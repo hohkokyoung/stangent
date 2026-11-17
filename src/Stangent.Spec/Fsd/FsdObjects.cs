@@ -36,11 +36,29 @@ public static partial class FsdObjects
     /// </summary>
     public static void Assign(string root, string doc, JsonObject? previous, JsonObject document)
     {
+        AssignTables(root, doc, previous, document);
         var ledger = FsdVersions.Ledger(root, doc);
-        Catch(ledger, Tables, TableFormat, previous?["tables"]);
         Catch(ledger, Figures, FigureFormat, previous?["images"]);
         var sections = document["sections"]!.AsArray().OfType<JsonObject>().ToList();
+        var pictures = (previous?["images"]?.AsArray() ?? []).OfType<JsonObject>().Where(o => o["id"] is not null).ToDictionary(o => (string)o["file"]!, o => (string)o["id"]!, StringComparer.Ordinal);
+        foreach (var image in document["images"]!.AsArray().OfType<JsonObject>())
+        {
+            var file = (string)image["file"]!;
+            image["id"] = pictures.Remove(file, out var kept) ? kept : ledger.Issue(Figures, FigureFormat);
+            if (sections.FirstOrDefault(s => ((string)s["text"]!).Contains($"({file})", StringComparison.Ordinal)) is not { } holder) continue;
+            image["section"] = (string)holder["permanentId"]!;
+            image["sectionNumber"] = (string)holder["id"]!;
+        }
+        foreach (var gone in pictures.Values) ledger.Remove(Figures, gone);
+        FsdAttachments.Assign(root, doc, previous, document);
+    }
 
+    /// <summary>The tables' ids alone, as <see cref="Assign"/> gives them: also for <c>fsd take</c> (D385), whose text changes tables.</summary>
+    public static void AssignTables(string root, string doc, JsonObject? previous, JsonObject document)
+    {
+        var ledger = FsdVersions.Ledger(root, doc);
+        Catch(ledger, Tables, TableFormat, previous?["tables"]);
+        var sections = document["sections"]!.AsArray().OfType<JsonObject>().ToList();
         var found = sections.SelectMany(s => TablesIn((string)s["text"]!).Select((t, i) => (Section: s, Position: i + 1, t.Rows, t.Columns, t.Hash))).ToList();
         var old = (previous?["tables"]?.AsArray() ?? []).OfType<JsonObject>().ToList();
         var ids = new string?[found.Count];
@@ -65,18 +83,6 @@ public static partial class FsdObjects
             ["id"] = ids[i] ?? ledger.Issue(Tables, TableFormat), ["section"] = Place(t.Section), ["sectionNumber"] = (string)t.Section["id"]!,
             ["position"] = t.Position, ["rows"] = t.Rows, ["columns"] = t.Columns, ["hash"] = t.Hash,
         })]);
-
-        var pictures = (previous?["images"]?.AsArray() ?? []).OfType<JsonObject>().Where(o => o["id"] is not null).ToDictionary(o => (string)o["file"]!, o => (string)o["id"]!, StringComparer.Ordinal);
-        foreach (var image in document["images"]!.AsArray().OfType<JsonObject>())
-        {
-            var file = (string)image["file"]!;
-            image["id"] = pictures.Remove(file, out var kept) ? kept : ledger.Issue(Figures, FigureFormat);
-            if (sections.FirstOrDefault(s => ((string)s["text"]!).Contains($"({file})", StringComparison.Ordinal)) is not { } holder) continue;
-            image["section"] = Place(holder);
-            image["sectionNumber"] = (string)holder["id"]!;
-        }
-        foreach (var gone in pictures.Values) ledger.Remove(Figures, gone);
-        FsdAttachments.Assign(root, doc, previous, document);
     }
 
     /// <summary>A ledger behind the document, or deleted, catches up first, so a live id is never given again.</summary>

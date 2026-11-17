@@ -67,31 +67,31 @@ public partial class StateChangesTests
     public void Who_may_move_is_held_by_the_table()
     {
         using var temp = new TempRepo();
-        // Only a person promotes a document (D117) or decides (D58); only a person confirms a bug (D96) or posts (D74).
-        foreach (var (kind, from, to) in new[] { (StateKinds.FsdCandidate, "candidate", "promoted"), (StateKinds.TraceDecision, "undecided", "agree"),
+        // Only a person settles a doubtful section (D117) or decides (D58); only a person confirms a bug (D96) or posts (D74).
+        foreach (var (kind, from, to) in new[] { (StateKinds.FsdSectionMatch, "doubtful", "same"), (StateKinds.TraceDecision, "undecided", "agree"),
             (StateKinds.TraceDecision, "agree", "defer"), (StateKinds.ProofConfirmation, "unconfirmed", "confirmed"), (StateKinds.DraftPosted, "unposted", "posted") })
         {
             Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, kind, "X-1", from, to, StateActor.Code("t"), "r"));
             Assert.True(StateChanges.Move(temp.Root, kind, "X-1", from, to, StateActor.Person("Pat"), "r"));
         }
         // Code alone starts an item, and a person doesn't run a step.
-        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.FsdCandidate, "C-1", null, "candidate", StateActor.Person("Pat"), "r"));
+        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.FsdSectionMatch, "C-1", null, "doubtful", StateActor.Person("Pat"), "r"));
         Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.PageRun, "p", "write", "verify", StateActor.Person("Pat"), "r"));
-        // A promoted candidate never comes back.
-        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.FsdCandidate, "C-1", "promoted", "candidate", StateActor.Code("t"), "r"));
+        // Code never undoes a person's word that a section is new.
+        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.FsdSectionMatch, "C-1", "new", "doubtful", StateActor.Code("t"), "r"));
     }
 
     [Fact]
     public void A_first_state_and_a_stay_are_judged_too()
     {
         using var temp = new TempRepo();
-        Assert.True(StateChanges.Move(temp.Root, StateKinds.FsdCandidate, "C-1", null, "candidate", StateActor.Code("t"), "r"));
-        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.FsdCandidate, "C-1", null, "promoted", StateActor.Code("t"), "r"));
+        Assert.True(StateChanges.Move(temp.Root, StateKinds.FsdSectionMatch, "C-1", null, "doubtful", StateActor.Code("t"), "r"));
+        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.FsdSectionMatch, "C-1", null, "same", StateActor.Code("t"), "r"));
         // Staying put changes nothing and adds no line, unless the table lists it (a second confirmation names a new person).
-        Assert.False(StateChanges.Move(temp.Root, StateKinds.FsdCandidate, "C-1", "promoted", "promoted", StateActor.Code("t"), "r"));
-        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.FsdCandidate, "C-1", "bad", "bad", StateActor.Code("t"), "r"));
+        Assert.False(StateChanges.Move(temp.Root, StateKinds.FsdSectionMatch, "C-1", "new", "new", StateActor.Code("t"), "r"));
+        Assert.Throws<StangentException>(() => StateChanges.Move(temp.Root, StateKinds.FsdSectionMatch, "C-1", "bad", "bad", StateActor.Code("t"), "r"));
         Assert.True(StateChanges.Move(temp.Root, StateKinds.ProofConfirmation, "K-1", "confirmed", "confirmed", StateActor.Person("Lee"), "r"));
-        Assert.Single(StateChanges.History(temp.Root, StateKinds.FsdCandidate, "C-1"));
+        Assert.Single(StateChanges.History(temp.Root, StateKinds.FsdSectionMatch, "C-1"));
     }
 
     [Fact]
@@ -107,9 +107,9 @@ public partial class StateChangesTests
 
         // A new object replacing an old one moves from the old one's state.
         var item = new JsonObject();
-        StateChanges.Apply(temp.Root, item, StateKinds.FsdCandidate, "C-1", "replaced", StateActor.Code("t"), "changed", previous: new JsonObject { ["state"] = "candidate" });
-        Assert.Equal("replaced", (string)item["state"]!);
-        Assert.Equal("candidate", StateChanges.History(temp.Root, StateKinds.FsdCandidate, "C-1")[0].From);
+        StateChanges.Apply(temp.Root, item, StateKinds.FsdSectionMatch, "C-1", "doubtful", StateActor.Code("t"), "changed", previous: new JsonObject { ["state"] = "same" });
+        Assert.Equal("doubtful", (string)item["state"]!);
+        Assert.Equal("same", StateChanges.History(temp.Root, StateKinds.FsdSectionMatch, "C-1")[0].From);
 
         // A lifecycle held elsewhere can't be written as a field.
         Assert.Equal("state_has_no_field", Assert.Throws<StangentException>(() =>
@@ -122,12 +122,12 @@ public partial class StateChangesTests
         using var temp = new TempRepo();
         var e = Assert.Throws<StangentException>(() => StateChanges.History(temp.Root, "nope", "x"));
         Assert.Equal(("unknown_state_kind", ExitCodes.Usage), (e.Code, e.ExitCode));
-        Assert.Empty(StateChanges.History(temp.Root, StateKinds.FsdCandidate, "C-1"));
+        Assert.Empty(StateChanges.History(temp.Root, StateKinds.FsdSectionMatch, "C-1"));
 
-        var path = Path.Combine(temp.Root, StateKinds.Get(StateKinds.FsdCandidate).HistoryFile);
+        var path = Path.Combine(temp.Root, StateKinds.Get(StateKinds.FsdSectionMatch).HistoryFile);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, "{not json\n");
-        Assert.Equal("bad_state_history", Assert.Throws<StangentException>(() => StateChanges.History(temp.Root, StateKinds.FsdCandidate, "C-1")).Code);
+        Assert.Equal("bad_state_history", Assert.Throws<StangentException>(() => StateChanges.History(temp.Root, StateKinds.FsdSectionMatch, "C-1")).Code);
     }
 
     [Fact]
@@ -159,7 +159,7 @@ public partial class StateChangesTests
         git.WaitForExit();
         var check = Process.Start(new ProcessStartInfo("git", ["check-ignore", "-q", StateKinds.Get(name).HistoryFile]) { WorkingDirectory = temp.Root })!;
         check.WaitForExit();
-        var committed = name is StateKinds.TraceDecision or StateKinds.FindingSeverity or StateKinds.FindingReview or StateKinds.FsdCandidate or StateKinds.FsdSectionMatch or StateKinds.FsdSectionAnswer or StateKinds.FindingStanding or StateKinds.FindingSecurity;
+        var committed = name is StateKinds.TraceDecision or StateKinds.FindingSeverity or StateKinds.FindingReview or StateKinds.FsdSectionMatch or StateKinds.FindingStanding or StateKinds.FindingSecurity;
         Assert.Equal(committed ? 1 : 0, check.ExitCode);   // check-ignore: 0 ignored, 1 not
     }
 
@@ -186,7 +186,8 @@ public partial class StateChangesTests
         [("src/Stangent.Spec/Fsd/FsdImport.cs", "status")] = (2, "what this import did: imported or unchanged"),
         [("src/Stangent.Spec/Fsd/FsdMigrate.cs", "status")] = (3, "what this migration did: migrated (from document.md, or from sections in document.json) or unchanged"),
         [("src/Stangent.Spec/Fsd/FsdCheck.cs", "status")] = (1, "what this check found: ready, unchanged or refused; nothing is stored"),
-        [("src/Stangent.Spec/Fsd/FsdVersions.cs", "status")] = (3, "what this import did: a new or a waiting candidate, a first import waiting or approved"),
+        [("src/Stangent.Spec/Fsd/FsdCompare.cs", "status")] = (1, "what this import did: compared with the committed FSD (D385)"),
+        [("src/Stangent.Spec/Fsd/FsdCompare.cs", "verdict")] = (2, "the new file's import verdict, a copy of ImportReport's, for reading"),
         [("src/Stangent.Spec/Fsd/ImportReport.cs", "verdict")] = (1, "an import's own result, ok or with warnings, not a finding's verdict"),
         [("src/Stangent.Spec/Fsd/FsdStatus.cs", "verdict")] = (1, "a copy of the current version's import verdict, for reading"),
         [("src/Stangent.Spec/Fsd/FsdReview.cs", "stage")] = (1, "`fsd review-status`: a copy of each run's stage, for reading; the moves are on the module"),
@@ -204,7 +205,7 @@ public partial class StateChangesTests
         // Lifecycle fields written beside the module, because the value isn't the state or it isn't a move.
         [("src/Stangent.Spec/Trace/TraceStore.cs", "decision")] = (2, "a new entry starts undecided, and a rebuilt entry carries its decision: neither is a move"),
         [("src/Stangent.Spec/Trace/TraceStore.cs", "decided_by")] = (2, "the same two, for who decided"),
-        [("src/Stangent.Spec/Fsd/FsdVersions.cs", "decided_by")] = (2, "holds a name from git, not a state (D58): one follows each move on the module"),
+        [("src/Stangent.Spec/Fsd/FsdCompare.cs", "decided_by")] = (2, "holds a name from git, not a state (D58): a person's settled answer, shown on its entry"),
         [("src/Stangent.Spec/Trace/TraceCheck.cs", "decided_by")] = (1, "holds a name from git, not a state (D58); Attribute moves the decision on the module first"),
         [("src/Stangent.Spec/Trace/TraceCheck.cs", "severity_by")] = (1, "holds a name from git, not a state (D118); Attribute moves the severity on the module first"),
         [("src/Stangent.Tickets/Drafts.cs", "posted")] = (2, "null in a new draft; then who, when and the comment, right after the move on the module"),

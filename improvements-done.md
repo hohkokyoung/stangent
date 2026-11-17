@@ -166,7 +166,9 @@ All proposed, none decided. Stangent's own file layout stays; only the ideas cou
 - A.8 · A section's fingerprint includes its attachments.  
   *`contentHash` beside `textHash`. The same words with other files read `modified`, naming the file; an older document falls back on the text (D123).*
 - A.9 · A person approves the first import, in a spec-only PR.  
-  *A switch, off by default: `fsd approve` (D122). Stangent opens no PR; a spec-only PR is the team's own.*
+  *A switch, off by default: `fsd approve` (D122). Stangent opens no PR; a spec-only PR is the team's own. Removed by D388 in phase fs layer 5 (D395): committing the chapters approves a first import (D385).*
+- D.1 · Section-level approval of a new FSD version (D128): approve or reject per changed section, `--partial`, readable section files under `specs/fsd/<doc>/sections/` (D142).  
+  *Built, off (D150); removed by D388 in phase fs layer 5 (D395): a new file is compared three ways and taken section by section with `fsd take`, and the commit approves (D385).*
 - A.10 · `fsd outline` and `fsd show <section>`.  
   *By code, by permanent id or number (D122).*
 - A.11 · `fsd export`: one file per top-level heading, long chapters cut one level down, generated, never read back.  

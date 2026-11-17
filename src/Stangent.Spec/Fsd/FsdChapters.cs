@@ -193,17 +193,28 @@ public static partial class FsdChapters
                 if (!HeadingLine().IsMatch(lines[i]))
                     throw new StangentException("chapters_out_of_step", $"Section {(string)s["id"]!} says its heading is at line {i + 1}, and it isn't one (a stangent bug).", ExitCodes.Failed);
                 var id = (string?)s["permanentId"] ?? throw new StangentException("chapters_out_of_step", $"Section {(string)s["id"]!} has no permanent id yet (a stangent bug).", ExitCodes.Failed);
-                // The import read no number here, so the reader mustn't take the heading's first word for one; or it gave a
-                // number the heading doesn't show (the attached-files section, AttachmentHome), so the marker carries it.
-                var typed = FsdSections.Typed(HeadingWords(lines[i])).Number;
-                var flag = (string)s["idKind"]! == "path" ? (typed is not null ? " " + NoNumber : "")
-                    : typed != (string)s["id"]! ? $" number={(string)s["id"]!}" : "";
-                marked[i] = $"{lines[i]} <!-- {id}{flag} -->";
+                marked[i] = HeadingWithMarker(lines[i], (string)s["idKind"]!, (string)s["id"]!, id);
             }
-            else if (HeadingLike().IsMatch(lines[i])) marked[i] = "\\" + lines[i];
+            else marked[i] = Escape(lines[i]);
         }
         return marked;
     }
+
+    /// <summary>A converter's heading line as a chapter file holds it, its marker added. The import read no number here, so the
+    /// reader mustn't take the heading's first word for one; or it gave a number the heading doesn't show (the attached-files
+    /// section, AttachmentHome), so the marker carries it.</summary>
+    public static string HeadingWithMarker(string line, string idKind, string id, string permanentId)
+    {
+        var typed = FsdSections.Typed(HeadingWords(line)).Number;
+        var flag = idKind == "path" ? (typed is not null ? " " + NoNumber : "") : typed != id ? $" number={id}" : "";
+        return $"{line} <!-- {permanentId}{flag} -->";
+    }
+
+    /// <summary>A converter's line that isn't a heading, as a chapter file holds it: one that would read as one gets a backslash.</summary>
+    public static string Escape(string line) => HeadingLike().IsMatch(line) ? "\\" + line : line;
+
+    /// <summary>Whether a line reads as a heading.</summary>
+    public static bool IsHeading(string line) => HeadingLine().IsMatch(line);
 
     static string HeadingWords(string line) => HeadingLine().Match(line).Groups[2].Value;
 

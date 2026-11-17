@@ -9,7 +9,7 @@ using Stangent.Spec.Trace;
 
 namespace Stangent.Core.Tests;
 
-/// <summary>Permanent section ids, candidates, the section diff, settling, promotion and carrying work across (D117). No AI.</summary>
+/// <summary>Permanent section ids and the section matcher (D117). The comparison and `fsd take` built on it are FsdCompareTests (D385). No AI.</summary>
 public sealed class FsdVersionTests : IDisposable
 {
     const string Pat = "Pat Example";
@@ -35,12 +35,13 @@ public sealed class FsdVersionTests : IDisposable
     string Root => repo.Root;
 
     /// <summary>Imports an outline as a Word file. The same outline is the same file, so importing it again is the same bytes.</summary>
-    JsonObject Import(string outline)
+    JsonObject Import(string outline, string id = "shop")
     {
-        var file = Path.Combine(Root, "shop.docx");
+        var file = Path.Combine(Root, $"{id}.docx");
         if (!files.TryGetValue(outline, out var bytes)) files[outline] = bytes = DocxWriter.Write(outline);
         File.WriteAllBytes(file, bytes);
         var imported = FsdImport.Import(repo.Repo, file);
+        File.Delete(file);
         Committed.All(repo.Repo);
         return imported;
     }
@@ -50,7 +51,9 @@ public sealed class FsdVersionTests : IDisposable
 
     string Id(string section) => (string)Current()["sections"]!.AsArray().First(s => (string)s!["id"]! == section)!["permanentId"]!;
 
-    List<JsonObject> Entries() => [.. FsdVersions.Diff(Root, "shop")["sections"]!.AsArray().OfType<JsonObject>()];
+    List<JsonObject> last = [];
+
+    List<JsonObject> Entries() => last;
 
     /// <summary>One entry as a line, so a whole diff reads as a list.</summary>
     static string Show(JsonObject e) => (string)e["kind"]! switch
@@ -61,10 +64,13 @@ public sealed class FsdVersionTests : IDisposable
         var k => $"{k} {e["from"]}>{e["to"]}",
     };
 
+    /// <summary>The matcher on its own: the committed FSD against a second file's sections, as a first import reads them.</summary>
     List<string> Diff(string first, string second)
     {
         Import(first);
-        Assert.Equal("candidate", (string)Import(second)["status"]!);
+        Import(second, "next");
+        var next = new JsonArray([.. FsdDocument.Load(Root, "next")["sections"]!.AsArray().OfType<JsonObject>().Select(s => { var c = s.DeepClone().AsObject(); c.Remove("permanentId"); return (JsonNode)c; })]);
+        last = FsdSectionDiff.Compare(new JsonArray([.. Current()["sections"]!.AsArray().Select(x => x!.DeepClone())]), next);
         return [.. Entries().Select(Show)];
     }
 
@@ -79,52 +85,6 @@ public sealed class FsdVersionTests : IDisposable
         Assert.Equal(4, (int)Current()["schemaVersion"]!);
         Assert.Equal([("1", "S-0001"), ("1.1", "S-0002")], Current()["sections"]!.AsArray().Select(s => ((string)s!["id"]!, (string)s["permanentId"]!)));
         Assert.Equal(["S-0001", "S-0002"], FsdVersions.Ledger(Root, "shop").Active("sections"));
-        Assert.False(Directory.Exists(FsdVersions.CandidateDir(Root, "shop")));
-    }
-
-    [Fact]
-    public void A_changed_file_waits_as_a_candidate_and_the_current_version_keeps_serving()
-    {
-        Import($"#! Fruit\n{Apples}\n");
-        var before = Chapters.Bytes(FsdImport.DocDir(Root, "shop"));
-        var json = File.ReadAllBytes(Path.Combine(FsdImport.DocDir(Root, "shop"), "document.json"));
-
-        var result = Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
-
-        Assert.Equal("candidate", (string)result["status"]!);
-        Assert.Equal(before, Chapters.Bytes(FsdImport.DocDir(Root, "shop")));
-        Assert.Equal(json, File.ReadAllBytes(Path.Combine(FsdImport.DocDir(Root, "shop"), "document.json")));
-        Assert.True(File.Exists(Path.Combine(Root, (string)result["diff"]!)));
-        Assert.True(File.Exists(Path.Combine(FsdVersions.CandidateDir(Root, "shop"), "section-diff.json")));
-        Assert.Single(FsdImport.Documents(Root));
-        Assert.Single(SpecIndex.Load(Root).Sections);
-        Assert.Equal("waiting", (string)Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n")["status"]!);
-    }
-
-    [Fact]
-    public void The_same_file_stays_unchanged_and_says_a_candidate_is_waiting()
-    {
-        var old = $"#! Fruit\n{Apples}\n";
-        Import(old);
-        Assert.Equal("unchanged", (string)Import(old)["status"]!);
-        Assert.Null(Import(old)["candidate"]);
-
-        var waiting = (string)Import($"#! Fruit\n{Pears}\n")["hash"]!;
-        Assert.Equal(waiting, (string)Import(old)["candidate"]!);
-    }
-
-    [Fact]
-    public void A_newer_file_replaces_a_waiting_candidate_and_what_was_settled_goes_with_it()
-    {
-        Import($"#! Fruit\n{Apples} {Pears}\n");
-        var firstHash = (string)Import($"#! Red\n{Apples}\n#! Green\n{Pears}\n")["hash"]!;
-        FsdVersions.Resolve(Root, "shop", "1", Id("1"), false, false, Pat);
-
-        var second = Import($"#! Red\n{Apples}\n#! Blue\n{Pears}\n");
-
-        Assert.Equal(3, FsdVersions.Diff(Root, "shop")["counts"]!["doubtful"]!.GetValue<int>());
-        Assert.Equal("replaced", StateChanges.History(Root, StateKinds.FsdCandidate, $"shop@{firstHash[..12]}")[^1].To);
-        Assert.Equal("candidate", StateChanges.History(Root, StateKinds.FsdCandidate, $"shop@{((string)second["hash"]!)[..12]}").Single().To);
     }
 
     [Fact]
@@ -152,13 +112,6 @@ public sealed class FsdVersionTests : IDisposable
     [Fact]
     public void Same_body_and_path_is_unchanged_even_when_a_new_chapter_changes_the_number() =>
         Assert.Equal(["added 1", "unchanged 1>2"], Diff($"#! Fruit\n{Apples}\n", $"#! New\n{Dates}\n#! Fruit\n{Apples}\n"));
-
-    [Fact]
-    public void A_new_number_is_counted_on_an_unchanged_section()
-    {
-        Diff($"#! Fruit\n{Apples}\n", $"#! New\n{Dates}\n#! Fruit\n{Apples}\n");
-        Assert.Equal(1, (int)FsdVersions.Diff(Root, "shop")["counts"]!["numberChanged"]!);
-    }
 
     [Fact]
     public void Same_body_under_another_parent_is_moved() =>
@@ -244,411 +197,10 @@ public sealed class FsdVersionTests : IDisposable
     public void Whitespace_doesnt_stop_a_sentence_being_shared_and_a_table_row_counts_as_one() =>
         Assert.Equal(["Plums and pears | ship the same day"], FsdSectionDiff.SharedSentences("| Plums   and pears | ship  the  same\tday |"));
 
-    // ---- A person settles ----
-
-    [Fact]
-    public void Promote_is_refused_while_any_remain_and_lists_them()
-    {
-        Import($"#! Fruit\n{Apples} {Pears}\n");
-        var doc = Import($"#! Red\n{Apples}\n#! Green\n{Pears}\n");
-        var id = Id("1");
-
-        var e = Assert.Throws<StangentException>(() => FsdVersions.Promote(repo.Repo, "shop", Pat));
-
-        Assert.Equal(("doubtful_sections_remain", ExitCodes.Failed), (e.Code, e.ExitCode));
-        Assert.Equal(["1", "2", id], e.Details);
-        Assert.Equal(["1", "2", id], doc["doubtful"]!.AsArray().Select(d => (string)d!));
-        Assert.Equal("Fruit", (string)Current()["sections"]![0]!["title"]!);
-    }
-
-    [Fact]
-    public void Resolve_then_promote_keeps_the_id_on_the_same_section_and_records_who_from_the_person()
-    {
-        Import($"#! Fruit\n{Apples} {Pears}\n");
-        Import($"#! Red\n{Apples}\n#! Green\n{Pears}\n");
-        var id = Id("1");
-
-        var settled = FsdVersions.Resolve(Root, "shop", "1", id, false, false, Pat);
-        Assert.Equal(("same", id, Pat), ((string)settled["state"]!, (string)settled["same_as"]!, (string)settled["decided_by"]!));
-        // The current section it claimed is settled with it, so only the other half is open.
-        Assert.Equal(["2"], settled["doubtful"]!.AsArray().Select(d => (string)d!));
-        FsdVersions.Resolve(Root, "shop", "2", null, true, false, Pat);
-
-        var history = StateChanges.History(Root, StateKinds.FsdSectionMatch, $"shop@{((string)FsdVersions.Diff(Root, "shop")["to"]!)[..12]}#1");
-        Assert.Equal([("doubtful", StateActor.CodeKind), ("same", StateActor.PersonKind)], history.Select(m => (m.To, m.Who.Kind)));
-        Assert.Equal(Pat, history[^1].Who.Name);
-
-        var result = FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-
-        Assert.Equal([("1", "Red", id), ("2", "Green", "S-0002")], Current()["sections"]!.AsArray().Select(s => ((string)s!["id"]!, (string)s["title"]!, (string)s["permanentId"]!)));
-        Assert.Equal(2, (int)result["sections"]!);
-        Assert.False(Directory.Exists(FsdVersions.CandidateDir(Root, "shop")));
-        Assert.Contains(Apples, Chapters.Text(FsdImport.DocDir(Root, "shop")), StringComparison.Ordinal);
-        Assert.Empty(SchemaRegistry.Embedded.Validate(FsdImport.Schema, FsdDocument.Facts(Root, "shop")!.ToJsonString()));
-        Assert.Equal("promoted", StateChanges.History(Root, StateKinds.FsdCandidate, $"shop@{((string)result["hash"]!)[..12]}")[^1].To);
-    }
-
-    [Fact]
-    public void A_person_can_change_their_mind_and_the_id_is_let_go()
-    {
-        Import($"#! Fruit\n{Apples} {Pears}\n");
-        Import($"#! Red\n{Apples}\n#! Green\n{Pears}\n");
-        var id = Id("1");
-
-        FsdVersions.Resolve(Root, "shop", "1", id, false, false, Pat);
-        Assert.Equal("section_id_taken", Assert.Throws<StangentException>(() => FsdVersions.Resolve(Root, "shop", "2", id, false, false, Pat)).Code);
-        Assert.Equal("section_id_taken", Assert.Throws<StangentException>(() => FsdVersions.Resolve(Root, "shop", id, null, false, true, Pat)).Code);
-
-        var changed = FsdVersions.Resolve(Root, "shop", "1", null, true, false, Pat);
-        Assert.Equal(["2", id], changed["doubtful"]!.AsArray().Select(d => (string)d!));
-        Assert.Equal("same", (string)FsdVersions.Resolve(Root, "shop", "2", id, false, false, Pat)["state"]!);
-    }
-
-    [Fact]
-    public void Resolve_refuses_what_it_cant_do()
-    {
-        Import($"#! Fruit\n{Apples} {Pears}\n#! Veg\n{Dates}\n");
-        Import($"#! Red\n{Apples}\n#! Green\n{Pears}\n#! Veg\n{Dates}\n");
-        var id = Id("1");
-
-        StangentException Refused(string section, string? same, bool isNew = false, bool removed = false) =>
-            Assert.Throws<StangentException>(() => FsdVersions.Resolve(Root, "shop", section, same, isNew, removed, Pat));
-
-        Assert.Equal("usage", Refused("1", id, isNew: true).Code);
-        Assert.Equal("usage", Refused("1", null).Code);
-        Assert.Equal("not_doubtful", Refused("3", id).Code);
-        Assert.Equal("not_found", Refused("1", "S-0099").Code);
-        Assert.Equal("section_id_taken", Refused("1", Id("2")).Code);
-        Assert.Equal("usage", Refused("1", null, removed: true).Code);
-        Assert.Equal("usage", Refused(id, null, isNew: true).Code);
-    }
-
-    [Fact]
-    public void A_doubtful_section_of_the_current_version_is_settled_as_removed_in_a_merge()
-    {
-        Import($"#! Red\n{Apples}\n#! Green\n{Pears}\n");
-        Import($"#! Fruit\n{Apples} {Pears}\n");
-        var (red, green) = (Id("1"), Id("2"));
-
-        FsdVersions.Resolve(Root, "shop", "1", red, false, false, Pat);
-        Assert.Equal([green], FsdVersions.Diff(Root, "shop")["sections"]!.AsArray().Where(e => (string?)e!["state"] == "doubtful").Select(e => (string)e!["permanentId"]!));
-        FsdVersions.Resolve(Root, "shop", green, null, false, true, Pat);
-        var result = FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-
-        Assert.Equal(red, Id("1"));
-        Assert.Equal([green], FsdVersions.Ledger(Root, "shop").Removed("sections"));
-        Assert.Equal(green, (string)result["carried"]!["removed"]![0]!["permanentId"]!);
-    }
-
-    [Fact]
-    public void An_id_removed_earlier_never_comes_back()
-    {
-        Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
-        var (fruit, veg) = (Id("1"), Id("2"));
-        Import($"#! Fruit\n{Apples}\n");
-        FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-        Assert.Equal([veg], FsdVersions.Ledger(Root, "shop").Removed("sections"));
-
-        // The removed section's words come back, under another name that shares a sentence with one still here.
-        Import($"#! Fruit\n{Apples}\n#! Veg again\n{Pears} {Apples}\n");
-        var e = Assert.Throws<StangentException>(() => FsdVersions.Resolve(Root, "shop", "2", veg, false, false, Pat));
-        Assert.Equal("section_id_removed", e.Code);
-
-        FsdVersions.Resolve(Root, "shop", "2", null, true, false, Pat);
-        FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-
-        Assert.Equal([fruit, "S-0003"], Current()["sections"]!.AsArray().Select(s => (string)s!["permanentId"]!));
-        Assert.Equal([veg], FsdVersions.Ledger(Root, "shop").Removed("sections"));
-    }
-
-    [Fact]
-    public void A_deleted_ledger_cant_give_a_live_id_again()
-    {
-        Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
-        var ledger = Path.Combine(FsdImport.DocDir(Root, "shop"), "ids.json");
-        var kept = File.ReadAllBytes(ledger);
-        File.Delete(ledger);
-        // The import commits the deletion; then the committed chapters name ids the committed ledger lacks (D392), and nothing reads them.
-        Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n#! Nuts\n{Plums}\n");
-        var refused = Assert.Throws<StangentException>(() => FsdVersions.Promote(repo.Repo, "shop", Pat));
-        Assert.Equal("invalid_fsd", refused.Code);
-        Assert.Contains("Restore it from git", refused.Message, StringComparison.Ordinal);
-
-        File.WriteAllBytes(ledger, kept);
-        Committed.All(repo.Repo);
-        FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-
-        Assert.Equal(["S-0001", "S-0002", "S-0003"], Current()["sections"]!.AsArray().Select(s => (string)s!["permanentId"]!));
-    }
-
-    [Fact]
-    public void A_second_round_of_versions_follows_the_first()
-    {
-        Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
-        var (fruit, veg) = (Id("1"), Id("2"));
-
-        Import($"#! New\n{Dates}\n#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
-        FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-        Assert.Equal([("1", "S-0003"), ("2", fruit), ("3", veg)], Current()["sections"]!.AsArray().Select(s => ((string)s!["id"]!, (string)s["permanentId"]!)));
-
-        Import($"#! New\n{Dates}\n#! Veg\n{Pears}\n#! Produce\n{Apples}\n");
-        Assert.Equal(["unchanged 1>1", "unchanged 3>2", "renamed 2>3"], Entries().Select(Show));
-        FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-
-        Assert.Equal([("1", "S-0003"), ("2", veg), ("3", fruit)], Current()["sections"]!.AsArray().Select(s => ((string)s!["id"]!, (string)s["permanentId"]!)));
-        Assert.Equal(2, File.ReadAllLines(Path.Combine(FsdImport.DocDir(Root, "shop"), "promotions.jsonl")).Length);
-    }
-
-    // ---- Carrying work across ----
-
-    JsonObject Link(string section, string title, string quote, string decision = "agree")
-    {
-        var entry = TraceStore.Entry("gap", "shop", new JsonObject { ["id"] = section, ["title"] = title }, quote, null, null, null, "code", null, null);
-        entry["decision"] = decision;
-        entry["decided_by"] = Pat;
-        var trace = TraceFile.Load(Root);
-        trace["entries"]!.AsArray().Add(entry);
-        TraceFile.Save(Root, trace);
-        return entry;
-    }
-
-    JsonObject Trace(int at = 0) => TraceFile.Load(Root)["entries"]![at]!.AsObject();
-
-    [Fact]
-    public void A_moved_section_takes_its_links_and_decisions_to_its_new_number()
-    {
-        Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
-        Link("2", "Veg", Pears);
-        var oldId = (string)Trace()["id"]!;
-
-        Import($"#! New\n{Dates}\n#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
-        var result = FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-
-        var entry = Trace();
-        Assert.Equal(("3", "agree", Pat), ((string)entry["fsd"]!["section"]!, (string)entry["decision"]!, (string)entry["decided_by"]!));
-        Assert.NotEqual(oldId, (string)entry["id"]!);
-        Assert.Equal(TraceFile.EntryId("gap", "shop", "3", null, Pears, null), (string)entry["id"]!);
-        Assert.Equal(oldId, (string)result["carried"]!["traceIds"]![0]!["from"]!);
-        // The trace check agrees: the id is the hash of the new link, and the section's there.
-        var check = TraceCheck.Run(Root, null, null, fix: false);
-        Assert.True((bool)check["ok"]!);
-    }
-
-    [Fact]
-    public void Numbers_that_shift_past_each_other_dont_run_together()
-    {
-        Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
-        Link("1", "Fruit", Apples);
-        Link("2", "Veg", Pears);
-
-        Import($"#! Veg\n{Pears}\n#! Fruit\n{Apples}\n");
-        FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-
-        var bySection = TraceFile.Load(Root)["entries"]!.AsArray().ToDictionary(e => (string)e!["fsd"]!["section"]!, e => (string)e!["fsd"]!["quote"]!);
-        Assert.Equal(Pears, bySection["1"]);
-        Assert.Equal(Apples, bySection["2"]);
-    }
-
-    [Fact]
-    public void A_ci_check_and_attribution_dont_count_a_moved_entry_as_a_new_decision()
-    {
-        Import($"#! Fruit\n{Apples}\n");
-        Link("1", "Fruit", Apples);
-        var before = TraceFile.Load(Root);
-
-        Import($"#! New\n{Dates}\n#! Fruit\n{Apples}\n");
-        FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-
-        Assert.True((bool)TraceCheck.Run(Root, null, before, fix: false)["ok"]!);
-        Assert.Equal(0, TraceCheck.Attribute(Root, before, "The Merger"));
-        Assert.Equal(Pat, (string)Trace()["decided_by"]!);
-    }
-
-    [Fact]
-    public void A_typed_name_on_a_moved_entry_is_still_caught()
-    {
-        Import($"#! Fruit\n{Apples}\n");
-        Link("1", "Fruit", Apples);
-        var before = TraceFile.Load(Root);
-        Import($"#! New\n{Dates}\n#! Fruit\n{Apples}\n");
-        FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-        var trace = TraceFile.Load(Root);
-        trace["entries"]![0]!["decided_by"] = "Typed Name";
-        TraceFile.Save(Root, trace);
-
-        Assert.False((bool)TraceCheck.Run(Root, null, before, fix: false)["ok"]!);
-    }
-
-    [Fact]
-    public void A_modified_section_goes_through_the_existing_drop_back_when_a_quote_changes()
-    {
-        Import($"#! Fruit\n{Apples} {Pears}\n");
-        Link("1", "Fruit", Apples);
-        Link("1", "Fruit", Pears);
-
-        Import($"#! Fruit\n{Apples} {Plums}\n");
-        FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-        // Once the promote is committed, the trace check drops back what lost its quote (D58, D380).
-        var stale = TraceCheck.Run(Root, null, null, fix: true)["staleQuotes"]!;
-
-        var entries = TraceFile.Load(Root)["entries"]!.AsArray().OfType<JsonObject>().ToDictionary(e => (string)e["fsd"]!["quote"]!);
-        Assert.Equal("agree", (string)entries[Apples]["decision"]!);
-        Assert.Null(entries[Pears]["decision"]);
-        Assert.Null(entries[Pears]["decided_by"]);
-        Assert.Equal([(string)entries[Pears]["id"]!], stale.AsArray().Select(s => (string)s!));
-    }
-
-    [Fact]
-    public void A_removed_sections_entries_are_reported_and_stay_out_of_reach_of_a_new_section_with_its_number()
-    {
-        Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
-        var veg = Id("2");
-        var link = Link("2", "Veg", Pears);
-
-        // Veg goes, and a different chapter takes its number.
-        Import($"#! Fruit\n{Apples}\n#! Nuts\n{Plums}\n");
-        var result = FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-
-        var removed = result["carried"]!["removed"]![0]!;
-        Assert.Equal((veg, "2", true), ((string)removed["permanentId"]!, (string)removed["section"]!, (bool)removed["numberUsedAgain"]!));
-        Assert.Equal([TraceFile.EntryId("gap", "shop", $"(removed {veg}) 2", null, Pears, null)], removed["traceEntries"]!.AsArray().Select(s => (string)s!));
-        Assert.Equal((string)link["id"]!, (string)result["carried"]!["traceIds"]![0]!["from"]!);
-        // Never dropped: the entry is still on file, under a mark no heading can be, and the new section 2 doesn't pick it up.
-        Assert.Equal($"(removed {veg}) 2", (string)Assert.Single(TraceFile.Load(Root)["entries"]!.AsArray())!["fsd"]!["section"]!);
-    }
-
-    [Fact]
-    public void A_removed_sections_trace_entry_takes_the_mark_and_keeps_its_decision_and_who_decided()
-    {
-        Import($"#! Intro\n{Apples}\n#! Orders\n{Pears}\n");
-        var orders = Id("2");
-        var oldId = (string)Link("2", "Orders", Pears, "fsd-wrong")["id"]!;
-        var before = TraceFile.Load(Root);
-
-        // Orders goes, and Billing takes its number.
-        Import($"#! Intro\n{Apples}\n#! Billing\n{Plums}\n");
-        var result = FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-
-        var mark = $"(removed {orders}) 2";
-        var newId = TraceFile.EntryId("gap", "shop", mark, null, Pears, null);
-        void Kept()
-        {
-            var entry = Assert.Single(TraceFile.Load(Root)["entries"]!.AsArray())!;
-            Assert.Equal((newId, mark, "Orders"), ((string)entry["id"]!, (string)entry["fsd"]!["section"]!, (string)entry["fsd"]!["title"]!));
-            Assert.Equal(("fsd-wrong", Pat), ((string?)entry["decision"], (string?)entry["decided_by"]));
-        }
-        Kept();
-
-        // Reported on promote: where it went and what it still holds. Nothing moved, so there's no history line and it isn't a stale quote.
-        var removed = result["carried"]!["removed"]![0]!;
-        Assert.Equal([newId], removed["traceEntries"]!.AsArray().Select(s => (string)s!));
-        var decision = Assert.Single(removed["decisions"]!.AsArray())!;
-        Assert.Equal((newId, "fsd-wrong", Pat), ((string)decision["id"]!, (string)decision["value"]!, (string)decision["by"]!));
-        Assert.Equal((oldId, newId), ((string)result["carried"]!["traceIds"]![0]!["from"]!, (string)result["carried"]!["traceIds"]![0]!["to"]!));
-        Assert.Empty(StateChanges.History(Root, StateKinds.TraceDecision, oldId));
-        Assert.Empty(StateChanges.History(Root, StateKinds.TraceDecision, newId));
-
-        // `trace check` keeps flagging it for a person, and its fix leaves it alone. CI doesn't read the new id as a typed name or a new decision.
-        var check = TraceCheck.Run(Root, null, null, fix: true);
-        Assert.Contains(check["problems"]!.AsArray(), p => (string)p! == $"{newId}: FSD section shop §{mark} was removed; its decision stays until a person deals with the entry");
-        Assert.Empty(check["staleQuotes"]!.AsArray());
-        Kept();
-        Assert.DoesNotContain(TraceCheck.Run(Root, null, before, fix: false)["problems"]!.AsArray(), p => ((string)p!).Contains("decided_by", StringComparison.Ordinal));
-        Assert.Equal(0, TraceCheck.Attribute(Root, before, "The Merger"));
-        Kept();
-
-        // A judge's new build of the new section 2 doesn't reach it, and approving that chapter doesn't either.
-        TraceStore.ApplyEntries(Root, "shop", "2", []);
-        Assert.Equal(0, TraceCheck.ApproveChapter(Root, "shop", "2"));
-        Kept();
-    }
-
-    [Fact]
-    public void A_person_discards_a_candidate_and_the_current_version_stays()
-    {
-        var first = $"#! Fruit\n{Apples}\n";
-        var second = $"#! Fruit\n{Pears}\n";
-        Import(first);
-        var hash = (string)Import(second)["hash"]!;
-
-        var result = FsdVersions.Discard(Root, "shop", Pat);
-
-        Assert.Equal(("shop", hash, Pat), ((string)result["id"]!, (string)result["discarded"]!, (string)result["by"]!));
-        Assert.False(Directory.Exists(FsdVersions.CandidateDir(Root, "shop")));
-        Assert.Null(FsdVersions.PendingHash(Root, "shop"));
-        Assert.Equal(Apples, ((string)Current()["sections"]![0]!["text"]!).Trim());
-        var last = StateChanges.History(Root, StateKinds.FsdCandidate, $"shop@{hash[..12]}")[^1];
-        Assert.Equal(("candidate", "discarded", "person", Pat), (last.From, last.To, last.Who.Kind, last.Who.Name));
-
-        Assert.Equal("no_candidate", Assert.Throws<StangentException>(() => FsdVersions.Discard(Root, "shop", Pat)).Code);
-        Assert.Equal("no_candidate", Assert.Throws<StangentException>(() => FsdVersions.Promote(repo.Repo, "shop", Pat)).Code);
-        // The same file can come back as a candidate later.
-        Assert.Equal("candidate", (string)Import(second)["status"]!);
-    }
-
-    [Fact]
-    public void The_current_file_again_says_plainly_a_candidate_is_still_waiting_and_how_to_discard_it()
-    {
-        var first = $"#! Fruit\n{Apples}\n";
-        Import(first);
-        Assert.Null(Import(first)["note"]);
-
-        var hash = (string)Import($"#! Fruit\n{Pears}\n")["hash"]!;
-        var same = Import(first);
-
-        Assert.Equal(("unchanged", hash), ((string)same["status"]!, (string)same["candidate"]!));
-        var note = (string)same["note"]!;
-        Assert.Contains($"candidate {hash[..12]} is still waiting", note);
-        Assert.Contains("`stangent fsd promote shop` would apply it", note);
-        Assert.Contains("`stangent fsd discard shop`", note);
-    }
-
-    [Fact]
-    public void A_modified_section_under_a_duplicate_heading_goes_to_a_person_even_with_no_sentence_shared()
-    {
-        Import($"#! Notes\n{Apples}\n#! Notes\n{Pears}\n");
-        var (apples, pears) = (Id("1"), Id("2"));
-        Import($"#! Notes\n{Pears}\n#! Notes\n{Apples}\n");
-        FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-        Assert.Equal((pears, apples), (Id("1"), Id("2")));
-
-        // The first note is rewritten: not a word shared, and the heading is the same as the other note's.
-        Import($"#! Notes\n{Plums}\n#! Notes\n{Apples}\n");
-
-        Assert.Equal(["doubtful 1: 1", "unchanged 2>2", "doubtful 1: 1"], Entries().Select(Show));
-        var open = Entries()[0];
-        var candidate = open["candidates"]![0]!;
-        Assert.Equal((pears, true), ((string)candidate["permanentId"]!, (bool)candidate["sameHeading"]!));
-        Assert.Null(candidate["sentence"]);
-        Assert.Contains("the same heading", FsdSectionDiff.Markdown(FsdVersions.Diff(Root, "shop")));
-        Assert.Equal("doubtful_sections_remain", Assert.Throws<StangentException>(() => FsdVersions.Promote(repo.Repo, "shop", Pat)).Code);
-
-        FsdVersions.Resolve(Root, "shop", "1", pears, isNew: false, removed: false, Pat);
-        FsdVersions.Promote(repo.Repo, "shop", Pat);
-        Committed.All(repo.Repo);
-        Assert.Equal((pears, apples), (Id("1"), Id("2")));
-    }
-
     [Fact]
     public void A_duplicate_heading_with_a_shared_sentence_lists_that_sentence_once()
     {
-        Import($"#! Notes\n{Apples}\n#! Notes\n{Pears}\n");
-        Import($"#! Notes\n{Apples} {Plums}\n#! Notes\n{Pears} {Figs}\n");
+        Diff($"#! Notes\n{Apples}\n#! Notes\n{Pears}\n", $"#! Notes\n{Apples} {Plums}\n#! Notes\n{Pears} {Figs}\n");
         var entries = Entries().Where(e => (string?)e["side"] == "candidate").ToList();
         Assert.Equal(2, entries.Count);
         // Each holds the note it shares a sentence with first, then the other under the same heading, each once.
@@ -674,6 +226,9 @@ public sealed class FsdVersionTests : IDisposable
         // v4 keeps no Markdown's name and adds the import commit (phase fs layer 2); that build wrote the one and not the other.
         copy["markdown"] = "document.md";
         copy.Remove("importCommit");
+        // Phase fs layer 5 (D385) adds what the file gave each section, and the converter.
+        copy.Remove("fileSections");
+        copy.Remove("converter");
         foreach (var s in copy["sections"]!.AsArray().OfType<JsonObject>()) { s.Remove("permanentId"); s.Remove("contentHash"); }
         copy.Remove("tables");
         foreach (var i in copy["images"]!.AsArray().OfType<JsonObject>()) { i.Remove("id"); i.Remove("section"); i.Remove("sectionNumber"); }
@@ -714,7 +269,10 @@ public sealed class FsdVersionTests : IDisposable
         var again = FsdMigrate.Run(repo.Repo, "sonarr");
         Assert.Equal(v1["sections"]!.AsArray().Count, (int)again["permanentIdsAdded"]!);
         Committed.All(repo.Repo);
-        Assert.Equal("unchanged", (string)FsdImport.Import(repo.Repo, file, "sonarr")["status"]!);
+        // The same file again is compared with what's committed (D385): nothing differs, and nothing changes.
+        var compared = FsdImport.Import(repo.Repo, file, "sonarr");
+        Assert.Equal("compared", (string)compared["status"]!);
+        Assert.Equal(v1["sections"]!.AsArray().Count, (int)compared["counts"]!["same"]!);
         Assert.Equal(md, Chapters.Bytes(dir));
 
         var upgraded = FsdDocument.Load(Root, "sonarr");
@@ -774,8 +332,7 @@ public sealed class FsdVersionTests : IDisposable
     [Fact]
     public void The_reviewed_pair_stays_as_reviewed()
     {
-        Import(PairBefore);
-        Import(PairAfter);
+        Diff(PairBefore, PairAfter);
 
         // Reviewed by hand. Delivery's words stay under a new title: renamed. Tracking and Returns have new parents: moved.
         // Cancelling split in two, neither half keeping its name: doubtful. Old notes shares nothing: removed.
@@ -783,12 +340,12 @@ public sealed class FsdVersionTests : IDisposable
         [
             "added 1", "unchanged 1>2", "modified 1.1>2.1", "doubtful 2.2: 1.2", "doubtful 2.3: 1.2", "renamed 2>3", "moved 2.1>3.1", "added 4", "moved 2.2>4.1", "doubtful 1.2: 2.2,2.3", "removed 3",
         ], Entries().Select(Show));
-        var counts = FsdVersions.Diff(Root, "shop")["counts"]!;
-        Assert.Equal((1, 2, 1, 1, 2, 1, 3, 0), ((int)counts["unchanged"]!, (int)counts["moved"]!, (int)counts["renamed"]!, (int)counts["modified"]!, (int)counts["added"]!, (int)counts["removed"]!, (int)counts["doubtful"]!, (int)counts["settled"]!));
-        var markdown = File.ReadAllText(Path.Combine(FsdVersions.CandidateDir(Root, "shop"), "SECTION_DIFF.md"));
+
+        // The same pair through the comparison (D385): its doubtful sections say how to settle them, with the sentence shared.
+        Assert.Equal("compared", (string)Import(PairAfter)["status"]!);
+        var markdown = File.ReadAllText(Path.Combine(FsdCompare.Dir(Root, "shop"), "comparison.md"));
         Assert.Contains("stangent fsd resolve shop \"2.2\" --same-as <S-id>", markdown, StringComparison.Ordinal);
         Assert.Contains($"\"{Plums}\"", markdown, StringComparison.Ordinal);
-        Assert.Equal(FsdSectionDiff.Markdown(FsdVersions.Diff(Root, "shop")), markdown);
     }
 
     /// <summary>A planted edit, not a real version change (D56): a chapter inserted, a section moved, one reworded, one split.</summary>
@@ -837,10 +394,12 @@ public sealed class FsdVersionTests : IDisposable
         Committed.All(repo.Repo);
 
         var counts = result["counts"]!;
-        // Planted: one added, one moved, one modified, one split (its old section and two new ones are doubtful), the rest unchanged.
-        Assert.Equal(("candidate", before + 2), ((string)result["status"]!, (int)result["sections"]!));
-        Assert.Equal((before - 3, 1, 0, 1, 1, 0, 3), ((int)counts["unchanged"]!, (int)counts["moved"]!, (int)counts["renamed"]!, (int)counts["modified"]!, (int)counts["added"]!, (int)counts["removed"]!, (int)counts["doubtful"]!));
-        Assert.Equal(7, (int)counts["numberChanged"]!);
+        // Planted, compared against the file it was imported from (D385): the chapter added is new; the reworded section and the
+        // renumbered ones (their headings changed) are changed only in the file; the split's old section and its two halves are
+        // doubtful; the moved one reads the same, its move listed; nothing was changed in the repo or is gone.
+        Assert.Equal("compared", (string)result["status"]!);
+        Assert.Equal((1, 6, 3, 0, 0, 0, before - 7), ((int)counts["new"]!, (int)counts["file-changed"]!, (int)counts["doubtful"]!, (int)counts["repo-changed"]!, (int)counts["both-changed"]!, (int)counts["gone"]!, (int)counts["same"]!));
+        Assert.Single(FsdCompare.Show(Root, "sonarr")["sections"]!.AsArray(), e => e!["fileMovedIt"] is not null && (string)e["case"]! == "same");
     }
 }
 
@@ -866,16 +425,7 @@ public sealed class SectionSplitTests
         Assert.Equal("doubtful", (string)old["kind"]!);
         Assert.Equal(["1", "2"], old["splitInto"]!.AsArray().Select(t => (string)t!));
         Assert.All(entries.Where(e => (string?)e["side"] == "candidate"), e => Assert.Equal("S-0001", (string)e["splitFrom"]!));
-
-        foreach (var e in entries.Where(e => (string)e["kind"]! == "doubtful")) e["state"] = "doubtful";
-        var counts = FsdSectionDiff.Counts(entries);
-        Assert.Equal(1, (int)counts["split"]!);
-        Assert.Equal(3, (int)counts["doubtful"]!);
-        var diff = new JsonObject { ["doc"] = "d", ["from"] = new string('a', 40), ["to"] = new string('b', 40), ["counts"] = counts, ["sections"] = new JsonArray([.. entries]) };
-        var md = FsdSectionDiff.Markdown(diff);
-        Assert.Contains("| split | 1 |", md);
-        Assert.Contains("## Split: a person decides", md);
-        Assert.Contains("became `1`, `2`", md);
+        Assert.Equal(3, entries.Count(e => (string)e["kind"]! == "doubtful"));
     }
 
     [Fact]

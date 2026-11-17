@@ -8,7 +8,7 @@ provides: {}
 
 # The FSD in the repo is the source of truth
 
-**Decided 2026-11-17 (D376–D388); planned the same day (D389). Layer 0 built and fresh-checked (D390); layer 1 built and fresh-checked (D391); layer 2 built and fresh-checked (D392); layer 3 built and fresh-checked (D393).** After import the client's file never comes back (D376).
+**Decided 2026-11-17 (D376–D388); planned the same day (D389). Layer 0 built and fresh-checked (D390); layer 1 built and fresh-checked (D391); layer 2 built and fresh-checked (D392); layer 3 built and fresh-checked (D393); layer 4 built and fresh-checked (D394); layer 5 built and fresh-checked (D395).** After import the client's file never comes back (D376).
 The FSD is one Markdown file per chapter, edited in git (D377), and a commit is the approval (D380). A PM's ruling
 becomes the FSD's own words (D379), and component switches go (D381). This phase builds that.
 
@@ -166,7 +166,14 @@ before the write) and the cites. Details in `docs/spec.md` ("Rulings become the 
 - **Fresh check:** "can `fsd write` change a sentence it wasn't asked to, or let an uncited or wrong sentence through?"
   Sonnet, about 120K. A live AI run on Kavita's planter rulings comes with D375's paid run, asked first.
 
-### Layer 5 · A new file is compared, never imported over (D385, D388)
+### Layer 5 · A new file is compared, never imported over (D385, D388) — built and fresh-checked (D395)
+
+Built as `FsdCompare` (`Compare`, `Resolve`, `Take`; `stangent fsd diff`, `fsd resolve`, `fsd take <doc> <section>… | --all-updates`)
+on `FsdSectionDiff.Compare` with the last file's sections (`document.json`'s `fileSections`, `converter`); tests in `FsdCompareTests`
+(10), the matcher's in `FsdVersionTests`, and stage 8 of `WholeFlowTests` (compare, resolve, take, `fsd check`, commit). Removed:
+`FsdSectionApproval`, `FsdSectionFiles`, the candidate half of `FsdVersions`, `fsd approve`/`reject`/`promote`/`discard`, `--partial`,
+the `fsd-candidate` and `fsd-section-answer` lifecycles. `docs/spec.md` "A new file: compared, never imported over".
+
 
 - `fsd import` of a later file writes `.stangent/fsd/<doc>/compare/` (`comparison.json`, `comparison.md`) and changes
   no chapter. Each new section is matched to the last file's sections as import matches today (doubtful ones settled

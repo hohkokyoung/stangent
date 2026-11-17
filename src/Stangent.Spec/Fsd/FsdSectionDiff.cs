@@ -1,11 +1,13 @@
-using System.Text;
 using System.Text.Json.Nodes;
+using Stangent.Core;
 
 namespace Stangent.Spec.Fsd;
 
 /// <summary>
-/// Two versions of a document, section by section, by code (D117). Only exact signals match on their own, in this order:
-/// the same body and heading path; the same body, unique on both sides; the same heading path, unique on both sides. Anything
+/// Two versions of a document, section by section, by code (D117, D385). Only exact signals match on their own, in this order:
+/// with the last imported file's sections (<see cref="BaseSection"/>, phase fs layer 5), the same heading path and text hash as the
+/// last file gave it, then the same text hash, each unique on both sides; then, against the repo's text, the same body and heading
+/// path; the same body, unique on both sides; the same heading path as the last file had, then as the repo has, unique on both sides. Anything
 /// left that shares a whole sentence with a section on the other side, or its heading path with one left there too, is doubtful,
 /// for a person. The rest is added or removed.
 /// There's no score and no threshold, so nothing here can be tuned to a document.
@@ -15,10 +17,19 @@ public static class FsdSectionDiff
     /// <summary>A sentence counts as shared only with at least this many words: "See above." or "Not applicable." says nothing about where a section went.</summary>
     public const int MinSentenceWords = 4;
 
-    const char PathMark = '\u0001';
+    internal const char PathMark = '\u0001';
+    static readonly string EmptyHash = CanonicalJson.Hash("");
+
+    /// <summary>A section as the last imported file gave it (phase fs layer 5, D385): its permanent id, heading path and text hash.
+    /// <c>InRepo</c> false: the repo no longer has it, so only these two can match it.</summary>
+    public sealed record BaseSection(string PermanentId, string Path, string TextHash);
 
     sealed record Side(JsonObject Json, string Id, string Title, string Path, string Text, string? PermanentId)
     {
+        public BaseSection? Base { get; init; }
+        /// <summary>A section the last file had and the repo no longer has: matched only by what the file gave it.</summary>
+        public bool RepoGone { get; init; }
+        public string TextHash => CanonicalJson.Hash(Text);
         public string? ContentHash => (string?)Json["contentHash"];
         public List<(string Name, string Hash)> Files => [.. (Json["attachments"]?.AsArray() ?? []).OfType<JsonObject>().Select(a => ((string)a["fileName"]!, (string)a["hash"]!))];
         public string ParentPath => Path.Contains(PathMark) ? Path[..Path.LastIndexOf(PathMark)] : "";
@@ -28,10 +39,20 @@ public static class FsdSectionDiff
     static List<Side> Read(JsonArray sections)
     {
         var all = sections.OfType<JsonObject>().ToList();
-        var byId = all.ToDictionary(s => (string)s["id"]!, StringComparer.Ordinal);
-        string PathOf(JsonObject s) => (string?)s["parent"] is { } p && byId.TryGetValue(p, out var up) ? PathOf(up) + PathMark + (string)s["title"]! : (string)s["title"]!;
-        return [.. all.Select(s => new Side(s, (string)s["id"]!, (string)s["title"]!, PathOf(s), (string)s["text"]!, (string?)s["permanentId"]))];
+        var paths = Paths(all);
+        return [.. all.Select(s => new Side(s, (string)s["id"]!, (string)s["title"]!, paths[(string)s["id"]!], (string)s["text"]!, (string?)s["permanentId"]))];
     }
+
+    /// <summary>Each section's heading path, by its id: its parents' titles and its own, as the matcher compares them.</summary>
+    public static Dictionary<string, string> Paths(IReadOnlyList<JsonObject> sections)
+    {
+        var byId = sections.GroupBy(s => (string)s["id"]!, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        string PathOf(JsonObject s) => (string?)s["parent"] is { } p && byId.TryGetValue(p, out var up) ? PathOf(up) + PathMark + (string)s["title"]! : (string)s["title"]!;
+        return byId.ToDictionary(kv => kv.Key, kv => PathOf(kv.Value), StringComparer.Ordinal);
+    }
+
+    /// <summary>A heading path as people read it: <c>Fruit / Pears</c>.</summary>
+    public static string Shown(string path) => path.Replace(PathMark.ToString(), " / ", StringComparison.Ordinal);
 
     /// <summary>The sentences a section can be recognised by, each once, in order.</summary>
     public static List<string> SharedSentences(string text) =>
@@ -92,17 +113,44 @@ public static class FsdSectionDiff
         }
     }
 
-    /// <summary>One entry per section: the candidate's in its order, then the current version's that have no match.</summary>
-    public static List<JsonObject> Compare(JsonArray current, JsonArray candidate)
+    /// <summary>One entry per section: the candidate's in its order, then the current version's that have no match. With
+    /// <paramref name="lastFile"/> (phase fs layer 5), each current section also carries its text hash and heading path as the last
+    /// imported file gave them, keyed by permanent id, and those match first; one the current version no longer has is matched
+    /// by them alone, and left out of the entries when nothing matches it (<c>repoGone</c> on its entry when something does).</summary>
+    public static List<JsonObject> Compare(JsonArray current, JsonArray candidate, IReadOnlyList<BaseSection>? lastFile = null)
     {
         var olds = Read(current);
+        var baseById = (lastFile ?? []).ToDictionary(b => b.PermanentId, StringComparer.Ordinal);
+        olds = [.. olds.Select(o => o.PermanentId is { } p && baseById.TryGetValue(p, out var b) ? o with { Base = b } : o)];
+        var here = olds.Select(o => o.PermanentId).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        olds.AddRange((lastFile ?? []).Where(b => !here.Contains(b.PermanentId)).Select(b => new Side(
+            new JsonObject { ["id"] = b.PermanentId, ["title"] = b.Path.Split(PathMark)[^1], ["text"] = "" }, b.PermanentId, b.Path.Split(PathMark)[^1], b.Path, "", b.PermanentId) { Base = b, RepoGone = true }));
         var news = Read(candidate);
         var match = new Dictionary<Side, (Side Old, string Kind)>();
         var taken = new HashSet<Side>();
 
+        // Keys that can be null: a section with no such key takes no part in that rule, on either side.
+        void Exact(Func<Side, string?> oldKey, Func<Side, string?> newKey)
+        {
+            var oldCount = olds.Where(o => oldKey(o) is not null).GroupBy(o => oldKey(o)!, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
+            var newCount = news.Where(n => newKey(n) is not null).GroupBy(n => newKey(n)!, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
+            foreach (var n in news.Where(n => !match.ContainsKey(n) && newKey(n) is not null))
+            {
+                if (newCount[newKey(n)!] != 1 || !oldCount.TryGetValue(newKey(n)!, out var same) || same.Count != 1 || taken.Contains(same[0])) continue;
+                var o = same[0];
+                match[n] = (o, o.RepoGone ? "modified" : o.Path == n.Path && o.Text == n.Text ? "unchanged" : o.Text == n.Text ? (o.Title != n.Title && o.ParentPath == n.ParentPath ? "renamed" : "moved") : "modified");
+                taken.Add(o);
+            }
+        }
+        if (lastFile is not null)
+        {
+            Exact(o => o.Base is { } b ? b.Path + PathMark + PathMark + b.TextHash : null, n => n.Path + PathMark + PathMark + n.TextHash);
+            Exact(o => o.Base is { } b && !string.IsNullOrEmpty(b.TextHash) && b.TextHash != EmptyHash ? b.TextHash : null, n => n.Text.Trim().Length > 0 ? n.TextHash : null);
+        }
+
         void Rule<TKey>(Func<Side, TKey> key, Func<Side, Side, string> kind, Func<Side, bool>? eligible = null) where TKey : notnull
         {
-            var oldCount = olds.GroupBy(key).ToDictionary(g => g.Key, g => g.ToList());
+            var oldCount = olds.Where(o => !o.RepoGone).GroupBy(key).ToDictionary(g => g.Key, g => g.ToList());
             var newCount = news.GroupBy(key).ToDictionary(g => g.Key, g => g.Count());
             foreach (var n in news.Where(n => !match.ContainsKey(n) && (eligible?.Invoke(n) ?? true)))
             {
@@ -115,6 +163,9 @@ public static class FsdSectionDiff
 
         Rule(s => (s.Path, s.Text), (_, _) => "unchanged");
         Rule(s => s.Text, (o, n) => o.Title != n.Title && o.ParentPath == n.ParentPath ? "renamed" : "moved", s => s.Text.Trim().Length > 0);
+        if (lastFile is not null) Exact(o => o.Base?.Path, n => n.Path);
+        // A section the repo took out takes no part in the rest: only what the file gave it could say it's the same one.
+        olds.RemoveAll(o => o.RepoGone && !taken.Contains(o));
         Rule(s => s.Path, (_, _) => "modified");
 
         var oldBySentence = BySentence(olds);
@@ -131,6 +182,7 @@ public static class FsdSectionDiff
                 if (m.Old.Id != n.Id) e["numberChanged"] = true;
                 if (m.Old.Title != n.Title) e["fromTitle"] = m.Old.Title;
                 if (m.Old.Path != n.Path) { e["fromPath"] = m.Old.ShownPath; e["toPath"] = n.ShownPath; }
+                if (m.Old.RepoGone) e["repoGone"] = true;
                 entries.Add(e);
                 continue;
             }
@@ -198,7 +250,6 @@ public static class FsdSectionDiff
     static List<Side> SameHeading(Side section, IEnumerable<Side> left, List<(Side Other, string Sentence)> shared) =>
         [.. left.Where(s => s.Path == section.Path && shared.All(c => c.Other != s))];
 
-    /// <summary>Each outcome's count. <c>doubtful</c> is what's still open, so it reaches zero; <c>numberChanged</c> counts across the outcomes.</summary>
     /// <summary>
     /// I.5: one section of the current version whose sentences went to two or more sections no other section claims. Stays doubtful, since which part keeps the
     /// id is a person's call and links rest on it, but it reads as what it is. A sentence is the same test the doubtful ones pass, so there's no score here.
@@ -217,103 +268,5 @@ public static class FsdSectionDiff
             old["splitInto"] = new JsonArray([.. into.Select(t => (JsonNode)t)]);
             foreach (var to in into) parts[to]["splitFrom"] = (string?)old["permanentId"];
         }
-    }
-
-    public static JsonObject Counts(IEnumerable<JsonObject> entries)
-    {
-        var list = entries.ToList();
-        var claimed = list.Select(e => (string?)e["same_as"]).OfType<string>().ToHashSet(StringComparer.Ordinal);
-        int Kind(string k) => list.Count(e => (string)e["kind"]! == k && !(k == "removed" && claimed.Contains((string)e["permanentId"]!)));
-        return new JsonObject
-        {
-            ["unchanged"] = Kind("unchanged"), ["moved"] = Kind("moved"), ["renamed"] = Kind("renamed"), ["modified"] = Kind("modified"),
-            ["added"] = Kind("added"), ["removed"] = Kind("removed"),
-            ["doubtful"] = list.Count(e => (string)e["kind"]! == "doubtful" && (string?)e["state"] == "doubtful"),
-            ["settled"] = list.Count(e => (string)e["kind"]! == "doubtful" && (string?)e["state"] != "doubtful"),
-            // Of the doubtful: sections that came apart, counted once each, on the current version's side.
-            ["split"] = list.Count(e => e["splitInto"] is not null && (string?)e["state"] == "doubtful"),
-            ["numberChanged"] = list.Count(e => e["numberChanged"] is not null),
-        };
-    }
-
-    /// <summary><c>SECTION_DIFF.md</c>: for people, from the JSON form. The same diff gives the same bytes.</summary>
-    public static string Markdown(JsonObject diff)
-    {
-        var doc = (string)diff["doc"]!;
-        if (diff["from"] is null) return $"# Section diff: {doc}\n\nA first import, waiting for `stangent fsd approve {doc}`. There's no current version to compare it with.\n";
-        var entries = diff["sections"]!.AsArray().OfType<JsonObject>().ToList();
-        var claimed = entries.Select(e => (string?)e["same_as"]).OfType<string>().ToHashSet(StringComparer.Ordinal);
-        var sb = new StringBuilder($"# Section diff: {doc}\n\n");
-        sb.Append($"Current version `{((string)diff["from"]!)[..12]}`, candidate `{((string)diff["to"]!)[..12]}`. The current version keeps serving until `stangent fsd promote {doc}`.\n\n");
-        sb.Append("| Outcome | Sections |\n|---|---|\n");
-        foreach (var name in new[] { "unchanged", "moved", "renamed", "modified", "added", "removed", "doubtful", "split", "settled", "numberChanged" }) sb.Append($"| {name} | {diff["counts"]![name]} |\n");
-        var splits = entries.Where(e => e["splitInto"] is not null && (string?)e["state"] == "doubtful").ToList();
-        if (splits.Count > 0)
-        {
-            sb.Append("\n## Split: a person decides\n\nOne section's sentences are now in several, and no other section claims them. At most one part can keep the id, and the links with it. They're in the doubtful count, and listed there with what they share.\n\n");
-            foreach (var e in splits)
-                sb.Append($"- `{(string)e["from"]!}` {(string)e["title"]!} ({(string)e["permanentId"]!}) became {string.Join(", ", e["splitInto"]!.AsArray().Select(t => $"`{(string)t!}`"))}\n");
-        }
-        var open = entries.Where(e => (string)e["kind"]! == "doubtful").ToList();
-        if (open.Count > 0)
-        {
-            sb.Append("\n## Doubtful: a person decides\n\nCode found a shared sentence or the same heading, and nothing exact, so it doesn't guess.\n");
-            foreach (var e in open)
-            {
-                var candidateSide = (string)e["side"]! == "candidate";
-                var name = candidateSide ? $"§{e["to"]}" : $"{e["permanentId"]} (§{e["from"]})";
-                sb.Append($"\n### {name} {e["title"]}: {e["state"]}");
-                if ((string?)e["decided_by"] is { } by) sb.Append($", by {by}");
-                sb.Append(candidateSide ? " (in the candidate)\n\n" : " (in the current version)\n\n");
-                foreach (var c in e["candidates"]!.AsArray().OfType<JsonObject>())
-                {
-                    var where = candidateSide ? $"{c["permanentId"]} §{c["from"]}" : $"§{c["to"]}";
-                    sb.Append($"- {where} {c["title"]}{((bool)c["alreadyMatched"]! ? " (already matched)" : "")}: {((string?)c["sentence"] is { } sentence ? $"\"{sentence}\"" : "the same heading")}\n");
-                }
-                if (e["suggestions"] is JsonArray { Count: > 0 } suggestions)
-                {
-                    sb.Append("\nThe closest sections by shared words, for reading first. It's a ranking, and it decides nothing:\n\n");
-                    foreach (var s in suggestions.OfType<JsonObject>())
-                        sb.Append($"- {(candidateSide ? $"{s["permanentId"]} §{s["from"]}" : $"§{s["to"]}")} {s["title"]} ({s["similarity"]})\n");
-                }
-                sb.Append(candidateSide
-                    ? $"\nSettle: `stangent fsd resolve {doc} \"{e["to"]}\" --same-as <S-id>` or `--new`\n"
-                    : $"\nSettle: `stangent fsd resolve {doc} {e["permanentId"]} --removed`, or claim it from a candidate section with `--same-as`\n");
-            }
-        }
-        foreach (var kind in new[] { "moved", "renamed", "modified", "added", "removed" })
-        {
-            var some = entries.Where(e => (string)e["kind"]! == kind && !(kind == "removed" && claimed.Contains((string)e["permanentId"]!))).ToList();
-            if (some.Count == 0) continue;
-            sb.Append($"\n## {char.ToUpperInvariant(kind[0])}{kind[1..]}\n\n");
-            foreach (var e in some) sb.Append($"- {Line(e)}\n");
-        }
-        if (diff["attachmentsWithNoSection"] is JsonArray whole)
-        {
-            sb.Append("\n## Files attached to the whole document\n\nThey're in no section's hash, so they're said here.\n\n");
-            foreach (var c in whole.OfType<JsonObject>()) sb.Append($"- {(string)c["fileName"]!}: {(string)c["change"]!}\n");
-        }
-        var renumbered = entries.Where(e => (string)e["kind"]! == "unchanged" && e["numberChanged"] is not null).ToList();
-        if (renumbered.Count > 0)
-        {
-            sb.Append("\n## Unchanged, with a new number\n\n");
-            foreach (var e in renumbered) sb.Append($"- {Line(e)}\n");
-        }
-        return sb.ToString();
-    }
-
-    static string Line(JsonObject e)
-    {
-        var id = (string?)e["permanentId"] is { } s ? s + " " : "";
-        var numbers = ((string?)e["from"], (string?)e["to"]) switch
-        {
-            ({ } f, { } t) when f != t => $"§{f} → §{t}",
-            (_, { } t) => $"§{t}",
-            ({ } f, _) => $"§{f}",
-            _ => "",
-        };
-        var was = (string?)e["fromPath"] is { } path ? $" (was {path})" : "";
-        var files = e["attachmentsChanged"] is JsonArray changes ? $" (attachment {string.Join(", ", changes.OfType<JsonObject>().Select(c => $"{(string)c["fileName"]!} {(string)c["change"]!}"))})" : "";
-        return $"{id}{numbers} {e["title"]}{was}{files}";
     }
 }

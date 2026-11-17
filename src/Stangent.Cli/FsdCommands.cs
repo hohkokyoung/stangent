@@ -18,33 +18,19 @@ static class FsdCommands
         var flatOption = new Option<bool>("--flat") { Description = "Import the whole document as one labelled section with no structure, for a document with no headings or bookmarks." };
         var acceptOption = new Option<bool>("--accept-changes") { Description = "For a .docx with tracked changes, which otherwise stops the import: import the accepted view (inserted text kept, deleted text gone, moved text once), listing how many were accepted." };
         var allowLabelOption = new Option<string[]>("--allow-label") { Description = "Import a file with this sensitivity label, by its name or id. Without it, a label stops the import. It's kept in the document's record with your name, from git. Repeat for several." };
-        var partialOption = new Option<bool>("--partial") { Description = "The file holds only changes: sections it doesn't hold aren't proposed for removal. Refused since D388 removed section approval; phase fs compares a new file instead (D385)." };
-        var import = new Command("import", "Convert a .docx, .pdf, .xlsx or .xlsm to Markdown by code, archive the original (D16) and record its sections (source-document v3), with a verdict and a report. A changed file for a document already here comes in as a candidate with a section diff (D117).") { fileArg, idOption, flatOption, acceptOption, allowLabelOption, partialOption };
+        var import = new Command("import", "Convert a .docx, .pdf, .xlsx or .xlsm to Markdown by code, archive the original (D16) and write the FSD's chapter files (source-document v4), with a verdict and a report; the commit approves it. A new file for a document already committed changes no chapter: it is compared three ways, section by section, in .stangent/fsd/<doc>/compare/ (D385), and `fsd take` copies in what you pick.") { fileArg, idOption, flatOption, acceptOption, allowLabelOption };
         import.SetAction(pr => Cli.Run(pr, "fsd import", ctx =>
         {
-            var result = Stopping(() => FsdImport.Import(ctx.Repo, pr.GetValue(fileArg)!, pr.GetValue(idOption), pr.GetValue(flatOption), pr.GetValue(acceptOption), pr.GetValue(allowLabelOption), pr.GetValue(partialOption)));
+            var result = Stopping(() => FsdImport.Import(ctx.Repo, pr.GetValue(fileArg)!, pr.GetValue(idOption), pr.GetValue(flatOption), pr.GetValue(acceptOption), pr.GetValue(allowLabelOption)));
             ctx.Span.Attributes["stangent.artifact.count"] = (int?)result["sections"] ?? 0;
             return result;
         }));
         fsd.Subcommands.Add(import);
 
         var docArgument = new Argument<string>("doc") { Description = "The document's id." };
-        var reread = new Command("reread", "Read the same original from the archive again with this build (D122). Different text comes in as a candidate; the same text reads unchanged.") { docArgument, allowLabelOption };
+        var reread = new Command("reread", "Read the same original from the archive again with this build (D122). Different text is compared with the committed FSD as a new file is (D385); the same text reads unchanged.") { docArgument, allowLabelOption };
         reread.SetAction(pr => Cli.Run(pr, "fsd reread", ctx => Stopping(() => FsdImport.Reread(ctx.Repo, pr.GetValue(docArgument)!, pr.GetValue(allowLabelOption)))));
         fsd.Subcommands.Add(reread);
-
-        var answerSection = new Argument<string?>("section") { Description = "Refused since D388 removed section approval (D150); phase fs layer 5 removes the argument.", Arity = ArgumentArity.ZeroOrOne };
-        var approveFirst = new Command("approve", "Removed by D388 with first-import and section approval: nothing waits for it now, and committing a document's chapters will be the approval (D385, phase fs layer 5).") { docArgument, answerSection };
-        approveFirst.SetAction(pr => Cli.Run(pr, "fsd approve", ctx => pr.GetValue(answerSection) is { } section
-            ? FsdSectionApproval.Answer(ctx.Repo, pr.GetValue(docArgument)!, section, true, null, FsdVersions.GitPerson(ctx.Repo.Root))
-            : FsdVersions.Approve(ctx.Repo.Root, pr.GetValue(docArgument)!, FsdVersions.GitPerson(ctx.Repo.Root), FsdSectionApproval.On(ctx.Repo.Config), ctx.Repo.Config.Fsd.ExportMaxLines)));
-        fsd.Subcommands.Add(approveFirst);
-
-        var rejectSection = new Argument<string>("section") { Description = "A changed section of the waiting candidate, by its number in the candidate or its permanent id." };
-        var rejectWhy = new Option<string?>("--why") { Description = "Why, in your words. It's kept beside your name." };
-        var reject = new Command("reject", "Removed by D388 with section approval (D150): refused; a new file is compared with the repo's FSD instead (D385, phase fs layer 5).") { docArgument, rejectSection, rejectWhy };
-        reject.SetAction(pr => Cli.Run(pr, "fsd reject", ctx => FsdSectionApproval.Answer(ctx.Repo, pr.GetValue(docArgument)!, pr.GetValue(rejectSection)!, false, pr.GetValue(rejectWhy), FsdVersions.GitPerson(ctx.Repo.Root))));
-        fsd.Subcommands.Add(reject);
 
         var docOption = new Option<string?>("--doc") { Description = "Only this document." };
         var chapterOption = new Option<string?>("--chapter") { Description = "Only this top-level heading: its number or permanent id, or its place in `fsd outline` where chapters have no numbers." };
@@ -97,33 +83,28 @@ static class FsdCommands
         compareTables.SetAction(pr => Cli.Run(pr, "fsd compare-tables", ctx => TableFacts.Compare(ctx.Repo.Root, pr.GetValue(docArg)!, Cli.LoadGraph(ctx))));
         fsd.Subcommands.Add(compareTables);
 
-        var diffFormat = new Option<string>("--format") { Description = "json (default) or md (SECTION_DIFF.md).", DefaultValueFactory = _ => "json" };
-        var diff = new Command("diff", "The waiting candidate's section diff against the current version (D117). Code only.") { docArg, diffFormat };
-        diff.SetAction(pr =>
-        {
-            var markdown = pr.GetValue(diffFormat) == "md";
-            return Cli.Run(pr, "fsd diff", ctx => FsdSectionApproval.Review(ctx.Repo, pr.GetValue(docArg)!), markdown ? r => FsdSectionDiff.Markdown(r!.AsObject()) + FsdSectionApproval.ReviewMarkdown(r!.AsObject()) : null);
-        });
+        var diffFormat = new Option<string>("--format") { Description = "json (default) or md (comparison.md).", DefaultValueFactory = _ => "json" };
+        var diff = new Command("diff", "The new file's comparison with the committed FSD (D385): per section, changed only in the file (offered), only in the repo (kept), in both (side by side, the repo's kept), new (offered), gone (listed), doubtful (a person settles). Code only.") { docArg, diffFormat };
+        diff.SetAction(pr => Cli.Run(pr, "fsd diff", ctx => FsdCompare.Show(ctx.Repo.Root, pr.GetValue(docArg)!, pr.GetValue(diffFormat) == "md"),
+            pr.GetValue(diffFormat) == "md" ? r => (string)r!["markdown"]! : null));
         fsd.Subcommands.Add(diff);
 
-        var candidateSection = new Argument<string>("candidate-section") { Description = "The doubtful section's id in the candidate; with --removed, the S-id of a doubtful section of the current version." };
-        var sameAsOption = new Option<string?>("--same-as") { Description = "It's the current version's section with this permanent id (S-0001)." };
-        var newOption = new Option<bool>("--new") { Description = "It's a new section: it gets a new permanent id on promotion." };
-        var removedOption = new Option<bool>("--removed") { Description = "The current version's section is gone: its id is marked removed on promotion." };
-        var resolve = new Command("resolve", "Settle one doubtful section (D117). Who decided comes from git.") { docArg, candidateSection, sameAsOption, newOption, goneOption };
-        resolve.SetAction(pr => Cli.Run(pr, "fsd resolve", ctx => FsdVersions.Resolve(ctx.Repo.Root, pr.GetValue(docArg)!, pr.GetValue(candidateSection)!,
+        var candidateSection = new Argument<string>("section") { Description = "The doubtful section: its number in the new file, or with --removed the S-id of a doubtful section of the repo." };
+        var sameAsOption = new Option<string?>("--same-as") { Description = "It's the repo's section with this permanent id (S-0001)." };
+        var newOption = new Option<bool>("--new") { Description = "It's a new section: `fsd take` can add it, with a new permanent id." };
+        var removedOption = new Option<bool>("--removed") { Description = "The repo's section isn't in the new file: it's listed as gone, never deleted." };
+        var resolve = new Command("resolve", "Settle one doubtful section of the new file's comparison (D117, D385). Who decided comes from git.") { docArg, candidateSection, sameAsOption, newOption, removedOption };
+        resolve.SetAction(pr => Cli.Run(pr, "fsd resolve", ctx => FsdCompare.Resolve(ctx.Repo.Root, pr.GetValue(docArg)!, pr.GetValue(candidateSection)!,
             pr.GetValue(sameAsOption), pr.GetValue(newOption), pr.GetValue(removedOption), FsdVersions.GitPerson(ctx.Repo.Root))));
         fsd.Subcommands.Add(resolve);
 
-        var promote = new Command("promote", "Make the candidate the current version, carrying trace entries across by code. Refused while a doubtful section remains (D117).") { docArg };
-        promote.SetAction(pr => Cli.Run(pr, "fsd promote", ctx => FsdVersions.Promote(ctx.Repo, pr.GetValue(docArg)!, FsdVersions.GitPerson(ctx.Repo.Root))));
-        fsd.Subcommands.Add(promote);
+        var takeSections = new Argument<string[]>("section") { Description = "A section the comparison offers: its permanent id (S-0012), or a new section's number in the new file. Repeat for several.", Arity = ArgumentArity.ZeroOrMore };
+        var allUpdates = new Option<bool>("--all-updates") { Description = "Every section only the new file changed. New sections are named one by one." };
+        var take = new Command("take", "Copy the new file's heading and text into the chapter files, uncommitted, for sections the comparison offers (D385): changed only in the file, or new. A section the repo changed is never taken. Then `fsd check` and commit: the commit approves (D380). Code only.") { docArg, takeSections, allUpdates };
+        take.SetAction(pr => Cli.Run(pr, "fsd take", ctx => FsdCompare.Take(ctx.Repo, pr.GetValue(docArg)!, pr.GetValue(takeSections) ?? [], pr.GetValue(allUpdates))));
+        fsd.Subcommands.Add(take);
 
-        var discard = new Command("discard", "Throw the waiting candidate away; the current version stays. Who decided comes from git (D117).") { docArg };
-        discard.SetAction(pr => Cli.Run(pr, "fsd discard", ctx => FsdVersions.Discard(ctx.Repo.Root, pr.GetValue(docArg)!, FsdVersions.GitPerson(ctx.Repo.Root))));
-        fsd.Subcommands.Add(discard);
-
-        var status = new Command("status", "Where a document stands: its version, a candidate waiting, doubtful sections, uncovered sections, who has what, and the next command. No AI.") { docArgument };
+        var status = new Command("status", "Where a document stands: its version, a new file's comparison, doubtful sections, uncovered sections, who has what, and the next command. No AI.") { docArgument };
         status.SetAction(pr => Cli.Run(pr, "fsd status", ctx => FsdStatus.Of(ctx.Repo.Root, pr.GetValue(docArgument)!)));
         fsd.Subcommands.Add(status);
 

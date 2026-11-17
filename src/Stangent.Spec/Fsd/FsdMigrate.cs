@@ -40,6 +40,7 @@ public static class FsdMigrate
         {
             // Chapters written while document.json still held the sections (layer 1): they are the FSD now, and only the copy goes.
             var given = FsdVersions.EnsureIds(root, doc, current);
+            current["fileSections"] = FsdCompare.FileSections([.. current["sections"]!.AsArray().OfType<JsonObject>()]);
             FsdDocument.Save(root, doc, current, newImport: true);
             var moved = new JsonObject
             {
@@ -55,6 +56,8 @@ public static class FsdMigrate
         var added = FsdVersions.EnsureIds(root, doc, current);
         var written = FsdChapters.Write(dir, text, [.. current["sections"]!.AsArray().OfType<JsonObject>()], repo.Config.Fsd.ExportMaxLines);
         File.Delete(md);
+        // What the file said, section by section, for the next file's comparison (D385): document.json's sections are the import's.
+        current["fileSections"] = FsdCompare.FileSections([.. current["sections"]!.AsArray().OfType<JsonObject>()]);
         FsdDocument.Save(root, doc, current, newImport: true);
         var result = new JsonObject
         {

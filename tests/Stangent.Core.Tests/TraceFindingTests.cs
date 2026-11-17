@@ -878,15 +878,15 @@ public class TraceFindingTests
     }
 
     [Fact]
-    public void Status_puts_a_waiting_candidate_first()
+    public void Status_puts_a_new_files_comparison_first()
     {
         var (app, _) = App();
         using var _d = app;
         var file = Path.Combine(app.Root, "shop.docx");
         File.WriteAllBytes(file, DocxWriter.Write(SavedWorkTests.Fsd + "\n\n#! Returns\nReturns take five days from the day they arrive.\n"));
-        Assert.Equal("candidate", (string)FsdImport.Import(app.Repo, file)["status"]!);
+        Assert.Equal("compared", (string)FsdImport.Import(app.Repo, file)["status"]!);
         var status = FsdStatus.Of(app.Root, "shop");
-        Assert.False((bool)status["candidate"]!["first"]!);
-        Assert.Equal("stangent fsd promote shop", (string)Next(app)["command"]!);
+        Assert.Equal(1, (int)status["comparison"]!["counts"]!["new"]!);
+        Assert.Equal("stangent fsd diff shop --format md", (string)Next(app)["command"]!);
     }
 }

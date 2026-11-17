@@ -10,8 +10,8 @@ namespace Stangent.Spec.Fsd;
 /// <summary>
 /// <c>stangent fsd import</c> (Phase 2b step 1, D111): converts a <c>.docx</c>, <c>.pdf</c>, <c>.xlsx</c> or <c>.xlsm</c> to Markdown by code, archives the original
 /// (D16) and records the import's facts as a <c>source-document</c> (v4, D383) and the text as chapter files (D377) in <c>specs/fsd/&lt;doc-id&gt;/</c>.
-/// The same file always gives the same bytes; a file already imported (same content hash) is left alone. A different file
-/// for a document already here comes in as a candidate beside it (<see cref="FsdVersions"/>, D117).
+/// The same file always gives the same bytes. A file for a document whose FSD is committed is compared with it and imported over
+/// nothing (<see cref="FsdCompare"/>, phase fs layer 5, D385); before that first commit, the same file again is left alone.
 /// </summary>
 public static class FsdImport
 {
@@ -22,7 +22,7 @@ public static class FsdImport
     public static string DefaultId(string file) =>
         Regex.Replace(Path.GetFileNameWithoutExtension(file).ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-') is { Length: > 0 } s ? s : "document";
 
-    public static JsonObject Import(StangentRepo repo, string file, string? id = null, bool flat = false, bool acceptChanges = false, IReadOnlyList<string>? allowLabels = null, bool partial = false)
+    public static JsonObject Import(StangentRepo repo, string file, string? id = null, bool flat = false, bool acceptChanges = false, IReadOnlyList<string>? allowLabels = null)
     {
         if (!File.Exists(file)) throw new StangentException("not_found", $"No file at {file}.", ExitCodes.NotFound);
         var options = ImportOptions.From(repo.Config, flat, acceptChanges, allowLabels);
@@ -42,13 +42,12 @@ public static class FsdImport
         var current = FsdDocument.Facts(repo.Root, id);
         if (current is not null && !FsdDocument.Migrated(current))
             throw new StangentException("fsd_not_migrated", $"{id} was imported before the FSD became chapter files. Run `stangent fsd migrate {id}` and commit specs/fsd/{id}/ first (D383).", ExitCodes.Usage);
-        if (partial && !FsdSectionApproval.On(repo.Config))
-            throw new StangentException("section_approval_off", "--partial went with section approval (D388): only section approval could keep what a changes-only file doesn't hold. Import the whole file.", ExitCodes.Usage);
-        if (partial && current is null)
-            throw new StangentException("usage", $"--partial says the file holds only changes, and {id} has no current version to change. Import the whole document first.", ExitCodes.Usage);
-        // The same file is imported once, unless --flat asks for a different shape than what's recorded.
-        if (current is not null && (string?)current["original"]?["hash"] == hash && flat == IsFlat(current))
-            return Unchanged(repo.Root, id, dir, current, hash);
+        // A first import not committed yet: the same file again is left alone, and another file waits for that commit (D380).
+        if (current is not null && FsdDocument.Blob(repo.Root, $"specs/fsd/{id}/document.json") is null && Git.Run(repo.Root, "rev-parse --git-dir") is not null)
+        {
+            if ((string?)current["original"]?["hash"] == hash && flat == IsFlat(current)) return Unchanged(repo.Root, id, dir, current, hash);
+            throw new StangentException("fsd_not_committed", $"specs/fsd/{id}/ isn't committed yet: read the first import and commit it (the commit approves it, D380), then import the new file to compare it with that.", ExitCodes.Usage);
+        }
 
         var import = ImportPipeline.Run(format, bytes, options);
         var converted = AttachmentHome.Apply(import.Document, true);
@@ -60,27 +59,26 @@ public static class FsdImport
         var archived = new JsonObject { ["name"] = archive.Name, ["path"] = archivedPath };
         if (current is not null)
         {
-            // Compared with the committed FSD (D380): an import not committed yet has no current version to compare with.
-            var offered = FsdVersions.Offer(repo.Root, id, FsdDocument.Load(repo.Root, id), doc, converted, hash, flat, archived, partial: partial);
-            offered["steps"] = import.StepsJson();
-            return offered;
+            // Compared with the committed FSD (D380, D385): no chapter changes; `fsd take` copies in what a person picks.
+            var compared = FsdCompare.Compare(repo, id, doc, converted, import, hash, archived, "a new file came in");
+            compared["steps"] = import.StepsJson();
+            return compared;
         }
-        // First-import approval is gone (D388): committing the chapters approves a first import (D385); the rest goes in phase fs layer 5.
-        // A first import still waiting from before D388: this one goes straight in, and that one is replaced.
-        FsdVersions.ReplaceFirst(repo.Root, id, hash);
-
+        // Committing the chapters approves a first import (D385, D388).
         FsdVersions.IssueIds(repo.Root, id, doc, doc["sections"]!.AsArray().OfType<JsonObject>());
         FsdObjects.Assign(repo.Root, id, null, doc);
         ImportProblems.Attach(doc);
+        // What the file said, section by section, for the next file's comparison (D385), and which converter read it.
+        doc["fileSections"] = FsdCompare.FileSections([.. doc["sections"]!.AsArray().OfType<JsonObject>()]);
+        doc["converter"] = import.ConverterJson();
         FsdDocument.Validate(doc);
         FsdChapters.Verify(converted.Markdown, [.. doc["sections"]!.AsArray().OfType<JsonObject>()], repo.Config.Fsd.ExportMaxLines);
         Directory.CreateDirectory(dir);
-        WriteText(dir, converted, doc, markdown: false);
+        WriteText(dir, converted, doc);
         // The FSD as the PM edits it (phase fs layer 1, D377, D378): chapter files with each heading's id, and no document.md.
         var chapters = FsdChapters.Write(dir, converted.Markdown, [.. doc["sections"]!.AsArray().OfType<JsonObject>()], repo.Config.Fsd.ExportMaxLines);
         FsdDocument.Save(repo.Root, id, doc, newImport: true);
         ImportReport.Write(dir, doc);
-        if (FsdSectionApproval.On(repo.Config)) FsdSectionFiles.Write(repo.Root, id, doc);
         return ImportReport.AddTo(new JsonObject
         {
             ["id"] = id, ["status"] = "imported", ["hash"] = hash, ["sections"] = converted.Sections.Count,
@@ -108,13 +106,7 @@ public static class FsdImport
         try { shown = FsdDocument.Load(root, id); }
         catch (StangentException e) when (e.Code is "fsd_not_committed" or "not_git") { shown = current.DeepClone().AsObject(); shown["sections"] = new JsonArray(); }
         ImportReport.Write(dir, shown);
-        var same = ImportReport.AddTo(new JsonObject { ["id"] = id, ["status"] = "unchanged", ["hash"] = hash }, shown, $"specs/fsd/{id}");
-        if (FsdVersions.PendingHash(root, id) is { } pending)
-        {
-            same["candidate"] = pending;
-            same["note"] = $"This file is already the current version, and candidate {pending[..12]} is still waiting: `stangent fsd promote {id}` would apply it. To throw it away, run `stangent fsd discard {id}`.";
-        }
-        return same;
+        return ImportReport.AddTo(new JsonObject { ["id"] = id, ["status"] = "unchanged", ["hash"] = hash }, shown, $"specs/fsd/{id}");
     }
 
     /// <summary>The labels a person allowed, for the document's record, each with who said so: from git, never typed. Null for a file with none. A reread keeps who allowed what's already recorded.</summary>
@@ -131,8 +123,8 @@ public static class FsdImport
     }
 
     /// <summary>
-    /// The same original, read again with today's converter (D122). Different text comes in as a candidate through the same flow as a new file, so 2.1's fixes reach
-    /// earlier imports and saved work stays until a person promotes. The same text reads <c>unchanged</c>, whatever the file hash says. What was asked of the first
+    /// The same original, read again with today's converter (D122). Different text is compared as a new file is (<see cref="FsdCompare"/>, D385), so a converter's
+    /// fixes reach earlier imports only as sections a person takes. The same text reads <c>unchanged</c>, whatever the file hash says. What was asked of the first
     /// reading holds: flat stays flat, tracked changes stay accepted, and a label already allowed stays allowed, with who allowed it.
     /// </summary>
     public static JsonObject Reread(StangentRepo repo, string id, IReadOnlyList<string>? allowLabels = null)
@@ -152,8 +144,6 @@ public static class FsdImport
         var bytes = File.ReadAllBytes(path);
         if (Convert.ToHexStringLower(SHA256.HashData(bytes)) != hash)
             throw new StangentException("archive_file_changed", $"The file at {path} isn't the original this document was imported from: its hash isn't {hash[..12]}. Nothing was read.");
-        if (FsdVersions.PendingHash(repo.Root, id) is { } waiting && waiting != hash)
-            throw new StangentException("candidate_waiting", $"Candidate {waiting[..12]} of {id}, from another file, is waiting. Promote or discard it first (`stangent fsd promote {id}`, `stangent fsd discard {id}`): reading the original again would replace it.");
 
         var fileName = (string)original["fileName"]!;
         var format = ImportPipeline.ForFile(fileName) ?? throw new StangentException("unsupported_format", $"No format reads {fileName} any more.", ExitCodes.Usage);
@@ -173,10 +163,10 @@ public static class FsdImport
 
         if (converted.Markdown != FsdDocument.Markdown(repo.Root, id) || !SameSections(current, doc) || !FsdAttachments.Same(current, doc))
         {
-            var offered = FsdVersions.Offer(repo.Root, id, current, doc, converted, hash, flat, archived, "the same file, read again by a newer build, gives other text");
-            offered["reread"] = true;
-            offered["steps"] = import.StepsJson();
-            return offered;
+            var compared = FsdCompare.Compare(repo, id, doc, converted, import, hash, archived, "the same file, read again by this build, gives other text");
+            compared["reread"] = true;
+            compared["steps"] = import.StepsJson();
+            return compared;
         }
 
         // The same text. A newer build can still have more to say about it, and problems are in no hash.
@@ -186,7 +176,10 @@ public static class FsdImport
         if (problemsChanged)
         {
             current["problems"] = doc["problems"]!.DeepClone();
-            FsdDocument.Save(repo.Root, id, current);
+            // Only the problems move, onto the working document.json: an uncommitted `fsd take` there keeps what it wrote (fresh check, layer 5).
+            var working = FsdDocument.Facts(repo.Root, id)!;
+            working["problems"] = doc["problems"]!.DeepClone();
+            FsdDocument.Save(repo.Root, id, working);
         }
         var same = Unchanged(repo.Root, id, dir, current, hash);
         same["reread"] = true;
@@ -238,12 +231,10 @@ public static class FsdImport
         return o;
     }
 
-    /// <summary>The images and the attachments into a folder, and the Markdown as <c>document.md</c> for a candidate (the
-    /// document's own folder holds chapter files instead, <see cref="FsdChapters"/>).</summary>
-    internal static void WriteText(string dir, ConvertedDocument converted, JsonObject document, bool markdown = true)
+    /// <summary>The images and the attachments into the document's folder (its text is chapter files, <see cref="FsdChapters"/>).</summary>
+    internal static void WriteText(string dir, ConvertedDocument converted, JsonObject document)
     {
         FsdAttachments.Write(dir, converted, document);
-        if (markdown) File.WriteAllText(Path.Combine(dir, "document.md"), converted.Markdown);
         foreach (var img in converted.Images)
         {
             Directory.CreateDirectory(Path.Combine(dir, "images"));

@@ -256,15 +256,17 @@ public sealed class WholeFlow : IDisposable
         File.WriteAllBytes(file, Version2());
         Saw["import.v2"] = Ok("fsd", "import", file, "--id", "shop");
         File.Delete(file);
+        // Compared, never imported over (D385): what a person takes comes in, and the commit approves it.
         Saw["document.candidate"] = Document("shop");
         var diff = Ok("fsd", "diff", "shop");
         Saw["diff"] = diff;
-        Saw["promote.refused"] = Run("fsd", "promote", "shop").Envelope;
+        Saw["take.refused"] = Run("fsd", "take", "shop", "S-0002").Envelope;     // Stock went a level down in the file: moved by hand, never by take
 
-        var delivery = diff["sections"]!.AsArray().Single(e => (string?)e!["state"] == "doubtful" && (string?)e["to"] == "4")!;
+        var delivery = diff["sections"]!.AsArray().Single(e => (string?)e!["case"] == "doubtful" && (string?)e["file"] == "4")!;
         var old = ((JsonArray)Document("shop")["sections"]!).Single(s => (string?)s!["id"] == "5")!;
-        Saw["resolve"] = Ok("fsd", "resolve", "shop", (string)delivery["to"]!, "--same-as", (string)old["permanentId"]!);
-        Saw["promote"] = Ok("fsd", "promote", "shop");
+        Saw["resolve"] = Ok("fsd", "resolve", "shop", (string)delivery["file"]!, "--same-as", (string)old["permanentId"]!);
+        Saw["promote"] = Ok("fsd", "take", "shop", "--all-updates");
+        Saw["fsd.check"] = Ok("fsd", "check", "shop");
         // The commit approves it (D380); then the trace check drops back what lost its quote (D58).
         Commit("the new version");
         Saw["document.v2"] = Document("shop");
@@ -312,14 +314,9 @@ public sealed class WholeFlow : IDisposable
     {
         Commit("the new page");
         var before = Git("rev-parse", "HEAD");
-        // A person deals with what the new version and the new page left: the link on the removed section goes.
-        Edit(trace =>
-        {
-            var removed = trace["entries"]!.AsArray().First(e => ((string?)e!["fsd"]?["section"])?.StartsWith("(removed", StringComparison.Ordinal) == true);
-            trace["entries"]!.AsArray().Remove(removed);
-        });
+        // A new file removes no section (D385): Legacy, gone from it, stays with its link, so there's nothing left to deal with.
         Saw["check.final"] = Check();
-        Commit("the removed link dealt with");
+        Commit("the final check");
         Saw["check.final.base"] = Check("--base", before);
         Saw["trace.final"] = Trace();
         Saw["phases"] = RunIn(RepoRoot.Find(), "phases", "check").Envelope;
@@ -711,35 +708,35 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
     }
 
     [Fact]
-    public void Stage_8_a_new_version_waits_as_a_candidate_until_doubtful_sections_are_settled()
+    public void Stage_8_a_new_file_is_compared_and_only_what_a_person_takes_comes_in()
     {
         flow.Reached(8);
-        Assert.Equal("candidate", (string?)flow.Seen("import.v2")["status"]);
-        Assert.Equal("S-0001", (string?)flow.Seen("document.candidate")["sections"]![0]!["permanentId"]);     // the current version still serves
+        Assert.Equal("compared", (string?)flow.Seen("import.v2")["status"]);
+        Assert.Equal("S-0001", (string?)flow.Seen("document.candidate")["sections"]![0]!["permanentId"]);     // the committed FSD still serves
         Assert.Equal("5", (string?)flow.Seen("document.candidate")["sections"]![4]!["id"]);
         var counts = flow.Seen("diff")["counts"]!;
-        Assert.Equal((1, 1, 1, 1, 1, 2), ((int?)counts["modified"], (int?)counts["moved"], (int?)counts["removed"], (int?)counts["unchanged"], (int?)counts["added"], (int?)counts["doubtful"]));
-        Assert.Equal("doubtful_sections_remain", (string?)flow.Seen("promote.refused")["error"]!["code"]);
+        Assert.Equal((1, 1, 2), ((int?)counts["new"], (int?)counts["gone"], (int?)counts["doubtful"]));
+        Assert.Equal("nothing_taken", (string?)flow.Seen("take.refused")["error"]!["code"]);
+        Assert.Contains(flow.Seen("promote")["notTaken"]!.AsArray(), n => (string?)n!["section"] == "S-0002");
+        // Taken: Orders' new words and Delivery as Shipping, number 4, which Legacy (gone from the file, kept here) still holds.
         var after = flow.Seen("document.v2")["sections"]!.AsArray();
-        Assert.Equal([("1", "S-0001"), ("2", "S-0006"), ("2.1", "S-0002"), ("3", "S-0003"), ("4", "S-0005")], after.Select(s => ((string?)s!["id"], (string?)s["permanentId"])));
+        Assert.Equal([("1", "S-0001"), ("2", "S-0002"), ("3", "S-0003"), ("4", "S-0004"), ("4 (2)", "S-0005")], after.Select(s => ((string?)s!["id"], (string?)s["permanentId"])));
+        Assert.Equal("Shipping", (string?)after[4]!["title"]);
+        Assert.Equal(["4"], flow.Seen("promote")["numbersRepeated"]!.AsArray().Select(n => (string?)n));
     }
 
     [Fact]
-    public void Stage_8_references_follow_a_moved_section_and_a_modified_quote_goes_back_to_the_BA()
+    public void Stage_8_a_section_left_alone_keeps_its_links_and_a_modified_quote_goes_back_to_the_BA()
     {
         flow.Reached(8);
         var was = flow.EntryIn("ids.before", WholeFlow.FsdStock);
-        var moved = flow.EntryIn("trace.promoted", WholeFlow.FsdStock);
-        Assert.Equal(("2.1", "Stock"), ((string?)moved["fsd"]!["section"], (string?)moved["fsd"]!["title"]));
-        Assert.Equal("S-0002", (string?)moved["fsd"]!["sectionId"]);     // the number moved; the permanent id didn't
-        Assert.Equal((string?)was["finding"], (string?)moved["finding"]);
-        Assert.Contains(flow.Seen("promote")["carried"]!["traceIds"]!.AsArray(), m => (string?)m!["from"] == (string?)was["id"] && (string?)m["to"] == (string?)moved["id"]);
-        Assert.Equal("ba", (string?)flow.Listing("check.promoted", (string)moved["finding"]!)!["goesTo"]);
+        var kept = flow.EntryIn("trace.promoted", WholeFlow.FsdStock);
+        Assert.Equal(("2", "Stock", "S-0002"), ((string?)kept["fsd"]!["section"], (string?)kept["fsd"]!["title"], (string?)kept["fsd"]!["sectionId"]));
+        Assert.Equal((string?)was["id"], (string?)kept["id"]);
 
         var modified = flow.EntryIn("trace.promoted", WholeFlow.FsdConflict);
         Assert.Contains(flow.Seen("fixed")["staleQuotes"]!.AsArray(), id => (string?)id == (string?)modified["id"]);
         Assert.Empty(flow.Seen("promote")["carried"]!["sectionIdsDisagree"]!.AsArray());
-        Assert.Null(flow.Seen("promote")["carried"]!["runAgain"]);     // no run is saved to carry (D342)
         Assert.Null(modified["decision"]);
         Assert.Null(modified["decided_by"]);
         Assert.Equal(("major", WholeFlow.Person), ((string?)modified["severity"], (string?)modified["severity_by"]));     // a grade stays
@@ -751,16 +748,13 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
     }
 
     [Fact]
-    public void Stage_8_a_removed_sections_link_keeps_its_decision_and_a_marker_and_its_number_can_be_used_again()
+    public void Stage_8_a_section_gone_from_the_file_stays_with_its_link_and_decision()
     {
         flow.Reached(8);
-        var removed = flow.EntryIn("trace.promoted", WholeFlow.FsdLegacy);
-        Assert.Equal(("(removed S-0004) 4", "Legacy place"), ((string?)removed["fsd"]!["section"], (string?)removed["fsd"]!["title"]));
-        Assert.Equal(("agree", WholeFlow.Person), ((string?)removed["decision"], (string?)removed["decided_by"]));
-        var carried = Assert.Single(flow.Seen("promote")["carried"]!["removed"]!.AsArray())!;
-        Assert.Equal(("S-0004", true), ((string?)carried["permanentId"], (bool?)carried["numberUsedAgain"]));
-        Assert.Equal((string?)removed["id"], (string?)carried["decisions"]![0]!["id"]);
-        Assert.Contains(WholeFlow.ProblemLines(flow.Seen("check.promoted")), p => p.Contains("was removed"));
+        var legacy = flow.EntryIn("trace.promoted", WholeFlow.FsdLegacy);
+        Assert.Equal(("4", "Legacy place"), ((string?)legacy["fsd"]!["section"], (string?)legacy["fsd"]!["title"]));
+        Assert.Equal(("agree", WholeFlow.Person), ((string?)legacy["decision"], (string?)legacy["decided_by"]));
+        Assert.Contains(flow.Seen("diff")["sections"]!.AsArray(), e => (string?)e!["case"] == "gone" && (string?)e["section"] == "S-0004");
     }
 
     [Fact]

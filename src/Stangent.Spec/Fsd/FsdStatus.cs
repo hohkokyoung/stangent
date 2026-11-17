@@ -9,9 +9,9 @@ public static class FsdStatus
 {
     public static JsonObject Of(string root, string doc)
     {
-        var waiting = FsdVersions.PendingHash(root, doc) is null ? null : FsdVersions.Diff(root, doc);
+        var waiting = FsdCompare.Load(root, doc);
         var facts = FsdDocument.Facts(root, doc);
-        if (facts is null && waiting is null) throw new StangentException("not_found", $"No imported document {doc}.", ExitCodes.NotFound);
+        if (facts is null) throw new StangentException("not_found", $"No imported document {doc}.", ExitCodes.NotFound);
         // The sections are the committed chapters' (phase fs layer 2): an import not committed yet, or chapters refused, read none.
         JsonObject? document = null;
         StangentException? unread = null;
@@ -19,7 +19,7 @@ public static class FsdStatus
             try { document = FsdDocument.Load(root, doc); }
             catch (StangentException e) when (e.Code is "fsd_not_committed" or "fsd_not_migrated" or "not_git" or "invalid_fsd") { unread = e; }
 
-        var doubtful = waiting is null ? [] : waiting["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful").Select(e => (string?)e["to"] ?? (string)e["permanentId"]!).ToList();
+        var doubtful = waiting is null ? [] : waiting["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string)e["case"]! == "doubtful").Select(e => (string?)e["file"] ?? (string)e["section"]!).ToList();
         var result = new JsonObject { ["doc"] = doc };
         if (facts is not null)
         {
@@ -31,7 +31,11 @@ public static class FsdStatus
             if (unread is not null) result["unread"] = new JsonObject { ["code"] = unread.Code, ["message"] = unread.Message };
         }
         if (waiting is not null)
-            result["candidate"] = new JsonObject { ["hash"] = (string)waiting["to"]!, ["state"] = (string?)waiting["state"], ["first"] = (bool?)waiting["first"] == true };
+            result["comparison"] = new JsonObject
+            {
+                ["hash"] = (string)waiting["file"]!["hash"]!, ["fileName"] = (string)waiting["file"]!["fileName"]!, ["counts"] = waiting["counts"]!.DeepClone(),
+                ["outOfDate"] = (string?)waiting["chaptersTree"] != Stangent.Graph.Git.Run(root, $"rev-parse --verify --quiet \"HEAD:./specs/fsd/{doc}/chapters\"")?.Trim(),
+            };
         result["doubtful"] = new JsonArray([.. doubtful.Select(d => (JsonNode)d)]);
 
         var trace = TraceFile.Load(root);
@@ -79,15 +83,15 @@ public static class FsdStatus
     {
         static JsonObject Do(string who, string what, string command) => new() { ["who"] = who, ["what"] = what, ["command"] = command };
         // What changes the document comes first: nothing else is worth deciding on words about to change.
-        if (waiting is not null && (bool?)waiting["first"] == true) return Do("a person", "Approve this first import, once its report has been read.", $"stangent fsd approve {doc}");
         if (doubtful.Count > 0)
         {
-            // A candidate's section is settled by naming what it is. One that's only left on the current side is settled by saying it's gone.
+            // A file's section is settled by naming what it is. One that's only left on the repo's side is settled by saying it's gone.
             var inCandidate = doubtful.FirstOrDefault(d => !d.StartsWith("S-", StringComparison.Ordinal));
-            return Do("a person", $"Settle {doubtful.Count} doubtful section(s) of the waiting candidate (`stangent fsd diff {doc} --format md` shows them), starting with this one.",
+            return Do("a person", $"Settle {doubtful.Count} doubtful section(s) of the new file's comparison (`stangent fsd diff {doc} --format md` shows them), starting with this one.",
                 inCandidate is not null ? $"stangent fsd resolve {doc} {Arg(inCandidate)} --same-as <S-id>" : $"stangent fsd resolve {doc} {doubtful[0]} --removed");
         }
-        if (waiting is not null) return Do("a person", "Make the waiting candidate the current version.", $"stangent fsd promote {doc}");
+        if (waiting is not null && ((int)waiting["counts"]!["file-changed"]! + (int)waiting["counts"]!["new"]!) > 0)
+            return Do("a person", $"Read the new file's comparison ({(string)waiting["file"]!["fileName"]!}) and take what you want; then `stangent fsd check {doc}` and commit (D385).", $"stangent fsd diff {doc} --format md");
         // The old link route is cut (D342): the review is how a document is checked against the code now.
         if (notReviewed) return Do("a person or the AI", "Review the document against the source: two reviewer runs, checked and merged by code (D341). This is a paid AI run; `--estimate` shows the cost first.", $"plugin/scripts/fsd-review-run.sh --max-cost 8 {doc}");
         if (ba.Count > 0) return Do("the BA", $"Decide {ba.Count} finding(s), by editing `decision` in specs/trace.yaml in a PR. `stangent trace check` lists them.", "stangent trace check");

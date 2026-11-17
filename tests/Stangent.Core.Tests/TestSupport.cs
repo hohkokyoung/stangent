@@ -34,19 +34,22 @@ static class Artifacts
     }
 }
 
-/// <summary>A new version taken all the way in, as a person would: imported, anything doubtful settled, promoted (D117).</summary>
+/// <summary>A new file taken all the way in, as a person would (D385): imported and compared, anything doubtful settled as new
+/// (or gone), every update and new section taken, committed. A section gone from the file stays, as it does for a person.</summary>
 static class FsdNewVersion
 {
     public static JsonObject Take(StangentRepo repo, string file, string doc = "shop")
     {
         var result = Stangent.Spec.Fsd.FsdImport.Import(repo, file);
         Committed.All(repo);
-        if ((string)result["status"]! != "candidate") return result;
-        foreach (var e in Stangent.Spec.Fsd.FsdVersions.Diff(repo.Root, doc)["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful").ToList())
-            Stangent.Spec.Fsd.FsdVersions.Resolve(repo.Root, doc, (string?)e["to"] ?? (string)e["permanentId"]!, null, e["to"] is not null, e["to"] is null, "Pat");
-        var promoted = Stangent.Spec.Fsd.FsdVersions.Promote(repo, doc, "Pat");
+        if ((string)result["status"]! != "compared") return result;
+        foreach (var e in Stangent.Spec.Fsd.FsdCompare.Show(repo.Root, doc)["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string)e["case"]! == "doubtful").ToList())
+            Stangent.Spec.Fsd.FsdCompare.Resolve(repo.Root, doc, (string?)e["file"] ?? (string)e["section"]!, null, e["file"] is not null, e["file"] is null, "Pat");
+        var news = Stangent.Spec.Fsd.FsdCompare.Show(repo.Root, doc)["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string)e["case"]! == "new").Select(e => (string)e["file"]!).ToList();
+        if (Stangent.Spec.Fsd.FsdCompare.Show(repo.Root, doc)["counts"]!["file-changed"]!.GetValue<int>() + news.Count == 0) return result;
+        var taken = Stangent.Spec.Fsd.FsdCompare.Take(repo, doc, news, allUpdates: true);
         Committed.All(repo);
-        return promoted;
+        return taken;
     }
 }
 

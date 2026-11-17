@@ -32,6 +32,11 @@ public sealed record ImportStepResult(string Step, string Status, string Note, i
 
 public sealed record ImportResult(string Format, ConvertedDocument Document, IReadOnlyList<ImportStepResult> Steps, IReadOnlyList<ImportLabel> Labels)
 {
+    /// <summary>The converter that read it, for <c>document.json</c>'s <c>converter</c> (D385).</summary>
+    public int ConverterVersion { get; init; } = 1;
+
+    public JsonObject ConverterJson() => new() { ["format"] = Format, ["version"] = ConverterVersion };
+
     public JsonArray StepsJson() => new([.. Steps.Select(s => (JsonNode)s.ToJson())]);
 }
 
@@ -44,6 +49,9 @@ public sealed record ImportResult(string Format, ConvertedDocument Document, IRe
 public interface IImportFormat
 {
     string Name { get; }
+    /// <summary>The converter's version (phase fs layer 5, D385): raised whenever the same file would give other Markdown, so a
+    /// comparison can say a difference may be the converter's, not the client's.</summary>
+    int Version { get; }
     IReadOnlyList<string> Extensions { get; }
     /// <summary>A request this format can't do at all, refused before anything else is looked at.</summary>
     void CheckOptions(ImportOptions options);
@@ -81,7 +89,7 @@ public static class ImportPipeline
         var safety = format.Safety(file, options);
         var document = EmbeddedFiles.Attach(format.Convert(file, options), options);
         var convert = new ImportStepResult("convert", ImportStepResult.Ran, "the file's text as Markdown, the same bytes each time", document.Sections.Count);
-        return new ImportResult(format.Name, document, [safety, convert, format.Comments(document), format.ExtractFiles(document), format.Completeness(document)], format.Labels(file));
+        return new ImportResult(format.Name, document, [safety, convert, format.Comments(document), format.ExtractFiles(document), format.Completeness(document)], format.Labels(file)) { ConverterVersion = format.Version };
     }
 
     /// <summary>
@@ -109,6 +117,7 @@ public static class ImportPipeline
     sealed class WordFormat : IImportFormat
     {
         public string Name => "docx";
+        public int Version => 1;
         public IReadOnlyList<string> Extensions { get; } = [".docx"];
         public void CheckOptions(ImportOptions options) { }
 
@@ -138,6 +147,7 @@ public static class ImportPipeline
     sealed class PdfFormat : IImportFormat
     {
         public string Name => "pdf";
+        public int Version => 1;
         public IReadOnlyList<string> Extensions { get; } = [".pdf"];
 
         public void CheckOptions(ImportOptions options)
@@ -170,6 +180,7 @@ public static class ImportPipeline
     sealed class ExcelFormat : IImportFormat
     {
         public string Name => "xlsx";
+        public int Version => 1;
         public IReadOnlyList<string> Extensions { get; } = [".xlsx", ".xlsm"];
 
         public void CheckOptions(ImportOptions options)

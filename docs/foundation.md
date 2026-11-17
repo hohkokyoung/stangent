@@ -158,9 +158,7 @@ returned is a result field, not a lifecycle. `src/Stangent.Core/State/` holds ev
 | `draft-posted` | `unposted`, `posted` | a person posts; code starts over when a draft is remade | same |
 | `ticket-step`, `ticket-match` | a ticket AI step's run | code | same |
 | `page-run` | `write`, `verify`, `fix`, `done`, `failed` | code | `.stangent/spec/state-history.jsonl` |
-| `fsd-candidate` | `candidate`, `pending-approval`, `promoted`, `approved`, `discarded`, `replaced` | a person promotes, approves a first import, or discards; code replaces it when a newer file comes in | `specs/fsd/history.jsonl` |
-| `fsd-section-match` | `doubtful`, `same`, `new`, `removed` | a person settles and can change their mind; code only lets go of a claimed id | same |
-| `fsd-section-answer` | `unanswered`, `approved`, `rejected` | a person answers a changed section and can change their mind; the id holds the exact text, so a changed text is a new id and code never moves one (D150) | same |
+| `fsd-section-match` | `doubtful`, `same`, `new`, `removed` | in a new file's comparison (D385), a person settles and can change their mind; code only lets go of a claimed id. `fsd-candidate` and `fsd-section-answer` went with promote and section approval (D388, phase fs layer 5); their old lines stay, unread | `specs/fsd/history.jsonl` |
 
 **History.** Append-only JSONL, one move per line: `at`, `kind`, `id`, `from`, `to`, `who`, `reason`. It sits beside the state:
 committed state has committed history, and CI adds `specs/trace-history.jsonl` to the bot's PR. No input hash and no artifact
@@ -206,7 +204,7 @@ exits 0. Tests pin this. A crash, a failed Claude call, a failed pull and a fail
 
 Each phase has its own tests, so a seam between phases could pass all of them and still break. `tests/Stangent.Core.Tests/WholeFlowTests.cs` (S.0) runs the flow once, end to end: the built `stangent` as a process, on a real git repo holding the shop fixture, with the real graph builder. Every AI step's answer is a hand-written file playing that step's agent, written where the step says and checked against its schema, and the code checks still run on it. No test here reaches an AI.
 
-**The order:** `init` and `graph build`; reference pages; a `.docx` and a `.pdf` imported; links and findings as the old link route left them in `specs/trace.yaml` (written by code: the route was cut, D342); a person's decisions, with `trace approve` and `trace attribute`; impact and a ticket bundle; a new version through `fsd promote`; a page written again after the code moved; then `trace check` and `phases check`.
+**The order:** `init` and `graph build`; reference pages; a `.docx` and a `.pdf` imported; links and findings as the old link route left them in `specs/trace.yaml` (written by code: the route was cut, D342); a person's decisions, with `trace approve` and `trace attribute`; impact and a ticket bundle; a new file compared, settled and taken (`fsd take`, D385); a page written again after the code moved; then `trace check` and `phases check`.
 
 **How it's built:** a class fixture does the run once and saves what each stage saw. The facts read those, so one stage's fact can fail without hiding the others. A stage that can't finish fails its own facts and every later stage's, with the reason. After each stage, a sweep checks pages, line files, documents and the trace file against their contracts. The test project builds the CLI first, without referencing it.
 

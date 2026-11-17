@@ -434,33 +434,23 @@ public sealed class EmbeddedFilesTests : IDisposable
 
     // ---- ids and the fingerprint across versions ----
 
+    JsonObject Entry(string file) => FsdCompare.Show(repo.Root, "fsd")["sections"]!.AsArray().OfType<JsonObject>().Single(e => (string?)e["file"] == file);
+
     [Fact]
-    public void Same_text_and_a_changed_attachment_reads_modified_naming_it_and_keeps_its_id()
+    public void Same_text_and_a_changed_attachment_is_listed_naming_it_and_the_repos_files_stay()
     {
         Import(WordWith("rates.xlsx", XlsxFixture.Rates("12")));
         var before = Document();
-        var candidate = Import(WordWith("rates.xlsx", XlsxFixture.Rates("99")));
-        Assert.Equal("candidate", (string)candidate["status"]!);
-        var diff = FsdVersions.Diff(repo.Root, "fsd");
-        var rules = diff["sections"]!.AsArray().Single(e => (string?)e!["to"] == "Rules")!;
-        Assert.Equal("modified", (string)rules["kind"]!);
+        Assert.Equal("compared", (string)Import(WordWith("rates.xlsx", XlsxFixture.Rates("99")))["status"]!);
+        var rules = Entry("Rules");
+        Assert.Equal("same", (string)rules["case"]!);
         Assert.Equal("changed", (string)rules["attachmentsChanged"]![0]!["change"]!);
         var name = (string)before["attachments"]![0]!["fileName"]!;
         Assert.Equal(name, (string)rules["attachmentsChanged"]![0]!["fileName"]!);
-        Assert.Equal("unchanged", (string)diff["sections"]!.AsArray().Single(e => (string?)e!["to"] == "Other")!["kind"]!);
-        Assert.Contains($"(attachment {name} changed)", File.ReadAllText(Path.Combine(FsdVersions.CandidateDir(repo.Root, "fsd"), "SECTION_DIFF.md")));
-        // It waits: the current version's files are still there.
+        Assert.Null(Entry("Other")["attachmentsChanged"]);
+        Assert.Contains($"{name} changed", File.ReadAllText(Path.Combine(FsdCompare.Dir(repo.Root, "fsd"), "comparison.md")));
+        // Compared, never imported over (D385): the repo's files are as they were, and take doesn't bring attachments.
         Assert.Contains("Gold,12", File.ReadAllText(Path.Combine(FsdAttachments.Folder(DocDir, "A-0001"), "rates.csv")));
-
-        FsdVersions.Promote(repo.Repo, "fsd", "Pat");
-        Committed.All(repo.Repo);
-        var after = Document();
-        Assert.Equal("A-0001", (string)after["attachments"]![0]!["id"]!);
-        Assert.Equal("A-0001", (string)after["sections"]![0]!["attachments"]![0]!["id"]!);
-        Assert.Equal((string)before["sections"]![0]!["textHash"]!, (string)after["sections"]![0]!["textHash"]!);
-        Assert.NotEqual((string)before["sections"]![0]!["contentHash"]!, (string)after["sections"]![0]!["contentHash"]!);
-        Assert.Contains("Gold,99", File.ReadAllText(Path.Combine(FsdAttachments.Folder(DocDir, "A-0001"), "rates.csv")));
-        Assert.False(Directory.Exists(FsdAttachments.Folder(DocDir, "pending-0001")));
     }
 
     [Fact]
@@ -469,8 +459,8 @@ public sealed class EmbeddedFilesTests : IDisposable
         var word = XlsxFixture.Rates("12");
         Import(WordWith("rates.xlsx", word));
         Import(Touch(WordWith("rates.xlsx", word)));
-        var rules = FsdVersions.Diff(repo.Root, "fsd")["sections"]!.AsArray().Single(e => (string?)e!["to"] == "Rules")!;
-        Assert.Equal("unchanged", (string)rules["kind"]!);
+        var rules = Entry("Rules");
+        Assert.Equal("same", (string)rules["case"]!);
         Assert.Null(rules["attachmentsChanged"]);
     }
 
@@ -486,32 +476,14 @@ public sealed class EmbeddedFilesTests : IDisposable
     }
 
     [Fact]
-    public void An_attachment_added_or_removed_with_the_same_text_is_modified_and_says_so()
+    public void An_attachment_added_with_the_same_text_is_listed_and_says_so()
     {
         const string body = "Rules text here for the reader.";
         var none = FsdDocxTests.Docx(FsdDocxTests.H("Rules") + FsdDocxTests.P(body) + FsdDocxTests.H("Other") + FsdDocxTests.P("Other text."));
         Import(none);
         Import(WordWith("rates.xlsx", XlsxFixture.Rates()));
-        var added = FsdVersions.Diff(repo.Root, "fsd")["sections"]!.AsArray().Single(e => (string?)e!["to"] == "Rules")!;
-        Assert.Equal(("modified", "added"), ((string)added["kind"]!, (string)added["attachmentsChanged"]![0]!["change"]!));
-        FsdVersions.Promote(repo.Repo, "fsd", "Pat");
-        Committed.All(repo.Repo);
-        var folder = FsdAttachments.Folder(DocDir, "A-0001");
-        Assert.True(Directory.Exists(folder));
-
-        Import(Touch(none));
-        var removed = FsdVersions.Diff(repo.Root, "fsd")["sections"]!.AsArray().Single(e => (string?)e!["to"] == "Rules")!;
-        Assert.Equal(("modified", "removed"), ((string)removed["kind"]!, (string)removed["attachmentsChanged"]![0]!["change"]!));
-        FsdVersions.Promote(repo.Repo, "fsd", "Pat");
-        Committed.All(repo.Repo);
-        Assert.False(Directory.Exists(folder));
-        Assert.Null(Document()["attachments"]);
-        // The id is gone for good: a file coming back is a new one.
-        Assert.Contains("A-0001", FsdVersions.Ledger(repo.Root, "fsd").Removed("attachments"));
-        Import(WordWith("rates.xlsx", XlsxFixture.Rates("55")));
-        FsdVersions.Promote(repo.Repo, "fsd", "Pat");
-        Committed.All(repo.Repo);
-        Assert.Equal("A-0002", (string)Document()["attachments"]![0]!["id"]!);
+        var added = Entry("Rules");
+        Assert.Equal(("same", "added"), ((string)added["case"]!, (string)added["attachmentsChanged"]![0]!["change"]!));
     }
 
     [Fact]
@@ -539,18 +511,18 @@ public sealed class EmbeddedFilesTests : IDisposable
     }
 
     [Fact]
-    public void Text_that_changes_with_the_same_attachment_reads_modified_with_no_file_named()
+    public void Text_that_changes_with_the_same_attachment_is_offered_with_no_file_named()
     {
         var workbook = XlsxFixture.Rates();
         Import(WordWith("rates.xlsx", workbook, text: "Rules text here for the reader."));
         Import(WordWith("rates.xlsx", workbook, text: "Quite different rules text this time."));
-        var rules = FsdVersions.Diff(repo.Root, "fsd")["sections"]!.AsArray().Single(e => (string?)e!["to"] == "Rules")!;
-        Assert.Equal("modified", (string)rules["kind"]!);
+        var rules = Entry("Rules");
+        Assert.Equal("file-changed", (string)rules["case"]!);
         Assert.Null(rules["attachmentsChanged"]);
     }
 
     [Fact]
-    public void Reading_the_original_again_with_files_this_build_can_read_comes_in_as_a_candidate()
+    public void Reading_the_original_again_with_files_this_build_can_read_is_compared()
     {
         Import(WordWith("rates.xlsx", XlsxFixture.Rates()));
         var doc = Document();
@@ -558,11 +530,8 @@ public sealed class EmbeddedFilesTests : IDisposable
         File.WriteAllText(Path.Combine(DocDir, "document.json"), CanonicalJson.Serialize(FsdDocument.Stripped(doc)));
         Committed.All(repo.Repo);
         var again = FsdImport.Reread(repo.Repo, "fsd");
-        Committed.All(repo.Repo);
-        Assert.Equal(("candidate", true), ((string)again["status"]!, (bool)again["reread"]!));
-        FsdVersions.Promote(repo.Repo, "fsd", "Pat");
-        Committed.All(repo.Repo);
-        Assert.StartsWith("A-", (string)Document()["attachments"]![0]!["id"]!);
+        Assert.Equal(("compared", true), ((string)again["status"]!, (bool)again["reread"]!));
+        Assert.Equal("added", (string)Entry("Rules")["attachmentsChanged"]![0]!["change"]!);
     }
 
     // ---- what a frozen link quotes from an attachment (D342 cut the switch) ----

@@ -538,11 +538,12 @@ public class FsdPdfTests
         var doc = FsdDocument.Load(a.Root, "shop");
         Assert.Empty(SchemaRegistry.Embedded.Validate(FsdImport.Schema, FsdDocument.Facts(a.Root, (string)doc["id"]!)!.ToJsonString()));
         Assert.True(File.Exists(Path.Combine(archive.Root, (string)doc["original"]!["path"]!)));
-        Assert.Equal("unchanged", (string)FsdImport.Import(a.Repo, file)["status"]!);
+        // The same file again, once committed, is compared (D385) and nothing differs.
+        Assert.Equal(0, (int)FsdImport.Import(a.Repo, file)["counts"]!["file-changed"]!);
     }
 
     [Fact]
-    public void Flat_replaces_a_structured_import_of_the_same_file_and_validates()
+    public void Flat_on_a_structured_import_of_the_same_file_is_compared_and_replaces_nothing()
     {
         using var archive = new TempRepo();
         using var repo = new TempRepo(Config(archive.Root));
@@ -552,13 +553,10 @@ public class FsdPdfTests
         Committed.All(repo.Repo);
         var flat = FsdImport.Import(repo.Repo, file, flat: true);
         Committed.All(repo.Repo);
-        Assert.Equal(("candidate", 1), ((string)flat["status"]!, (int)flat["sections"]!));
-        Assert.Equal("waiting", (string)FsdImport.Import(repo.Repo, file, flat: true)["status"]!);
-        // Both sections of the current version go, with no text in common: nothing to settle.
-        FsdVersions.Promote(repo.Repo, "shop", "Pat");
-        Committed.All(repo.Repo);
-        Assert.Equal("unchanged", (string)FsdImport.Import(repo.Repo, file, flat: true)["status"]!);
+        // Compared, never imported over (D385): the one flat section is offered as new, and the repo's sections stay.
+        Assert.Equal(("compared", 1), ((string)flat["status"]!, (int)flat["counts"]!["new"]!));
         var doc = FsdDocument.Load(repo.Root, "shop");
+        Assert.Equal(["1"], doc["sections"]!.AsArray().Select(x => (string)x!["id"]!).Take(1));
         Assert.Empty(SchemaRegistry.Embedded.Validate(FsdImport.Schema, FsdDocument.Facts(repo.Root, (string)doc["id"]!)!.ToJsonString()));
     }
 
@@ -1174,41 +1172,6 @@ public class FsdPdfTests
     // ---- Re-import, protection (findings 9, 10)
 
     [Fact]
-    public void A_reimport_lists_the_sections_that_left_and_the_trace_entries_on_them()
-    {
-        using var archive = new TempRepo();
-        using var repo = new TempRepo(Config(archive.Root));
-        var file = Path.Combine(repo.Root, "shop.pdf");
-        File.WriteAllBytes(file, Outlined(("1 Orders", 0), ("2 Refunds", 0)));
-        FsdImport.Import(repo.Repo, file);
-        Committed.All(repo.Repo);
-        var entry = TraceStore.Entry("gap", "shop", new JsonObject { ["id"] = "1", ["title"] = "Orders" }, "Text of page 1.", null, null, null, "code", null, null);
-        var trace = TraceFile.Empty();
-        trace["entries"]!.AsArray().Add(entry);
-        TraceFile.Save(repo.Root, trace);
-
-        Assert.Equal("candidate", (string)FsdImport.Import(repo.Repo, file, flat: true)["status"]!);
-        foreach (var open in FsdVersions.Diff(repo.Root, "shop")["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful" && (string?)e["side"] == "candidate"))
-            FsdVersions.Resolve(repo.Root, "shop", (string)open["to"]!, null, isNew: true, removed: false, "Pat");
-        foreach (var open in FsdVersions.Diff(repo.Root, "shop")["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful"))
-            FsdVersions.Resolve(repo.Root, "shop", (string)open["permanentId"]!, null, isNew: false, removed: true, "Pat");
-        var removed = FsdVersions.Promote(repo.Repo, "shop", "Pat")["carried"]!["removed"]!.AsArray();
-        Committed.All(repo.Repo);
-        Assert.Equal(["1", "2"], removed.Select(s => (string)s!["section"]!));
-        Assert.Single(removed[0]!["traceEntries"]!.AsArray());
-        Assert.Null(JsonNode.Parse(File.ReadAllText(Path.Combine(FsdImport.DocDir(repo.Root, "shop"), "document.json")))!["replacedSections"]);
-    }
-
-    static byte[] Rc4(byte[] key, byte[] data)
-    {
-        var s = Enumerable.Range(0, 256).ToArray();
-        for (int i = 0, j = 0; i < 256; i++) { j = (j + s[i] + key[i % key.Length]) % 256; (s[i], s[j]) = (s[j], s[i]); }
-        var o = new byte[data.Length];
-        for (int k = 0, i = 0, j = 0; k < data.Length; k++) { i = (i + 1) % 256; j = (j + s[i]) % 256; (s[i], s[j]) = (s[j], s[i]); o[k] = (byte)(data[k] ^ s[(s[i] + s[j]) % 256]); }
-        return o;
-    }
-
-    [Fact]
     public void A_pdf_with_only_an_owner_password_opens_with_no_password_but_is_still_refused()
     {
 #pragma warning disable CA5351 // MD5 and RC4 are what this old PDF encryption is made of.
@@ -1487,27 +1450,13 @@ public class FsdPdfTests
         Assert.Equal("invalid_pdf", Code(() => PdfConverter.Convert(bytes)));
     }
 
-    [Fact]
-    public void The_trace_count_only_counts_this_document()
+    static byte[] Rc4(byte[] key, byte[] data)
     {
-        using var archive = new TempRepo();
-        using var repo = new TempRepo(Config(archive.Root));
-        var file = Path.Combine(repo.Root, "shop.pdf");
-        File.WriteAllBytes(file, Outlined(("1 Orders", 0), ("2 Refunds", 0)));
-        FsdImport.Import(repo.Repo, file);
-        Committed.All(repo.Repo);
-        var trace = TraceFile.Empty();
-        trace["entries"]!.AsArray().Add(TraceStore.Entry("gap", "another-doc", new JsonObject { ["id"] = "1", ["title"] = "Orders" }, "Text.", null, null, null, "code", null, null));
-        TraceFile.Save(repo.Root, trace);
-        FsdImport.Import(repo.Repo, file, flat: true);
-        Committed.All(repo.Repo);
-        foreach (var open in FsdVersions.Diff(repo.Root, "shop")["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful" && (string?)e["side"] == "candidate"))
-            FsdVersions.Resolve(repo.Root, "shop", (string)open["to"]!, null, isNew: true, removed: false, "Pat");
-        foreach (var open in FsdVersions.Diff(repo.Root, "shop")["sections"]!.AsArray().OfType<JsonObject>().Where(e => (string?)e["state"] == "doubtful"))
-            FsdVersions.Resolve(repo.Root, "shop", (string)open["permanentId"]!, null, isNew: false, removed: true, "Pat");
-        var removed = FsdVersions.Promote(repo.Repo, "shop", "Pat")["carried"]!["removed"]!.AsArray();
-        Committed.All(repo.Repo);
-        Assert.All(removed, s => Assert.Empty(s!["traceEntries"]!.AsArray()));
+        var s = Enumerable.Range(0, 256).ToArray();
+        for (int i = 0, j = 0; i < 256; i++) { j = (j + s[i] + key[i % key.Length]) % 256; (s[i], s[j]) = (s[j], s[i]); }
+        var o = new byte[data.Length];
+        for (int k = 0, i = 0, j = 0; k < data.Length; k++) { i = (i + 1) % 256; j = (j + s[i]) % 256; (s[i], s[j]) = (s[j], s[i]); o[k] = (byte)(data[k] ^ s[(s[i] + s[j]) % 256]); }
+        return o;
     }
 
     [Fact]

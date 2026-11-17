@@ -116,6 +116,8 @@ public sealed class ImportProblemsTests : IDisposable
         var dir = Path.GetDirectoryName(json)!;
         var old = FsdDocument.Load(repo.Root, "shop");
         old.Remove("importCommit");
+        old.Remove("fileSections");
+        old.Remove("converter");
         old["markdown"] = "document.md";
         File.WriteAllText(Path.Combine(dir, "document.md"), Chapters.Text(dir));
         Directory.Delete(FsdChapters.Dir(dir), recursive: true);
@@ -140,20 +142,17 @@ public sealed class ImportProblemsTests : IDisposable
     }
 
     [Fact]
-    public void A_candidates_problems_get_their_permanent_ids_when_it_is_promoted()
+    public void A_new_files_problems_are_listed_in_its_comparison_on_the_permanent_id_of_their_section()
     {
         var json = ImportFile("a.docx", FsdDocxTests.Docx(FsdDocxTests.H("Rules") + FsdDocxTests.P("Apples are sorted by size before packing.")), out _);
         var file = Path.Combine(archive.Root, "a.docx");
         File.WriteAllBytes(file, FsdDocxTests.Docx(FsdDocxTests.H("Rules") + FsdDocxTests.P("Apples are sorted by size before packing.") + $"<w:p>{FsdDocxTests.R("gone", "<w:vanish/>")}</w:p>"));
         var offered = FsdImport.Import(repo.Repo, file, "shop");
         Committed.All(repo.Repo);
-        Assert.Equal("candidate", (string)offered["status"]!);
-        Assert.Null(offered["problems"]![0]!["section"]);
+        Assert.Equal("compared", (string)offered["status"]!);
         Assert.Equal(5, offered["steps"]!.AsArray().Count);
-
-        FsdVersions.Promote(repo.Repo, "shop", "Pat Example");
-        Committed.All(repo.Repo);
-        var p = Assert.Single(JsonNode.Parse(File.ReadAllText(json))!["problems"]!.AsArray())!;
-        Assert.Equal("S-0001", (string)p["section"]!);
+        Assert.Equal("S-0001", (string)Assert.Single(offered["problems"]!.AsArray())!["section"]!);
+        // The repo's record holds the problems of the file it came from; the new file's reach it only for a section taken (D385).
+        Assert.Empty(JsonNode.Parse(File.ReadAllText(json))!["problems"]!.AsArray());
     }
 }

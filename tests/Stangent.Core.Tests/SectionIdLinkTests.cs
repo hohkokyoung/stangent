@@ -80,27 +80,17 @@ public sealed class SectionIdLinkTests : IDisposable
         OldLink("2", Pears);
         TraceCheck.Run(repo.Root, null, null, false);
 
-        Assert.Equal("candidate", (string)Import(Chapter("1 Figs", Figs) + Chapter("2 Apples", Apples) + Chapter("3 Pears", Pears))["status"]!);
-        var promoted = FsdVersions.Promote(repo.Repo, "shop", "Pat Example");
+        Assert.Equal("compared", (string)Import(Chapter("1 Figs", Figs) + Chapter("2 Apples", Apples) + Chapter("3 Pears", Pears))["status"]!);
+        // The file renumbered both: taking the updates moves the numbers, and the link follows its section by id (D385).
+        var taken = FsdCompare.Take(repo.Repo, "shop", [], allUpdates: true);
         Committed.All(repo.Repo);
-        Assert.Empty(promoted["carried"]!["sectionIdsDisagree"]!.AsArray());
+        Assert.Empty(taken["carried"]!["sectionIdsDisagree"]!.AsArray());
         Assert.Equal(("3", "S-0002"), ((string)Link()["section"]!, (string)Link()["sectionId"]!));
         Assert.Equal("S-0002", (string)Section("3")["permanentId"]!);
     }
 
     [Fact]
-    public void A_removed_section_keeps_its_id_beside_the_mark()
-    {
-        Import(Chapter("1 Apples", Apples) + Chapter("2 Pears", Pears));
-        OldLink("2", Pears);
-        Import(Chapter("1 Apples", Apples));
-        FsdVersions.Promote(repo.Repo, "shop", "Pat Example");
-        Committed.All(repo.Repo);
-        Assert.Equal(("(removed S-0002) 2", "S-0002"), ((string)Link()["section"]!, (string)Link()["sectionId"]!));
-    }
-
-    [Fact]
-    public void Promotion_lists_a_link_whose_number_and_id_name_different_sections()
+    public void Take_lists_a_link_whose_number_and_id_name_different_sections()
     {
         Import(Chapter("1 Apples", Apples) + Chapter("2 Pears", Pears));
         OldLink("2", Pears);
@@ -109,7 +99,7 @@ public sealed class SectionIdLinkTests : IDisposable
         TraceFile.Save(repo.Root, trace);
 
         Import(Chapter("1 Figs", Figs) + Chapter("2 Apples", Apples) + Chapter("3 Pears", Pears));
-        var bad = Assert.Single(FsdVersions.Promote(repo.Repo, "shop", "Pat Example")["carried"]!["sectionIdsDisagree"]!.AsArray())!;
+        var bad = Assert.Single(FsdCompare.Take(repo.Repo, "shop", [], allUpdates: true)["carried"]!["sectionIdsDisagree"]!.AsArray())!;
         Assert.Equal(("S-0001", "S-0002"), ((string)bad["sectionId"]!, (string)bad["numberNames"]!));
     }
 }

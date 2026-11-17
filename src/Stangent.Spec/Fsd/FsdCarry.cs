@@ -6,7 +6,7 @@ using Stangent.Spec.Trace;
 namespace Stangent.Spec.Fsd;
 
 /// <summary>
-/// On promotion, the trace entries follow their section by code (D117): an entry citing a section that kept its permanent id gets its
+/// When a section's number or heading path moves (<c>fsd take</c>, D385), the trace entries follow it by code (D117): an entry citing a section that kept its permanent id gets its
 /// new number and title, with no stored file changing shape. What cites a removed section takes its mark and is listed, never dropped.
 /// Since the link route was cut (D342), nothing else carries: no run is saved to re-key.
 /// </summary>
@@ -74,7 +74,7 @@ static class FsdCarry
             });
         }
 
-        StateChanges.RecordIdMoves(root, StateKinds.TraceDecision, [.. traceIds.Select(m => ((string)m!["from"]!, (string)m["to"]!)).Where(m => m.Item1 != m.Item2)], StateActor.Code("stangent fsd promote"), "its section moved");
+        StateChanges.RecordIdMoves(root, StateKinds.TraceDecision, [.. traceIds.Select(m => ((string)m!["from"]!, (string)m["to"]!)).Where(m => m.Item1 != m.Item2)], StateActor.Code("stangent fsd take"), "its section moved");
         if (trace["entries"]!.AsArray().Count > 0) TraceFile.Save(root, trace);
 
         return new JsonObject

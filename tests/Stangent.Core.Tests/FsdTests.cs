@@ -159,9 +159,10 @@ public class FsdTests
         Assert.True(File.Exists(Path.Combine(archive.Root, (string)doc["original"]!["path"]!)));
         Assert.True(File.Exists(Path.Combine(FsdImport.DocDir(a.Root, "shop-fsd"), (string)doc["images"]![0]!["file"]!)));
 
+        // The same file again, once committed, is compared (D385): nothing differs, and no chapter changes.
         var again = FsdImport.Import(a.Repo, file);
-        Committed.All(a.Repo);
-        Assert.Equal("unchanged", (string)again["status"]!);
+        Assert.Equal(("compared", 0, 0), ((string)again["status"]!, (int)again["counts"]!["file-changed"]!, (int)again["counts"]!["new"]!));
+        Assert.Empty(Stangent.Graph.Git.Run(a.Root, "status --porcelain -- specs")!.Trim());
     }
 
     [Fact]

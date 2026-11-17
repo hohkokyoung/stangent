@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "urn:stangent:schema:source-document:v4",
   "title": "An imported FSD's facts (contract source-document v4, sections read from the committed chapters, D383)",
-  "description": "What only an import knows about a document converted by code (D13, D52): the original, archived and cited by archive name, path and content hash (D16), the import problems, tables, pictures and attachments with their ids, and the commit the import was made on. Stored in specs/fsd/<id>/document.json. v4 drops `sections` and `markdown`: the FSD is the chapter files in specs/fsd/<id>/chapters/, and every step reads its sections from them as of HEAD (D380, D383), each heading carrying its permanent id (D382). A section's attachments are the records here whose `section` is its id.",
+  "description": "What only an import knows about a document converted by code (D13, D52): the original, archived and cited by archive name, path and content hash (D16), the import problems, tables, pictures and attachments with their ids, and the commit the import was made on. Stored in specs/fsd/<id>/document.json. v4 drops `sections` and `markdown`: the FSD is the chapter files in specs/fsd/<id>/chapters/, and every step reads its sections from them as of HEAD (D380, D383), each heading carrying its permanent id (D382). A section's attachments are the records here whose `section` is its id. `fileSections` and `converter` (phase fs layer 5, D385) say what the last imported file gave each section, for comparing a new file three ways.",
   "type": "object",
   "required": [
     "schemaVersion",
@@ -54,6 +54,63 @@
       "description": "HEAD when the import (or `fsd migrate`) wrote this record: the commit its chapters were written on. The commit that approves them comes after it (D380). Missing when the repo had no commit yet.",
       "type": "string",
       "pattern": "^[0-9a-f]{40,64}$"
+    },
+    "fileSections": {
+      "description": "Each section as the last imported file gave it, by permanent id (phase fs layer 5, D385): its heading and text hash. A new file is compared three ways against these: what only the file changed is offered, what the repo changed is kept. `fsd take` moves a section's entry to the file it took the text from. Missing in a document imported or migrated before layer 5: the comparison then reads the chapters of the commit that approved the import.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "section",
+          "title",
+          "path",
+          "textHash"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "section": {
+            "type": "string",
+            "pattern": "^S-[0-9]{4,}$"
+          },
+          "number": {
+            "description": "The section's number as the file gave it; missing for a section known by its heading path.",
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "path": {
+            "description": "The headings above it and its own, as the file gave them.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "textHash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "converter": {
+      "description": "The converter that read the last imported file (D385): a comparison says when today's differs, since then a section the file seems to have changed may be the converter's doing.",
+      "type": "object",
+      "required": [
+        "format",
+        "version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
     },
     "images": {
       "type": "array",

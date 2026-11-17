@@ -33,7 +33,7 @@ public static class StateKinds
     public const string TraceDecision = "trace-decision", FindingSeverity = "finding-severity",
         Proof = "proof", ProofConfirmation = "proof-confirmation", DraftPosted = "draft-posted",
         PageRun = "page-run", PageCorrection = "page-correction", TicketStep = "ticket-step",
-        FsdCandidate = "fsd-candidate", FsdSectionMatch = "fsd-section-match", FsdSectionAnswer = "fsd-section-answer", FindingReview = "finding-review", FsdReviewRun = "fsd-review-run", FsdWriteRun = "fsd-write-run",
+        FsdSectionMatch = "fsd-section-match", FindingReview = "finding-review", FsdReviewRun = "fsd-review-run", FsdWriteRun = "fsd-write-run",
         FixRun = "fix-run", FindingStanding = "finding-standing", FindingSecurity = "finding-security";
 
     // Committed state gets committed history; run state in .stangent/ gets history beside it, ignored the same way.
@@ -139,28 +139,14 @@ public static class StateKinds
             .. Each(Code, "running", "done", "failed"), By(Code, "failed", "done"), By(Code, "done", "failed"),
         ], Field: "stage", NullState: "running"),
 
-        // D117: a new version of an imported document waits beside the current one. Only a person promotes or discards it; a newer file replaces it.
-        // D122: with first-import-approval on, a first import waits the same way, for a person's approval.
-        new(FsdCandidate, FsdHistory, ["candidate", "pending-approval"],
-        [
-            .. Each(Person, "candidate", "promoted", "discarded"), By(Code, "candidate", "replaced"),
-            .. Each(Person, "pending-approval", "approved", "discarded"), By(Code, "pending-approval", "replaced"),
-        ], Field: "state"),
-
-        // D117: a section code won't match on its own. A person settles it and can change their mind. Code only lets go of a
-        // claim when the section that claimed this id is settled another way.
+        // D117, D385: a section of a new file code won't match on its own, in its comparison. A person settles it and can change
+        // their mind. (Phase fs layer 5 removed fsd-candidate and fsd-section-answer with promote and section approval; their old
+        // lines in specs/fsd/history.jsonl stay, and nothing reads them.)
         new(FsdSectionMatch, FsdHistory, ["doubtful"],
         [
             .. Each(Person, "doubtful", "same", "new", "removed"), By(Person, "same", "same"), By(Person, "same", "new"), By(Person, "new", "same"),
             By(Person, "removed", "same"), By(Code, "same", "doubtful"),
         ], Field: "state"),
-
-        // D150: with section-approval on, a person approves or rejects each changed section. The id holds the exact text on both sides,
-        // so an answer drops by itself when that text changes: code never moves one.
-        new(FsdSectionAnswer, FsdHistory, ["unanswered"],
-        [
-            .. Each(Person, "unanswered", "approved", "rejected"), By(Person, "approved", "rejected"), By(Person, "rejected", "approved"),
-        ], Field: "answer", NullState: "unanswered"),
     ];
 
     public static StateKind Get(string name) => All.FirstOrDefault(k => k.Name == name)
