@@ -8,7 +8,7 @@ provides: {}
 
 # The FSD in the repo is the source of truth
 
-**Decided 2026-11-17 (D376–D388); planned the same day (D389). Layer 0 built and fresh-checked (D390); layer 1 built and fresh-checked (D391); layer 2 built and fresh-checked (D392); layer 3 built and fresh-checked (D393); layer 4 built and fresh-checked (D394); layer 5 built and fresh-checked (D395).** After import the client's file never comes back (D376).
+**Decided 2026-11-17 (D376–D388); planned the same day (D389). Layer 0 built and fresh-checked (D390); layer 1 built and fresh-checked (D391); layer 2 built and fresh-checked (D392); layer 3 built and fresh-checked (D393); layer 4 built and fresh-checked (D394); layer 5 built and fresh-checked (D395); its two gaps closed, built and fresh-checked (D396).** After import the client's file never comes back (D376).
 The FSD is one Markdown file per chapter, edited in git (D377), and a commit is the approval (D380). A PM's ruling
 becomes the FSD's own words (D379), and component switches go (D381). This phase builds that.
 
@@ -187,6 +187,13 @@ the `fsd-candidate` and `fsd-section-answer` lifecycles. `docs/spec.md` "A new f
 - **Tests:** the four cases and new/gone on a fixture pair of `.docx` versions; a doubtful match; `take` then commit
   moves the base, so a third file compares against the second; a converter change is named.
 - **Fresh check:** "can a client's file ever overwrite a PM's edit without a person taking it?" Sonnet, about 100K.
+- **After layer 5 (D396), built and fresh-checked:** `fsd take` brings a taken section's attachments (files under
+  `attachments/<id>/`, records in `document.json`; the id kept by the same bytes, then the same file name, in the
+  section; a new one from the ledger; one gone marked removed), and a section whose only change is its attachments is
+  offered; a PM's attachment change is a repo change (`fileSections` entries gain optional `attachments`). `fsd check`
+  marks a removed section's `specs/trace.yaml` entries `(removed S-0004) 4`, decision kept, and puts them back if the
+  removal is undone before the commit (`FsdCarry`). Tests in `EmbeddedFilesTests` (4) and `FsdCheckTests` (1). Fresh
+  check: Sonnet, about 107K; 2 defects fixed (a restored entry's number, a taken record's `sectionNumber`).
 
 ### Layer 6 · Word export (D378)
 

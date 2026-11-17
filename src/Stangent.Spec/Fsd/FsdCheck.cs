@@ -8,14 +8,16 @@ namespace Stangent.Spec.Fsd;
 /// <summary>
 /// <c>stangent fsd check &lt;doc&gt;</c> (phase fs layer 3, D380, D382, D384, D393): the check before a commit. Unlike every other
 /// step it reads the working tree's chapter files, and compares them with <c>HEAD</c>'s by permanent id. It gives each heading
-/// typed with no marker the next id from the ledger, which is the only thing it writes. It refuses, writing nothing: a marker
+/// typed with no marker the next id from the ledger, which is the only chapter write. It refuses, writing nothing: a marker
 /// that doesn't read as one, or sits off its heading; an id on two headings; an id the ledger never gave, marks removed, or gave
 /// before <c>HEAD</c> and no committed heading holds; a ledger that went back; a section gone from <c>HEAD</c> while a heading has
 /// no marker (it may be that section retyped: never guessed, the person puts the marker back or says <c>--removed</c>); an
 /// unmarked heading that looks like a section whose marker now sits on a heading that doesn't; a heading that skips a level,
 /// where <c>HEAD</c>'s didn't; and a section removed while <c>rulings.yaml</c> holds a person's work on it, unless the person
 /// says <c>--removed</c> (its entries are listed). It warns about repeated or out-of-order numbers (D384) and lists every section
-/// added, removed, renamed, moved or changed against <c>HEAD</c>: that list is what the commit approves. Code only.
+/// added, removed, renamed, moved or changed against <c>HEAD</c>: that list is what the commit approves. When it succeeds, a removed
+/// section's entries in <c>specs/trace.yaml</c> take its mark, <c>(removed S-0004) 4</c>, decision kept, and are listed under
+/// <c>trace</c> (D396); a removal undone before the commit puts them back. Code only.
 /// </summary>
 public static partial class FsdCheck
 {
@@ -208,8 +210,19 @@ public static partial class FsdCheck
         var ok = refused.Count == 0;
         var counts = new JsonObject();
         foreach (var (k, v) in changes) counts[k] = v!.AsArray().Count;
+        // A removed section's trace entries take its mark, decision and decided_by kept (D117, D396), as promote did; one whose
+        // section is on a heading again (the removal undone before a commit) goes back to it. Only on success: a refusal writes nothing.
+        JsonObject? trace = null;
+        if (ok)
+        {
+            // Back on the number it has now, which may not be HEAD's (fresh check, D396).
+            var back = workById.Values.Where(w => headById.ContainsKey(w.PermanentId!)).Select(FsdChapters.Json).ToList();
+            if (removed.Count > 0 || Marked(root, doc, back))
+                trace = FsdCarry.Apply(root, doc, [], [.. removed.Select(FsdChapters.Json)], work.Sections.Select(s => s.Id).ToHashSet(StringComparer.Ordinal), "stangent fsd check", back);
+        }
+        var traceMoved = trace?["traceIds"]?.AsArray().Count > 0;
         var uncommitted = ok ? Uncommitted(root, rel) : [];
-        var nothing = ok && idsGiven.Count == 0 && changes.All(c => c.Value!.AsArray().Count == 0) && uncommitted.Count == 0;
+        var nothing = ok && idsGiven.Count == 0 && changes.All(c => c.Value!.AsArray().Count == 0) && uncommitted.Count == 0 && !traceMoved;
         var result = new JsonObject
         {
             ["doc"] = doc,
@@ -222,10 +235,22 @@ public static partial class FsdCheck
             ["refused"] = refused,
             ["next"] = !ok ? $"Nothing was written. Put right what's under refused, then run `stangent fsd check {doc}` again."
                 : nothing ? $"Nothing in {rel} differs from HEAD."
+                : traceMoved ? $"Read the list under changes: it is what your commit approves (D380). The trace entries under trace.removed now name their removed section: commit them with it (`git add {rel} specs/trace.yaml && git commit`)."
                 : $"Read the list under changes: it is what your commit approves (D380). Then commit {rel}/ (`git add {rel} && git commit`).",
         };
+        if (trace is not null) result["trace"] = trace;
+        if (traceMoved) uncommitted.Add("specs/trace.yaml");
         if (uncommitted.Count > 0) result["uncommittedFiles"] = new JsonArray([.. uncommitted.Select(f => (JsonNode)f)]);
         return result;
+    }
+
+    /// <summary>Whether trace.yaml holds a removed mark on one of these sections, which are on a heading again: only then is it rewritten.</summary>
+    static bool Marked(string root, string doc, List<JsonObject> back)
+    {
+        if (back.Count == 0 || !File.Exists(Trace.TraceFile.PathIn(root))) return false;
+        var ids = back.Select(b => (string)b["permanentId"]!).ToHashSet(StringComparer.Ordinal);
+        return Trace.TraceFile.Load(root)["entries"]!.AsArray().OfType<JsonObject>().Select(e => e["fsd"]).OfType<JsonObject>()
+            .Any(f => (string?)f["doc"] == doc && Trace.TraceFile.IsRemovedSection((string?)f["section"]) && (string?)f["sectionId"] is { } id && ids.Contains(id));
     }
 
     static FsdDocument.SectionLedger Ledger(string? text, string what)

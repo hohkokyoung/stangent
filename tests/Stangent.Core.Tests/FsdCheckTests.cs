@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Stangent.Graph;
 using Stangent.Spec;
 using Stangent.Spec.Fsd;
+using Stangent.Spec.Trace;
 
 namespace Stangent.Core.Tests;
 
@@ -164,6 +165,71 @@ public sealed class FsdCheckTests : IDisposable
         var result = Check();
         Assert.True((bool)result["ok"]!);
         Assert.Equal(["S-0002"], Ids(result, "removed"));
+    }
+
+    List<JsonObject> TraceEntries() => [.. TraceFile.Load(Root)["entries"]!.AsArray().OfType<JsonObject>()];
+
+    [Fact]
+    public void A_removed_sections_trace_entries_take_its_mark_with_their_decision_kept_and_go_back_if_it_comes_back()
+    {
+        Shop();
+        var doc = FsdDocument.Load(Root, "shop");
+        var cited = TraceStore.Entry("gap", "shop", Section(doc, "S-0002"), "Refunds take five days.", null, null, null, "code", null, null);
+        cited["decision"] = "agree";
+        cited["decided_by"] = "Pat Example";
+        var other = TraceStore.Entry("gap", "shop", Section(doc, "S-0001"), "Orders are placed from the cart.", null, null, null, "code", null, null);
+        // Its number names the removed section, its permanent id another: never guessed, left where it is (D121).
+        var odd = TraceStore.Entry("gap", "shop", Section(doc, "S-0002"), "five days", null, null, null, "code", null, null);
+        odd["fsd"]!["sectionId"] = "S-0003";
+        // Its permanent id names the removed section and its number is out of date: marked by the id, and said.
+        var stale = TraceStore.Entry("gap", "shop", Section(doc, "S-0002"), "take five", null, null, null, "code", null, null);
+        stale["fsd"]!["section"] = "9";
+        var trace = TraceFile.Empty();
+        foreach (var e in new[] { cited, other, odd, stale }) trace["entries"]!.AsArray().Add(e.DeepClone());
+        TraceFile.Save(Root, trace);
+        Committed.All(Root, "test: links");
+        var (citedId, otherId, oddId) = ((string)cited["id"]!, (string)other["id"]!, (string)odd["id"]!);
+        var saved = File.ReadAllBytes(TraceFile.PathIn(Root));
+
+        // A refusal writes nothing, trace.yaml included.
+        Edit("## 1.1 Refunds <!-- S-0002 -->", "## 1.1 Refund rules");
+        Refused("marker-removed");
+        Assert.Equal(saved, File.ReadAllBytes(TraceFile.PathIn(Root)));
+
+        var result = Check("S-0002");
+        Assert.True((bool)result["ok"]!);
+        var marked = TraceEntries().Single(e => (string?)e["decision"] == "agree");
+        Assert.Equal(("(removed S-0002) 1.1", "S-0002", "Pat Example"), ((string)marked["fsd"]!["section"]!, (string)marked["fsd"]!["sectionId"]!, (string)marked["decided_by"]!));
+        Assert.NotEqual(citedId, (string)marked["id"]!);
+        var removed = Assert.Single(result["trace"]!["removed"]!.AsArray())!;
+        Assert.Equal("S-0002", (string)removed["permanentId"]!);
+        Assert.Equal(2, removed["traceEntries"]!.AsArray().Count);
+        Assert.Contains((string)marked["id"]!, removed["traceEntries"]!.AsArray().Select(t => (string)t!));
+        Assert.Equal("agree", (string)Assert.Single(removed["decisions"]!.AsArray())!["value"]!);
+        Assert.Equal("1", (string)TraceEntries().Single(e => (string)e["id"]! == otherId)["fsd"]!["section"]!);
+        Assert.Equal("1.1", (string)TraceEntries().Single(e => (string)e["id"]! == oddId)["fsd"]!["section"]!);
+        var disagree = result["trace"]!["sectionIdsDisagree"]!.AsArray().OfType<JsonObject>().ToList();
+        Assert.Equal(oddId, (string)disagree.Single(d => d["markedBy"] is null)["entry"]!);
+        var byId = disagree.Single(d => (string?)d["markedBy"] == "sectionId");
+        Assert.Equal(("9", "1.1"), ((string)byId["section"]!, (string)byId["removedNumber"]!));
+        Assert.Equal("(removed S-0002) 1.1", (string)TraceEntries().Single(e => (string?)e["fsd"]?["quote"] == "take five")["fsd"]!["section"]!);
+        Assert.Contains("specs/trace.yaml", result["uncommittedFiles"]!.AsArray().Select(f => (string)f!));
+
+        // The same check again marks nothing twice, and still lists it.
+        var again = Check("S-0002");
+        Assert.Contains((string)marked["id"]!, Assert.Single(again["trace"]!["removed"]!.AsArray())!["traceEntries"]!.AsArray().Select(t => (string)t!));
+        Assert.Equal(2, TraceEntries().Count(e => TraceFile.IsRemovedSection((string?)e["fsd"]?["section"])));
+
+        // The removal undone before a commit, and the section renumbered: its entries go back to it, on the number it has now.
+        Stangent.Graph.Git.Run(Root, "checkout -- specs/fsd/shop/chapters");
+        Edit("## 1.1 Refunds <!-- S-0002 -->", "## 1.2 Refunds <!-- S-0002 -->");
+        var back = Check();
+        Assert.True((bool)back["ok"]!);
+        var returned = TraceEntries().Single(e => (string?)e["decision"] == "agree");
+        Assert.Equal(("1.2", "S-0002", "Pat Example"), ((string)returned["fsd"]!["section"]!, (string)returned["fsd"]!["sectionId"]!, (string)returned["decided_by"]!));
+        Assert.Equal(2, back["trace"]!["restored"]!.AsArray().Count);
+        Assert.Contains(back["trace"]!["restored"]!.AsArray().OfType<JsonObject>(), r => (string)r["entry"]! == (string)marked["id"]! && (string)r["to"]! == "1.2");
+        Assert.DoesNotContain(TraceEntries(), e => TraceFile.IsRemovedSection((string?)e["fsd"]?["section"]));
     }
 
     [Theory]

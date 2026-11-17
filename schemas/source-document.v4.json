@@ -56,7 +56,7 @@
       "pattern": "^[0-9a-f]{40,64}$"
     },
     "fileSections": {
-      "description": "Each section as the last imported file gave it, by permanent id (phase fs layer 5, D385): its heading and text hash. A new file is compared three ways against these: what only the file changed is offered, what the repo changed is kept. `fsd take` moves a section's entry to the file it took the text from. Missing in a document imported or migrated before layer 5: the comparison then reads the chapters of the commit that approved the import.",
+      "description": "Each section as the last imported file gave it, by permanent id (phase fs layer 5, D385): its heading and text hash. A new file is compared three ways against these: what only the file changed is offered, what the repo changed is kept. `fsd take` moves a section's entry to the file it took the text from, and its attachments with it (D396). Missing in a document imported or migrated before layer 5: the comparison then reads the chapters of the commit that approved the import.",
       "type": "array",
       "items": {
         "type": "object",
@@ -90,6 +90,27 @@
           "textHash": {
             "type": "string",
             "pattern": "^[0-9a-f]{64}$"
+          },
+          "attachments": {
+            "description": "The files the file attached to the section, by file name and hash (D396): a PM's change to a section's attachments reads as the repo's, so it is never taken over. Missing for a section with none, and in an entry written before D396.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "fileName",
+                "hash"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "fileName": {
+                  "type": "string"
+                },
+                "hash": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
           }
         }
       }

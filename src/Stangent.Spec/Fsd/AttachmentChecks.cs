@@ -125,6 +125,167 @@ public static class FsdAttachments
 
     /// <summary>The folder a record's files are in, in order: under its id, or for a candidate not yet moved, its holding place.</summary>
     internal static string FolderName(JsonObject record, int index, bool candidate) => candidate ? Slot(index) : (string)record["id"]!;
+
+    // ---- fsd take (D396) -----------------------------------------------------------------------------------------------
+
+    /// <summary>The files a record's folder holds, by path under it, with their hashes. Its originals are in the archive (I.7), not here.</summary>
+    internal static List<(string Path, string Hash)> Written(JsonObject record) =>
+        [.. record["files"]!.AsArray().OfType<JsonObject>().Where(f => !EmbeddedFiles.IsOriginal((string)f["file"]!)).Select(f => ((string)f["file"]!, (string)f["hash"]!))];
+
+    /// <summary>A section's attachments as the comparison weighs them: each one's file name and hash, in a fixed order. Empty with none.</summary>
+    internal static string Key(JsonNode? attachments) => string.Join('\u0001', (attachments?.AsArray() ?? []).OfType<JsonObject>()
+        .Select(a => (string)a["fileName"]! + "\u0002" + (string)a["hash"]!).Order(StringComparer.Ordinal));
+
+    /// <summary>A section's attachments for <c>fileSections</c>: file name and hash, as the file gave them. Null with none.</summary>
+    internal static JsonArray? Base(JsonNode? attachments) => (attachments?.AsArray() ?? []).OfType<JsonObject>().ToList() is { Count: > 0 } list
+        ? new JsonArray([.. list.Select(a => (JsonNode)new JsonObject { ["fileName"] = (string)a["fileName"]!, ["hash"] = (string)a["hash"]! })
+            .OrderBy(a => (string)a!["fileName"]!, StringComparer.Ordinal).ThenBy(a => (string)a!["hash"]!, StringComparer.Ordinal)])
+        : null;
+
+    static string Sha(byte[] bytes) => System.Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(bytes));
+
+    /// <summary>Why a record's folder doesn't hold what its record says, or null: a file missing, changed or added by hand.</summary>
+    internal static string? FolderDiffers(string folder, JsonObject record)
+    {
+        var written = Written(record);
+        foreach (var (path, hash) in written)
+        {
+            var file = Path.Combine(folder, path);
+            if (!File.Exists(file)) return $"{path} is missing";
+            if (Sha(File.ReadAllBytes(file)) != hash) return $"{path} was edited";
+        }
+        if (!Directory.Exists(folder)) return null;
+        var names = written.Select(w => w.Path).ToHashSet(StringComparer.Ordinal);
+        var extra = Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories).Select(f => Path.GetRelativePath(folder, f).Replace('\\', '/'))
+            .FirstOrDefault(f => !names.Contains(f));
+        return extra is null ? null : $"{extra} was added";
+    }
+
+    /// <summary>Whether HEAD's copy of a record's files differs from what the record says: the PM edited one and committed it.</summary>
+    internal static bool EditedAtHead(string root, string doc, JsonObject record) =>
+        Written(record).Any(w => HeadBytes(root, $"specs/fsd/{doc}/attachments/{(string)record["id"]!}/{w.Path}") is not { } bytes || Sha(bytes) != w.Hash);
+
+    /// <summary>A file as HEAD holds it, as bytes (an attachment can be anything); null when HEAD has none.</summary>
+    static byte[]? HeadBytes(string root, string rel)
+    {
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo("git") { WorkingDirectory = root, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+            foreach (var a in new[] { "cat-file", "blob", $"HEAD:./{rel}" }) psi.ArgumentList.Add(a);
+            using var process = System.Diagnostics.Process.Start(psi)!;
+            using var bytes = new MemoryStream();
+            var errors = process.StandardError.ReadToEndAsync();
+            process.StandardOutput.BaseStream.CopyTo(bytes);
+            process.WaitForExit();
+            _ = errors.Result;
+            return process.ExitCode == 0 ? bytes.ToArray() : null;
+        }
+        catch (System.ComponentModel.Win32Exception) { return null; }
+    }
+
+    /// <summary>The section's records in a document's facts.</summary>
+    static List<JsonObject> On(JsonObject facts, string section) =>
+        [.. (facts["attachments"]?.AsArray() ?? []).OfType<JsonObject>().Where(r => (string?)r["section"] == section)];
+
+    /// <summary>The new file's attachments on one of its sections, each with the index that names its folder in the comparison.</summary>
+    static List<(JsonObject Record, int Index)> Incoming(JsonArray fileAttachments, string fileSection) =>
+        [.. fileAttachments.OfType<JsonObject>().Select((r, i) => (r, i)).Where(x => (string?)x.r["sectionNumber"] == fileSection)];
+
+    /// <summary>
+    /// Why a section's attachments can't be taken, or null, before anything is written: the repo's records or files for it changed since
+    /// HEAD (an uncommitted edit is never overwritten), or the comparison's copy of one of the file's isn't what the file gave.
+    /// </summary>
+    internal static string? CannotTake(string docDir, string compareDir, JsonObject working, JsonObject committed, JsonArray fileAttachments, string? section, string fileSection)
+    {
+        if (section is not null)
+        {
+            var now = On(working, section);
+            if (!JsonNode.DeepEquals(new JsonArray([.. now.Select(r => r.DeepClone())]), new JsonArray([.. On(committed, section).Select(r => r.DeepClone())])))
+                return "its attachments' records in document.json were changed since HEAD (an uncommitted change): the change is kept; commit or undo it, import the file again, then take";
+            foreach (var r in now)
+                if (FolderDiffers(Folder(docDir, (string)r["id"]!), r) is { } why)
+                    return $"its attachment {(string)r["id"]!} ({(string)r["fileName"]!}) was changed here since HEAD ({why}): the change is kept; commit or undo it, import the file again, then take";
+        }
+        foreach (var (r, i) in Incoming(fileAttachments, fileSection))
+        {
+            var folder = Folder(compareDir, Slot(i));
+            foreach (var (path, hash) in Written(r))
+                if (!File.Exists(Path.Combine(folder, path)) || Sha(File.ReadAllBytes(Path.Combine(folder, path))) != hash)
+                    return $"the comparison's copy of its attachment {(string)r["fileName"]!} ({path}) is missing or isn't what the file gave: import the file again, then take";
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// <c>fsd take</c> (D396): a taken section's attachments become the new file's, files and records. Each of the file's attachments on
+    /// the section keeps the <c>A-</c> id of the one the repo holds there with the same bytes, then with the same file name, as an
+    /// edited file is still that file; any other gets a new id from the ledger; one the repo holds there that the file no longer has is
+    /// marked removed (rule 11), and its folder goes (as it came, it's in the archive). The files are copied from the comparison's
+    /// copies, which <see cref="CannotTake"/> checked by hash. Other sections' records stay as they are. <paramref name="number"/> is the
+    /// section's number (its id) in the repo once taken. Null when neither side has any.
+    /// </summary>
+    internal static JsonObject? Take(string root, string doc, string docDir, string compareDir, JsonObject facts, JsonArray fileAttachments, string section, string fileSection, string number, ISet<string> changed)
+    {
+        var held = On(facts, section);
+        var incoming = Incoming(fileAttachments, fileSection);
+        if (held.Count == 0 && incoming.Count == 0) return null;
+        if (facts["attachments"] is not JsonArray records) facts["attachments"] = records = [];
+        var ledger = FsdVersions.Ledger(root, doc);
+        var highest = records.OfType<JsonObject>().Select(o => (string?)o["id"]).OfType<string>().Select(s => int.Parse(s[2..], System.Globalization.CultureInfo.InvariantCulture)).DefaultIfEmpty(0).Max();
+        if (highest > 0) ledger.Raise(Scope, Format, highest);
+
+        var left = held.ToList();
+        var ids = new string?[incoming.Count];
+        void Claim(Func<JsonObject, JsonObject, bool> same)
+        {
+            for (var i = 0; i < incoming.Count; i++)
+                if (ids[i] is null && left.FirstOrDefault(o => same(o, incoming[i].Record)) is { } match) { ids[i] = (string)match["id"]!; left.Remove(match); }
+        }
+        Claim((o, a) => (string)o["hash"]! == (string)a["hash"]!);
+        Claim((o, a) => (string)o["fileName"]! == (string)a["fileName"]!);
+
+        var at = held.Count > 0 ? records.IndexOf(held[0]) : records.Count;
+        foreach (var h in held)
+        {
+            records.Remove(h);
+            if (Directory.Exists(Folder(docDir, (string)h["id"]!))) Directory.Delete(Folder(docDir, (string)h["id"]!), recursive: true);
+            changed.Add($"specs/fsd/{doc}/attachments/{(string)h["id"]!}");
+        }
+        var removed = new JsonArray();
+        foreach (var gone in left)
+        {
+            ledger.Remove(Scope, (string)gone["id"]!);
+            removed.Add((JsonNode)(string)gone["id"]!);
+        }
+        var kept = new JsonArray();
+        var added = new JsonArray();
+        for (var i = 0; i < incoming.Count; i++)
+        {
+            var (record, index) = incoming[i];
+            var id = ids[i] ?? ledger.Issue(Scope, Format);
+            (ids[i] is null ? added : kept).Add((JsonNode)id);
+            var from = Path.GetFullPath(Folder(compareDir, Slot(index))) + Path.DirectorySeparatorChar;
+            var to = Path.GetFullPath(Folder(docDir, id)) + Path.DirectorySeparatorChar;
+            foreach (var (path, _) in Written(record))
+            {
+                var source = Path.GetFullPath(Path.Combine(from, path));
+                var target = Path.GetFullPath(Path.Combine(to, path));
+                if (!source.StartsWith(from, StringComparison.Ordinal) || !target.StartsWith(to, StringComparison.Ordinal))
+                    throw new InvalidOperationException($"An attachment's file {path} would land outside its folder (a stangent bug).");
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                File.Copy(source, target, overwrite: true);
+            }
+            var o = record.DeepClone().AsObject();
+            o["id"] = id;
+            o["section"] = section;
+            // The section's number here, which can differ from the file's (fresh check, D396).
+            o["sectionNumber"] = number;
+            records.Insert(at++, o);
+            changed.Add($"specs/fsd/{doc}/attachments/{id}");
+        }
+        if (records.Count == 0) facts.Remove("attachments");
+        return new JsonObject { ["section"] = section, ["kept"] = kept, ["added"] = added, ["removed"] = removed };
+    }
 }
 
 /// <summary>

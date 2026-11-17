@@ -436,21 +436,101 @@ public sealed class EmbeddedFilesTests : IDisposable
 
     JsonObject Entry(string file) => FsdCompare.Show(repo.Root, "fsd")["sections"]!.AsArray().OfType<JsonObject>().Single(e => (string?)e["file"] == file);
 
+    string Csv(string id = "A-0001") => Path.Combine(FsdAttachments.Folder(DocDir, id), "rates.csv");
+
+    JsonObject Take() => FsdCompare.Take(repo.Repo, "fsd", ["S-0001"], false);
+
     [Fact]
-    public void Same_text_and_a_changed_attachment_is_listed_naming_it_and_the_repos_files_stay()
+    public void Same_text_and_a_changed_attachment_is_offered_and_taking_it_brings_the_new_file_under_its_id()
     {
         Import(WordWith("rates.xlsx", XlsxFixture.Rates("12")));
-        var before = Document();
-        Assert.Equal("compared", (string)Import(WordWith("rates.xlsx", XlsxFixture.Rates("99")))["status"]!);
+        var before = (JsonObject)Document()["attachments"]![0]!;
+        var ninetyNine = XlsxFixture.Rates("99");
+        Assert.Equal("compared", (string)Import(WordWith("rates.xlsx", ninetyNine))["status"]!);
         var rules = Entry("Rules");
-        Assert.Equal("same", (string)rules["case"]!);
-        Assert.Equal("changed", (string)rules["attachmentsChanged"]![0]!["change"]!);
-        var name = (string)before["attachments"]![0]!["fileName"]!;
-        Assert.Equal(name, (string)rules["attachmentsChanged"]![0]!["fileName"]!);
+        // D396: a section's attachments count as its words do, so this is the file's change, offered.
+        Assert.Equal(("file-changed", false, false), ((string)rules["case"]!, (bool)rules["textChanged"]!, (bool)rules["headingChanged"]!));
+        var name = (string)before["fileName"]!;
+        Assert.Equal(("changed", name), ((string)rules["attachmentsChanged"]![0]!["change"]!, (string)rules["attachmentsChanged"]![0]!["fileName"]!));
+        Assert.Equal("same", (string)Entry("Other")["case"]!);
         Assert.Null(Entry("Other")["attachmentsChanged"]);
         Assert.Contains($"{name} changed", File.ReadAllText(Path.Combine(FsdCompare.Dir(repo.Root, "fsd"), "comparison.md")));
-        // Compared, never imported over (D385): the repo's files are as they were, and take doesn't bring attachments.
-        Assert.Contains("Gold,12", File.ReadAllText(Path.Combine(FsdAttachments.Folder(DocDir, "A-0001"), "rates.csv")));
+        // Compared, never imported over (D385): the repo's files are as they were until a person takes the section.
+        Assert.Contains("Gold,12", File.ReadAllText(Csv()));
+
+        var words = Chapters.Text(DocDir);
+        var taken = Take();
+        Assert.Equal("S-0001", (string)Assert.Single(taken["taken"]!.AsArray())!["section"]!);
+        var moved = Assert.Single(taken["attachments"]!.AsArray())!;
+        Assert.Equal(("A-0001", 0, 0), ((string)Assert.Single(moved["kept"]!.AsArray())!, moved["added"]!.AsArray().Count, moved["removed"]!.AsArray().Count));
+        Assert.Null(taken["attachmentsNotTaken"]);
+        Assert.Equal(words, Chapters.Text(DocDir)); // its words are the same, byte for byte
+        Assert.Contains("Gold,99", File.ReadAllText(Csv()));
+        var record = (JsonObject)Assert.Single(FsdDocument.Facts(repo.Root, "fsd")!["attachments"]!.AsArray())!;
+        Assert.Equal(("A-0001", "S-0001", "Rules"), ((string)record["id"]!, (string)record["section"]!, (string)record["sectionNumber"]!));
+        Assert.NotEqual((string)before["hash"]!, (string)record["hash"]!);
+        Assert.Equal((string)record["hash"]!, (string)FsdDocument.Facts(repo.Root, "fsd")!["fileSections"]!.AsArray().OfType<JsonObject>().Single(f => (string)f["section"]! == "S-0001")["attachments"]![0]!["hash"]!);
+        Assert.Contains("specs/fsd/fsd/attachments/A-0001", taken["changed"]!.AsArray().Select(c => (string)c!));
+
+        // Committed, the next file compares against what was taken.
+        Committed.All(repo.Repo);
+        Import(WordWith("rates.xlsx", ninetyNine));
+        Assert.Equal("same", (string)Entry("Rules")["case"]!);
+    }
+
+    [Fact]
+    public void An_attachment_added_gets_a_new_id_one_gone_is_marked_removed_and_a_removed_id_never_comes_back()
+    {
+        const string body = "Rules text here for the reader.";
+        var none = FsdDocxTests.Docx(FsdDocxTests.H("Rules") + FsdDocxTests.P(body) + FsdDocxTests.H("Other") + FsdDocxTests.P("Other text."));
+        Import(none);
+        Import(WordWith("rates.xlsx", XlsxFixture.Rates()));
+        var added = Entry("Rules");
+        Assert.Equal(("file-changed", "added"), ((string)added["case"]!, (string)added["attachmentsChanged"]![0]!["change"]!));
+        Assert.Equal(["A-0001"], Assert.Single(Take()["attachments"]!.AsArray())!["added"]!.AsArray().Select(a => (string)a!));
+        Assert.Contains("Silver tier fee is seven", File.ReadAllText(Csv()));
+        Committed.All(repo.Repo);
+        Assert.Equal("A-0001", (string)Assert.Single(Document()["sections"]![0]!["attachments"]!.AsArray())!["id"]!);
+
+        Import(none);
+        Assert.Equal(("file-changed", "removed"), ((string)Entry("Rules")["case"]!, (string)Entry("Rules")["attachmentsChanged"]![0]!["change"]!));
+        Assert.Equal(["A-0001"], Assert.Single(Take()["attachments"]!.AsArray())!["removed"]!.AsArray().Select(a => (string)a!));
+        Assert.False(Directory.Exists(FsdAttachments.Folder(DocDir, "A-0001")));
+        Assert.Null(FsdDocument.Facts(repo.Root, "fsd")!["attachments"]);
+        Assert.Contains("A-0001", FsdVersions.Ledger(repo.Root, "fsd").Removed("attachments"));
+        Committed.All(repo.Repo);
+
+        Import(WordWith("rates.xlsx", XlsxFixture.Rates("7")));
+        Assert.Equal(["A-0002"], Assert.Single(Take()["attachments"]!.AsArray())!["added"]!.AsArray().Select(a => (string)a!));
+        Assert.Contains("Gold,7", File.ReadAllText(Csv("A-0002")));
+    }
+
+    [Fact]
+    public void An_attachment_the_pm_edited_is_never_taken_over_committed_or_not()
+    {
+        Import(WordWith("rates.xlsx", XlsxFixture.Rates("12")));
+        File.WriteAllText(Csv(), "Tier,Fee\nGold,15\n");
+        Committed.All(repo.Repo);
+        Import(WordWith("rates.xlsx", XlsxFixture.Rates("99")));
+        var rules = Entry("Rules");
+        // The PM's committed edit is the repo's change, and the file's too: side by side, the repo's kept.
+        Assert.Equal(("both-changed", true), ((string)rules["case"]!, (bool)rules["attachmentFilesEditedHere"]!));
+        Assert.Equal("nothing_taken", Assert.Throws<StangentException>(() => Take()).Code);
+        Assert.Equal("Tier,Fee\nGold,15\n", File.ReadAllText(Csv()));
+    }
+
+    [Fact]
+    public void An_uncommitted_edit_to_an_offered_sections_attachment_is_kept()
+    {
+        Import(WordWith("rates.xlsx", XlsxFixture.Rates("12")));
+        Import(WordWith("rates.xlsx", XlsxFixture.Rates("99")));
+        Assert.Equal("file-changed", (string)Entry("Rules")["case"]!);
+        File.WriteAllText(Csv(), "Tier,Fee\nGold,15\n");
+        var refused = Assert.Throws<StangentException>(() => Take());
+        Assert.Equal("nothing_taken", refused.Code);
+        Assert.Contains("A-0001", Assert.Single(refused.Details), StringComparison.Ordinal);
+        Assert.Equal("Tier,Fee\nGold,15\n", File.ReadAllText(Csv()));
+        Assert.Equal("A-0001", (string)FsdDocument.Facts(repo.Root, "fsd")!["attachments"]![0]!["id"]!);
     }
 
     [Fact]
@@ -473,17 +553,6 @@ public sealed class EmbeddedFilesTests : IDisposable
         using (var w = new StreamWriter(zip.CreateEntry("docProps/extra.xml").Open()))
             w.Write("<x/>");
         return stream.ToArray();
-    }
-
-    [Fact]
-    public void An_attachment_added_with_the_same_text_is_listed_and_says_so()
-    {
-        const string body = "Rules text here for the reader.";
-        var none = FsdDocxTests.Docx(FsdDocxTests.H("Rules") + FsdDocxTests.P(body) + FsdDocxTests.H("Other") + FsdDocxTests.P("Other text."));
-        Import(none);
-        Import(WordWith("rates.xlsx", XlsxFixture.Rates()));
-        var added = Entry("Rules");
-        Assert.Equal(("same", "added"), ((string)added["case"]!, (string)added["attachmentsChanged"]![0]!["change"]!));
     }
 
     [Fact]

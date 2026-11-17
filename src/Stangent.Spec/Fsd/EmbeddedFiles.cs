@@ -285,7 +285,10 @@ public static partial class EmbeddedFiles
 
     /// <summary>The record <c>document.json</c> holds, its id and section's permanent id still to come.</summary>
     /// <summary>I.7, D16: a client's file as it came, at any depth. It goes to the archive; what it came to stays in the repo.</summary>
-    public static bool IsOriginal(AttachmentOutput o) => o.Path.StartsWith("original/", StringComparison.Ordinal) || o.Path.Contains("/original/", StringComparison.Ordinal);
+    public static bool IsOriginal(AttachmentOutput o) => IsOriginal(o.Path);
+
+    /// <summary>The same, by the path a record's <c>files</c> entry holds: a file not written to the attachment's folder.</summary>
+    public static bool IsOriginal(string path) => path.StartsWith("original/", StringComparison.Ordinal) || path.Contains("/original/", StringComparison.Ordinal);
 
     public static JsonObject Json(AttachmentRecord r, int attachmentChars)
     {

@@ -16,8 +16,9 @@ namespace Stangent.Spec.Fsd;
 /// Then three ways, per section, against the last file: only the file changed it (offered), only the repo did (kept), both did
 /// (shown side by side, the repo's kept), new in the file (offered), gone from the file (listed). <c>fsd take</c> copies an
 /// offered section's text into its chapter, uncommitted, and moves its <c>fileSections</c> entry; the commit approves (D380).
-/// Code only. Nothing here writes a chapter except <see cref="Take"/>, and it writes only a section whose text in the working
-/// tree is HEAD's and, at HEAD, the last file's: a section the PM changed is never offered.
+/// A section's attachments count as its words do: taking it brings them, files and records, ids kept by bytes then file name (D396).
+/// Code only. Nothing here writes a chapter except <see cref="Take"/>, and it writes only a section whose text and attachments in
+/// the working tree are HEAD's and, at HEAD, the last file's: a section the PM changed is never offered.
 /// </summary>
 public static partial class FsdCompare
 {
@@ -51,6 +52,8 @@ public static partial class FsdCompare
             ["textHash"] = (string?)s["textHash"] ?? CanonicalJson.Hash((string)s["text"]!),
         };
         if ((string?)s["idKind"] == "number") o["number"] = (string)s["id"]!;
+        // Its attachments as the file gave them (D396), so a PM's change to them reads as the repo's.
+        if (FsdAttachments.Base(s["attachments"]) is { } files) o["attachments"] = files;
         return o;
     }
 
@@ -132,6 +135,8 @@ public static partial class FsdCompare
             Directory.CreateDirectory(Path.Combine(dir, "images"));
             File.WriteAllBytes(Path.Combine(dir, img.Name), img.Bytes);
         }
+        // The file's attachments, each under the place that names it by its order in fileAttachments, for take to copy in (D396).
+        FsdAttachments.Write(dir, converted, document);
         // The new file's own import report, as a first import has one, for reading before anything is taken.
         ImportReport.Write(dir, document);
         Build(root, doc, cmp, facts, fresh: true);
@@ -168,6 +173,9 @@ public static partial class FsdCompare
         var key = $"{doc}@{((string)cmp["file"]!["hash"]!)[..12]}";
         var repoById = repoSections.Where(s => s["permanentId"] is not null).ToDictionary(s => (string)s["permanentId"]!, StringComparer.Ordinal);
         var fileById = fileSections.ToDictionary(s => (string)s["id"]!, StringComparer.Ordinal);
+        // An attachment's file the PM edited and committed is a change the repo made, as its record can't say so (D396).
+        var editedHere = (facts["attachments"]?.AsArray() ?? []).OfType<JsonObject>().Where(r => (string?)r["section"] is not null && r["id"] is not null && FsdAttachments.EditedAtHead(root, doc, r))
+            .Select(r => (string)r["section"]!).ToHashSet(StringComparer.Ordinal);
 
         // A person's word on a doubtful section: a file section is an id (same) or new; a repo section is gone from the file.
         foreach (var e in matched.Where(e => (string)e["kind"]! == "doubtful"))
@@ -213,7 +221,7 @@ public static partial class FsdCompare
                 entries.Add(new JsonObject { ["case"] = "removed-here", ["section"] = pidOf, ["file"] = (string)file["id"]!, ["title"] = (string)file["title"]!, ["note"] = "the last file had it and the repo took it out; the new file still has it, and nothing here brings it back" });
                 continue;
             }
-            entries.Add(Pair(file, repoSection, basis.GetValueOrDefault(pidOf), e));
+            entries.Add(Pair(file, repoSection, basis.GetValueOrDefault(pidOf), e, editedHere.Contains(pidOf)));
         }
         cmp["sections"] = new JsonArray([.. entries.Select(x => (JsonNode)x)]);
         // The new file's import problems, each on its section's permanent id where the file's section has one here.
@@ -254,12 +262,15 @@ public static partial class FsdCompare
         _ => false,
     };
 
-    static JsonObject Pair(JsonObject file, JsonObject repo, JsonObject? last, JsonObject match)
+    static JsonObject Pair(JsonObject file, JsonObject repo, JsonObject? last, JsonObject match, bool filesEditedHere)
     {
         var (fileHash, repoHash) = ((string)file["textHash"]!, (string)repo["textHash"]!);
-        var fileChanged = last is null || fileHash != (string)last["textHash"]! || Heading(file) != BaseHeading(last);
-        var repoChanged = last is null || repoHash != (string)last["textHash"]! || Heading(repo) != BaseHeading(last);
-        var same = fileHash == repoHash && Heading(file) == Heading(repo);
+        // A section's attachments count as its words do (D396): by file name and hash, and an attachment's file edited here is the repo's change.
+        var (fileFiles, repoFiles) = (FsdAttachments.Key(file["attachments"]), FsdAttachments.Key(repo["attachments"]) + (filesEditedHere ? "\u0003edited here" : ""));
+        var lastFiles = last is null ? null : FsdAttachments.Key(last["attachments"]);
+        var fileChanged = last is null || fileHash != (string)last["textHash"]! || Heading(file) != BaseHeading(last) || fileFiles != lastFiles;
+        var repoChanged = last is null || repoHash != (string)last["textHash"]! || Heading(repo) != BaseHeading(last) || repoFiles != lastFiles;
+        var same = fileHash == repoHash && Heading(file) == Heading(repo) && fileFiles == repoFiles;
         var @case = same ? "same" : !fileChanged ? "repo-changed" : !repoChanged ? "file-changed" : "both-changed";
         var o = new JsonObject
         {
@@ -276,6 +287,8 @@ public static partial class FsdCompare
         if ((int)file["level"]! != (int)repo["level"]!) o["levelChanged"] = new JsonObject { ["repo"] = (int)repo["level"]!, ["file"] = (int)file["level"]! };
         if (match["fromPath"] is not null) o["fileMovedIt"] = new JsonObject { ["from"] = match["fromPath"]!.DeepClone(), ["to"] = match["toPath"]!.DeepClone() };
         if (match["attachmentsChanged"] is JsonArray files) o["attachmentsChanged"] = files.DeepClone();
+        if (last is not null && repoFiles != lastFiles) o["attachmentsChangedHere"] = true;
+        if (filesEditedHere) o["attachmentFilesEditedHere"] = true;
         if ((string?)match["decided_by"] is { } by) o["settledBy"] = by;
         return o;
     }
@@ -484,6 +497,11 @@ public static partial class FsdCompare
             throw new StangentException("fsd_check_first", $"The chapter files of {doc} have headings with no id, a damaged id or one id twice: run `stangent fsd check {doc}` first (nothing was written).", ExitCodes.Usage);
         var head = FsdDocument.Load(root, doc)["sections"]!.AsArray().OfType<JsonObject>().Where(s => s["permanentId"] is not null)
             .ToDictionary(s => (string)s["permanentId"]!, StringComparer.Ordinal);
+        // The section's attachments come with it (D396): the repo's must be as HEAD has them, and the comparison's copies as the file gave them.
+        var working = FsdDocument.Facts(root, doc)!;
+        var committedFacts = FsdDocument.CommittedFacts(root, doc);
+        var fileAttachments = cmp["fileAttachments"]?.AsArray() ?? [];
+        var compareDir = Dir(root, doc);
         var ledgerText = File.Exists(Path.Combine(dir, "ids.json")) ? File.ReadAllText(Path.Combine(dir, "ids.json")) : null;
         var ledger = FsdDocument.LedgerOf(ledgerText);
         var next = ledger.Last;
@@ -505,12 +523,15 @@ public static partial class FsdCompare
                 var was = read.Sections.FirstOrDefault(x => x.PermanentId == pid);
                 var now = edit.Section(pid);
                 if (was is null || now is null) { Skip(name, "it isn't in the working tree's chapter files"); continue; }
-                if (was.TextHash == (string)file["textHash"]! && Heading(FsdChapters.Json(was)) == Heading(file))
+                var wordsSame = was.TextHash == (string)file["textHash"]! && Heading(FsdChapters.Json(was)) == Heading(file);
+                if (wordsSame && RepoFiles(working, pid) == FsdAttachments.Key(file["attachments"]))
                 { Skip(name, "it already reads as the file has it (taken, not committed yet): read it and commit"); continue; }
                 if (!head.TryGetValue(pid, out var committed) || was.TextHash != (string)committed["textHash"]! || was.Title != (string)committed["title"]! || was.Id != (string)committed["id"]!)
                 { Skip(name, "it was edited since HEAD (an uncommitted change): the edit is kept; commit or undo it, import the file again, then take"); continue; }
                 if (e["levelChanged"] is not null) { Skip(name, "the file moved it to another heading level: move it by hand"); continue; }
-                if (edit.Update(now, file) is { } bad) { Skip(name, bad); continue; }
+                if (FsdAttachments.CannotTake(dir, compareDir, working, committedFacts, fileAttachments, pid, (string)file["id"]!) is { } stuck) { Skip(name, stuck); continue; }
+                // Only its attachments changed: its words stay as they are, byte for byte.
+                if (!wordsSame && edit.Update(now, file) is { } bad) { Skip(name, bad); continue; }
                 taken.Add((e, file, pid, false));
             }
             else
@@ -519,6 +540,7 @@ public static partial class FsdCompare
                 var after = at > 0 ? placed.GetValueOrDefault(order[at - 1]) : null;
                 if (after is null || edit.Section(after) is not { } previous)
                 { Skip(name, at == 0 ? "it's the file's first section, so where it goes here can't be told: add it by hand" : $"the section before it in the file ({order[at - 1]}) isn't in the repo, so where it goes can't be told: take that one first, or add it by hand"); continue; }
+                if (FsdAttachments.CannotTake(dir, compareDir, working, committedFacts, fileAttachments, null, (string)file["id"]!) is { } stuck) { Skip(name, stuck); continue; }
                 var pid = string.Format(System.Globalization.CultureInfo.InvariantCulture, ledger.Format, ++next);
                 if (edit.Insert(previous, file, pid) is { } bad) { next--; Skip(name, bad); continue; }
                 placed[(string)file["id"]!] = pid;
@@ -578,7 +600,7 @@ public static partial class FsdCompare
             var record = Record(new JsonObject
             {
                 ["permanentId"] = t.PermanentId, ["title"] = (string)t.File["title"]!, ["idKind"] = (string)t.File["idKind"]!, ["id"] = (string)t.File["id"]!,
-                ["textHash"] = (string)t.File["textHash"]!,
+                ["textHash"] = (string)t.File["textHash"]!, ["attachments"] = t.File["attachments"]?.DeepClone(),
             }, paths[(string)t.File["id"]!]);
             var at = fileSections.OfType<JsonObject>().ToList().FindIndex(r => (string?)r["section"] == t.PermanentId);
             if (at >= 0) fileSections[at] = record; else fileSections.Add(record);
@@ -597,6 +619,12 @@ public static partial class FsdCompare
             }
         }
         facts["fileSections"] = fileSections;
+        // Each taken section's attachments, files and records, from the comparison's copies (D396).
+        var changedFiles = new HashSet<string>(StringComparer.Ordinal);
+        var attachments = new JsonArray();
+        foreach (var t in taken)
+            if (FsdAttachments.Take(root, doc, dir, compareDir, facts, fileAttachments, t.PermanentId, (string)t.File["id"]!,
+                after2.Sections.First(x => x.PermanentId == t.PermanentId).Id, changedFiles) is { } moved) attachments.Add(moved);
         var archive = cmp["file"]!["archive"]!.AsObject();
         facts["original"] = new JsonObject
         {
@@ -625,10 +653,6 @@ public static partial class FsdCompare
             .Select(p => new FsdCarry.Pair(WithId(p.Old), WithId(p.New!), "modified")).ToList();
         var carried = pairs.Count > 0 ? FsdCarry.Apply(root, doc, pairs, [], after2.Sections.Select(s => s.Id).ToHashSet(StringComparer.Ordinal)) : null;
 
-        var attachments = new JsonArray([.. taken.Where(t => t.Entry["attachmentsChanged"] is not null).Select(t => (JsonNode)new JsonObject
-        {
-            ["section"] = t.PermanentId, ["changes"] = t.Entry["attachmentsChanged"]!.DeepClone(),
-        })]);
         var result = new JsonObject
         {
             ["doc"] = doc,
@@ -637,8 +661,9 @@ public static partial class FsdCompare
                 ["section"] = t.PermanentId, ["file"] = (string)t.File["id"]!, ["title"] = (string)t.File["title"]!, ["new"] = t.IsNew,
             })]),
             ["notTaken"] = notTaken, ["idsGiven"] = new JsonArray([.. issued.Select(i => (JsonNode)i)]), ["images"] = brought,
-            ["attachmentsNotTaken"] = attachments,
-            ["changed"] = new JsonArray([.. edit.Changed.Order(StringComparer.Ordinal).Select(n => (JsonNode)$"specs/fsd/{doc}/chapters/{n}"), (JsonNode)$"specs/fsd/{doc}/document.json"]),
+            ["attachments"] = attachments,
+            ["changed"] = new JsonArray([.. edit.Changed.Order(StringComparer.Ordinal).Select(n => (JsonNode)$"specs/fsd/{doc}/chapters/{n}"), (JsonNode)$"specs/fsd/{doc}/document.json",
+                .. changedFiles.Order(StringComparer.Ordinal).Select(f => (JsonNode)f)]),
             ["next"] = $"Read the change (`git diff specs/fsd/{doc}`), run `stangent fsd check {doc}`, and commit: the commit approves it (D380). Nothing is read by a step until then.",
         };
         if (carried is not null) result["carried"] = carried;
@@ -647,11 +672,14 @@ public static partial class FsdCompare
             result["numbersRepeated"] = new JsonArray([.. repeated.Select(n => (JsonNode)n)]);
             Console.Error.WriteLine($"warning: two sections are now numbered {string.Join(", ", repeated)} in specs/fsd/{doc}: a section gone from the new file may still hold the number here. Take it out by hand (`stangent fsd check {doc} --removed <id>`) or renumber, before you commit.");
         }
-        if (attachments.Count > 0) result["note"] = "Files attached to these sections changed in the new file; take copies text and pictures only, so the attachments stay as the last import brought them (listed in attachmentsNotTaken).";
         return result;
     }
 
     static JsonObject WithId(ChapterSection s) => FsdChapters.Json(s);
+
+    /// <summary>A section's attachments in a document's facts, weighed as <see cref="FsdAttachments.Key"/> weighs them.</summary>
+    static string RepoFiles(JsonObject facts, string pid) =>
+        FsdAttachments.Key(new JsonArray([.. (facts["attachments"]?.AsArray() ?? []).OfType<JsonObject>().Where(r => (string?)r["section"] == pid).Select(r => r.DeepClone())]));
 
     /// <summary>Each section's parent, by permanent id.</summary>
     static Dictionary<string, string?> ParentIds(ChapterRead read)
@@ -822,7 +850,8 @@ public static partial class FsdCompare
                 sb.Append($"\n### {id}{(fileOnly ? "§" + e["file"] : "§" + (e["repo"] ?? e["file"]))} {e["title"]}\n\n");
                 if (e["fileMovedIt"] is JsonObject moved) sb.Append($"The file moved it: {(string)moved["from"]!} → {(string)moved["to"]!}. Take changes its words only.\n\n");
                 if (e["levelChanged"] is not null) sb.Append("The file put it at another heading level: take won't move it; move it by hand.\n\n");
-                if (e["attachmentsChanged"] is JsonArray files) sb.Append($"Its attachments changed in the file ({string.Join(", ", files.OfType<JsonObject>().Select(c => $"{(string)c["fileName"]!} {(string)c["change"]!}"))}); take doesn't bring attachments.\n\n");
+                if (e["attachmentsChanged"] is JsonArray files) sb.Append($"Its attachments differ in the file ({string.Join(", ", files.OfType<JsonObject>().Select(c => $"{(string)c["fileName"]!} {(string)c["change"]!}"))}){(@case is "file-changed" or "new" ? "; taking it brings them" : "")}.\n\n");
+                if ((bool?)e["attachmentsChangedHere"] == true || (bool?)e["attachmentFilesEditedHere"] == true) sb.Append("Its attachments were changed here since the last file: the repo's are kept.\n\n");
                 if ((bool?)e["noBase"] == true) sb.Append("The last file's words for it aren't known, so the repo's are kept.\n\n");
                 if (sideBySide)
                 {
@@ -855,13 +884,13 @@ public static partial class FsdCompare
         var attached = entries.Where(e => e["attachmentsChanged"] is JsonArray).ToList();
         if (attached.Count > 0)
         {
-            sb.Append("\n## Attachments changed in the file\n\nTake copies text and pictures only: these stay as the last import brought them.\n\n");
+            sb.Append("\n## Attachments that differ in the file\n\nTaking an offered section brings its attachments with it (an attachment with the same bytes or file name keeps its id); elsewhere the repo's stay.\n\n");
             foreach (var e in attached)
                 sb.Append($"- {e["section"]} §{e["repo"] ?? e["file"]} {e["title"]}: {string.Join(", ", e["attachmentsChanged"]!.AsArray().OfType<JsonObject>().Select(c => $"{(string)c["fileName"]!} {(string)c["change"]!}"))}\n");
         }
         if (cmp["attachmentsWithNoSection"] is JsonArray whole)
         {
-            sb.Append("\n## Files attached to the whole document\n\nThey're in no section's hash, so they're said here. Take doesn't bring them.\n\n");
+            sb.Append("\n## Files attached to the whole document\n\nThey're in no section's hash, so they're said here. No section holds them, so taking sections doesn't bring them: they stay as the last import brought them.\n\n");
             foreach (var c in whole.OfType<JsonObject>()) sb.Append($"- {(string)c["fileName"]!}: {(string)c["change"]!}\n");
         }
         return sb.ToString();
