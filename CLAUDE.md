@@ -50,7 +50,7 @@ Short forms. If one differs from its decision's full entry, the entry wins.
 5. **One `stangent` CLI (D23, D110).** Products go through it, and its core stays C#.
 6. **AI steps have three parts (D60).** The CLI prepares the input, an agent writes the output, the CLI checks it.
 7. **A separate agent with a fresh context judges whether work is right (D61).** Paused while building (D120).
-8. **Build first, test later (D120).** Every component gets a switch; anything that changes a prompt starts off.
+8. **Build first, test later (D120, D381).** No switches: a feature is on once built and fresh-checked; one that looks useless is raised with the owner, never turned off or removed without their yes.
 9. **No paid step without a choice (D126).** A cost cap, or an explicit `none`.
 10. **Nothing is dropped silently (D111, D116).** What can't be brought in exactly is listed.
 11. **Permanent ids are never renumbered or reused (D117, D118).**
