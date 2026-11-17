@@ -147,8 +147,9 @@ public class FsdTests
         var first = FsdImport.Import(a.Repo, file);
         Assert.Equal(("shop-fsd", "imported", 7), ((string)first["id"]!, (string)first["status"]!, (int)first["sections"]!));
         FsdImport.Import(b.Repo, file);
-        foreach (var name in new[] { "document.md", "document.json" })
-            Assert.Equal(File.ReadAllBytes(Path.Combine(FsdImport.DocDir(a.Root, "shop-fsd"), name)), File.ReadAllBytes(Path.Combine(FsdImport.DocDir(b.Root, "shop-fsd"), name)));
+        Assert.Equal(File.ReadAllBytes(Path.Combine(FsdImport.DocDir(a.Root, "shop-fsd"), "document.json")), File.ReadAllBytes(Path.Combine(FsdImport.DocDir(b.Root, "shop-fsd"), "document.json")));
+        Assert.Equal(Chapters.Files(FsdImport.DocDir(a.Root, "shop-fsd")), Chapters.Files(FsdImport.DocDir(b.Root, "shop-fsd")));
+        Assert.False(File.Exists(Path.Combine(FsdImport.DocDir(a.Root, "shop-fsd"), "document.md")));
 
         var doc = JsonNode.Parse(File.ReadAllText(Path.Combine(FsdImport.DocDir(a.Root, "shop-fsd"), "document.json")))!;
         Assert.Empty(SchemaRegistry.Embedded.Validate(FsdImport.Schema, doc.ToJsonString()));

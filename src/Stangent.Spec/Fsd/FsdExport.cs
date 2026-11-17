@@ -7,8 +7,9 @@ using Stangent.Graph;
 namespace Stangent.Spec.Fsd;
 
 /// <summary>
-/// <c>fsd export</c> (A.11, D122): <c>document.md</c> as one Markdown file per top-level heading, for people to read and for tools that want small files. Generated, never read back:
-/// <c>document.json</c> stays the record, and a test holds that nothing in <c>src/</c> reads these. A chapter over the limit is cut at its next heading level, and so on down;
+/// <c>fsd export</c> (A.11, D122, D378): the FSD's chapter files without their id markers, as one Markdown file per top-level heading, or with <c>--whole</c> as one file
+/// (<c>&lt;doc&gt;.md</c>), for people to read and for tools that want small files. Generated, outside git, never read back: the chapters are the FSD, and a test holds
+/// that nothing in <c>src/</c> reads these. A chapter over the limit is cut at its next heading level, and so on down;
 /// one section over the limit stays whole, because there's no heading to cut at, and is listed. The same document gives the same bytes.
 /// </summary>
 public static partial class FsdExport
@@ -30,21 +31,35 @@ public static partial class FsdExport
 
     public static string DefaultDir(string root, string doc) => Path.Combine(root, ".stangent", "fsd", doc, "export");
 
-    public static JsonObject Run(string root, string doc, string? outDir, int maxLines)
+    public static JsonObject Run(string root, string doc, string? outDir, int maxLines, bool whole = false)
     {
         if (maxLines < 1) throw new StangentException("usage", "--max-lines must be at least 1.", ExitCodes.Usage);
         var document = FsdOutline.Load(root, doc);
         var hash = (string)document["original"]!["hash"]!;
         FsdHandEdit.Note(root, doc, document, null);
-        var lines = File.ReadAllText(Path.Combine(FsdImport.DocDir(root, doc), "document.md")).Split('\n');
+        var docDir = FsdImport.DocDir(root, doc);
+        // The chapters as they are on disk (phase fs layer 1), markers off; a document not migrated yet still has document.md.
+        string markdown, from;
+        List<JsonObject> sections;
+        if (FsdChapters.Has(docDir))
+        {
+            var read = FsdChapters.Read(FsdChapters.Files(docDir));
+            (markdown, sections, from) = (read.Markdown, [.. read.Sections.Select(FsdChapters.Json)], $"specs/fsd/{doc}/chapters");
+        }
+        else (markdown, sections, from) = (File.ReadAllText(Path.Combine(docDir, "document.md")), [.. document["sections"]!.AsArray().OfType<JsonObject>()], $"specs/fsd/{doc}/document.md");
+        var lines = markdown.Split('\n');
         var dir = outDir is null ? DefaultDir(root, doc) : Path.GetFullPath(outDir, root);
 
-        var tops = Tree(document["sections"]!.AsArray().OfType<JsonObject>().ToList(), lines);
         var files = new List<(string Name, string Body, string? Section)>();
         var overLimit = new JsonArray();
-        var front = string.Join('\n', lines[..tops[0].Start]).Trim('\n');
-        if (front.Trim().Length > 0) files.Add(("00-front-matter.md", front, null));
-        for (var i = 0; i < tops.Count; i++) Emit(tops[i], $"{i + 1:D2}", lines, maxLines, files, overLimit);
+        if (whole) files.Add(($"{doc}.md", markdown.TrimEnd('\n'), null));
+        else
+        {
+            var tops = Tree(sections, lines);
+            var front = string.Join('\n', lines[..tops[0].Start]).Trim('\n');
+            if (front.Trim().Length > 0) files.Add(("00-front-matter.md", front, null));
+            for (var i = 0; i < tops.Count; i++) Emit(tops[i], $"{i + 1:D2}", lines, maxLines, files, overLimit);
+        }
 
         Directory.CreateDirectory(dir);
         // What an earlier export left: only files that say they're ours, so a folder a person named keeps everything else.
@@ -53,17 +68,19 @@ public static partial class FsdExport
             using (var r = new StreamReader(old)) { if (r.ReadLine()?.StartsWith(Marker, StringComparison.Ordinal) != true) continue; }
             File.Delete(old);
         }
-        var header = $"{Marker} from specs/fsd/{doc}/document.md, source {hash}. Never read back: change the FSD and import it again. -->\n\n";
+        var header = $"{Marker} from {from}, source {hash}. Never read back: edit the chapter files in specs/fsd/{doc}/chapters. -->\n\n";
         foreach (var (name, body, _) in files) File.WriteAllText(Path.Combine(dir, name), header + body + "\n");
 
         // Ignored files can't end up in a commit. `git check-ignore` gives an empty answer when ignored, and nothing at all when it isn't.
         var ignored = Git.Run(root, $"check-ignore -q -- \"{dir}\"") is not null;
-        return new JsonObject
+        var result = new JsonObject
         {
             ["doc"] = doc, ["source"] = hash, ["out"] = Path.GetRelativePath(root, dir), ["maxLines"] = maxLines, ["ignoredByGit"] = ignored,
             ["files"] = new JsonArray([.. files.Select(f => (JsonNode)new JsonObject { ["file"] = f.Name, ["section"] = f.Section, ["lines"] = f.Body.Count(c => c == '\n') + 1 })]),
             ["overLimit"] = overLimit,
         };
+        if (whole) result["whole"] = true;
+        return result;
     }
 
     /// <summary>The sections as a tree by heading level. A section's <c>line</c> is its heading's line in <c>document.md</c>; one that isn't a heading means the record is out of step.</summary>
@@ -76,7 +93,7 @@ public static partial class FsdExport
         {
             var start = (int)s["line"]! - 1;
             if (start < 0 || start >= lines.Length || !lines[start].StartsWith('#'))
-                throw new StangentException("export_out_of_step", $"Section {(string)s["id"]!} says its heading is at line {start + 1} of document.md, and it isn't. Import the file again.");
+                throw new StangentException("export_out_of_step", $"Section {(string)s["id"]!} says its heading is at line {start + 1} of document.md, and it isn't. Run `stangent fsd migrate` for this document.");
             var node = new Node(s, start);
             nodes.Add(node);
             var level = (int)s["level"]!;

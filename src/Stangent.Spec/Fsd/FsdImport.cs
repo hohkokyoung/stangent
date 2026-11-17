@@ -76,8 +76,11 @@ public static class FsdImport
         ImportProblems.Attach(doc);
         var errors = SchemaRegistry.Embedded.Validate(Schema, doc.ToJsonString());
         if (errors.Count > 0) throw new StangentException("invalid_document", "The imported document broke source-document v3 (a stangent bug).", ExitCodes.Failed, errors);
+        FsdChapters.Verify(converted.Markdown, [.. doc["sections"]!.AsArray().OfType<JsonObject>()], repo.Config.Fsd.ExportMaxLines);
         Directory.CreateDirectory(dir);
-        WriteText(dir, converted, doc);
+        WriteText(dir, converted, doc, markdown: false);
+        // The FSD as the PM edits it (phase fs layer 1, D377, D378): chapter files with each heading's id, and no document.md.
+        var chapters = FsdChapters.Write(dir, converted.Markdown, [.. doc["sections"]!.AsArray().OfType<JsonObject>()], repo.Config.Fsd.ExportMaxLines);
         File.WriteAllText(jsonPath, CanonicalJson.Serialize(doc));
         ImportReport.Write(dir, doc);
         if (FsdSectionApproval.On(repo.Config)) FsdSectionFiles.Write(repo.Root, id, doc);
@@ -85,8 +88,16 @@ public static class FsdImport
         {
             ["id"] = id, ["status"] = "imported", ["hash"] = hash, ["sections"] = converted.Sections.Count,
             ["images"] = converted.Images.Count, ["problems"] = doc["problems"]!.DeepClone(), ["archive"] = archived, ["steps"] = import.StepsJson(),
+            ["chapters"] = Chapters(chapters),
         }, doc, $"specs/fsd/{id}");
     }
+
+    /// <summary>The chapter files written, and any one section too long to cut, for an import's result.</summary>
+    internal static JsonObject Chapters((List<string> Files, List<string> OverLimit) written) => new()
+    {
+        ["dir"] = "chapters", ["files"] = new JsonArray([.. written.Files.Select(f => (JsonNode)f)]),
+        ["overLimit"] = new JsonArray([.. written.OverLimit.Select(f => (JsonNode)f)]),
+    };
 
     static JsonObject Unchanged(string root, string id, string dir, JsonObject current, string hash, int added)
     {
@@ -155,7 +166,7 @@ public static class FsdImport
         if (LabelRecord(repo.Root, import.Labels, current) is { } labels) doc["labels"] = labels;
         var archived = new JsonObject { ["name"] = archive.Name, ["path"] = (string)original["path"]! };
 
-        if (converted.Markdown != File.ReadAllText(Path.Combine(dir, "document.md")) || !SameSections(current, doc) || !FsdAttachments.Same(current, doc))
+        if (converted.Markdown != FsdChapters.Markdown(dir) || !SameSections(current, doc) || !FsdAttachments.Same(current, doc))
         {
             var offered = FsdVersions.Offer(repo.Root, id, current, doc, converted, hash, flat, archived, "the same file, read again by a newer build, gives other text");
             offered["reread"] = true;
@@ -225,11 +236,12 @@ public static class FsdImport
         return o;
     }
 
-    /// <summary>The Markdown, the images and the attachments into a folder.</summary>
-    internal static void WriteText(string dir, ConvertedDocument converted, JsonObject document)
+    /// <summary>The images and the attachments into a folder, and the Markdown as <c>document.md</c> for a candidate (the
+    /// document's own folder holds chapter files instead, <see cref="FsdChapters"/>).</summary>
+    internal static void WriteText(string dir, ConvertedDocument converted, JsonObject document, bool markdown = true)
     {
         FsdAttachments.Write(dir, converted, document);
-        File.WriteAllText(Path.Combine(dir, "document.md"), converted.Markdown);
+        if (markdown) File.WriteAllText(Path.Combine(dir, "document.md"), converted.Markdown);
         foreach (var img in converted.Images)
         {
             Directory.CreateDirectory(Path.Combine(dir, "images"));

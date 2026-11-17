@@ -53,6 +53,14 @@ public static class FsdVersions
         return missing.Count;
     }
 
+    /// <summary>The new current version's text as chapter files (phase fs layer 1). A document not migrated yet is migrated
+    /// here: its <c>document.md</c> goes once the chapters are written.</summary>
+    static void WriteChapters(string dir, string markdown, JsonObject document, int maxLines)
+    {
+        FsdChapters.Write(dir, markdown, [.. document["sections"]!.AsArray().OfType<JsonObject>()], maxLines);
+        File.Delete(Path.Combine(dir, "document.md"));
+    }
+
     internal static void Validate(JsonObject doc)
     {
         var errors = SchemaRegistry.Embedded.Validate(FsdImport.Schema, doc.ToJsonString());
@@ -172,7 +180,7 @@ public static class FsdVersions
     }
 
     /// <summary>A person approves a first import, and it becomes the current version. Only then does it get its ids and anything can read it.</summary>
-    public static JsonObject Approve(string root, string doc, string who, bool sectionFiles = false)
+    public static JsonObject Approve(string root, string doc, string who, bool sectionFiles = false, int maxLines = 1500)
     {
         var diff = Load(root, doc);
         if (!IsFirst(diff))
@@ -184,9 +192,11 @@ public static class FsdVersions
         FsdObjects.Assign(root, doc, null, pending);
         ImportProblems.Attach(pending);
         Validate(pending);
+        var markdown = File.ReadAllText(Path.Combine(candidate, "document.md"));
+        FsdChapters.Verify(markdown, [.. pending["sections"]!.AsArray().OfType<JsonObject>()], maxLines);
         if (Directory.Exists(Path.Combine(candidate, "images"))) Directory.Move(Path.Combine(candidate, "images"), Path.Combine(dir, "images"));
         FsdAttachments.Move(candidate, dir, pending);
-        File.Move(Path.Combine(candidate, "document.md"), Path.Combine(dir, "document.md"), overwrite: true);
+        WriteChapters(dir, markdown, pending, maxLines);
         Quotes.WriteAtomic(JsonPath(root, doc), CanonicalJson.Serialize(pending));
         ImportReport.Write(dir, pending);
         StateChanges.Apply(root, diff, StateKinds.FsdCandidate, CandidateKey(doc, (string)diff["to"]!), "approved", StateActor.Person(who), "first import approved");
@@ -334,6 +344,9 @@ public static class FsdVersions
         ImportProblems.Attach(pending);
         pending["schemaVersion"] = 3;
         Validate(pending);
+        // Before anything moves: chapters that wouldn't read back stop the promote here, with the current version as it was.
+        var markdown = merged?.Markdown ?? File.ReadAllText(Path.Combine(CandidateDir(root, doc), "document.md"));
+        FsdChapters.Verify(markdown, [.. pending["sections"]!.AsArray().OfType<JsonObject>()], repo.Config.Fsd.ExportMaxLines);
 
         var claimed = merged is null ? kept.Values.Select(k => k.Id).ToHashSet(StringComparer.Ordinal)
             : sections.Select(s => (string)s["permanentId"]!).Where(oldById.ContainsKey).ToHashSet(StringComparer.Ordinal);
@@ -350,8 +363,7 @@ public static class FsdVersions
         if (Directory.Exists(Path.Combine(dir, "images"))) Directory.Delete(Path.Combine(dir, "images"), recursive: true);
         if (Directory.Exists(Path.Combine(candidate, "images"))) Directory.Move(Path.Combine(candidate, "images"), Path.Combine(dir, "images"));
         FsdAttachments.Move(candidate, dir, pending);
-        if (merged is null) File.Move(Path.Combine(candidate, "document.md"), Path.Combine(dir, "document.md"), overwrite: true);
-        else Quotes.WriteAtomic(Path.Combine(dir, "document.md"), merged.Markdown);
+        WriteChapters(dir, markdown, pending, repo.Config.Fsd.ExportMaxLines);
         Quotes.WriteAtomic(JsonPath(root, doc), CanonicalJson.Serialize(pending));
         ImportReport.Write(dir, pending);
         var sectionFiles = approval ? FsdSectionFiles.Write(root, doc, pending) : null;

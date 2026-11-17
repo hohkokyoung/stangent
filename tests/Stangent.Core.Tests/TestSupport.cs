@@ -62,3 +62,23 @@ static class RepoRoot
         throw new InvalidOperationException("roadmap.md not found above the test binaries");
     }
 }
+
+/// <summary>A document's chapter files (phase fs layer 1), as tests read and edit them.</summary>
+static class Chapters
+{
+    /// <summary>The whole document as document.md held it: the chapters joined, markers off.</summary>
+    public static string Text(string docDir) => Stangent.Spec.Fsd.FsdChapters.Markdown(docDir)!;
+
+    public static byte[] Bytes(string docDir) => System.Text.Encoding.UTF8.GetBytes(Text(docDir));
+
+    /// <summary>Every chapter file, name and bytes, for "nothing changed" checks.</summary>
+    public static Dictionary<string, byte[]> Files(string docDir) =>
+        Directory.EnumerateFiles(Stangent.Spec.Fsd.FsdChapters.Dir(docDir), "*.md").ToDictionary(f => Path.GetFileName(f), File.ReadAllBytes);
+
+    /// <summary>Replaces <paramref name="from"/> in the one chapter file that holds it.</summary>
+    public static void Edit(string docDir, string from, string to)
+    {
+        var file = Assert.Single(Directory.EnumerateFiles(Stangent.Spec.Fsd.FsdChapters.Dir(docDir), "*.md"), f => File.ReadAllText(f).Contains(from, StringComparison.Ordinal));
+        File.WriteAllText(file, File.ReadAllText(file).Replace(from, to, StringComparison.Ordinal));
+    }
+}

@@ -8,7 +8,7 @@ provides: {}
 
 # The FSD in the repo is the source of truth
 
-**Decided 2026-11-17 (D376–D388); planned the same day (D389). Layer 0 built and fresh-checked (D390).** After import the client's file never comes back (D376).
+**Decided 2026-11-17 (D376–D388); planned the same day (D389). Layer 0 built and fresh-checked (D390); layer 1 built and fresh-checked (D391).** After import the client's file never comes back (D376).
 The FSD is one Markdown file per chapter, edited in git (D377), and a commit is the approval (D380). A PM's ruling
 becomes the FSD's own words (D379), and component switches go (D381). This phase builds that.
 
@@ -79,7 +79,12 @@ fixes are made before the next layer.
 - **Fresh check:** "can any old switch still change behaviour, and does every command still run with a repo's old
   `stangent.yaml`?" Sonnet, about 100K.
 
-### Layer 1 · Chapter files and ids (D377, D378, D382, D384)
+### Layer 1 · Chapter files and ids (D377, D378, D382, D384) — built and fresh-checked (D391)
+
+Built as `FsdChapters` (writer, reader, order) and `FsdMigrate`; tests in `FsdChaptersTests`. Kavita's and Sonarr's
+benchmark FSDs migrate byte for byte. Added while building (D391): a `no-number` flag in the marker, a backslash on
+heading-like lines, a `number=` flag for a number the heading doesn't show, no code fences read, and the writer's own
+round-trip check, run before import, approve or promote changes anything.
 
 - `fsd import` (first file) writes `chapters/`, using the export's layout and naming (`fsd.exportMaxLines`), and puts
   each heading's id in `<!-- S-0012 -->`. It writes no `document.md`. Text above the first heading goes in

@@ -83,13 +83,13 @@ public sealed class FsdVersionTests : IDisposable
     public void A_changed_file_waits_as_a_candidate_and_the_current_version_keeps_serving()
     {
         Import($"#! Fruit\n{Apples}\n");
-        var before = File.ReadAllBytes(Path.Combine(FsdImport.DocDir(Root, "shop"), "document.md"));
+        var before = Chapters.Bytes(FsdImport.DocDir(Root, "shop"));
         var json = File.ReadAllBytes(Path.Combine(FsdImport.DocDir(Root, "shop"), "document.json"));
 
         var result = Import($"#! Fruit\n{Apples}\n#! Veg\n{Pears}\n");
 
         Assert.Equal("candidate", (string)result["status"]!);
-        Assert.Equal(before, File.ReadAllBytes(Path.Combine(FsdImport.DocDir(Root, "shop"), "document.md")));
+        Assert.Equal(before, Chapters.Bytes(FsdImport.DocDir(Root, "shop")));
         Assert.Equal(json, File.ReadAllBytes(Path.Combine(FsdImport.DocDir(Root, "shop"), "document.json")));
         Assert.True(File.Exists(Path.Combine(Root, (string)result["diff"]!)));
         Assert.True(File.Exists(Path.Combine(FsdVersions.CandidateDir(Root, "shop"), "section-diff.json")));
@@ -282,7 +282,7 @@ public sealed class FsdVersionTests : IDisposable
         Assert.Equal([("1", "Red", id), ("2", "Green", "S-0002")], Current()["sections"]!.AsArray().Select(s => ((string)s!["id"]!, (string)s["title"]!, (string)s["permanentId"]!)));
         Assert.Equal(2, (int)result["sections"]!);
         Assert.False(Directory.Exists(FsdVersions.CandidateDir(Root, "shop")));
-        Assert.Contains(Apples, File.ReadAllText(Path.Combine(FsdImport.DocDir(Root, "shop"), "document.md")), StringComparison.Ordinal);
+        Assert.Contains(Apples, Chapters.Text(FsdImport.DocDir(Root, "shop")), StringComparison.Ordinal);
         Assert.Empty(SchemaRegistry.Embedded.Validate(FsdImport.Schema, Current().ToJsonString()));
         Assert.Equal("promoted", StateChanges.History(Root, StateKinds.FsdCandidate, $"shop@{((string)result["hash"]!)[..12]}")[^1].To);
     }
@@ -662,7 +662,7 @@ public sealed class FsdVersionTests : IDisposable
         var imported = JsonNode.Parse(File.ReadAllText(jsonPath))!.AsObject();
 
         // The same bytes as before this work: document.md whole, and document.json but for the added ids.
-        Assert.Equal("b546bb24c70f6901327bdc6298db22e136aec9ca7ff2c3ae76cb39e7d5254f50", Sha(File.ReadAllBytes(Path.Combine(dir, "document.md"))));
+        Assert.Equal("b546bb24c70f6901327bdc6298db22e136aec9ca7ff2c3ae76cb39e7d5254f50", Sha(Chapters.Bytes(dir)));
         var written = CanonicalJson.Serialize(AsItWasWritten(imported));
         Assert.Equal("c18cbded20fc31bbdcac45e8e71671f29efcac855516862246905a43b9f6a621", Sha(System.Text.Encoding.UTF8.GetBytes(written)));
 
@@ -674,7 +674,7 @@ public sealed class FsdVersionTests : IDisposable
         var trace = TraceFile.Empty();
         trace["entries"]!.AsArray().Add(TraceStore.Entry("gap", "sonarr", withText[0], Sentences.Of((string)withText[0]["text"]!)[0].Text, null, null, null, "code", null, null));
         TraceFile.Save(Root, trace);
-        var saved = new[] { TraceFile.PathIn(Root), Path.Combine(dir, "document.md") }.ToDictionary(p => p, File.ReadAllBytes);
+        var saved = new[] { TraceFile.PathIn(Root) }.Concat(Directory.EnumerateFiles(FsdChapters.Dir(dir))).ToDictionary(p => p, File.ReadAllBytes);
 
         // Its next import: the same file. It stays unchanged, and gets its ids.
         var again = FsdImport.Import(repo.Repo, file, "sonarr");

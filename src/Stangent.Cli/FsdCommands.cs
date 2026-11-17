@@ -37,7 +37,7 @@ static class FsdCommands
         var approveFirst = new Command("approve", "Removed by D388 with first-import and section approval: nothing waits for it now, and committing a document's chapters will be the approval (D385, phase fs layer 5).") { docArgument, answerSection };
         approveFirst.SetAction(pr => Cli.Run(pr, "fsd approve", ctx => pr.GetValue(answerSection) is { } section
             ? FsdSectionApproval.Answer(ctx.Repo, pr.GetValue(docArgument)!, section, true, null, FsdVersions.GitPerson(ctx.Repo.Root))
-            : FsdVersions.Approve(ctx.Repo.Root, pr.GetValue(docArgument)!, FsdVersions.GitPerson(ctx.Repo.Root), FsdSectionApproval.On(ctx.Repo.Config))));
+            : FsdVersions.Approve(ctx.Repo.Root, pr.GetValue(docArgument)!, FsdVersions.GitPerson(ctx.Repo.Root), FsdSectionApproval.On(ctx.Repo.Config), ctx.Repo.Config.Fsd.ExportMaxLines)));
         fsd.Subcommands.Add(approveFirst);
 
         var rejectSection = new Argument<string>("section") { Description = "A changed section of the waiting candidate, by its number in the candidate or its permanent id." };
@@ -69,9 +69,13 @@ static class FsdCommands
         fsd.Subcommands.Add(show);
         var exportOut = new Option<string?>("--out") { Description = "Where to write (default: .stangent/fsd/<doc>/export/, which git ignores)." };
         var exportMax = new Option<int?>("--max-lines") { Description = "A chapter over this many lines is cut at its next heading level (default: fsd.exportMaxLines, 1500)." };
-        var export = new Command("export", "One Markdown file per top-level heading, generated and never read back (D122). Code only.") { docArgument, exportOut, exportMax };
-        export.SetAction(pr => Cli.Run(pr, "fsd export", ctx => FsdExport.Run(ctx.Repo.Root, pr.GetValue(docArgument)!, pr.GetValue(exportOut), pr.GetValue(exportMax) ?? ctx.Repo.Config.Fsd.ExportMaxLines)));
+        var exportWhole = new Option<bool>("--whole") { Description = "One file, <doc>.md, holding the whole FSD (D378)." };
+        var export = new Command("export", "The FSD's chapters without their id markers, one Markdown file per top-level heading or, with --whole, one file; generated, outside git, never read back (D122, D378). Code only.") { docArgument, exportOut, exportMax, exportWhole };
+        export.SetAction(pr => Cli.Run(pr, "fsd export", ctx => FsdExport.Run(ctx.Repo.Root, pr.GetValue(docArgument)!, pr.GetValue(exportOut), pr.GetValue(exportMax) ?? ctx.Repo.Config.Fsd.ExportMaxLines, pr.GetValue(exportWhole))));
         fsd.Subcommands.Add(export);
+        var migrate = new Command("migrate", "Turn a document imported before phase fs into chapter files: specs/fsd/<doc>/chapters/, each heading with its permanent id, and no document.md (D377, D378, D389). Refused with uncommitted changes under specs/fsd/<doc>/. Code only.") { docArgument };
+        migrate.SetAction(pr => Cli.Run(pr, "fsd migrate", ctx => FsdMigrate.Run(ctx.Repo, pr.GetValue(docArgument)!)));
+        fsd.Subcommands.Add(migrate);
         var docArg = new Argument<string>("doc") { Description = "The document's id." };
         var sectionArg = new Argument<string>("section") { Description = "The section's id: its number (4.2.3) or heading path." };
         var tables = new Command("tables", "A document's tables and attachments' sheets, with their T- or A- ids and columns, for writing table-map.yaml. Code only.") { docArg };

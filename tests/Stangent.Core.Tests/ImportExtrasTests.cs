@@ -86,19 +86,18 @@ public sealed class ImportExtrasTests : IDisposable
     {
         Import();
         // What an older converter wrote: the words differ, and the file doesn't.
-        var path = Path.Combine(Dir, "document.md");
-        var older = File.ReadAllText(path).Replace("Leeks wait a day", "Leeks wait aday");
-        File.WriteAllText(path, older);
+        Chapters.Edit(Dir, "Leeks wait a day", "Leeks wait aday");
+        var older = Chapters.Text(Dir);
         var hash = (string)Doc()["original"]!["hash"]!;
 
         var again = FsdImport.Reread(repo.Repo, "shop");
         Assert.Equal(("candidate", true, hash, hash), ((string)again["status"]!, (bool)again["reread"]!, (string)again["hash"]!, (string)again["from"]!));
-        Assert.Equal(older, File.ReadAllText(path));
+        Assert.Equal(older, Chapters.Text(Dir));
         Assert.Contains("Leeks wait a day", File.ReadAllText(Path.Combine(FsdVersions.CandidateDir(Root, "shop"), "document.md")));
         Assert.Equal("waiting", (string)FsdImport.Reread(repo.Repo, "shop")["status"]!);
 
         FsdVersions.Promote(repo.Repo, "shop", "Pat");
-        Assert.Contains("Leeks wait a day", File.ReadAllText(path));
+        Assert.Contains("Leeks wait a day", Chapters.Text(Dir));
         Assert.Equal("unchanged", (string)FsdImport.Reread(repo.Repo, "shop")["status"]!);
     }
 
@@ -326,10 +325,10 @@ public sealed class ImportExtrasTests : IDisposable
         var doc = Doc();
         doc.Remove("tables");
         File.WriteAllText(Path.Combine(Dir, "document.json"), CanonicalJson.Serialize(doc));
-        var md = File.ReadAllBytes(Path.Combine(Dir, "document.md"));
+        var md = Chapters.Bytes(Dir);
         Assert.Equal("unchanged", (string)Import()["status"]!);
         Assert.StartsWith("T-", (string)Assert.Single(Doc()["tables"]!.AsArray())!["id"]!);
-        Assert.Equal(md, File.ReadAllBytes(Path.Combine(Dir, "document.md")));
+        Assert.Equal(md, Chapters.Bytes(Dir));
     }
 
     // A.9's first-import approval was removed by D388: committing a first import's chapters approves it (D385).

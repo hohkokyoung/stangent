@@ -514,11 +514,11 @@ public sealed class XlsxImportTests
         Assert.Equal(("Rates", "S-0001"), ((string)doc["sections"]![0]!["id"]!, (string)doc["sections"]![0]!["permanentId"]!));
         Assert.Equal("T-0001", (string)doc["tables"]![0]!["id"]!);
         Assert.Contains("hidden sheet \"Back\"", File.ReadAllText(Path.Combine(dir, ImportReport.FileName)));
-        var md = File.ReadAllBytes(Path.Combine(dir, "document.md"));
+        var md = Chapters.Bytes(dir);
         Assert.Equal("unchanged", (string)FsdImport.Import(repo.Repo, file)["status"]!);
         var again = FsdImport.Reread(repo.Repo, "rates");
         Assert.Equal("unchanged", (string)again["status"]!);
-        Assert.Equal(md, File.ReadAllBytes(Path.Combine(dir, "document.md")));
+        Assert.Equal(md, Chapters.Bytes(dir));
     }
 
     [Fact]

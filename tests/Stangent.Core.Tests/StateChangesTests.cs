@@ -184,6 +184,7 @@ public partial class StateChangesTests
         [("src/Stangent.Spec/Trace/TraceFindings.cs", "severity")] = (1, "trace check's listing: a copy of the entry's severity"),
         [("src/Stangent.Spec/Trace/TraceFindings.cs", "decision")] = (1, "trace check's listing: a copy of the entry's decision"),
         [("src/Stangent.Spec/Fsd/FsdImport.cs", "status")] = (2, "what this import did: imported or unchanged"),
+        [("src/Stangent.Spec/Fsd/FsdMigrate.cs", "status")] = (2, "what this migration did: migrated or unchanged"),
         [("src/Stangent.Spec/Fsd/FsdVersions.cs", "status")] = (3, "what this import did: a new or a waiting candidate, a first import waiting or approved"),
         [("src/Stangent.Spec/Fsd/ImportReport.cs", "verdict")] = (1, "an import's own result, ok or with warnings, not a finding's verdict"),
         [("src/Stangent.Spec/Fsd/FsdStatus.cs", "verdict")] = (1, "a copy of the current version's import verdict, for reading"),

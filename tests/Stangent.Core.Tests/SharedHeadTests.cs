@@ -77,7 +77,7 @@ public class FsdHandEditTests
         var file = Path.Combine(app.Root, "shop.docx");
         File.WriteAllBytes(file, DocxWriter.Write(Text));
         FsdImport.Import(app.Repo, file);
-        return Path.Combine(FsdImport.DocDir(app.Root, "shop"), "document.md");
+        return FsdImport.DocDir(app.Root, "shop");
     }
 
     static SpecApp App() => new($"version: 1\nfsd: {{ archive: {{ name: docs, path: '{Directory.CreateTempSubdirectory("stangent-archive-").FullName}' }} }}\n");
@@ -99,9 +99,9 @@ public class FsdHandEditTests
         using var app = App();
         var md = Imported(app);
         var before = FsdOutline.Load(app.Root, "shop").ToJsonString();
-        File.WriteAllText(md, File.ReadAllText(md).Replace(from, to));
+        Chapters.Edit(md, from, to);
         var edited = FsdStatus.Of(app.Root, "shop")["documentEdited"]!.AsObject();
-        Assert.Contains("import it again", (string)edited["warning"]!);
+        Assert.Contains("chapters don't match", (string)edited["warning"]!);
         Assert.NotEmpty(edited["sections"]!.AsArray());
         Assert.NotNull(FsdOutline.Outline(app.Root, "shop")["documentEdited"]);
         Assert.Equal(before, FsdOutline.Load(app.Root, "shop").ToJsonString());

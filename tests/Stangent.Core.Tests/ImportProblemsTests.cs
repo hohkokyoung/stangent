@@ -109,7 +109,7 @@ public sealed class ImportProblemsTests : IDisposable
     {
         var bytes = FsdDocxTests.Docx(FsdDocxTests.H("Rules") + FsdDocxTests.P("Text.") + $"<w:p>{FsdDocxTests.R("gone", "<w:vanish/>")}</w:p>");
         var json = ImportFile("a.docx", bytes, out _);
-        var md = File.ReadAllBytes(Path.Combine(Path.GetDirectoryName(json)!, "document.md"));
+        var md = Chapters.Bytes(Path.GetDirectoryName(json)!);
 
         // As an older build left it: its problems as plain lines.
         var old = JsonNode.Parse(File.ReadAllText(json))!.AsObject();
@@ -127,7 +127,7 @@ public sealed class ImportProblemsTests : IDisposable
         var now = JsonNode.Parse(File.ReadAllText(json))!.AsObject();
         Assert.Equal(3, (int)now["schemaVersion"]!);
         Assert.Equal("element", (string)Assert.Single(now["problems"]!.AsArray())!["kind"]!);
-        Assert.Equal(md, File.ReadAllBytes(Path.Combine(Path.GetDirectoryName(json)!, "document.md")));
+        Assert.Equal(md, Chapters.Bytes(Path.GetDirectoryName(json)!));
     }
 
     [Fact]

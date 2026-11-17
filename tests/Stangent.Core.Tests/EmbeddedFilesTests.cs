@@ -98,7 +98,7 @@ public sealed class EmbeddedFilesTests : IDisposable
 
         // The text and the Markdown are as they'd be with no file in the document at all.
         var plain = DocxConverter.Convert(FsdDocxTests.Docx(FsdDocxTests.H("Rules") + FsdDocxTests.P("Rules text here for the reader.") + FsdDocxTests.H("Other") + FsdDocxTests.P("Other text.")));
-        Assert.Equal(plain.Markdown, File.ReadAllText(Path.Combine(DocDir, "document.md")));
+        Assert.Equal(plain.Markdown, Chapters.Text(DocDir));
         Assert.DoesNotContain("Gold", plain.Markdown);
         Assert.Equal(CanonicalJson.Hash(plain.Sections[0].Text), (string)section["textHash"]!);
 
