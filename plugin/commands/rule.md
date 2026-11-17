@@ -1,7 +1,7 @@
 ---
 description: Record a PM's answers to the truth map's numbered questions, from plain words (D371).
 argument-hint: "<doc id>"
-allowed-tools: Bash(stangent fsd rule:*), Bash(stangent fsd rulings-check:*), Read
+allowed-tools: Bash(stangent fsd rule:*), Bash(stangent fsd rulings-check:*), Bash(stangent fsd check:*), Read
 ---
 
 The PM reads `specs/fsd/$ARGUMENTS/truth-map.md` and answers its numbered questions in plain words. They don't know any
@@ -30,6 +30,13 @@ syntax and never edit `rulings.yaml`; you turn their words into `stangent fsd ru
    plain words and ask the PM what they meant.
 5. When the PM is done, run `stangent fsd rulings-check $ARGUMENTS` once. It rebuilds `truth-map.md`, so its numbers can
    change; tell the PM to read it again before giving more answers. Say how many are still to answer.
-6. Offer to commit `specs/fsd/$ARGUMENTS/rulings.yaml`. The answers count only once committed, and git records the
-   commit's author as who answered, so commit only when the PM says yes, on their own machine and git name. Never
-   commit anything else with it, and never push.
+6. If any chapter file under `specs/fsd/$ARGUMENTS/chapters/` was edited (by the PM, or by you for them), run
+   `stangent fsd check $ARGUMENTS` before offering a commit. It gives new headings their ids and lists every section added,
+   removed, renamed, moved or changed: read that list back to the PM in plain words, since it is what the commit approves.
+   If `ok` is false, nothing was written: say what each `refused` message says in plain words and put it right with the PM
+   (for a section they removed on purpose, run it again with `--removed <id>` only once they say so). The order is always:
+   edit, `fsd check`, read the list, commit.
+7. Offer to commit `specs/fsd/$ARGUMENTS/rulings.yaml`, with the chapter files and `ids.json` when step 6 ran. The
+   answers count only once committed, and git records the commit's author as who answered, so commit only when the PM
+   says yes, on their own machine and git name. Never commit anything outside `specs/fsd/$ARGUMENTS/` with it, and never
+   push.

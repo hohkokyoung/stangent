@@ -38,7 +38,7 @@ public static class FsdDocument
     /// <summary>A document imported before phase fs layer 2 still holds its sections in <c>document.json</c>.</summary>
     public static bool Migrated(JsonObject facts) => facts["sections"] is null;
 
-    static StangentException NotMigrated(string doc) => new("fsd_not_migrated",
+    internal static StangentException NotMigrated(string doc) => new("fsd_not_migrated",
         $"{doc} was imported before the FSD became chapter files: its sections are still in document.json. Run `stangent fsd migrate {doc}` and commit specs/fsd/{doc}/ (D383).", ExitCodes.Usage);
 
     /// <summary>The document as every step reads it: HEAD's facts, and the sections of HEAD's chapters.</summary>
@@ -66,7 +66,7 @@ public static class FsdDocument
     public static string? Blob(string root, string rel) =>
         global::Stangent.Graph.Git.Run(root, $"cat-file blob \"HEAD:./{rel.Replace('\\', '/')}\"");
 
-    static void Git(string root)
+    internal static void Git(string root)
     {
         if (global::Stangent.Graph.Git.Run(root, "rev-parse --git-dir") is null)
             throw new StangentException("not_git", $"The FSD is read from its committed chapter files (D380, D383), and {root} isn't a git checkout.", ExitCodes.Usage);
@@ -100,14 +100,43 @@ public static class FsdDocument
     /// <summary>The chapter files as <c>HEAD</c> holds them, read once per tree hash and checked (D389 call 1).</summary>
     static ChapterRead Committed(string root, string doc)
     {
-        Git(root);
-        var tree = global::Stangent.Graph.Git.Run(root, $"rev-parse --verify --quiet \"HEAD:./{Rel(doc)}\"")?.Trim();
-        if (string.IsNullOrEmpty(tree))
-            throw new StangentException("fsd_not_committed",
+        var (tree, read) = Head(root, doc) ?? throw new StangentException("fsd_not_committed",
                 $"{Rel(doc)} isn't committed, and steps read only the committed FSD (D380). Read the chapter files and commit them: the commit approves them.", ExitCodes.Usage);
-        var read = Reads.GetOrAdd(tree, t => FsdChapters.Read(Files(root, doc, t)));
         Check(root, doc, tree, read);
         return read;
+    }
+
+    /// <summary>The chapter files as <c>HEAD</c> holds them, not checked: what <c>fsd check</c> compares the working tree with
+    /// (phase fs layer 3), and its raw files (name, text). Null when <c>HEAD</c> has no chapters for the document.</summary>
+    public static (ChapterRead Read, List<(string Name, string Text)> Files)? CommittedChapters(string root, string doc)
+    {
+        Git(root);
+        var tree = global::Stangent.Graph.Git.Run(root, $"rev-parse --verify --quiet \"HEAD:./{Rel(doc)}\"")?.Trim();
+        if (string.IsNullOrEmpty(tree)) return null;
+        var files = Files(root, doc, tree);
+        return (Reads.GetOrAdd(tree, _ => FsdChapters.Read(files)), files);
+    }
+
+    static (string Tree, ChapterRead Read)? Head(string root, string doc)
+    {
+        Git(root);
+        var tree = global::Stangent.Graph.Git.Run(root, $"rev-parse --verify --quiet \"HEAD:./{Rel(doc)}\"")?.Trim();
+        if (string.IsNullOrEmpty(tree)) return null;
+        return (tree, Reads.GetOrAdd(tree, t => FsdChapters.Read(Files(root, doc, t))));
+    }
+
+    /// <summary>A section ledger (<c>ids.json</c>) as text, read as the ledger keeps it: ids 1..last in the scope's
+    /// format (<see cref="Given"/>), and those marked removed. Empty for no text, or no sections scope.</summary>
+    public sealed record SectionLedger(int Last, string Format, IReadOnlySet<string> Given, IReadOnlySet<string> Removed);
+
+    public static SectionLedger LedgerOf(string? text)
+    {
+        var ledger = text is null ? null : JsonNode.Parse(text)?["scopes"]?[Scope] as JsonObject;
+        var last = (int?)ledger?["last"] ?? 0;
+        var format = (string?)ledger?["format"] ?? "S-{0:D4}";
+        var given = Enumerable.Range(1, last).Select(n => string.Format(System.Globalization.CultureInfo.InvariantCulture, format, n)).ToHashSet(StringComparer.Ordinal);
+        var removed = (ledger?["removed"]?.AsArray() ?? []).Select(r => (string?)r).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        return new SectionLedger(last, format, given, removed);
     }
 
     /// <summary>The <c>.md</c> files of a chapters tree, in document order, from the cache or from git.</summary>
@@ -140,11 +169,12 @@ public static class FsdDocument
     {
         if (read.Repeated.Count > 0)
             throw new StangentException("invalid_fsd", $"In the committed {Rel(doc)}, {string.Join(", ", read.Repeated)} sits on more than one heading. Each id names one section: put the right id back on each heading and commit.", ExitCodes.Failed, [.. read.Repeated]);
+        // A marker that doesn't read as one hides which section its heading is, and so its rulings and attachments (D393).
+        if (read.Damaged.Count > 0)
+            throw new StangentException("invalid_fsd", $"In the committed {Rel(doc)}, {read.Damaged.Count} line(s) hold a marker that doesn't read as one ({string.Join(", ", read.Damaged.Take(3).Select(d => $"{d.File} line {d.FileLine}"))}): which section it names can't be told. Write it as `<!-- S-0012 -->` at the end of its heading, run `stangent fsd check {doc}` and commit.", ExitCodes.Failed,
+                [.. read.Damaged.Select(d => $"{d.File}:{d.FileLine}")]);
         // The ledger as committed, read as PermanentIds keeps it: ids 1..last in the scope's format, and those removed.
-        var ledger = Blob(root, $"specs/fsd/{doc}/ids.json") is { } text ? JsonNode.Parse(text)?["scopes"]?[Scope] as JsonObject : null;
-        var given = ledger is null ? [] : Enumerable.Range(1, (int?)ledger["last"] ?? 0)
-            .Select(n => string.Format(System.Globalization.CultureInfo.InvariantCulture, (string?)ledger["format"] ?? "S-{0:D4}", n)).ToHashSet(StringComparer.Ordinal);
-        var removed = (ledger?["removed"]?.AsArray() ?? []).Select(r => (string?)r).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        var (given, removed) = LedgerOf(Blob(root, $"specs/fsd/{doc}/ids.json")) is var l ? (l.Given, l.Removed) : default;
         var unknown = read.Sections.Select(s => s.PermanentId).OfType<string>().Where(id => !given.Contains(id)).Distinct().ToList();
         var reused = read.Sections.Select(s => s.PermanentId).OfType<string>().Where(removed.Contains).Distinct().ToList();
         if (reused.Count > 0)
@@ -179,7 +209,7 @@ public static class FsdDocument
     public static void Note(string root, string doc, JsonObject? result)
     {
         if (Uncommitted(root, doc) is not { Count: > 0 } files) return;
-        var warning = $"specs/fsd/{doc} has uncommitted changes ({(files.Count == 1 ? files[0] : $"{files.Count} files")}). Steps read only the committed FSD (D380): what's shown here is HEAD's, and the edit counts once it's committed.";
+        var warning = $"specs/fsd/{doc} has uncommitted changes ({(files.Count == 1 ? files[0] : $"{files.Count} files")}). Steps read only the committed FSD (D380): what's shown here is HEAD's, and the edit counts once it's committed: run `stangent fsd check {doc}`, read its list, then commit.";
         Console.Error.WriteLine("warning: " + warning);
         if (result is null) return;
         result["uncommitted"] = true;

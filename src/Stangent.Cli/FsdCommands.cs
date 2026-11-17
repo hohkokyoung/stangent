@@ -76,6 +76,18 @@ static class FsdCommands
         var migrate = new Command("migrate", "Turn a document imported before phase fs into chapter files: specs/fsd/<doc>/chapters/, each heading with its permanent id, and no document.md (D377, D378, D389). Refused with uncommitted changes under specs/fsd/<doc>/. Code only.") { docArgument };
         migrate.SetAction(pr => Cli.Run(pr, "fsd migrate", ctx => FsdMigrate.Run(ctx.Repo, pr.GetValue(docArgument)!)));
         fsd.Subcommands.Add(migrate);
+        var goneOption = new Option<string[]>("--removed") { Description = "A section gone since HEAD on purpose, by its permanent id (S-0007): said when a heading also has no marker, or when rulings.yaml holds a ruling on it (its entries stay there, listed). Repeat for several." };
+        var sameOption = new Option<string[]>("--same") { Description = "A ruled section whose heading and words both changed and that is still that section, by its permanent id: its rulings stay on it. Repeat for several." };
+        var check = new Command("check", "Before a commit (D380, D382, D384): reads the working tree's chapter files, gives each heading with no marker the next id from the ledger (the only thing it writes), refuses what could put a ruling on the wrong section or lose one, warns about numbers, and lists every section added, removed, renamed, moved or changed against HEAD: what the commit approves. Code only.") { docArgument, goneOption, sameOption };
+        check.SetAction(pr => Cli.Run(pr, "fsd check", ctx =>
+        {
+            var report = FsdCheck.Run(ctx.Repo, pr.GetValue(docArgument)!, pr.GetValue(goneOption), pr.GetValue(sameOption));
+            if (report["ok"]!.GetValue<bool>()) return report;
+            var refused = report["refused"]!.AsArray();
+            throw new CheckFailed("fsd_check_refused", $"specs/fsd/{pr.GetValue(docArgument)} can't be committed as it is: {refused.Count} problem(s), nothing written. See result.refused.", report,
+                details: [.. refused.Select(r => (string)r!["message"]!)]);
+        }));
+        fsd.Subcommands.Add(check);
         var docArg = new Argument<string>("doc") { Description = "The document's id." };
         var sectionArg = new Argument<string>("section") { Description = "The section's id: its number (4.2.3) or heading path." };
         var tables = new Command("tables", "A document's tables and attachments' sheets, with their T- or A- ids and columns, for writing table-map.yaml. Code only.") { docArg };
@@ -98,7 +110,7 @@ static class FsdCommands
         var sameAsOption = new Option<string?>("--same-as") { Description = "It's the current version's section with this permanent id (S-0001)." };
         var newOption = new Option<bool>("--new") { Description = "It's a new section: it gets a new permanent id on promotion." };
         var removedOption = new Option<bool>("--removed") { Description = "The current version's section is gone: its id is marked removed on promotion." };
-        var resolve = new Command("resolve", "Settle one doubtful section (D117). Who decided comes from git.") { docArg, candidateSection, sameAsOption, newOption, removedOption };
+        var resolve = new Command("resolve", "Settle one doubtful section (D117). Who decided comes from git.") { docArg, candidateSection, sameAsOption, newOption, goneOption };
         resolve.SetAction(pr => Cli.Run(pr, "fsd resolve", ctx => FsdVersions.Resolve(ctx.Repo.Root, pr.GetValue(docArg)!, pr.GetValue(candidateSection)!,
             pr.GetValue(sameAsOption), pr.GetValue(newOption), pr.GetValue(removedOption), FsdVersions.GitPerson(ctx.Repo.Root))));
         fsd.Subcommands.Add(resolve);

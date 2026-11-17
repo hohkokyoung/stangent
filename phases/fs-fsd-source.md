@@ -8,7 +8,7 @@ provides: {}
 
 # The FSD in the repo is the source of truth
 
-**Decided 2026-11-17 (D376–D388); planned the same day (D389). Layer 0 built and fresh-checked (D390); layer 1 built and fresh-checked (D391); layer 2 built and fresh-checked (D392).** After import the client's file never comes back (D376).
+**Decided 2026-11-17 (D376–D388); planned the same day (D389). Layer 0 built and fresh-checked (D390); layer 1 built and fresh-checked (D391); layer 2 built and fresh-checked (D392); layer 3 built and fresh-checked (D393).** After import the client's file never comes back (D376).
 The FSD is one Markdown file per chapter, edited in git (D377), and a commit is the approval (D380). A PM's ruling
 becomes the FSD's own words (D379), and component switches go (D381). This phase builds that.
 
@@ -118,7 +118,14 @@ unknown one; `fsd tables` lists a table edited away.
 - **Ripple (D20):** 2b provides v4; 2c, 3 and tm consume `source-document` and stay or go `needs review`.
 - **Fresh check:** "can any step still read uncommitted FSD text, or text from `document.json`?" Sonnet, about 90K.
 
-### Layer 3 · The pre-commit check (D380, D382, D384)
+### Layer 3 · The pre-commit check (D380, D382, D384) — built and fresh-checked (D393)
+
+Built as `FsdCheck` (`stangent fsd check <doc> [--removed <id>] [--same <id>]`); tests in `FsdCheckTests`. The reader
+(`FsdChapters.Read`) lists damaged and stray markers, and `FsdDocument.Load` refuses them too. Added while building (D393):
+a missing marker is never guessed (`--removed` when a section goes on purpose, also the way past its rulings), an `old-id`
+and a ledger that went back are refused, an id on another section's words is refused, and a ruled section whose heading
+and words both changed needs `--same`. A level skip the committed FSD or a first import already has is only a warning.
+
 
 - `stangent fsd check <doc>` reads the working tree. It gives each heading with no marker the next id from the ledger
   (the only thing it writes), and refuses a marker removed from a section that had one at `HEAD`, a marker on two

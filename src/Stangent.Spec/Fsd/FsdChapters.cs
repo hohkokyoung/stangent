@@ -14,9 +14,15 @@ public sealed record ChapterSection(
     string Id, string IdKind, string? Number, string Title, int Level, string? Parent, string Text, string TextHash,
     string? PermanentId, int Line, string File, int FileLine);
 
+/// <summary>A line holding something that looks like a marker and doesn't read as one (phase fs layer 3, D393): on a heading,
+/// a damaged marker (<c>&lt;!--S-0012 nonumber--&gt;</c>, <c>&lt;!-- S-12</c>, one not at the line's end); on any other line, a
+/// marker off its heading. <c>Line</c> counts in the whole document, <c>FileLine</c> in its chapter file.</summary>
+public sealed record ChapterLine(string File, int FileLine, int Line, string Text, bool Heading);
+
 /// <summary>What the chapter files say: the whole document as one Markdown text (no markers, as <c>document.md</c> was), its
-/// sections, the headings typed with no marker, and the ids that sit on more than one heading.</summary>
-public sealed record ChapterRead(string Markdown, IReadOnlyList<ChapterSection> Sections, IReadOnlyList<ChapterSection> Unmarked, IReadOnlyList<string> Repeated);
+/// sections, the headings typed with no marker, the ids that sit on more than one heading, and the lines whose marker doesn't
+/// read as one.</summary>
+public sealed record ChapterRead(string Markdown, IReadOnlyList<ChapterSection> Sections, IReadOnlyList<ChapterSection> Unmarked, IReadOnlyList<string> Repeated, IReadOnlyList<ChapterLine> Damaged);
 
 /// <summary>
 /// The FSD as the PM edits it (phase fs layer 1, D377, D382, D384): <c>specs/fsd/&lt;doc&gt;/chapters/</c>, one Markdown file per
@@ -47,6 +53,23 @@ public static partial class FsdChapters
     /// <summary>The marker at the end of a heading. The space before it is the one the writer adds.</summary>
     [GeneratedRegex(@" ?<!--[ \t]*(S-\d+)(?:[ \t]+(no-number|number=(\d+(?:\.\d+)*)))?[ \t]*-->[ \t]*$")]
     private static partial Regex Marker();
+
+    /// <summary>Text that looks like a marker, or part of one: <c>&lt;!-- S-1</c>, <c>&lt;!-s-0012</c>, <c>S-0012 --&gt;</c>. Left on a line
+    /// once a marker that reads is taken off, it's a damaged one (D393).</summary>
+    [GeneratedRegex(@"<!-+[ \t]*[Ss][- ]?\d|[Ss]-\d+[^>\n]*-+>")]
+    private static partial Regex MarkerLike();
+
+    /// <summary>A marker's opening on a line that isn't a heading: <c>&lt;!-- S-0012</c>. Only the opening, since text may hold
+    /// an arrow (<c>S-1 --&gt; S-2</c>).</summary>
+    [GeneratedRegex(@"<!-+[ \t]*[Ss][- ]?\d")]
+    private static partial Regex MarkerOpen();
+
+    /// <summary>The marker a heading line ends with, as written (<c>&lt;!-- S-0012 no-number --&gt;</c>), or null.</summary>
+    public static string? MarkerOf(string line) => HeadingLine().IsMatch(line) && Marker().Match(line) is { Success: true } m ? m.Value.Trim() : null;
+
+    /// <summary>A heading line with <paramref name="id"/> added as its marker, as the writer adds it; a <c>\r</c> ending stays.</summary>
+    public static string WithMarker(string line, string id) =>
+        line.EndsWith('\r') ? $"{line[..^1]} <!-- {id} -->\r" : $"{line} <!-- {id} -->";
 
     /// <summary>A line made not to read as a heading: one more backslash than it had (<c>\# x</c>, or <c>\\# x</c> for a line that was <c>\# x</c>).</summary>
     [GeneratedRegex(@"^\\(\\*#+(?:[ \t].*)?)$")]
@@ -200,6 +223,7 @@ public static partial class FsdChapters
         var md = new StringBuilder();
         var headings = new List<FsdHeading>();
         var meta = new List<(string? Id, string File, int FileLine)>();
+        var damaged = new List<ChapterLine>();
         for (var i = 0; i < all.Count; i++)
         {
             if (i > 0) md.Append('\n');
@@ -208,6 +232,7 @@ public static partial class FsdChapters
             {
                 var m = Marker().Match(line);
                 var plain = m.Success ? line[..m.Index] : line;
+                if (MarkerLike().IsMatch(plain)) damaged.Add(new ChapterLine(file, fileLine, i + 1, line, true));
                 var start = md.Length;
                 md.Append(plain);
                 var words = HeadingWords(plain);
@@ -218,7 +243,11 @@ public static partial class FsdChapters
                 headings.Add(new FsdHeading(number, title, level, i + 1, start, md.Length, false, words));
                 meta.Add((m.Success ? m.Groups[1].Value : null, file, fileLine));
             }
-            else md.Append(Escaped().Match(line) is { Success: true } e ? e.Groups[1].Value : line);
+            else
+            {
+                if (MarkerOpen().IsMatch(line)) damaged.Add(new ChapterLine(file, fileLine, i + 1, line, false));
+                md.Append(Escaped().Match(line) is { Success: true } e ? e.Groups[1].Value : line);
+            }
         }
         var markdown = md.ToString();
         var built = FsdSections.Build(markdown, headings, []);
@@ -226,7 +255,7 @@ public static partial class FsdChapters
             CanonicalJson.Hash(s.Text), meta[i].Id, s.Line, meta[i].File, meta[i].FileLine)).ToList();
         var repeated = sections.Where(s => s.PermanentId is not null).GroupBy(s => s.PermanentId!, StringComparer.Ordinal)
             .Where(g => g.Count() > 1).Select(g => g.Key).Order(StringComparer.Ordinal).ToList();
-        return new ChapterRead(markdown, sections, [.. sections.Where(s => s.PermanentId is null)], repeated);
+        return new ChapterRead(markdown, sections, [.. sections.Where(s => s.PermanentId is null)], repeated, damaged);
     }
 
     /// <summary>The tree of sections by heading level; each node's lines run to the next section's heading.</summary>

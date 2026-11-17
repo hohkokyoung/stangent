@@ -342,8 +342,8 @@ public static partial class Rulings
     public static bool Ruled(RulingEntry e, RulingSection? section) =>
         e.Ruling is not null || (e.IsMatch && section is { MatchesConfirmed: true } && !e.New);
 
-    /// <summary>Holds something a person wrote, so it is kept when no run finds it again.</summary>
-    static bool PersonWork(RulingEntry e, RulingSection? section) =>
+    /// <summary>An entry holding a person's work: a ruling, a confirmed match, the PM's words or note, a Jira reply.</summary>
+    public static bool PersonWork(RulingEntry e, RulingSection? section) =>
         Ruled(e, section) || e.Statement is not null || e.PmNote is not null || e.Jira is not null;
 
     /// <summary><c>fsd rulings &lt;doc&gt;</c>: drafts <c>rulings.yaml</c> from <c>review.json</c>, or refreshes it.</summary>
