@@ -1,0 +1,312 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:bug-proof:v2",
+  "title": "A bug's proof (contract bug-proof v2, Phase 3)",
+  "description": "Whether a reproduction test fails on the ticket's expected result before any fix (D75, D76). Each attempt is kept with its hint, test, runs and outcome; the latest attempt is the current outcome. Stored in .stangent/tickets/<KEY>/bug-proof.json; the test itself goes into the repo's test project with the fix.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "key",
+    "outcome",
+    "attempts",
+    "confirmedBy",
+    "verification"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "run": {
+      "type": "object",
+      "required": [
+        "result"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "result": {
+          "description": "runner-error: the test runner itself failed before any test ran (D90), a setup problem.",
+          "enum": [
+            "failed-on-assertion",
+            "failed-other",
+            "passed",
+            "timeout",
+            "compile-error",
+            "not-found",
+            "error",
+            "runner-error"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "file": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "line": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "ms": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "key": {
+      "type": "string"
+    },
+    "outcome": {
+      "description": "reproduced: fails on the named assertion (the code differs from what the reporter expected; the developer confirms it is the reported problem and a bug, D96); not-reproduced: the test passes, or the attempt hit its cap; not-reproduced-flaky: a Playwright test that passed on one of its 3 runs; not-provable: no unit or Playwright test can reach it here; failed: no valid test after the one retry.",
+      "enum": [
+        "reproduced",
+        "not-reproduced",
+        "not-reproduced-flaky",
+        "not-provable",
+        "failed"
+      ]
+    },
+    "attempts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "n",
+          "outcome",
+          "commit"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "n": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "hint": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outcome": {
+            "$ref": "#/properties/outcome"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "noProof": {
+            "description": "Why a not-reproduced attempt has no proof (D106): ran-out, its cap, which says nothing about the bug; test-passed; flaky. Absent on records from before it. v2 (D361, D364): contradicted, the truth map's rule says the ticket's expectation is wrong; unclear, no agreed rule settles it. Either way no test was written (outcome not-provable).",
+            "enum": [
+              "ran-out",
+              "test-passed",
+              "flaky",
+              "contradicted",
+              "unclear"
+            ]
+          },
+          "outside": {
+            "description": "Not provable because of a part outside the code (D83): skipped when every part is, or the reproducer's answer accepted without the retry.",
+            "type": "boolean"
+          },
+          "advice": {
+            "description": "What the developer can do about a setup failure (D91), chosen by code; stangent never installs anything itself.",
+            "type": "string"
+          },
+          "setupBlocked": {
+            "description": "Failed because of the setup, not the reproducer (D89–D91): Claude Code refused something stangent's own rules allow, the test runner couldn't run (a missing runtime or tool), or the app didn't build or start. See `advice`; the next run tries again.",
+            "type": "boolean"
+          },
+          "commit": {
+            "description": "The commit the test ran on (with -dirty when the working tree had changes beyond the test).",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "unit",
+              "playwright"
+            ]
+          },
+          "target": {
+            "type": "string"
+          },
+          "targetSpec": {
+            "description": "The test target as it was, so --verify runs the same commands.",
+            "type": "object"
+          },
+          "testFile": {
+            "type": "string"
+          },
+          "testName": {
+            "type": "string"
+          },
+          "assertion": {
+            "type": "object"
+          },
+          "expectedQuote": {
+            "type": "string"
+          },
+          "actualQuote": {
+            "description": "The ticket's actual result, word for word (D95).",
+            "type": "string"
+          },
+          "shows": {
+            "description": "Reproduced attempts only: the words of the failure message that show it, as the reproducer gave them; code checked they are in the message and not in the test's source (D95).",
+            "type": "string"
+          },
+          "runs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/run"
+            }
+          },
+          "baseline": {
+            "description": "Other tests in the target already failing at this commit: --verify allows only these.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "testHash": {
+            "description": "Reproduced attempts only: the test file as it was, so --verify can say if it was edited since (D105).",
+            "type": "string"
+          },
+          "usage": {
+            "type": "object"
+          },
+          "retries": {
+            "type": "integer"
+          },
+          "inputs": {
+            "type": "string"
+          },
+          "verdict": {
+            "description": "v2: the truth map verdict (D361), as code settled it.",
+            "type": "object",
+            "required": [
+              "verdict",
+              "forced"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "verdict": {
+                "enum": [
+                  "backed",
+                  "contradicted",
+                  "unclear"
+                ]
+              },
+              "said": {
+                "description": "The reproducer's verdict when code changed it.",
+                "enum": [
+                  "backed",
+                  "contradicted",
+                  "unclear"
+                ]
+              },
+              "forced": {
+                "description": "Code made it unclear: the cited entry can't back a ticket, or none was cited, or nothing covers the ticket.",
+                "type": "boolean"
+              },
+              "entry": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "The entry it rests on, as the bundle listed it."
+              },
+              "quote": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "why": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "pmConfirmed": {
+                "description": "False when it rests on a match of high confidence the PM hasn't confirmed (D366 (4)).",
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "confirmedBy": {
+      "description": "The developer who confirmed the failure is the reported problem and a bug. Until then a reproduced outcome only shows the code differs from what the reporter expected (D96).",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "verification": {
+      "description": "On the fix branch (stangent ticket prove --verify): the test passes and nothing else started failing (D18).",
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "commit",
+        "passed",
+        "newFailures"
+      ],
+      "properties": {
+        "commit": {
+          "type": "string"
+        },
+        "passed": {
+          "description": "result is passed.",
+          "type": "boolean"
+        },
+        "result": {
+          "description": "What the test did here (D105; absent on records from before it). passed: it passes and nothing new fails; new-failures: it passes, other tests started failing; same-failure: it fails with the words its proof named (shows; a proof without them compares the message); different-failure: it fails, but those words are gone; not-compiled: it couldn't build; not-run: a timeout, no test found, a runner error or the test file not on the branch. A person reads anything but a pass, and a pass can still be for the wrong reason.",
+          "enum": [
+            "passed",
+            "new-failures",
+            "same-failure",
+            "different-failure",
+            "not-compiled",
+            "not-run"
+          ]
+        },
+        "reason": {
+          "description": "The result in a sentence, for the developer.",
+          "type": "string"
+        },
+        "othersChecked": {
+          "description": "A full run of the target judged the other tests. False for Playwright (it has none), a build that failed, a missing test file, or a run that gave no results (a timeout, no report or an unreadable one, none in it): passed then means only the test passes.",
+          "type": "boolean"
+        },
+        "testChanged": {
+          "description": "The test file differs from when it was reproduced; null when the proof didn't record it, or the file isn't here.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "newFailures": {
+          "description": "Tests failing here that weren't in the baseline; the reproduction test only when it passes alone and fails with the rest.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "runs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/run"
+          }
+        }
+      }
+    }
+  }
+}

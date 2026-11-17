@@ -37,7 +37,7 @@ public class PageCorrectionTests
     [Fact]
     public void Off_it_refuses_and_a_page_with_none_is_as_it_was()
     {
-        using var app = new SpecApp();
+        using var app = new SpecApp("version: 1\ncomponents: { page-corrections: false }\n");   // on by default since D373
         Write(app, Output());
         var e = Assert.Throws<StangentException>(() => PageCorrections.Propose(app.Pages(), app.Repo, SpecApp.Post, Rule(app), "x", "why", "me"));
         Assert.Equal("component_off", e.Code);

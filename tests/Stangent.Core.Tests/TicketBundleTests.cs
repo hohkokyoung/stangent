@@ -84,7 +84,7 @@ public class TicketBundleTests
         await TicketPull.RunAsync(app.Repo, tracker, "SHOP-20", TestContext.Current.CancellationToken);
         TicketPoints.Update(app.Repo, TicketContext.Load(app.Repo), "SHOP-20", [], [], "Pat Developer");
         var b = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-20");
-        Assert.Empty(SchemaRegistry.Embedded.Validate("ticket-bundle.v2.json", b.ToJsonString()));
+        Assert.Empty(SchemaRegistry.Embedded.Validate("ticket-bundle.v3.json", b.ToJsonString()));
         Assert.Equal("broken.docx", (string)b["ticket"]!["attachments"]![0]!["fileName"]!);
     }
 
@@ -197,7 +197,7 @@ public class TicketBundleTests
         Page(app, Cart, false, ("shows", "The cart screen lists what the user is about to buy, with a total.", ["ts|web/src/Other.tsx#CartPage"]));
         var b = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-20");
 
-        Assert.Equal(2, (int)b["schemaVersion"]!);
+        Assert.Equal(3, (int)b["schemaVersion"]!);
         var point = Assert.Single(b["points"]!.AsArray())!;
         Assert.Equal(("file", "web/src/Orders.tsx"), ((string)point["kind"]!, (string)point["id"]!));
         var first = b["pointers"]![0]!;

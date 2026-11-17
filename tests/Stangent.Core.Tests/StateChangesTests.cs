@@ -196,7 +196,8 @@ public partial class StateChangesTests
         [("src/Stangent.Tickets/Bundle.cs", "status")] = (1, "a copy of Jira's status"),
         [("src/Stangent.Tickets/Bundle.cs", "decision")] = (1, "a copy of the trace decision into a bundle"),
         [("src/Stangent.Tickets/Points.cs", "status")] = (5, "the file finder's last answer, worked out again from its inputs on every pull; its run's stage is the lifecycle"),
-        [("src/Stangent.Tickets/Proof/BugProof.cs", "outcome")] = (3, "one attempt's result, appended and never changed; the proof's own outcome is on the module"),
+        [("src/Stangent.Tickets/Proof/BugProof.cs", "outcome")] = (4, "one attempt's result, appended and never changed; the proof's own outcome is on the module"),
+        [("src/Stangent.Tickets/Proof/BugProof.cs", "verdict")] = (4, "an attempt's truth map verdict (D361), what one attempt said as code settled it, appended and never changed: not a state that moves"),
 
         // Lifecycle fields written beside the module, because the value isn't the state or it isn't a move.
         [("src/Stangent.Spec/Trace/TraceStore.cs", "decision")] = (2, "a new entry starts undecided, and a rebuilt entry carries its decision: neither is a move"),

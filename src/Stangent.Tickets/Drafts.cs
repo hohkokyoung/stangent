@@ -67,6 +67,10 @@ public static partial class TicketDrafts
         // D106: an attempt that only ran out says nothing about the bug, so it isn't the reporter's to answer.
         if (proof?["attempts"]?.AsArray().LastOrDefault() is JsonObject last && BugProof.NoProof(last) == "ran-out") facts["proofRanOut"] = true;
         facts["pr"] = prRange is null ? null : new JsonObject { ["range"] = prRange, ["url"] = prUrl };
+        // Truth map layer 4 (D364): the proof stopped because no agreed rule backs the ticket; code adds the PM's question.
+        if (kind == "questions" && TruthList.On(repo.Config) && proof?["attempts"]?.AsArray().LastOrDefault() is JsonObject stop
+            && BugProof.NoProof(stop) is "contradicted" or "unclear" && stop["verdict"] is JsonObject verdict)
+            facts["truth"] = verdict.DeepClone();
         return (facts, Input(Step(kind), kind, tone, pulled, facts, proof, ctx));
     }
 
@@ -161,6 +165,13 @@ public static partial class TicketDrafts
             var section = ctx.Index.Sections[((string)s!["doc"]!, (string)s["section"]!)];
             sb.Append($"## {s["doc"]} §{s["section"]} {(string)section["title"]!}\n\n````text\n{(string)section["text"]!}\n````\n\n");
         }
+        if (facts["truth"] is JsonObject truth)
+            sb.Append("# Why no test was written (the truth map)\n\n")
+                .Append((string)truth["verdict"]! == "contradicted"
+                    ? "The rules the PM agreed say the code is right as it is, so the reported behaviour may be how it's meant to work.\n"
+                    : "No rule the PM agreed settles what should happen here, so the work waits for one.\n")
+                .Append("stangent adds the question for the PM at the end of your draft, quoting the rule: don't ask it yourself and don't repeat it. ")
+                .Append("Ask only what else the ticket needs.\n\n");
         if (proof?["attempts"]?.AsArray().LastOrDefault() is JsonObject a)
         {
             // D96: before work starts, a reproduced failure is a difference for a person to judge; a resolution comes after the fix.
@@ -201,7 +212,7 @@ public static partial class TicketDrafts
         var record = new JsonObject
         {
             ["schemaVersion"] = 1, ["key"] = paths.Key, ["kind"] = kind, ["tone"] = tone,
-            ["text"] = Join(parts, Keeps),
+            ["text"] = Join(parts, Keeps) + (state["truth"] is JsonObject truth ? "\n\n" + TruthQuestion(truth, tone) : ""),
             ["claims"] = output!["claims"]!.DeepClone(), ["pr"] = state["pr"]?.DeepClone(),
             ["inputs"] = (string)state["inputs"]!, ["run"] = run, ["posted"] = null,
         };
@@ -214,6 +225,48 @@ public static partial class TicketDrafts
         AiStep.Finish(paths, step, state, "done", "recorded");
         return new RunStep("recorded", "none");
     }
+
+    /// <summary>The PM's question when a proof stopped on the truth map (D364), written by code: what the rule says or why
+    /// none settles it, quoted, then how to answer. Only a reply line starting <c>Ruling:</c> is read back (layer 5).</summary>
+    public static string TruthQuestion(JsonObject verdict, string tone)
+    {
+        var e = verdict["entry"] as JsonObject;
+        var client = tone == "client";
+        // Client tone: no code names; the FSD's and the PM's words are kept, with backticks taken out.
+        string Words(string t) => client ? t.Replace("`", "") : t;
+        var undocumented = (string?)e?["state"] == "undocumented";
+        var subject = e is null ? "" : undocumented ? "this code isn't in the FSD"
+            : $"{((string?)e["section"] is { } sec ? $"the FSD's §{sec} {(string?)e["title"]}" : "the FSD")}{((string?)e["key"]?["quote"] is { } q ? $" says “{Words(Quotes.Normalize(q))}”" : "")}";
+        var code = client || e is null ? "" : $" (the code: {string.Join(", ", e["evidence"]!.AsArray().Select(v => $"`{(string)v!}`"))})";
+        string ask;
+        if ((string)verdict["verdict"]! == "contradicted")
+        {
+            var rule = (string?)e?["statement"] is { } st ? $"“{Words(st)}”" : (string?)e?["ruling"] switch
+            {
+                "code-right" => "that the code is right",
+                "keep" => "to keep this code as it is",
+                "confirmed" => "that the code does what the FSD says",
+                _ => "that the code is right",
+            };
+            ask = $"**For the PM:** {subject}, and the agreed rule is {rule}{code}, which goes against what this ticket expects. Should the rule change?";
+        }
+        else if (e is null)
+            ask = "**For the PM:** nothing in the FSD or the agreed rules says what should happen here. What should it do?";
+        else
+            ask = (string?)e["standing"] switch
+            {
+                "unconfirmed" => $"**For the PM:** {subject}. Does the code do that{code}? Nobody has confirmed it yet.",
+                "not-a-match" => $"**For the PM:** {subject}; it was answered that the code doesn't do that{code}, and no rule says what it should do. What should it do?",
+                "flagged" => $"**For the PM:** {subject}, and its ruling needs another look{code}. {(undocumented ? "Keep this code or remove it?" : "Which is right, the code or the FSD?")}",
+                "not-found" => $"**For the PM:** {subject}, and the last FSD review didn't find it again{code}. {(undocumented ? "Keep this code or remove it?" : "Which is right, the code or the FSD?")}",
+                _ => undocumented
+                    ? $"**For the PM:** {subject}, and nobody has ruled whether to keep it{code}. Keep it or remove it?"
+                    : $"**For the PM:** {subject}, and nobody has ruled whether the code or the FSD is right{code}. Which is right?",
+            };
+        return ask + "\n\nReply with a line starting `Ruling:`, for example `Ruling: the FSD is right`, `Ruling: the code is right`, or the rule in your own words.";
+    }
+
+    static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 
     [GeneratedRegex(@"[ \t]?\[C\d+\]")]
     private static partial Regex Markers();

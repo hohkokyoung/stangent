@@ -1285,7 +1285,7 @@ public class BugProofTests
     }
 
     /// <summary>Stands in for dotnet and npx: canned reports written where the command asks for them.</summary>
-    sealed class FakeRunner : ICommandRunner
+    internal sealed class FakeRunner : ICommandRunner
     {
         public List<string> Commands { get; } = [];
         public Queue<string> Tests { get; } = new();

@@ -16,11 +16,12 @@ namespace Stangent.Tickets;
 /// source code. Over <c>tickets.bundleChars</c>, first the impact answer's item lists go (its counts stay), then the
 /// lowest-ranked pages become pointers; the starting points are never cut. Missing and stale pages are flagged, never
 /// generated. Code only: the same inputs give the same bytes, and the result is validated against
-/// <c>ticket-bundle.v2.json</c>.
+/// <c>ticket-bundle.v3.json</c>. v3 (truth map layer 4, D361): <c>truth</c>, the truth map's entries that apply to the
+/// ticket (<see cref="TruthList"/>), with the <c>truth-verdict</c> component on.
 /// </summary>
 public static class TicketBundle
 {
-    public const string Schema = "ticket-bundle.v2.json";
+    public const string Schema = "ticket-bundle.v3.json";
     public const int ImpactDepth = 2;
 
     public static JsonObject Build(StangentRepo repo, TicketContext ctx, string key)
@@ -61,6 +62,15 @@ public static class TicketBundle
             : ctx.Analyzer.AnalyzeStarts(starts, "starting-points", $"{starts.Count} point(s) from the ticket's starting points", repo.Root, ImpactDepth,
                 (reached, expand) => FsdImpact.Sections(repo.Root, reached, expand));
 
+        // The truth map's entries for the ticket's own files (D361): the file points, the symbol points' files, and the
+        // files the page points' statements cite. Not the impact answer's: an entry two lines away doesn't judge the ticket.
+        var truthFiles = files
+            .Concat(list.Where(p => p.Kind == StartingPoint.Symbol).Select(p => ctx.Analyzer.Find(p.Id)?.File).OfType<string>())
+            .Concat(written.Where(d => pagePoints.Contains(d.Id))
+                .SelectMany(d => PageChecks.Statements(ctx.Index.Pages[d.Id]).SelectMany(s => s.Statement["cites"]!.AsArray().Select(c => ctx.Analyzer.Find((string)c!)?.File))).OfType<string>())
+            .Distinct(StringComparer.Ordinal).ToList();
+        var truth = TruthList.Build(repo, truthFiles);
+
         // Whether the finder's answer is stale is judged now, against the code the bundle is built on (D101).
         var codeNow = points["ai"]?["commit"] is null ? "" : TicketPoints.CodeState(repo.Root);
 
@@ -91,7 +101,7 @@ public static class TicketBundle
             }
             var bundle = new JsonObject
             {
-                ["schemaVersion"] = 2,
+                ["schemaVersion"] = 3,
                 ["key"] = paths.Key,
                 ["source"] = pulled["source"]!.DeepClone(),
                 ["raw"] = pulled["raw"]!.DeepClone(),
@@ -113,6 +123,7 @@ public static class TicketBundle
                     : null,
                 ["pages"] = pages,
                 ["sections"] = Sections(repo, ctx, included.Select(d => d.Id).ToHashSet(StringComparer.Ordinal)),
+                ["truth"] = truth.DeepClone(),
                 ["impact"] = shownImpact.DeepClone(),
                 // A cut page point keeps its citations (it is a starting point); a cut page that only explains a file
                 // takes its citations with it: the file it explains is a pointer of its own.
@@ -430,6 +441,8 @@ public static class TicketBundle
                 md.Append('\n');
             }
         }
+
+        TruthList.Markdown(md, b["truth"] as JsonObject);
 
         md.Append("## Impact\n\n");
         md.Append(b["impact"]!["groups"]!.AsArray().Count == 0 ? "No symbols to start from.\n\n" : ImpactAnalyzer.Markdown(b["impact"]!.AsObject()) + "\n");

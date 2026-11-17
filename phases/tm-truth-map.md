@@ -2,7 +2,7 @@
 phase: tm
 name: truth map
 status: in progress
-consumes: { store: 1, cli-conventions: 3, code-graph: 7, flows: 6, source-document: 3, ticket-bundle: 2, bug-proof: 1 }
+consumes: { store: 1, cli-conventions: 3, code-graph: 7, flows: 6, source-document: 3, ticket-bundle: 3, bug-proof: 2 }
 provides: { rulings: 1, truth-map: 1 }
 ---
 
@@ -153,6 +153,10 @@ it); Kavita 22 lines, 1 blind spot; Sonarr and nopCommerce 0.
 - D20: bump `code-graph` to v7, mark its consumers `needs review` in `roadmap.md`, `phases check` clean.
 
 ### Layer 4 · The bundle, the verdict, the question (D361, D364)
+
+**Built and fresh-checked (D372).** Behind `truth-verdict` (off by default). `TruthList.cs`; `ticket-bundle` v3,
+`bug-proof` v2, `bug-reproducer-output` v2 (v1 stays what the reproducer reads with it off); the PM's question is
+appended by code, so `ticket-update` stays v1; `fsd.pm` isn't built (the question names no one).
 
 - **The bundle:** a new `truth` list, read from `truth-map.json`. These are the entries that apply to the ticket: an entry applies when one of its
   evidence files is a ticket file (a starting point or a found file), or its screen is one of the ticket's pages.

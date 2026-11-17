@@ -117,11 +117,11 @@ A page's Markdown links to `specs/reference/index.md` at its top and bottom, and
 
 `stangent spec coverage` lists every screen, shared component and backend entry point the graph calls for, per kind: written, failed, not written yet, or excluded with a reason. `--strict` exits 1 if any is neither written nor excluded. A page not written yet isn't a fault in itself, since pages are made as needed (I.1): `--strict` is for a project that wants them all. It reports what the graph knows: what the graph can't see isn't here, and is counted where it was read (`docs/code-graph.md`).
 
-`stangent spec exclude <page> --why "..." --by <name>` says a page isn't one, for a tooltip `root-screens` took for a screen, say. It goes in `specs/page-exclusions.json` (contract `page-exclusions` v1), and needs `page-exclusions` on. An excluded page isn't in `spec pages`, `spec stale` or a section's candidates, and nothing writes it. Other pages' slices and hashes don't move, because exclusions are taken off last. A page already written and then excluded shows as `removed` in `spec stale`, like any recorded page the graph no longer calls for. `spec include <page>` takes it back. An exclusion for a page the graph no longer calls for is listed as `gone`.
+`stangent spec exclude <page> --why "..." --by <name>` says a page isn't one, for a tooltip `root-screens` took for a screen, say. It goes in `specs/page-exclusions.json` (contract `page-exclusions` v1), and needs `page-exclusions` on (the default since D373). An excluded page isn't in `spec pages`, `spec stale` or a section's candidates, and nothing writes it. Other pages' slices and hashes don't move, because exclusions are taken off last. A page already written and then excluded shows as `removed` in `spec stale`, like any recorded page the graph no longer calls for. `spec include <page>` takes it back. An exclusion for a page the graph no longer calls for is listed as `gone`.
 
 ## A person's correction to a page (T.1, D131)
 
-`page-wrong` asks for the page to be written again, and the writer may well write the same thing. A correction sticks. Off by default (`page-corrections`), because a corrected statement is what link judges then read, so those sections are judged again.
+`page-wrong` asks for the page to be written again, and the writer may well write the same thing. A correction sticks. On by default since D373 (`page-corrections`; it was off because a corrected statement is what link judges then read, and that route is frozen, D342): it acts only on a correction a person approved.
 
 - `stangent spec correct <page> <statement> (--text "..." | --remove) --why "..." --by <name>` records it in `specs/page-corrections.json` (contract `page-corrections` v1), as `proposed`.
 - `stangent spec correct-approve <C-id> --by <name>` is a person's yes. The page's JSON and Markdown say it from then on, marked in the Markdown. Its input hash doesn't move, so no AI run follows, and a `page-wrong` mark on that statement goes back to the person who made it.
@@ -322,7 +322,7 @@ stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and r
 - **Checked free (2026-11-15):** the saved Kavita runs through the built command: 29 of 30, 0 dropped
   (`benchmark/results/2026-11-15-fsd-review-free/`).
 
-## The truth map (D361–D371; `phases/tm-truth-map.md`), being built
+## The truth map (D361–D372; `phases/tm-truth-map.md`), being built
 
 The PM's rulings on the review's findings judge tickets. Built so far:
 
@@ -398,6 +398,10 @@ The PM's rulings on the review's findings judge tickets. Built so far:
   (looked at). The map isn't rebuilt, so a number keeps its meaning until `fsd rulings-check` runs; nothing is committed,
   and the commit's author is who answered. Kavita: numbers 1–42, the answers wrote only their lines (and, once, the
   header's new wording).
+- **The verdict** (layer 4, D372; `truth-verdict`, off by default): a ticket bundle's `truth` lists the entries on the
+  ticket's files; `ticket prove` stops with no test when no agreed rule can back the ticket (unclear) or one says the
+  code is right (contradicted), checked by code, and the questions draft ends with the PM's question. Details in
+  `docs/tickets.md`.
 - **Email templates in the graph** (layer 3, D362 (5), D370; `code-graph` v7, `docs/code-graph.md` "Template files"): a finding on
   a template file links by its `template-file` point (a node link, so still a fallback), and the graph's 🟡
   `sends-template` line from the constant naming it (`EmailConfirmTemplate`) lets a ticket starting in the sending code reach

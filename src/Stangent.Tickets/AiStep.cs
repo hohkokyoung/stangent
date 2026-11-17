@@ -17,6 +17,9 @@ public sealed record StepSpec(string Name, string Agent, string Schema, string I
     /// <summary>The file finder (D101): multi-turn, read-only search of the repo; its answer comes back as structured output.</summary>
     public static readonly StepSpec Points = new("points", FileFinder, "file-finder-output.v1.json", "file-finder.md");
     public static readonly StepSpec Prove = new("prove", BugReproducer, "bug-reproducer-output.v1.json", "bug-reproducer.md");
+    /// <summary>The same step with the truth map verdict (D361; the <c>truth-verdict</c> component): v2 adds <c>verdict</c> and
+    /// the <c>stopped</c> outcome. Off, the reproducer reads exactly what it read before.</summary>
+    public static readonly StepSpec ProveTruth = Prove with { Schema = "bug-reproducer-output.v2.json" };
     public static readonly StepSpec Questions = new("questions", QuestionWriter, "draft-output.v2.json", "question-writer.md");
     public static readonly StepSpec Resolution = new("resolution", SummaryWriter, "draft-output.v2.json", "summary-writer.md");
 
@@ -77,7 +80,7 @@ public static class AiStep
         var work = Work(paths, step);
         return new RunStep(status, step.Name, step.Agent,
             $"Input: {paths.Relative(Path.Combine(work, step.InputFile))}\nWrite your JSON to: {paths.Relative(Path.Combine(work, step.OutputFile))}",
-            paths.Relative(Path.Combine(work, step.OutputFile)));
+            paths.Relative(Path.Combine(work, step.OutputFile)), Schema: step.Schema);
     }
 
     public static JsonObject State(TicketPaths paths, StepSpec step) =>

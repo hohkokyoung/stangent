@@ -86,7 +86,7 @@ description (`### Expected Behavior`, `**Actual:**`); the missing ones are liste
 
 ## The bundle (D71, D101)
 
-`bundle.json` (validated against `schemas/ticket-bundle.v2.json`) and `bundle.md`: the ticket and attachments; the
+`bundle.json` (validated against `schemas/ticket-bundle.v3.json`; v3 adds `truth`, below) and `bundle.md`: the ticket and attachments; the
 starting points with their reasons (a found file with its ticket quote, its line and the finder's reason, labelled as an
 unchecked guess and left out of the reproducer's input, D107); the reference pages that explain
 them, each saying which found files it explains (its statements cite code in the file, or the file is in its slice),
@@ -100,6 +100,15 @@ starting points are never cut; a bundle still over with every page cut says so (
 are flagged (`/stangent:spec-generate`), never generated here. `finder` records the commit the finder searched and
 whether HEAD has moved on since (judged when the bundle is built). Same inputs and the same commit checked out → the
 same bytes.
+
+**The truth map's entries** (`truth`, v3; truth map layer 4, D361, D372; the `truth-verdict` component, off by default):
+from every `specs/fsd/<doc>/truth-map.json`, each entry one of whose evidence lines is in a ticket file (a file point,
+a symbol point's file, a file a page point's statements cite; not the impact answer's), as `T1`, `T2`, … with its
+state, standing, ruling, the PM's words, confidence, who ruled, the review's notes and its lines, whether it **can back
+a ticket** (ruled, a confirmed match, or an unconfirmed match of high confidence; never blank, flagged, not found
+again, not a match, or an unconfirmed medium or low match, D366 (4)), and the full text of each section they sit in.
+`state`: `off`; `none` (the repo has no truth map: nothing about the FSD is judged, as before); `built` (no entries:
+nothing the PM agreed covers the ticket's files). `bundle.md` prints them under "The truth map (what the PM agreed)".
 
 ## The bug proof (D75, D76, D81)
 
@@ -128,6 +137,16 @@ same bytes.
   is in the ticket word for word; it compiles; and it **fails on that assertion** (TRX, Jest/Vitest and Playwright
   reports read by code; an exception in setup, a timeout or another assertion isn't proof; a mock's own check, such
   as Moq's `Verify`, is an assertion, D90). Playwright runs 3 times.
+- **The verdict** (truth map layer 4, D361, D364, D372; `truth-verdict` on and a truth map built): with no entry that
+  can back the ticket, nothing is asked of an AI: the attempt is recorded `not-provable` with `noProof: unclear` and the
+  entry it stopped on (or none: not covered). Otherwise the reproducer reads `bug-reproducer-output` v2 and gives
+  `verdict` (`backed`, `contradicted`, `unclear`) with the entry (`T1` …) and words from it (its FSD sentence, the PM's
+  words, its section's text, the review's note), word for word. Code checks the entry is in the input and the quote in
+  it (one retry), that backed comes with the test and the others with outcome `stopped`, and makes it **unclear**
+  (`forced`, `said` kept) when the cited entry can't back a ticket. Contradicted and unclear write no test and run
+  none: `not-provable`, `noProof: contradicted | unclear`, `verdict` on the attempt (`bug-proof` v2). Backed goes on to
+  the test as before, its verdict kept, `pmConfirmed: false` on an unconfirmed high match. Off, the reproducer reads
+  exactly what it read before (v1).
 - **Outcomes** (`bug-proof.json`): `reproduced` (with the other tests already failing at that commit, the baseline),
   `not-reproduced` (the test passes, or the attempt hit its cap; `noProof` says which, D106: `ran-out`, `test-passed`, `flaky`),
   `not-reproduced-flaky`, `not-provable`, `failed` (no
@@ -146,6 +165,13 @@ same bytes.
   wrong reason (SONB-26).
 
 ## Drafts and posting (D74)
+
+**The PM's question** (truth map layer 4, D364, D372; `truth-verdict` on): after a proof stopped as contradicted or
+unclear, the questions draft's writer is told why and that code adds the question; code appends it to the checked text,
+quoting the rule ("**For the PM:** the FSD's §1 Orders says “…”, and nobody has ruled whether the code or the FSD is
+right (the code: `Core/OrderService.cs:5`). Which is right?"; no code names in the client tone), then "Reply with a
+line starting `Ruling:` …". Which entry it asks about stays in `bug-proof.json`'s verdict, for layer 5 to read the
+reply back.
 
 `stangent ticket draft <KEY> --kind questions|resolution [--tone internal|client] [--pr base..head --pr-url …]`: code
 gathers the facts (missing fields, clashes' candidates, the proof; or the PR's files, the pages and FSD sections it

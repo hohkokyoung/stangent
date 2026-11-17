@@ -48,8 +48,8 @@ components: { page-verifier: false, git-history: false, detector-config-keys: fa
 | `detector-<name>` (8) | `detectors` | on | It doesn't run; the graph lists those that did. `http-services` and `frontend-http` need `aspnetcore-routes`. |
 | `detector-playwright-specs` | `detectors` | on | The Playwright lines. `graph screen-tests` says `playwrightSpecs: off`, not none. |
 | `schema-once` | `components.schema-once` | off | Batch runs send the schema twice, in the text and through Claude Code's option. On, only through the option (J.4, D130). No hash moves either way. |
-| `page-corrections` | `components.page-corrections` | off | `spec correct` refuses, and nothing already approved is put back when a page is written. On, approved corrections stick (T.1). |
-| `page-exclusions` | `components.page-exclusions` | off | `spec exclude` refuses and exclusions on file are ignored. `spec coverage` still works. On, an excluded page isn't listed, written or a candidate (T.3). |
+| `page-corrections` | `components.page-corrections` | on (D373) | Off: `spec correct` refuses, and nothing already approved is put back when a page is written. On, approved corrections stick (T.1). |
+| `page-exclusions` | `components.page-exclusions` | on (D373) | Off: `spec exclude` refuses and exclusions on file are ignored. `spec coverage` still works. On, an excluded page isn't listed, written or a candidate (T.3). |
 | `follow-moves` | `components.follow-moves` | off | Any change to a page's inputs asks for a run, lines moving included. On, code that only moved takes the page's citations and saved hash with it, with no AI (I.4). |
 | `statement-update` | `components.statement-update` | off | A stale page goes back whole to the writer and verifier. On, only statements citing code that changed do, and code puts the others back word for word (I.2). |
 | `page-verifier` | `components.` | on | Recorded as written, with `verification.off: true` on the page and a warning. |
@@ -65,6 +65,7 @@ components: { page-verifier: false, git-history: false, detector-config-keys: fa
 | `findings` | `fsd.findings` | off | Only links are recorded (D68). |
 | `file-finder` | `tickets.aiPoints` | on | Code's signals are the starting points (`ai.status: off`). |
 | `bug-proof` | `components.` | on | Status `off`, "neither proven nor disproven", and a questions draft on a bug warns. |
+| `truth-verdict` | `components.` | off | The bundle's `truth` is `off`; the reproducer reads `bug-reproducer-output` v1 and gives no verdict; no PM question in a draft (truth map layer 4, D372). |
 | `drafts` | `components.` | on | Status `off`. |
 
 **A run says which were on:** in the envelope beside `result`, and on its telemetry event, for the components that command uses. **Never in a hash:** a switch's state goes into no input hash. Turning one on or off asks for no new paid call by itself; only what really reaches an AI can move a hash, as `requirements-links` does by changing what's judged. Turning `page-verifier` back on leaves pages it didn't check as they are, marked, until their inputs change.

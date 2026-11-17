@@ -1,0 +1,110 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:bug-reproducer-output:v2",
+  "title": "What stangent-bug-reproducer returns (Phase 3, D75, D76; v2: the truth map verdict, D361, D364)",
+  "description": "A reproduction test it wrote, or why the bug can't be reproduced here. Code then builds and runs the test: it must fail on the named assertion, the quoted expected and actual results must be in the ticket word for word, and `shows` must be in the failure message (D95). A developer confirms the failure is the reported problem and a bug.",
+  "type": "object",
+  "required": [
+    "outcome"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "outcome": {
+      "description": "stopped (v2): no test, because the truth map contradicts the ticket or leaves it unclear (verdict).",
+      "enum": [
+        "test-written",
+        "not-provable",
+        "stopped"
+      ]
+    },
+    "target": {
+      "description": "The id of the test target the test was written in, as the input lists it.",
+      "type": "string"
+    },
+    "testFile": {
+      "description": "The test file, relative to the repo root.",
+      "type": "string"
+    },
+    "testName": {
+      "description": "The test's full name: Namespace.Class.Method for .NET; the full title for Jest, Vitest or Playwright.",
+      "type": "string"
+    },
+    "assertion": {
+      "type": "object",
+      "required": [
+        "line",
+        "text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "line": {
+          "description": "The line in testFile where the assertion that checks the expected result starts.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "text": {
+          "description": "That line's code, copied exactly.",
+          "type": "string",
+          "minLength": 3
+        }
+      }
+    },
+    "expectedQuote": {
+      "description": "The ticket's sentence giving the expected result, word for word.",
+      "type": "string",
+      "minLength": 3
+    },
+    "actualQuote": {
+      "description": "The ticket's sentence giving the actual result (what went wrong), word for word (D95).",
+      "type": "string",
+      "minLength": 3
+    },
+    "shows": {
+      "description": "The words of your test's failure message that show that actual result, copied from the message (D95).",
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 300
+    },
+    "reason": {
+      "description": "For not-provable: why no unit or Playwright test can reach this behaviour here.",
+      "type": "string",
+      "maxLength": 1000
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "verdict": {
+      "description": "Only when the input has a truth map section: whether the PM's agreed rules back the ticket (D361). Code checks the entry and quote, and makes it unclear when the entry can't back a ticket.",
+      "type": "object",
+      "required": [
+        "verdict",
+        "why"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "verdict": {
+          "enum": [
+            "backed",
+            "contradicted",
+            "unclear"
+          ]
+        },
+        "entry": {
+          "description": "The truth entry it rests on (T1, T2, … from the input); required for backed and contradicted.",
+          "type": "string"
+        },
+        "quote": {
+          "description": "Words from that entry (its FSD sentence, the PM's words, its section's text or the review's note), word for word.",
+          "type": "string",
+          "minLength": 3
+        },
+        "why": {
+          "description": "In one or two sentences: how the entry backs, contradicts or leaves open what the ticket expects.",
+          "type": "string",
+          "maxLength": 600
+        }
+      }
+    }
+  }
+}

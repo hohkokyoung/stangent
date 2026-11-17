@@ -243,7 +243,7 @@ public sealed class WholeFlow : IDisposable
         Saw["ticket.pull"] = Ok("ticket", "pull", "SHOP-1");
         Saw["ticket.points"] = Ok("ticket", "points", "SHOP-1", "--add", Post);
         Saw["ticket.bundle"] = Ok("ticket", "bundle", "SHOP-1");
-        Validate("ticket-bundle.v2.json", Seen("ticket.bundle"), "ticket bundle");
+        Validate("ticket-bundle.v3.json", Seen("ticket.bundle"), "ticket bundle");
         Directory.Delete(Path.Combine(Root, "replay"), true);
     }
 
