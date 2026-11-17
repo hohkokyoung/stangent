@@ -41,12 +41,6 @@ public static class FixLoop
         File.WriteAllText(paths.State, CanonicalJson.Serialize(state));
     }
 
-    static void EnsureOn(StangentRepo repo)
-    {
-        if (!StangentComponents.IsOn(repo.Config, "fix"))
-            throw new StangentException("fix_off", "The fix loop is off (components.fix: false), so nothing was tried.", ExitCodes.Usage);
-    }
-
     // ---- start ----
 
     /// <summary>
@@ -57,7 +51,6 @@ public static class FixLoop
     /// </summary>
     public static JsonObject Start(StangentRepo repo, string key, string? baseRef, bool replace)
     {
-        EnsureOn(repo);
         var paths = new FixPaths(repo.Root, key);
         var tpaths = new TicketPaths(repo.Root, key);
         var proof = BugProof.Load(tpaths);
@@ -241,7 +234,6 @@ public static class FixLoop
     /// <summary>The fixer's input (D345's two sides: <c>ticket</c> or <c>bundle</c>) and the limits the driver runs it under.</summary>
     public static JsonObject Prepare(StangentRepo repo, string key, string context)
     {
-        EnsureOn(repo);
         if (!Contexts.Contains(context))
             throw new StangentException("usage", $"--context is files, ticket or bundle, not '{context}'.", ExitCodes.Usage);
         var paths = new FixPaths(repo.Root, key);
@@ -449,7 +441,6 @@ public static class FixLoop
     /// </summary>
     public static async Task<JsonObject> CheckAsync(StangentRepo repo, string key, JsonNode? claudeResult, ICommandRunner runner, GraphRebuild rebuild, CancellationToken ct = default)
     {
-        EnsureOn(repo);
         var paths = new FixPaths(repo.Root, key);
         var state = LoadOrFail(paths);
         if ((string?)state["stop"]?["reason"] != "in-progress") return Step(repo, paths, state, (string)state["stop"]!["reason"]!);

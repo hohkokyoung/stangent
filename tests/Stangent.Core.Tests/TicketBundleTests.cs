@@ -261,16 +261,15 @@ public class TicketBundleTests
     }
 
     [Fact]
-    public void Findings_appear_only_when_fsd_findings_is_on_and_are_marked_unconfirmed()
+    public void The_old_routes_findings_are_never_shown_even_with_an_old_setting()
     {
-        using var app = App("fsd:\n  findings: true\n");
+        using var app = App("fsd:\n  findings: true\n");   // ignored since D388, with a warning
         OrdersPage(app);
         Fsd(app);
         Ticket(app, "SHOP-6", "On /orders the total is wrong.");
         var b = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-6");
-        var conflict = b["sections"]![0]!["links"]!.AsArray().Single(l => (string?)l!["state"] == "conflict")!;
-        Assert.True((bool)conflict["unconfirmed"]!);
-        Assert.True((bool)b["findings"]!);
+        Assert.DoesNotContain(b["sections"]!.AsArray().SelectMany(s => s!["links"]!.AsArray()), l => (string?)l!["state"] == "conflict");
+        Assert.False((bool)b["findings"]!);
     }
 
     // ---- a security flag (D148) ----

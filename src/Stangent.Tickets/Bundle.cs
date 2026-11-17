@@ -135,7 +135,8 @@ public static class TicketBundle
                 },
                 ["missingPages"] = new JsonArray([.. missing.Select(m => (JsonNode)m)]),
                 ["stalePages"] = new JsonArray([.. included.Concat(written.Where(d => cut.Contains(d.Id) && pagePoints.Contains(d.Id))).Where(IsStale).Select(d => (JsonNode)d.Id)]),
-                ["findings"] = repo.Config.Fsd.Findings,
+                // Always false since D388 removed the old route's findings; the field leaves at ticket-bundle's next bump.
+                ["findings"] = false,
             };
             bundle["cap"]!["chars"] = Size(bundle);
             return bundle;
@@ -225,13 +226,12 @@ public static class TicketBundle
     }
 
     /// <summary>FSD sections linked to the included pages (D53): the section's text and each link's state, whether a
-    /// person decided it. Findings (gap, conflict, undocumented) only when <c>fsd.findings</c> is on, marked unconfirmed.</summary>
+    /// person decided it. The old route's findings (gap, conflict, undocumented) are not shown (D388): the truth map judges now.</summary>
     static JsonArray Sections(StangentRepo repo, TicketContext ctx, IReadOnlySet<string> pages)
     {
-        var findings = repo.Config.Fsd.Findings;
         var entries = ctx.Trace.Where(e => e["fsd"] is JsonObject && (string?)e["page"]?["id"] is { } p && pages.Contains(p))
             // An unanswered security flag stays in sight whatever else happened to its finding (D148).
-            .Where(e => findings || (string?)e["state"] == "agree" || TraceFindings.SecurityOpen(e)).Where(e => !TraceFindings.Closed(e) || TraceFindings.SecurityOpen(e));
+            .Where(e => (string?)e["state"] == "agree" || TraceFindings.SecurityOpen(e)).Where(e => !TraceFindings.Closed(e) || TraceFindings.SecurityOpen(e));
         var result = new JsonArray();
         foreach (var g in entries.GroupBy(e => ((string)e["fsd"]!["doc"]!, (string)e["fsd"]!["section"]!))
                      .OrderBy(g => g.Key.Item1, StringComparer.Ordinal).ThenBy(g => TraceFile.SectionKey(g.Key.Item2), StringComparer.Ordinal))

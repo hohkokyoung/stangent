@@ -2,12 +2,11 @@ namespace Stangent.Spec.Fsd;
 
 /// <summary>
 /// I.8: a file attached to a whole PDF, or one nothing in a Word body points to, has no section, so no link or check can reach it. With this on, those files get a
-/// section at the document's end, made by code and saying what it is. Off by default: a document that has such files gains a section, which is new text and a new hash.
+/// section at the document's end, made by code and saying what it is. Always on (D381): a document that has such files gains a section, which is new text and a new hash.
 /// No section is guessed from a file's name or content. A document read flat has one section already, and that's the home.
 /// </summary>
 public static class AttachmentHome
 {
-    public const string Component = "attachment-home";
     public const string Title = "Files attached to this document";
 
     public static ConvertedDocument Apply(ConvertedDocument doc, bool on)

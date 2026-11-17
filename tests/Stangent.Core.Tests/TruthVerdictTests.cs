@@ -265,26 +265,4 @@ public sealed class TruthVerdictTests : IDisposable
         Assert.DoesNotContain("`Core", f);
     }
 
-    [Fact]
-    public void Off_the_bundle_says_so_and_the_reproducer_is_asked_for_no_verdict()
-    {
-        using var off = new TruthVerdictTests(false);
-        off.Map(Entry(1, "gap", "ruled", "fsd-right", Rule, "Core/OrderService.cs:5"));
-        Assert.Equal("off", (string)TicketBundle.LoadOrFail(off.Root, Key)["truth"]!["state"]!);
-        off.Prepare();
-        var offInput = File.ReadAllText(Path.Combine(off.Root, ".stangent", "tickets", Key, "prove", "input.md"));
-        Assert.DoesNotContain("truth map", offInput, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("urn:stangent:schema:bug-reproducer-output:v1", offInput);   // off, the reproducer reads what it read before
-        var none = new TruthVerdictTests(true);
-        try
-        {
-            // On, with no truth map in the repo: nothing about the FSD is judged, as before.
-            var ctx = TicketContext.Load(none.app.Repo);
-            TicketPoints.Update(none.app.Repo, ctx, Key, [SpecApp.Place], [], "Pat Developer");
-            TicketBundle.Build(none.app.Repo, ctx, Key);
-            Assert.Equal("none", (string)TicketBundle.LoadOrFail(none.Root, Key)["truth"]!["state"]!);
-            Assert.Equal("prepared", none.Prepare().Status);
-        }
-        finally { none.Dispose(); }
-    }
 }

@@ -6,7 +6,7 @@ namespace Stangent.Spec.Pages;
 /// <summary>T.3 (D131): every page the graph calls for is written, or a person excluded it with a reason. Code only. No file means nothing is excluded.</summary>
 public static class PageExclusions
 {
-    public const string Component = "page-exclusions", Contract = "page-exclusions.v1.json";
+    public const string Contract = "page-exclusions.v1.json";
 
     public static string FileIn(string root) => Path.Combine(root, "specs", "page-exclusions.json");
 
@@ -27,8 +27,6 @@ public static class PageExclusions
 
     public static JsonObject Exclude(PageSet set, StangentRepo repo, string pageKey, string why, string by)
     {
-        if (!StangentComponents.IsOn(repo.Config, Component))
-            throw new StangentException("component_off", $"{Component} is off. Turn on `components.{Component}`: excluding a page can change what a link judge reads.", ExitCodes.Usage);
         var page = set.Find(pageKey) ?? throw new StangentException("not_found", $"No page '{pageKey}'. `stangent spec pages` lists them.", ExitCodes.NotFound);
         using var _ = PageRun.Lock(new SpecPaths(repo.Root));
         var file = Load(repo.Root);

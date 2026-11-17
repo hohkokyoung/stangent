@@ -31,50 +31,31 @@ Three rules live in the validator, not the schema:
 - `checkedBy` may be empty only for a `guess` (D18).
 - `ran` needs a checker of kind `code` or `person`. An agent saying a test passed isn't a test passing.
 
-## Switches (D120, D121)
+## No switches (D381, D388)
 
-Anything that can be taken out with the flow still running has a switch, so the test phase can run the flow with each one off.
+Every feature is on once it's built and fresh-checked. There is no per-component switch, and the `components` command
+is gone. A feature a measurement or check shows to be useless is raised with the owner, and removed or kept only on
+their yes. A paid step is stopped by its cost choice (rule 9, `--max-cost`), not a switch.
 
-```yaml
-components: { page-verifier: false, git-history: false, detector-config-keys: false }
-```
+**One setting stays: `ai.enabled`** (D24). It's a client's rule, not a feature switch: `false` stops every AI step with
+`ai_disabled`, exit 4, for a client whose contract forbids external AI.
 
-`components.<name>` works for every one and wins. Older keys keep working where they are, and an old `stangent.yaml` needs nothing changed. Unknown names stop with `unknown_component`. `stangent components` lists them with their state.
+**An old `stangent.yaml` still loads.** These keys are read, ignored and named in a warning on stderr ("no longer do
+anything: every feature is on (D381)"): `components`, `detectors`, `history.enabled`, `fsd.findings`,
+`fsd.attachmentHome`, `fsd.compareTables`, `tickets.aiPoints`. `stangent init` writes none of them. So every detector
+runs, git history is read, the file finder runs, and the truth map, page corrections and exclusions, follow-moves,
+statement updates, schema-once, attachment homes, table facts, root screens, render routes and developer pages are on.
 
-| Component | Setting | Default | When it's off |
-|---|---|---|---|
-| `ai` | `ai.enabled` | on | Every AI step stops with `ai_disabled`, exit 4. |
-| `git-history` | `history.enabled` | on | `historyStatus: off` on the graph. |
-| `detector-<name>` (8) | `detectors` | on | It doesn't run; the graph lists those that did. `http-services` and `frontend-http` need `aspnetcore-routes`. |
-| `detector-playwright-specs` | `detectors` | on | The Playwright lines. `graph screen-tests` says `playwrightSpecs: off`, not none. |
-| `schema-once` | `components.schema-once` | off | Batch runs send the schema twice, in the text and through Claude Code's option. On, only through the option (J.4, D130). No hash moves either way. |
-| `page-corrections` | `components.page-corrections` | on (D373) | Off: `spec correct` refuses, and nothing already approved is put back when a page is written. On, approved corrections stick (T.1). |
-| `page-exclusions` | `components.page-exclusions` | on (D373) | Off: `spec exclude` refuses and exclusions on file are ignored. `spec coverage` still works. On, an excluded page isn't listed, written or a candidate (T.3). |
-| `follow-moves` | `components.follow-moves` | off | Any change to a page's inputs asks for a run, lines moving included. On, code that only moved takes the page's citations and saved hash with it, with no AI (I.4). |
-| `statement-update` | `components.statement-update` | off | A stale page goes back whole to the writer and verifier. On, only statements citing code that changed do, and code puts the others back word for word (I.2). |
-| `page-verifier` | `components.` | on | Recorded as written, with `verification.off: true` on the page and a warning. |
-| `line-citations` | `components.` | on | No `<path>.lines.json`, an old one removed, so no `code` evidence; `spec cite` says `lineCitations: off`. |
-| `first-import-approval` | `components.` | off | A first import goes straight in. When it's on, it waits until `fsd approve` (D122). |
-| `attachment-home` | `fsd.attachmentHome` | off | A file with no place in a document's text, such as one attached to a PDF, has no section, and no link or check reaches it. On, those files get a section at the end, which changes that document's text and sections (I.8). |
-| `ticket-excel-text` | `components.` | off | A ticket's workbook, zip or a file inside its attachment is only saved under `converted/`; `ticket.json`, and so every ticket hash, is what it was (D123). |
-| `root-screens` | `components.root-screens` | off | Off, a screen needs a route. On, `graph build` also adds a page for each screen a React app's root shows with no route (`docs/code-graph.md`), so `spec pages` lists more |
-| `route-render` | `components.route-render` | off | Off, a route written `<Route path render=…>` or `children` gets no page. On, `graph build` adds one, read from the JSX it shows (`docs/code-graph.md`), so `spec pages` lists more |
-| `section-approval` | `components.section-approval` | off | A new version is promoted whole once doubtful sections are settled, `fsd reject` and `fsd approve <doc> <section>` refuse (`section_approval_off`), `--partial` refuses, and no section files are written. On, each changed section needs a person's answer and promote applies only what was approved (D150) |
-| `pages` | `components.pages` | off | `stangent areas check` writes each area's `page.md` without a developer page (and drops one left there); `pages verify` refuses. On, each page holds the developer page by code, no AI (`docs/pages.md`, D278–D285), read by nobody yet. |
-| `table-facts` | `fsd.compareTables` | off | `graph build` reads no enums and removes any on file; `fsd compare-tables` writes nothing and says `compared: false` (D124). |
-| `findings` | `fsd.findings` | off | Only links are recorded (D68). |
-| `file-finder` | `tickets.aiPoints` | on | Code's signals are the starting points (`ai.status: off`). |
-| `bug-proof` | `components.` | on | Status `off`, "neither proven nor disproven", and a questions draft on a bug warns. |
-| `truth-verdict` | `components.` | off | The bundle's `truth` is `off`; the reproducer reads `bug-reproducer-output` v1 and gives no verdict; no PM question in a draft (truth map layer 4, D372). |
-| `drafts` | `components.` | on | Status `off`. |
+**Removed (D388):** section approval and first-import approval (replaced by the comparison and the commit, D385; the
+code goes in phase fs layer 5, and neither runs now), and the old link route's findings in ticket bundles and drafts
+(the truth map replaced them; `specs/trace.yaml` stays frozen, D342, and the bundle's `findings` is always `false` until
+`ticket-bundle`'s next bump).
 
-**A run says which were on:** in the envelope beside `result`, and on its telemetry event, for the components that command uses. **Never in a hash:** a switch's state goes into no input hash. Turning one on or off asks for no new paid call by itself; only what really reaches an AI can move a hash, as `requirements-links` does by changing what's judged. Turning `page-verifier` back on leaves pages it didn't check as they are, marked, until their inputs change.
-
-**No clean switch,** and why: the document import and the page writer (everything after them reads what they make, and a step without them would report a false gap); the code checks (they make an AI's answer usable, D18); the state module.
+**The envelope and telemetry name no components** (`cli-conventions` v4, `telemetry-event` v3).
 
 ## Built, not connected yet (S.4)
 
-Built and tested, and nothing uses them yet. They're labelled so no one counts on them; none is connected in this batch. `stangent components` shows each with `connected: false` and what it's waiting for.
+Built and tested, and nothing uses them yet. They're labelled so no one counts on them; none is connected in this batch.
 
 | What | Built in | Waiting for |
 |---|---|---|

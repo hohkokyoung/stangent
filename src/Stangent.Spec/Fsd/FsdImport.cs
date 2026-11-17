@@ -42,7 +42,7 @@ public static class FsdImport
         var jsonPath = Path.Combine(dir, "document.json");
         var current = File.Exists(jsonPath) ? JsonNode.Parse(File.ReadAllText(jsonPath)) as JsonObject : null;
         if (partial && !FsdSectionApproval.On(repo.Config))
-            throw new StangentException("section_approval_off", "--partial needs components.section-approval on in stangent.yaml: only section approval can keep what a changes-only file doesn't hold (D150).", ExitCodes.Usage);
+            throw new StangentException("section_approval_off", "--partial went with section approval (D388): only section approval could keep what a changes-only file doesn't hold. Import the whole file.", ExitCodes.Usage);
         if (partial && current is null)
             throw new StangentException("usage", $"--partial says the file holds only changes, and {id} has no current version to change. Import the whole document first.", ExitCodes.Usage);
         // The same file is imported once, unless --flat asks for a different shape than what's recorded.
@@ -54,7 +54,7 @@ public static class FsdImport
         }
 
         var import = ImportPipeline.Run(format, bytes, options);
-        var converted = AttachmentHome.Apply(import.Document, StangentComponents.IsOn(repo.Config, AttachmentHome.Component));
+        var converted = AttachmentHome.Apply(import.Document, true);
         var labels = LabelRecord(repo.Root, import.Labels, null);
         var archivedPath = ArchiveOriginal(repo, archive, id, file, bytes, hash);
         var doc = Document(id, file, converted, archive.Name, archivedPath, hash, options.AttachmentChars);
@@ -67,13 +67,8 @@ public static class FsdImport
             offered["steps"] = import.StepsJson();
             return offered;
         }
-        if (StangentComponents.IsOn(repo.Config, FsdVersions.FirstImportApproval))
-        {
-            var waiting = FsdVersions.OfferFirst(repo.Root, id, doc, converted, hash, flat, archived);
-            waiting["steps"] = import.StepsJson();
-            return waiting;
-        }
-        // The switch went off with a first import still waiting: this one goes straight in, and that one is replaced.
+        // First-import approval is gone (D388): committing the chapters approves a first import (D385); the rest goes in phase fs layer 5.
+        // A first import still waiting from before D388: this one goes straight in, and that one is replaced.
         FsdVersions.ReplaceFirst(repo.Root, id, hash);
 
         FsdVersions.IssueIds(repo.Root, id, doc, doc["sections"]!.AsArray().OfType<JsonObject>());
@@ -153,7 +148,7 @@ public static class FsdImport
         var options = ImportOptions.From(repo.Config, flat, accepted, allowed);
         format.CheckOptions(options);
         var import = ImportPipeline.Run(format, bytes, options);
-        var converted = AttachmentHome.Apply(import.Document, StangentComponents.IsOn(repo.Config, AttachmentHome.Component));
+        var converted = AttachmentHome.Apply(import.Document, true);
         var doc = Document(id, fileName, converted, archive.Name, (string)original["path"]!, hash, options.AttachmentChars);
         ArchiveEmbedded(repo, archive, id, converted, doc);
         doc["title"] = current["title"]?.DeepClone();

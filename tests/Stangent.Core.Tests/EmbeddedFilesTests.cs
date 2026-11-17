@@ -541,19 +541,6 @@ public sealed class EmbeddedFilesTests : IDisposable
     }
 
     [Fact]
-    public void A_first_import_waiting_for_approval_moves_its_files_when_approved()
-    {
-        using var approving = new TempRepo($"version: 1\ncomponents: {{ first-import-approval: true }}\nfsd: {{ archive: {{ name: a, path: '{archive.Root}', git: false }} }}\n");
-        var file = Path.Combine(approving.Root, "fsd.docx");
-        File.WriteAllBytes(file, WordWith("rates.xlsx", XlsxFixture.Rates()));
-        Assert.Equal("pending-approval", (string)FsdImport.Import(approving.Repo, file, "fsd")["status"]!);
-        var dir = FsdImport.DocDir(approving.Root, "fsd");
-        Assert.True(File.Exists(Path.Combine(FsdVersions.CandidateDir(approving.Root, "fsd"), "attachments", "pending-0001", "rates.csv")));
-        FsdVersions.Approve(approving.Root, "fsd", "Pat");
-        Assert.True(File.Exists(Path.Combine(FsdAttachments.Folder(dir, "A-0001"), "rates.csv")));
-    }
-
-    [Fact]
     public void Reading_the_original_again_with_files_this_build_can_read_comes_in_as_a_candidate()
     {
         Import(WordWith("rates.xlsx", XlsxFixture.Rates()));
@@ -604,18 +591,13 @@ public sealed class EmbeddedFilesTests : IDisposable
     }
 
     [Fact]
-    public async Task A_tickets_workbook_converts_and_stays_out_of_ticket_json_and_the_ai_steps_until_the_switch_is_on()
+    public async Task A_tickets_workbook_converts_and_reaches_ticket_json_and_the_ai_steps()
     {
-        var off = await Pull("", "rates.xlsx", XlsxFixture.Rates());
-        Assert.Null(off["text"]);
-        Assert.Null(off["format"]);
-        Assert.Null(off["converted"]);
-        Assert.Contains(off["onDisk"]!.AsArray(), f => (string?)f == "rates.csv");
-
-        var on = await Pull("components: { ticket-excel-text: true }\n", "rates.xlsx", XlsxFixture.Rates());
+        var on = await Pull("", "rates.xlsx", XlsxFixture.Rates());   // always since D381 (was the ticket-excel-text switch)
         Assert.Contains("| Gold | 12 |", (string)on["text"]!);
         Assert.Equal("xlsx", (string)on["format"]!);
         Assert.NotNull(on["converted"]);
+        Assert.Contains(on["onDisk"]!.AsArray(), f => (string?)f == "rates.csv");
     }
 
     [Fact]

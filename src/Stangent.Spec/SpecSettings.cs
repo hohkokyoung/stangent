@@ -8,8 +8,8 @@ public sealed record SpecSettings(int Depth, int BackendDepth, bool SplitAtEndpo
     public static SpecSettings From(StangentConfig config, int? depth = null)
     {
         var c = config.Spec;
-        return new(depth ?? c.Depth, c.BackendDepth, c.SplitAtEndpoints, c.HubCallers, c.MaxBundleChars, StangentComponents.IsOn(config, "page-exclusions"), StangentComponents.IsOn(config, "follow-moves"),
-            StangentComponents.IsOn(config, "follow-moves") || StangentComponents.IsOn(config, "statement-update"));
+        return new(depth ?? c.Depth, c.BackendDepth, c.SplitAtEndpoints, c.HubCallers, c.MaxBundleChars, true, true,
+            true);
     }
 
     /// <summary>What the slices depend on, so a settings change makes every page stale.</summary>

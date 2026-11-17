@@ -115,7 +115,7 @@ public sealed record TicketText(IReadOnlyList<(string Where, string Text)> Prose
 }
 
 /// <summary>
-/// Starting points by code (D70 step 1), used when the file finder is off (D101: <c>tickets.aiPoints</c> false or
+/// Starting points by code (D70 step 1), used while the file finder hasn't answered (D390) or can't run (D101:
 /// <c>ai.enabled</c> false): stack-trace frames → methods; URL paths → route pages and endpoint pages;
 /// quoted screen names, page titles and FSD section titles → pages (sections through <c>specs/trace.yaml</c>); symbol
 /// names that exist in the graph. Each point records its signal and the text it came from. Deterministic.
@@ -346,10 +346,11 @@ public static class TicketPoints
         }
 
         var ai = AiSection(repo, text, previous?["ai"] as JsonObject, refind);
-        var finderOn = (string)ai["status"]! is not ("off" or "disabled");
-        var code = finderOn ? [] : PointFinder.Find(text, ctx);
         var found = (ai["files"] as JsonArray ?? []).Select(f => new StartingPoint(StartingPoint.File, (string)f!["path"]!,
             Path.GetFileName((string)f["path"]!), "ai", (string)f["quote"]!, "ticket", "ai", (string)f["line"]!, (string)f["why"]!)).ToList();
+        // Code's signals (D70) are the starting points while the finder can't run (ai.enabled false) or hasn't answered
+        // yet, so a ticket is never left with none (D390, toward D156 P6); once the finder answers, its files are used.
+        var code = (string)ai["status"]! is "disabled" || ((string)ai["status"]! is "needed" && found.Count == 0) ? PointFinder.Find(text, ctx) : [];
 
         var points = code.Concat(found).ToList();
         var outside = (ai["outside"] as JsonArray ?? []).Select(o => new OutsidePart((string)o!["area"]!, (string)o["quote"]!, "ai")).ToList();
@@ -471,11 +472,9 @@ public static class TicketPoints
     static string FileText(string root, string path) =>
         Tracked(root) is not null && Stangent.Graph.Git.Run(root, $"show \"HEAD:./{path}\"") is { } text ? text : File.ReadAllText(Path.Combine(root, path));
 
-    /// <summary>The file finder's state in points.json: <c>off</c> (tickets.aiPoints false), <c>disabled</c> (ai.enabled
-    /// false), <c>needed</c>, or the recorded outcome (<c>found</c>, <c>none</c>, <c>failed</c>) when its input is unchanged.</summary>
+    /// <summary>The file finder's state in points.json: <c>disabled</c> (ai.enabled false), <c>needed</c>, or the recorded outcome (<c>found</c>, <c>none</c>, <c>failed</c>) when its input is unchanged.</summary>
     static JsonObject AiSection(StangentRepo repo, TicketText text, JsonObject? previous, bool refind)
     {
-        if (!repo.Config.Tickets.AiPoints) return new JsonObject { ["status"] = "off" };
         if (!repo.Config.Ai.Enabled) return new JsonObject { ["status"] = "disabled" };
         var inputs = FinderInputHash(text);
         // The answer is kept while the ticket is the same, even after the code moves on: a new search would see the
@@ -549,8 +548,8 @@ public static class TicketPoints
         var paths = new TicketPaths(repo.Root, key);
         var points = LoadOrFail(repo.Root, key);
         var status = (string?)points["ai"]?["status"];
-        if (status is "off" or "disabled")
-            return new RunStep("current", "none", Errors: [status == "off" ? "tickets.aiPoints is off: code's signals are the starting points" : "AI is switched off for this repo (ai.enabled: false)"]);
+        if (status is "disabled")
+            return new RunStep("current", "none", Errors: ["AI is switched off for this repo (ai.enabled: false)"]);
         if (status is "found" or "none") return new RunStep("current", "none");
         AiPolicy.EnsureAllowed(repo.Config, "ticket prepare --step points");
         var text = TicketText.From(TicketPull.LoadOrFail(repo.Root, key));

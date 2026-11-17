@@ -15,7 +15,6 @@ namespace Stangent.Spec.Fsd;
 public static class FsdVersions
 {
     const string Scope = "sections", Format = "S-{0:D4}";
-    public const string FirstImportApproval = "first-import-approval";
     static readonly StateActor Code = StateActor.Code("stangent fsd import");
 
     static string JsonPath(string root, string doc) => Path.Combine(FsdImport.DocDir(root, doc), "document.json");

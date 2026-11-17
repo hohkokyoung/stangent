@@ -37,7 +37,6 @@ public static partial class TicketDrafts
 
     public static RunStep Prepare(StangentRepo repo, TicketContext ctx, string key, string kind, string? tone, string? prRange, string? prUrl)
     {
-        if (!StangentComponents.IsOn(repo.Config, "drafts")) return new RunStep("off", "none", Errors: ["drafts is off, so no draft was made."]);
         var paths = new TicketPaths(repo.Root, key);
         var step = Step(kind);
         tone ??= repo.Config.Tickets.Tone;
@@ -48,10 +47,7 @@ public static partial class TicketDrafts
         AiPolicy.EnsureAllowed(repo.Config, $"ticket draft --kind {kind}");
         facts["kind"] = kind;
         facts["tone"] = tone;
-        var started = AiStep.Start(paths, step, input, hash, facts);
-        // D121: with no proof tried, a draft that asks about a bug mustn't read as "couldn't reproduce it". Not in its input.
-        return !StangentComponents.IsOn(repo.Config, "bug-proof") && (bool?)TicketPull.Load(repo.Root, key)?["isBug"] == true
-            ? started with { Warning = "bug-proof is off, so this draft has no proof to go on: that says nothing about whether the bug reproduces." } : started;
+        return AiStep.Start(paths, step, input, hash, facts);
     }
 
     /// <summary>What a draft is made from: the facts it may link to, and the input the writer reads, whose hash says
@@ -68,7 +64,7 @@ public static partial class TicketDrafts
         if (proof?["attempts"]?.AsArray().LastOrDefault() is JsonObject last && BugProof.NoProof(last) == "ran-out") facts["proofRanOut"] = true;
         facts["pr"] = prRange is null ? null : new JsonObject { ["range"] = prRange, ["url"] = prUrl };
         // Truth map layer 4 (D364): the proof stopped because no agreed rule backs the ticket; code adds the PM's question.
-        if (kind == "questions" && TruthList.On(repo.Config) && proof?["attempts"]?.AsArray().LastOrDefault() is JsonObject stop
+        if (kind == "questions" && proof?["attempts"]?.AsArray().LastOrDefault() is JsonObject stop
             && BugProof.NoProof(stop) is "contradicted" or "unclear" && stop["verdict"] is JsonObject verdict)
             facts["truth"] = verdict.DeepClone();
         return (facts, Input(Step(kind), kind, tone, pulled, facts, proof, ctx));
@@ -112,8 +108,7 @@ public static partial class TicketDrafts
         var pages = ctx.Index.Pages.Where(p => PageChecks.Statements(p.Value).Any(s => s.Statement["cites"]!.AsArray().Any(c => reached.Contains((string)c!))))
             .Select(p => p.Key).Order(StringComparer.Ordinal).Take(MaxPages).ToList();
         var pageSet = pages.ToHashSet(StringComparer.Ordinal);
-        var findings = repo.Config.Fsd.Findings;
-        var sections = ctx.Trace.Where(e => e["fsd"] is JsonObject && (string?)e["page"]?["id"] is { } p && pageSet.Contains(p) && (findings || (string?)e["state"] == "agree") && !TraceFindings.Closed(e))
+        var sections = ctx.Trace.Where(e => e["fsd"] is JsonObject && (string?)e["page"]?["id"] is { } p && pageSet.Contains(p) && (string?)e["state"] == "agree" && !TraceFindings.Closed(e))
             .Select(e => ((string)e["fsd"]!["doc"]!, (string)e["fsd"]!["section"]!)).Where(ctx.Index.Sections.ContainsKey).Distinct().OrderBy(s => s.Item1, StringComparer.Ordinal).ThenBy(s => TraceFile.SectionKey(s.Item2), StringComparer.Ordinal);
         JsonObject? impact = starts.Count == 0 ? null : ctx.Analyzer.Analyze(change, repo.Root, null, TicketBundle.ImpactDepth, (r, x) => FsdImpact.Sections(repo.Root, r, x));
         return new JsonObject

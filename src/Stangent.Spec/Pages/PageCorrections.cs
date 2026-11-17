@@ -7,11 +7,11 @@ namespace Stangent.Spec.Pages;
 /// <summary>
 /// A person's corrections to a page (T.1, D131). Recorded, then approved by a person; code puts an approved one back every time the page is written,
 /// so regeneration can't undo it. The writer isn't told, so no prompt or input hash changes: the page's statement simply says what the person said.
-/// Off by default (<c>page-corrections</c>), because a corrected statement is what a link judge then reads. No AI anywhere in this.
+/// Always on (D381); a corrected statement is what a link judge then reads. No AI anywhere in this.
 /// </summary>
 public static class PageCorrections
 {
-    public const string Component = "page-corrections", Contract = "page-corrections.v1.json";
+    public const string Contract = "page-corrections.v1.json";
 
     public static string FileIn(string root) => Path.Combine(root, "specs", "page-corrections.json");
 
@@ -27,15 +27,8 @@ public static class PageCorrections
         Quotes.WriteAtomic(FileIn(root), CanonicalJson.Serialize(file));
     }
 
-    static void EnsureOn(StangentRepo repo)
-    {
-        if (!StangentComponents.IsOn(repo.Config, Component))
-            throw new StangentException("component_off", $"{Component} is off, so a correction can't be recorded. Turn on `components.{Component}`: a corrected statement is what link judges then read.", ExitCodes.Usage);
-    }
-
     public static JsonObject Propose(PageSet set, StangentRepo repo, string pageKey, string statement, string? text, string why, string by)
     {
-        EnsureOn(repo);
         if (string.IsNullOrWhiteSpace(why) || string.IsNullOrWhiteSpace(by)) throw new StangentException("usage", "A correction needs --why and --by.", ExitCodes.Usage);
         var paths = new SpecPaths(repo.Root);
         var page = set.Find(pageKey) ?? throw new StangentException("not_found", $"No page '{pageKey}'.", ExitCodes.NotFound);
@@ -61,7 +54,6 @@ public static class PageCorrections
 
     public static JsonObject Approve(PageSet set, StangentRepo repo, string id, string by)
     {
-        EnsureOn(repo);
         var paths = new SpecPaths(repo.Root);
         JsonObject correction;
         JsonObject record;
@@ -90,7 +82,6 @@ public static class PageCorrections
     /// <summary>Refuses a proposal, or withdraws an approved one: the page keeps its words until it's next written.</summary>
     public static JsonObject Reject(StangentRepo repo, string id, string by, string why)
     {
-        EnsureOn(repo);
         using var _ = PageRun.Lock(new SpecPaths(repo.Root));
         var file = Load(repo.Root);
         var correction = Find(file, id);
@@ -118,9 +109,9 @@ public static class PageCorrections
         return new JsonObject { ["corrections"] = rows };
     }
 
-    /// <summary>Approved corrections for one page, or none when the switch is off.</summary>
+    /// <summary>Approved corrections for one page, if any.</summary>
     public static List<JsonObject> Approved(StangentConfig config, string root, string pageId) =>
-        !StangentComponents.IsOn(config, Component) || !File.Exists(FileIn(root)) ? [] :
+        !File.Exists(FileIn(root)) ? [] :
         [.. All(Load(root)).Where(c => (string)c["page"]! == pageId && (string)c["state"]! == "approved")];
 
     /// <summary>A copy of the recorded page with corrected statements back in the words the writer gave, so the ids match as they would have with no correction.</summary>
@@ -171,7 +162,7 @@ public static class PageCorrections
     /// <summary>What the Markdown marks: corrected statements and removed ones. Empty when there are none, so a page with none reads as it always did.</summary>
     public static (IReadOnlyDictionary<string, string> Corrected, IReadOnlyList<JsonObject> Removed) Marks(string root, string pageId, StangentConfig? config)
     {
-        var approved = config is null || !StangentComponents.IsOn(config, Component) || !File.Exists(FileIn(root)) ? [] : Approved(config, root, pageId);
+        var approved = config is null || !File.Exists(FileIn(root)) ? [] : Approved(config, root, pageId);
         return (approved.Where(c => (string)c["kind"]! == "replace" && c["appliedTo"] is not null && (bool?)c["notApplied"] != true)
                 .GroupBy(c => (string)c["appliedTo"]!).ToDictionary(g => g.Key, g => (string)g.Last()["id"]!, StringComparer.Ordinal),
             [.. approved.Where(c => (string)c["kind"]! == "remove" && (bool?)c["notApplied"] != true)]);

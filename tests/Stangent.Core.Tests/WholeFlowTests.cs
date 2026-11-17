@@ -64,10 +64,8 @@ public sealed class WholeFlow : IDisposable
     /// <summary>The flow with these settings added, as far as what's left on can take it (D121): the rest of the stages need findings to act on.</summary>
     public static WholeFlow With(string extraConfig) => new(extraConfig);
 
-    public const string SwitchedOn = "components: { table-facts: true }";
-
-    /// <summary>The flow with what's built switched off turned on (D124): the fake AI answers each variant, and nothing real runs.</summary>
-    public static WholeFlow AllSwitchedOn() => new(SwitchedOn, allOn: true);
+    /// <summary>The flow with the stages for what used to be switched off (D124; always on since D381): the fake AI answers each variant, and nothing real runs.</summary>
+    public static WholeFlow AllSwitchedOn() => new(null, allOn: true);
 
     /// <summary>A command as a person runs it, envelope and all.</summary>
     public JsonNode Cli(params string[] args) => Run(args).Envelope;
@@ -138,7 +136,7 @@ public sealed class WholeFlow : IDisposable
         Saw["graph"] = Ok("graph", "build");
     }
 
-    string FsdConfig() => $"fsd: {{ archive: {{ name: docs, path: '{archive}' }}, findings: true }}";
+    string FsdConfig() => $"fsd: {{ archive: {{ name: docs, path: '{archive}' }} }}";
 
     void ReferencePages()
     {
@@ -185,7 +183,7 @@ public sealed class WholeFlow : IDisposable
     /// <summary>The links and findings as the old link route left them in specs/trace.yaml (cut by D342): written by code here, then checked as CI checks them.</summary>
     void LinksAndFindings()
     {
-        var findings = StangentRepo.Discover(Root).Config.Fsd.Findings;
+        var findings = true; // trace.yaml keeps the old route's findings, frozen (D342); bundles no longer show them (D388)
         Section("1", [
             Entry("agree", "1", FsdAgree, Orders, "A1", "The Place button submits the order.", "confirmed"),
             Entry("agree", "1", FsdReceipt, Post, "E1", "which sends a receipt", "confirmed"),
@@ -380,10 +378,9 @@ public sealed class WholeFlow : IDisposable
         File.Delete(word);
         Saw["embedded.check.before"] = checkBefore;
         Saw["embedded.check.after"] = Check();
-        Saw["components"] = Ok("components");
     }
 
-    /// <summary>A person's mapping file and a real graph, with enums read from C# and TypeScript (C.2). The graph's export is the same bytes with the switch on or off.</summary>
+    /// <summary>A person's mapping file and a real graph, with enums read from C# and TypeScript (C.2).</summary>
     void ComparedTables()
     {
         var file = Path.Combine(Root, "facts.docx");
@@ -401,24 +398,7 @@ public sealed class WholeFlow : IDisposable
         Saw["compared.check"] = Check();
         Saw["compared.trace"] = Trace();
 
-        string Export(string name)
-        {
-            var path = Path.Combine(archive, name);
-            Ok("graph", "export", path);
-            return Convert.ToBase64String(File.ReadAllBytes(path));
-        }
-        var yaml = Path.Combine(Root, "stangent.yaml");
-        var on = File.ReadAllText(yaml);
         var enumsOn = File.ReadAllText(CodeEnums.PathFor(Root));
-        var exportOn = Export("on.gz");
-        File.WriteAllText(yaml, on.Replace("table-facts: true", "table-facts: false", StringComparison.Ordinal));
-        Ok("graph", "build");
-        Saw["enums.removed"] = JsonValue.Create(!File.Exists(CodeEnums.PathFor(Root)));
-        Saw["compare.off"] = Ok("fsd", "compare-tables", "facts");
-        Saw["export.same"] = JsonValue.Create(Export("off.gz") == exportOn);
-        File.WriteAllText(yaml, on);
-        Ok("graph", "build");
-        Saw["enums.back"] = JsonValue.Create(File.ReadAllText(CodeEnums.PathFor(Root)) == enumsOn);
         // A build that reuses every project keeps what's on file for them.
         Ok("graph", "build");
         Saw["enums.kept"] = JsonValue.Create(File.ReadAllText(CodeEnums.PathFor(Root)) == enumsOn);
@@ -513,7 +493,10 @@ public sealed class WholeFlow : IDisposable
             {
                 var name = Path.GetFileName(file);
                 if (name == "failed.json" || name.EndsWith(".ids.json", StringComparison.Ordinal)) continue;
-                Validate(name.EndsWith(".lines.json", StringComparison.Ordinal) ? "reference-lines.v1.json" : "reference-page.v1.json", JsonNode.Parse(File.ReadAllText(file)), $"stage {stage} {name}");
+                // A page's .shape.json is written since follow-moves came on (D381): it has its own contract.
+                var schema = name.EndsWith(".lines.json", StringComparison.Ordinal) ? "reference-lines.v1.json"
+                    : name.EndsWith(".shape.json", StringComparison.Ordinal) ? "page-shape.v1.json" : "reference-page.v1.json";
+                Validate(schema, JsonNode.Parse(File.ReadAllText(file)), $"stage {stage} {name}");
             }
         var fsd = Path.Combine(Root, "specs", "fsd");
         if (Directory.Exists(fsd))
@@ -710,7 +693,9 @@ public class WholeFlowTests(WholeFlow flow) : IClassFixture<WholeFlow>
         var bundle = flow.Seen("ticket.bundle");
         var section = bundle["sections"]!.AsArray().Single(s => (string?)s!["id"] == "1")!;
         Assert.Equal("shop", (string?)section["doc"]);
-        Assert.Contains(section["links"]!.AsArray(), l => (string?)l!["state"] == "conflict" && (string?)l["statement"] == "R1" && (string?)l["decision"] == "code-wrong");
+        // The old route's conflict (decided code-wrong) is no longer shown (D388); its agreed links are.
+        Assert.DoesNotContain(section["links"]!.AsArray(), l => (string?)l!["state"] == "conflict");
+        Assert.Contains(section["links"]!.AsArray(), l => (string?)l!["state"] == "agree");
         Assert.Contains(bundle["impact"]!["fsdSections"]!["items"]!.AsArray(), i => (string?)i!["section"] == "1" && (string?)i["title"] == "Orders");
     }
 

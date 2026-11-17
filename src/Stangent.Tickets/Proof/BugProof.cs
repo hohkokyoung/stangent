@@ -31,7 +31,6 @@ public static partial class BugProof
 
     public static RunStep Prepare(StangentRepo repo, TicketContext ctx, string key, string? hint)
     {
-        if (!StangentComponents.IsOn(repo.Config, "bug-proof")) return new RunStep("off", "none", Errors: ["bug-proof is off, so nothing was tried: this bug is neither proven nor disproven."]);
         var paths = new TicketPaths(repo.Root, key);
         var pulled = TicketPull.LoadOrFail(repo.Root, key);
         if (!(bool)pulled["isBug"]!)
@@ -55,9 +54,9 @@ public static partial class BugProof
 
         // Truth map layer 4 (D361, D364): a ticket no agreed rule can back gets no test and no AI call. Nothing covers its
         // files, or every entry that does is blank, flagged, not found again, not a match, or a match not yet confirmed.
-        if (TruthList.On(repo.Config) && (string?)bundle["truth"]?["state"] is null or "off")
-            throw new StangentException("stale_bundle", $"{key}'s bundle was built with truth-verdict off, so it has no truth map entries to judge the ticket by. Run `stangent ticket bundle {key}` again.", ExitCodes.Failed);
-        var truth = TruthList.On(repo.Config) && bundle["truth"] is JsonObject { } t && (string?)t["state"] == "built" ? t : null;
+        if ((string?)bundle["truth"]?["state"] is null or "off")
+            throw new StangentException("stale_bundle", $"{key}'s bundle was built before the truth map was always on (D381), so it has no truth map entries to judge the ticket by. Run `stangent ticket bundle {key}` again.", ExitCodes.Failed);
+        var truth = bundle["truth"] is JsonObject { } t && (string?)t["state"] == "built" ? t : null;
         if (truth is not null && !truth["entries"]!.AsArray().OfType<JsonObject>().Any(e => (bool)e["usable"]!))
         {
             var entries = truth["entries"]!.AsArray().OfType<JsonObject>().ToList();

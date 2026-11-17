@@ -57,7 +57,7 @@ public static partial class TicketPull
 
         var files = new JsonArray();
         foreach (var a in ticket.Attachments.OrderBy(a => a.Id, StringComparer.Ordinal))
-            files.Add(await Attachment(paths, tracker, ticket, a, settings.AttachmentChars, description, comments, StangentComponents.IsOn(repo.Config, "ticket-excel-text"), ct));
+            files.Add(await Attachment(paths, tracker, ticket, a, settings.AttachmentChars, description, comments, true, ct));
 
         var isBug = settings.IsBugType(ticket.Type);
         var result = new JsonObject
@@ -111,7 +111,7 @@ public static partial class TicketPull
         {
             "text" => Decode(await File.ReadAllBytesAsync(saved.Path, ct)),
             "docx" => Document(a, await File.ReadAllBytesAsync(saved.Path, ct), o),
-            // A workbook is new to tickets, and its text would reach the AI steps, so it's only saved beside the attachment until the switch says otherwise (D123).
+            // A workbook's text reaches ticket.json and the AI steps (D123); always since D381, which removed ticket-excel-text.
             _ when ImportPipeline.ForFile(a.FileName)?.Name == "xlsx" && !excelText => null,
             // A PDF keeps its kind, "other", since ticket-bundle has no other value for it: its text and its format say the rest.
             _ when ImportPipeline.ForFile(a.FileName) is not null => Document(a, await File.ReadAllBytesAsync(saved.Path, ct), o),

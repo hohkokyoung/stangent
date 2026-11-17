@@ -29,6 +29,8 @@ public class StatementIdTests
         var file = new SpecPaths(app.Root).PageJson(def);
         // A changed input, so prepare runs. Any change to the slice's source will do.
         if (File.Exists(file)) app.Write("Core/OrderService.cs", File.ReadAllText(Path.Combine(app.Root, "Core/OrderService.cs")).TrimEnd('\n').Replace("public Order Place(decimal total)", "public Order Place(decimal total) /*changed*/"));
+        // The whole page is written again: no saved shape, so statement updates (on since D381) keep nothing back.
+        if (File.Exists(PageMoves.FileFor(file))) File.Delete(PageMoves.FileFor(file));
         var step = PageRun.Prepare(app.Pages(), def, app.Repo);
         File.WriteAllText(Path.Combine(app.Root, step.Output!), output.ToJsonString());
         step = PageRun.Check(app.Pages(), def, app.Repo, null);

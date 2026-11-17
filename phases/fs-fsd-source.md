@@ -1,14 +1,14 @@
 ---
 phase: fs
 name: fsd source
-status: planned
-consumes: { store: 1, cli-conventions: 3, telemetry-event: 2, source-document: 3, rulings: 1, truth-map: 1, ticket-bundle: 3 }
+status: in progress
+consumes: { store: 1, cli-conventions: 4, telemetry-event: 3, source-document: 3, rulings: 1, truth-map: 1, ticket-bundle: 3 }
 provides: {}
 ---
 
 # The FSD in the repo is the source of truth
 
-**Decided 2026-11-17 (D376–D388); planned the same day.** After import the client's file never comes back (D376).
+**Decided 2026-11-17 (D376–D388); planned the same day (D389). Layer 0 built and fresh-checked (D390).** After import the client's file never comes back (D376).
 The FSD is one Markdown file per chapter, edited in git (D377), and a commit is the approval (D380). A PM's ruling
 becomes the FSD's own words (D379), and component switches go (D381). This phase builds that.
 
@@ -62,22 +62,22 @@ fixes are made before the next layer.
 ### Layer 0 · No switches (D381, D388; `cli-conventions` 3 → 4, `telemetry-event` 2 → 3)
 
 - `StangentComponents`, `ComponentReport` and `stangent components` are removed. Each `IsOn(...)` call site (28 files)
-  takes the on branch. `ai.enabled`, `history.enabled`, `detectors:`, `tickets.aiPoints`, `fsd.findings`,
-  `fsd.attachmentHome` and `fsd.compareTables` leave `StangentConfig`. A `stangent.yaml` holding `components:` or a
-  removed key is refused (`unknown_setting`, naming D381), as cut components are today (D342).
-- `findings` is removed: `trace.yaml`'s frozen findings are no longer shown in ticket bundles or drafts, and
-  `trace check` and `fsd promote` stop carrying them. `specs/trace.yaml` stays on disk, frozen (D342). Section approval
+  takes the on branch. `history.enabled`, `detectors:`, `tickets.aiPoints`, `fsd.findings`, `fsd.attachmentHome` and
+  `fsd.compareTables` leave `StangentConfig`; `ai.enabled` stays (D24, D390). A `stangent.yaml` still holding one, or
+  `components:`, loads with a warning naming D381 (D390: refusing would break every `init`-written file).
+- `findings` is removed: `trace.yaml`'s frozen findings are no longer shown in ticket bundles or drafts (the bundle's
+  `findings` stays `false` until `ticket-bundle`'s next bump, D390). `specs/trace.yaml` stays on disk, frozen (D342). Section approval
   waits for layer 5, which replaces it.
 - The `components` field leaves the output envelope (`docs/cli-conventions.md`), and the on/off fields leave telemetry
   events. `NotConnectedYet`'s two items move to `roadmap.md`.
 - What now comes on and was never on a real repo is listed in the layer's report: `truth-verdict`,
   `ticket-excel-text`, `follow-moves`, `schema-once`, `attachment-home`, `statement-update`, `table-facts`, and only
   on the pilot, `root-screens` and `route-render` (D388).
-- **Tests:** a config with `components:` is refused; a bundle has `truth` with no setting; a graph build runs every
+- **Tests:** a config with `components:` loads and warns; a bundle has `truth` with no setting; a graph build runs every
   detector; the envelope and a telemetry event carry no `components`; schema tests for the two bumped contracts.
 - **Ripple (D20):** phase 0 provides the new versions; 1a (now `done`) and tm go `needs review`, the others already are.
 - **Fresh check:** "can any old switch still change behaviour, and does every command still run with a repo's old
-  `stangent.yaml` (refused or read)?" Sonnet, about 100K.
+  `stangent.yaml`?" Sonnet, about 100K.
 
 ### Layer 1 · Chapter files and ids (D377, D378, D382, D384)
 

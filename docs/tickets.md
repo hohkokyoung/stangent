@@ -48,12 +48,12 @@ pull gives the same `ticket.json`, byte for byte, as the live one. `tickets.proj
 `.stangent/tickets/<KEY>/ticket.json` (git-ignored): the ticket's fields, the description and comments (a body Jira
 sends as HTML is turned by code into the Markdown it would otherwise have sent: links, images, list numbers, task ticks
 and code marks kept, D102), and every attachment saved with its hash. Text files go in up to `tickets.attachmentChars`;
-`.docx` goes through 2b's converter, flat if it has no headings, and if it can't be opened it's listed with `notConverted`, so an attachment never stops the pull; a workbook, a zip and files inside a document go through the same path (D123), saved under `attachments/<id>/converted/` with a `converted.json`, and reach `ticket.json` and the AI steps only with `components: { ticket-excel-text: true }`, off by default, so no ticket hash moves; images and anything else are listed with where they're mentioned; files over
+`.docx` goes through 2b's converter, flat if it has no headings, and if it can't be opened it's listed with `notConverted`, so an attachment never stops the pull; a workbook, a zip and files inside a document go through the same path (D123), saved under `attachments/<id>/converted/` with a `converted.json`, and reach `ticket.json` and the AI steps (D381: always; this was the `ticket-excel-text` switch, off by default); images and anything else are listed with where they're mentioned; files over
 100 MB are listed, not downloaded. For a bug (`tickets.bugTypes`): steps, expected, actual, version and environment from
 the field `tickets.fields` names, Jira's own environment and affects-version fields, or a labelled part of the
 description (`### Expected Behavior`, `**Actual:**`); the missing ones are listed.
 
-**`Ruling:` replies** (truth map layer 5, D364, D374; `truth-verdict` on; code only): pull's output gains `rulings` once
+**`Ruling:` replies** (truth map layer 5, D364, D374; code only): pull's output gains `rulings` once
 a questions draft holding the PM's question ("Reply with a line starting `Ruling:`") has been posted. It reads the
 comments after that post (by their place after it; by time when Jira no longer lists it), leaving out stangent's own
 posts, for lines starting `Ruling:` (bold, italic or backtick marks and a `-` or `1.` bullet allowed; a quoted `>` line
@@ -82,7 +82,7 @@ ticket again (`ticket bundle`, `ticket prove`, or `ticket-run.sh --prove`).
 
 ## Starting points (D101; D70 as the fallback)
 
-- **The file finder** (`tickets.aiPoints`, default on): `stangent-file-finder`, a headless coding agent, gets the
+- **The file finder** (always, D381; only `ai.enabled: false` stops it): `stangent-file-finder`, a headless coding agent, gets the
   ticket (summary, description, comments, text attachments) and searches the repo itself, read-only: Read, Grep and Glob
   inside the repo, never `.stangent/` or `.git/` (permission rules the driver passes; an allow rule on the repo bounds
   Grep and Glob too). It returns up to 10 files, most likely first, each with a quote from the ticket, a line copied
@@ -95,7 +95,7 @@ ticket again (`ticket bundle`, `ticket prove`, or `ticket-run.sh --prove`).
   files git tracks there (exact case) and lines against git's copy. Recorded with its input hash (the instructions and
   the ticket) and the commit it searched: an unchanged ticket makes no AI call, and once the code moves on the answer is
   kept and marked `stale`; `stangent ticket points <KEY> --refind` searches again.
-- **Code's signals, when the finder is off** (`tickets.aiPoints: false` or `ai.enabled: false`): stack-trace frames
+- **Code's signals, when the finder can't run** (`ai.enabled: false`, or it failed): stack-trace frames
   (.NET, also async and lambda frames; script frames by file) in the ticket or a text attachment → methods, by file and
   line or by name; URL paths → route pages and endpoint pages; quoted screen names, page titles and FSD section titles
   (through `specs/trace.yaml`) → pages; symbol names that exist in the graph. With the finder on they're only leads in
@@ -118,7 +118,7 @@ starting points with their reasons (a found file with its ticket quote, its line
 unchecked guess and left out of the reproducer's input, D107); the reference pages that explain
 them, each saying which found files it explains (its statements cite code in the file, or the file is in its slice),
 after your own and code's page points; the FSD sections linked to the included pages with each link's state and
-whether a person decided it (findings only with `fsd.findings`, marked unconfirmed); the impact answer from the
+whether a person decided it (the old route's findings are no longer shown, D388; `findings` is always `false`); the impact answer from the
 starting points within 2 lines (the found files' code, symbol points, page points' citations); pointers to files and
 symbols, the found files first. **No source code.** Over `tickets.bundleChars` (compact JSON): first the impact
 answer's item lists go (counts kept, `cap.impactTrimmed`; `stangent graph impact` lists them), then the lowest-ranked
@@ -128,7 +128,7 @@ are flagged (`/stangent:spec-generate`), never generated here. `finder` records 
 whether HEAD has moved on since (judged when the bundle is built). Same inputs and the same commit checked out → the
 same bytes.
 
-**The truth map's entries** (`truth`, v3; truth map layer 4, D361, D372; the `truth-verdict` component, off by default):
+**The truth map's entries** (`truth`, v3; truth map layer 4, D361, D372; always on since D381):
 from every `specs/fsd/<doc>/truth-map.json`, each entry one of whose evidence lines is in a ticket file (a file point,
 a symbol point's file, a file a page point's statements cite; not the impact answer's), as `T1`, `T2`, … with its
 state, standing, ruling, the PM's words, confidence, who ruled, the review's notes and its lines, whether it **can back
@@ -164,7 +164,7 @@ nothing the PM agreed covers the ticket's files). `bundle.md` prints them under 
   is in the ticket word for word; it compiles; and it **fails on that assertion** (TRX, Jest/Vitest and Playwright
   reports read by code; an exception in setup, a timeout or another assertion isn't proof; a mock's own check, such
   as Moq's `Verify`, is an assertion, D90). Playwright runs 3 times.
-- **The verdict** (truth map layer 4, D361, D364, D372; `truth-verdict` on and a truth map built): with no entry that
+- **The verdict** (truth map layer 4, D361, D364, D372; a truth map built): with no entry that
   can back the ticket, nothing is asked of an AI: the attempt is recorded `not-provable` with `noProof: unclear` and the
   entry it stopped on (or none: not covered). Otherwise the reproducer reads `bug-reproducer-output` v2 and gives
   `verdict` (`backed`, `contradicted`, `unclear`) with the entry (`T1` …) and words from it (its FSD sentence, the PM's
@@ -193,7 +193,7 @@ nothing the PM agreed covers the ticket's files). `bundle.md` prints them under 
 
 ## Drafts and posting (D74)
 
-**The PM's question** (truth map layer 4, D364, D372; `truth-verdict` on): after a proof stopped as contradicted or
+**The PM's question** (truth map layer 4, D364, D372): after a proof stopped as contradicted or
 unclear, the questions draft's writer is told why and that code adds the question; code appends it to the checked text,
 quoting the rule ("**For the PM:** the FSD's §1 Orders says “…”, and nobody has ruled whether the code or the FSD is
 right (the code: `Core/OrderService.cs:5`). Which is right?"; no code names in the client tone), then "Reply with a
@@ -229,7 +229,6 @@ tickets:
   tone: internal                    # or client
   bundleChars: 40000
   attachmentChars: 8000
-  aiPoints: true
   textFiles: [src/App/Localization/en.json]   # UI texts: a string in the code that is a key here reads as its text (D87)
   replay: benchmark/tickets/x/raw   # read saved results instead of Jira
   app: { build: …, start: …, url: http://localhost:8989, seed: …, readySeconds: 120, specDir: e2e/stangent, playwrightDir: e2e }

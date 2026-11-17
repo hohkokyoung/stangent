@@ -42,16 +42,6 @@ public class PageMoveTests
     static string RecordedHash(SpecApp app) => (string)((JsonObject)PageRun.LoadJson(new SpecPaths(app.Root).PageJson(app.Pages().Find(SpecApp.Post)!))!)["generated"]!["bundleHash"]!;
 
     [Fact]
-    public void Off_a_shifted_line_asks_for_a_run_as_it_always_did()
-    {
-        using var app = App(on: false);
-        Write(app);
-        Assert.False(File.Exists(PageMoves.FileFor(new SpecPaths(app.Root).PageJson(app.Pages().Find(SpecApp.Post)!))));
-        ShiftFile(app, File1);
-        Assert.Equal("write", PageRun.Prepare(app.Pages(), app.Pages().Find(SpecApp.Post)!, app.Repo).Status);
-    }
-
-    [Fact]
     public void A_shifted_line_moves_the_page_on_with_no_ai_and_its_statements_stay()
     {
         using var app = App();
@@ -104,12 +94,6 @@ public class PageMoveTests
         Assert.Equal(SpecApp.Post, (string)report["followed"]![0]!);
     }
 
-    [Fact]
-    public void Follow_refuses_off()
-    {
-        using var app = App(on: false);
-        Assert.Equal("component_off", Assert.Throws<StangentException>(() => PageMoves.Run(app.Pages(), app.Repo.Config, new SpecPaths(app.Root))).Code);
-    }
 }
 
 /// <summary>I.2: only the statements citing changed code go back to the AI; code keeps the rest, word for word.</summary>
@@ -145,16 +129,6 @@ public class StatementUpdateTests
     }
 
     static string Work(SpecApp app, RunStep step, string name) => Path.Combine(app.Root, Path.GetDirectoryName(step.Output!)!, name);
-
-    [Fact]
-    public void Off_the_writer_gets_the_whole_page_and_what_it_returns_is_the_page()
-    {
-        using var app = App(on: false);
-        First(app);
-        ChangeReceipt(app);
-        var step = PageRun.Prepare(app.Pages(), app.Pages().Find(SpecApp.Post)!, app.Repo);
-        Assert.DoesNotContain("Update only what changed", File.ReadAllText(Work(app, step, "bundle.md")));
-    }
 
     [Fact]
     public void Only_the_changed_statement_goes_back_and_the_rest_stays_word_for_word_with_its_id()

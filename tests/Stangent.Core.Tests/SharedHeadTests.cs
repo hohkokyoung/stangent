@@ -47,7 +47,6 @@ public class SharedHeadTests
         Assert.Contains(Bundles.Instructions("page-writer.md"), once);
         Assert.DoesNotContain("## Output schema", once);
         Assert.Equal(whole.Replace("## Output schema\n\n```json\n" + SchemaRegistry.EmbeddedText(Bundles.WriterSchema).TrimEnd('\n') + "\n```\n\n", ""), once);
-        Assert.False(StangentComponents.IsOn(new StangentConfig(), "schema-once"));
     }
 
     [Fact]

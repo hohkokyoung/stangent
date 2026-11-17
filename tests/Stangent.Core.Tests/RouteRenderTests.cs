@@ -49,9 +49,6 @@ public class RouteRenderTests
     }
 
     [Fact]
-    public void Route_render_is_off_by_default() => Assert.False(StangentComponents.IsOn(new StangentConfig(), "route-render"));
-
-    [Fact]
     public void A_render_route_gets_a_page_only_with_its_switch_on()
     {
         var root = App();
@@ -61,17 +58,13 @@ public class RouteRenderTests
     }
 
     [Fact]
-    public async Task A_plain_react_repo_with_no_python_is_read_only_when_it_asks_for_a_route_rule()
+    public async Task A_plain_react_repo_with_no_python_is_read_for_its_route_rules()
     {
         var ct = TestContext.Current.CancellationToken;
         var root = Directory.CreateTempSubdirectory("stangent-plain-").FullName;
         File.WriteAllText(Path.Combine(root, "package.json"), """{ "dependencies": { "react": "18" } }""");
         File.WriteAllText(Path.Combine(root, "App.jsx"), """export default function App() { return <p>hi</p>; }""");
         var repo = StangentRepo.Init(root).Repo;
-        var (_, off) = await GraphBuilder.BuildAsync(repo, new BuildOptions(Restore: false), ct);
-        Assert.Equal(0, off.Frontends);
-        Assert.Null(off.RouteRender);
-        repo.Config.Components["route-render"] = true;
         var (_, on) = await GraphBuilder.BuildAsync(repo, new BuildOptions(Restore: false), ct);
         Assert.Equal(1, on.Frontends);
         Assert.Equal(new RouteRenderStats(0, 0), on.RouteRender);

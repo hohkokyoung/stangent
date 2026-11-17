@@ -58,7 +58,7 @@ public static class GraphBuilder
         var fingerprints = ProjectScanner.Fingerprints(repo.Root, projects)
             .ToDictionary(kv => kv.Key, kv => CanonicalJson.Hash(kv.Value + "\n" + salt), StringComparer.Ordinal);
         // Enums (C.2) are read only with table-facts on. Turned on with none on file, a project nothing changed in still has to be read for them.
-        var enumsOn = StangentComponents.IsOn(repo.Config, "table-facts");
+        var enumsOn = true;
         var enumsBefore = enumsOn ? CodeEnums.Load(repo.Root) : null;
         var previous = options.Full || enumsOn && enumsBefore is null ? null : GraphStore.Load(GraphStore.PathFor(repo));
 
@@ -160,9 +160,9 @@ public static class GraphBuilder
         // Frontends (D30): fingerprinted and re-extracted the same way, by the bundled Node extractor.
         // Python (D127) first: a repo with Python also has its plain React apps read, a repo without keeps the map it had.
         // A switch for React routes asks for React to be read, so it reads a plain app in a repo with no Python too.
-        var rootScreensOn = StangentComponents.IsOn(repo.Config, "root-screens");
-        var routeRenderOn = StangentComponents.IsOn(repo.Config, "route-render");
-        var pythonProjects = StangentComponents.IsOn(repo.Config, "python") ? PythonScanner.Find(repo.Root) : [];
+        var rootScreensOn = true;
+        var routeRenderOn = true;
+        var pythonProjects = PythonScanner.Find(repo.Root);
         var frontends = FrontendScanner.Find(repo.Root, plainReact: pythonProjects.Count > 0 || rootScreensOn || routeRenderOn);
         // Screens with no route (root-screens) and render routes (route-render) change what's extracted, so turning one on or off re-reads each frontend.
         var frontendSalt = salt + "\n" + FrontendScanner.ExtractorHash() + (rootScreensOn ? "\nroot-screens" : "") + (routeRenderOn ? "\nroute-render" : "");
@@ -248,6 +248,10 @@ public static class GraphBuilder
         }
 
         CodeEnums.Save(repo.Root, enumsOn, graph, previous, enumsBefore);
+        // Written on every build since D381; a repo set up before then has no ignore line for it, so it would show as a change.
+        if (Git.Run(repo.Root, "rev-parse --is-inside-work-tree") is not null && File.Exists(CodeEnums.PathFor(repo.Root))
+            && Git.Run(repo.Root, "check-ignore -q .stangent/graph-enums.json") is null)
+            warnings.Add("graph_enums_not_ignored: git doesn't ignore .stangent/graph-enums.json, which every graph build writes since D381; run `stangent init` to add the line to .gitignore");
 
         var link = Stopwatch.StartNew();
         var linkCtx = new LinkContext(graph, new Dictionary<string, List<string>>()) { Root = repo.Root };

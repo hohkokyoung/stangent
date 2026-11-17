@@ -135,7 +135,7 @@ public sealed record HistoryLine(string Source, string Target, int Shared, int O
 
 /// <summary>
 /// What 📜 was computed from (<c>meta.history</c>, D42). <see cref="Status"/>: <c>full</c>, <c>shallow</c>
-/// (a shallow clone's partial history), <c>none</c> (no history) or <c>off</c> (<c>history.enabled: false</c>).
+/// (a shallow clone's partial history), <c>none</c> (no history) or <c>off</c> (only from before D381, when <c>history.enabled</c> could be false).
 /// <see cref="Commit"/> is the commit the lines were computed at; it's older than the graph's own commit
 /// when a shallow clone kept the lines it downloaded.
 /// </summary>

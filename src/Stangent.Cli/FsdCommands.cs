@@ -18,7 +18,7 @@ static class FsdCommands
         var flatOption = new Option<bool>("--flat") { Description = "Import the whole document as one labelled section with no structure, for a document with no headings or bookmarks." };
         var acceptOption = new Option<bool>("--accept-changes") { Description = "For a .docx with tracked changes, which otherwise stops the import: import the accepted view (inserted text kept, deleted text gone, moved text once), listing how many were accepted." };
         var allowLabelOption = new Option<string[]>("--allow-label") { Description = "Import a file with this sensitivity label, by its name or id. Without it, a label stops the import. It's kept in the document's record with your name, from git. Repeat for several." };
-        var partialOption = new Option<bool>("--partial") { Description = "The file holds only changes: sections it doesn't hold aren't proposed for removal. Needs components.section-approval (D128, D150)." };
+        var partialOption = new Option<bool>("--partial") { Description = "The file holds only changes: sections it doesn't hold aren't proposed for removal. Refused since D388 removed section approval; phase fs compares a new file instead (D385)." };
         var import = new Command("import", "Convert a .docx, .pdf, .xlsx or .xlsm to Markdown by code, archive the original (D16) and record its sections (source-document v3), with a verdict and a report. A changed file for a document already here comes in as a candidate with a section diff (D117).") { fileArg, idOption, flatOption, acceptOption, allowLabelOption, partialOption };
         import.SetAction(pr => Cli.Run(pr, "fsd import", ctx =>
         {
@@ -33,8 +33,8 @@ static class FsdCommands
         reread.SetAction(pr => Cli.Run(pr, "fsd reread", ctx => Stopping(() => FsdImport.Reread(ctx.Repo, pr.GetValue(docArgument)!, pr.GetValue(allowLabelOption)))));
         fsd.Subcommands.Add(reread);
 
-        var answerSection = new Argument<string?>("section") { Description = "With section-approval on: a changed section of the waiting candidate, by its number in the candidate or its permanent id (D150).", Arity = ArgumentArity.ZeroOrOne };
-        var approveFirst = new Command("approve", "A person approves a first import waiting with first-import-approval on (D122), or with a section, one changed section of a new version (D150). Who decided comes from git. Stangent opens no PR and pushes nothing.") { docArgument, answerSection };
+        var answerSection = new Argument<string?>("section") { Description = "Refused since D388 removed section approval (D150); phase fs layer 5 removes the argument.", Arity = ArgumentArity.ZeroOrOne };
+        var approveFirst = new Command("approve", "Removed by D388 with first-import and section approval: nothing waits for it now, and committing a document's chapters will be the approval (D385, phase fs layer 5).") { docArgument, answerSection };
         approveFirst.SetAction(pr => Cli.Run(pr, "fsd approve", ctx => pr.GetValue(answerSection) is { } section
             ? FsdSectionApproval.Answer(ctx.Repo, pr.GetValue(docArgument)!, section, true, null, FsdVersions.GitPerson(ctx.Repo.Root))
             : FsdVersions.Approve(ctx.Repo.Root, pr.GetValue(docArgument)!, FsdVersions.GitPerson(ctx.Repo.Root), FsdSectionApproval.On(ctx.Repo.Config))));
@@ -42,7 +42,7 @@ static class FsdCommands
 
         var rejectSection = new Argument<string>("section") { Description = "A changed section of the waiting candidate, by its number in the candidate or its permanent id." };
         var rejectWhy = new Option<string?>("--why") { Description = "Why, in your words. It's kept beside your name." };
-        var reject = new Command("reject", "With section-approval on, a person rejects one changed section of a new version: promote keeps it as it is now (D150). Who decided comes from git.") { docArgument, rejectSection, rejectWhy };
+        var reject = new Command("reject", "Removed by D388 with section approval (D150): refused; a new file is compared with the repo's FSD instead (D385, phase fs layer 5).") { docArgument, rejectSection, rejectWhy };
         reject.SetAction(pr => Cli.Run(pr, "fsd reject", ctx => FsdSectionApproval.Answer(ctx.Repo, pr.GetValue(docArgument)!, pr.GetValue(rejectSection)!, false, pr.GetValue(rejectWhy), FsdVersions.GitPerson(ctx.Repo.Root))));
         fsd.Subcommands.Add(reject);
 
@@ -77,9 +77,8 @@ static class FsdCommands
         var tables = new Command("tables", "A document's tables and attachments' sheets, with their T- or A- ids and columns, for writing table-map.yaml. Code only.") { docArg };
         tables.SetAction(pr => Cli.Run(pr, "fsd tables", ctx => FsdTables.Listing(ctx.Repo.Root, pr.GetValue(docArg)!)));
         fsd.Subcommands.Add(tables);
-        var compareTables = new Command("compare-tables", "Compare a document's tables with facts from the code, as specs/fsd/<doc>/table-map.yaml says, by code with no AI. Each difference is a table-fact finding. Off unless fsd.compareTables is on (C.2, D124).") { docArg };
-        compareTables.SetAction(pr => Cli.Run(pr, "fsd compare-tables", ctx => Stangent.Core.StangentComponents.IsOn(ctx.Repo.Config, "table-facts")
-            ? TableFacts.Compare(ctx.Repo.Root, pr.GetValue(docArg)!, Cli.LoadGraph(ctx)) : TableFacts.Off()));
+        var compareTables = new Command("compare-tables", "Compare a document's tables with facts from the code, as specs/fsd/<doc>/table-map.yaml says, by code with no AI. Each difference is a table-fact finding. (C.2, D124; on since D381).") { docArg };
+        compareTables.SetAction(pr => Cli.Run(pr, "fsd compare-tables", ctx => TableFacts.Compare(ctx.Repo.Root, pr.GetValue(docArg)!, Cli.LoadGraph(ctx))));
         fsd.Subcommands.Add(compareTables);
 
         var diffFormat = new Option<string>("--format") { Description = "json (default) or md (SECTION_DIFF.md).", DefaultValueFactory = _ => "json" };

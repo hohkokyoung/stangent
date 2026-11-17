@@ -9,17 +9,16 @@ item cutter layer 5's judge reads, stays (below). Decisions: D270–D289; plan a
 
 | Command | What it does |
 |---|---|
-| `stangent areas check` | Writes every area's `page.md` (D230). With `components.pages` on, the developer page goes between D233's two layer 4 lines and the page opens with its note; off, the page has none (one left from before is dropped). |
+| `stangent areas check` | Writes every area's `page.md` (D230). The developer page goes between D233's two layer 4 lines and the page opens with its note (always, since D381). |
 | `stangent pages chart <area> [--proposed] [--format md\|counts\|json]` | The area's developer page without writing it: `md` (default) is the note and body as `page.md` holds them; `counts` a table of nodes, boxes, diamonds, scenario rows, shared guards and changes per changing click, then totals; `json` everything. Works with the switch off. |
-| `stangent pages verify [<area>]` | Gate 1 of D280 (below), every area or one. Exit 1 (`pages_verify_failed`) with the report when anything is missing, a rebuild differs or a page on disk isn't current. Needs the switch on (`component_off`, exit 2). |
+| `stangent pages verify [<area>]` | Gate 1 of D280 (below), every area or one. Exit 1 (`pages_verify_failed`) with the report when anything is missing, a rebuild differs or a page on disk isn't current. |
 | `stangent pages summary <area> [--proposed] [--format json\|md\|counts]` | The area's item summary by code (below). Writes nothing. |
 
 `<area>` is the name in `areas.yaml` ("Series › Add New") or its folder (`series-add-new`).
 
 ## Switch and settings
 
-- **`components.pages`, off by default** (D285): like `workflow-files` and `test-journeys`, code-made files nobody has read yet.
-  It goes on by default only when gate 3 of D280 passes. No AI, no cost.
+- **On** (D381; was off by default under D285 until a person read the pages). No AI, no cost.
 - **`pages.frameworkShare`** (percent, default 10, 1–100, D281): a change (save, delete, message, queued job, outside call)
   that **more than** this share of the app's start flows pass through, **and at least 10 flows** (fixed), is a framework
   change: listed under "Changes made in shared code" with `file:line` and its flow count, not drawn, and it doesn't make a
@@ -168,7 +167,7 @@ skipped changes): the same change at the same line, or the same shared part, run
 flows** list leaves out shared flows that change nothing, stop nothing and call nothing outside, nor does anything they continue
 into (only plain calls, package code and filters: no database step, read or save, no server call, file, message, push, queue or
 plugin call, no stop, no ❓), counted in one line, `Left out: 38 that change nothing, stop nothing and call nothing outside (for
-example `SqlBuilder.AddClause`, …)`, the heading saying `(21 of 59)`; developer page only (switch on). (3) Stops of one exception
+example `SqlBuilder.AddClause`, …)`, the heading saying `(21 of 59)`; developer page only. (3) Stops of one exception
 kind thrown in one class (a `throw` stop, not an answer or redirect) are one `X` row, and under a one-line flow one sub-bullet,
 listing every stop and, compactly, the conditions all share once and each place's others: "Stops: throws
 ArgumentOutOfRangeException (7 places in ReadingListFilter)" … "when `comparison` matches no case, at `ReadingListFilter.cs:28`

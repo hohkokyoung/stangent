@@ -35,16 +35,6 @@ public class PageCorrectionTests
     static string Rule(SpecApp app) => PageChecks.Statements(Page(app)).First(s => s.Section == "rules").Id;
 
     [Fact]
-    public void Off_it_refuses_and_a_page_with_none_is_as_it_was()
-    {
-        using var app = new SpecApp("version: 1\ncomponents: { page-corrections: false }\n");   // on by default since D373
-        Write(app, Output());
-        var e = Assert.Throws<StangentException>(() => PageCorrections.Propose(app.Pages(), app.Repo, SpecApp.Post, Rule(app), "x", "why", "me"));
-        Assert.Equal("component_off", e.Code);
-        Assert.False(File.Exists(PageCorrections.FileIn(app.Root)));
-    }
-
-    [Fact]
     public void A_proposal_changes_nothing_until_a_person_approves()
     {
         using var app = App();
@@ -108,7 +98,10 @@ public class PageCorrectionTests
     {
         var page = Page(app);
         page["generated"]!["bundleHash"] = "moved";
-        File.WriteAllText(new SpecPaths(app.Root).PageJson(app.Pages().Find(SpecApp.Post)!), CanonicalJson.Serialize(page));
+        var json = new SpecPaths(app.Root).PageJson(app.Pages().Find(SpecApp.Post)!);
+        File.WriteAllText(json, CanonicalJson.Serialize(page));
+        File.Delete(PageMoves.FileFor(json));   // no saved shape, so follow-moves and statement updates (on since D381) can't keep it
+
     }
 
     [Fact]

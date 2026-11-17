@@ -104,6 +104,13 @@ public class BugProofTests
         $"   at Shop.Tests.OrderTests.Rejects_orders_over_100() in /home/ci/shop/{TestFile}:line {line}"));
 
     [Fact]
+    public void Ai_enabled_false_stops_the_proof_before_any_call()   // D24: the one setting D381 kept
+    {
+        using var p = new Proof("ai:\n  enabled: false\n");
+        Assert.Equal("ai_disabled", Assert.Throws<StangentException>(() => p.Prepare()).Code);
+    }
+
+    [Fact]
     public void The_input_names_the_test_project_that_covers_the_code_and_the_commands()
     {
         using var p = new Proof();

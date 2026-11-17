@@ -547,7 +547,7 @@
                   "type": "boolean"
                 },
                 "unconfirmed": {
-                  "description": "A finding (fsd.findings on) no person has decided.",
+                  "description": "A finding no person has decided (only in bundles from before D388, which stopped showing the old route's findings).",
                   "type": "boolean"
                 },
                 "security": {
@@ -707,7 +707,7 @@
       }
     },
     "findings": {
-      "description": "Whether FSD findings are on (fsd.findings, D68).",
+      "description": "Whether FSD findings are shown (fsd.findings, D68); always false since D388.",
       "type": "boolean"
     },
     "rejected": {

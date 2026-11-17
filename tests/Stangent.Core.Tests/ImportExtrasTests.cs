@@ -332,74 +332,7 @@ public sealed class ImportExtrasTests : IDisposable
         Assert.Equal(md, File.ReadAllBytes(Path.Combine(Dir, "document.md")));
     }
 
-    // ---- A.9: first-import approval ----
-
-    TempRepo Approving(TempRepo archiveRepo) => new($"version: 1\nfsd: {{ archive: {{ name: a, path: '{archiveRepo.Root}', git: false }} }}\ncomponents: {{ first-import-approval: true }}\n");
-
-    [Fact]
-    public void First_import_approval_is_off_by_default_and_listed_as_a_component()
-    {
-        Assert.False(StangentComponents.Find("first-import-approval").OnByDefault);
-        Assert.False(StangentComponents.IsOn(repo.Repo.Config, "first-import-approval"));
-        Assert.Equal("imported", (string)Import()["status"]!);
-    }
-
-    [Fact]
-    public void With_approval_on_a_first_import_waits_where_nothing_reads_it_until_a_person_approves()
-    {
-        using var on = Approving(archive);
-        var file = Path.Combine(on.Root, "shop.docx");
-        File.WriteAllBytes(file, DocxWriter.Write(Outline));
-        var waiting = FsdImport.Import(on.Repo, file);
-        Assert.Equal(("pending-approval", "stangent fsd approve shop"), ((string)waiting["status"]!, (string)waiting["next"]!));
-        Assert.Empty(FsdImport.Documents(on.Root));
-        Assert.False(File.Exists(Path.Combine(FsdImport.DocDir(on.Root, "shop"), "document.json")));
-        Assert.Equal("pending-approval", (string)FsdImport.Import(on.Repo, file)["status"]!);
-        Assert.Equal("needs_approval", Code(() => FsdVersions.Promote(on.Repo, "shop", "Pat")));
-
-        var approved = FsdVersions.Approve(on.Root, "shop", "Pat");
-        Assert.Equal(("imported", "Pat"), ((string)approved["status"]!, (string)approved["approvedBy"]!));
-        var doc = Assert.Single(FsdImport.Documents(on.Root));
-        Assert.Equal("S-0001", (string)doc["sections"]![0]!["permanentId"]!);
-        Assert.False(Directory.Exists(FsdVersions.CandidateDir(on.Root, "shop")));
-        var moves = StateChanges.History(on.Root, StateKinds.FsdCandidate, $"shop@{((string)doc["original"]!["hash"]!)[..12]}");
-        Assert.Equal([("pending-approval", "code"), ("approved", "person")], moves.Select(m => (m.To, m.Who.Kind)));
-
-        Assert.Equal("no_candidate", Code(() => FsdVersions.Approve(on.Root, "shop", "Pat")));
-        File.WriteAllBytes(file, DocxWriter.Write(Outline + "\n# Herbs\n\nMint is cut to order every single morning.\n"));
-        Assert.Equal("candidate", (string)FsdImport.Import(on.Repo, file)["status"]!);
-        Assert.Equal("not_pending_approval", Code(() => FsdVersions.Approve(on.Root, "shop", "Pat")));
-    }
-
-    [Fact]
-    public void A_waiting_first_import_can_be_discarded_or_replaced_by_another_file()
-    {
-        using var on = Approving(archive);
-        var file = Path.Combine(on.Root, "shop.docx");
-        File.WriteAllBytes(file, DocxWriter.Write(Outline));
-        FsdImport.Import(on.Repo, file);
-        File.WriteAllBytes(file, DocxWriter.Write(Outline + "\n# Herbs\n\nMint is cut to order every single morning.\n"));
-        Assert.Equal("pending-approval", (string)FsdImport.Import(on.Repo, file)["status"]!);
-        Assert.Contains("Herbs", File.ReadAllText(Path.Combine(FsdVersions.CandidateDir(on.Root, "shop"), "document.md")));
-        Assert.Contains("first import", FsdSectionDiff.Markdown(FsdVersions.Diff(on.Root, "shop")));
-        FsdVersions.Discard(on.Root, "shop", "Pat");
-        Assert.Empty(FsdImport.Documents(on.Root));
-        Assert.Equal("no_candidate", Code(() => FsdVersions.Diff(on.Root, "shop")));
-    }
-
-    [Fact]
-    public void Status_shows_a_first_import_waiting_with_no_current_version()
-    {
-        using var on = Approving(archive);
-        var file = Path.Combine(on.Root, "shop.docx");
-        File.WriteAllBytes(file, DocxWriter.Write(Outline));
-        FsdImport.Import(on.Repo, file);
-        var status = FsdStatus.Of(on.Root, "shop");
-        Assert.Null(status["current"]);
-        Assert.True((bool)status["candidate"]!["first"]!);
-        Assert.Equal("pending-approval", (string)status["candidate"]!["state"]!);
-        Assert.Equal("stangent fsd approve shop", (string)status["next"]!["command"]!);
-    }
+    // A.9's first-import approval was removed by D388: committing a first import's chapters approves it (D385).
 
     [Fact]
     public void Status_names_a_doubtful_section_of_the_candidate()

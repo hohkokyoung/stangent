@@ -15,7 +15,7 @@ public class TicketPointsTests
     static SpecApp App(string extra = "") => new($"version: 1\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n{extra}");
 
     /// <summary>The finder off: code's own signals are the starting points (D70, D101).</summary>
-    static SpecApp CodeOnly() => App("  aiPoints: false\n");
+    static SpecApp CodeOnly() => App(""); // the finder never answers here, so code's signals are the points (D390)
 
     static JsonObject Points(SpecApp app, string key, string description, IEnumerable<string>? comments = null, IEnumerable<TicketFixtures.File>? files = null,
         string[]? add = null, string[]? remove = null)
@@ -34,18 +34,6 @@ public class TicketPointsTests
         [.. points["points"]!.AsArray().Select(p => ((string)p!["kind"]!, (string)p["id"]!, (string)p["signal"]!))];
 
     [Fact]
-    public void The_file_finder_off_by_its_component_works_as_the_old_key_does()
-    {
-        using var app = App("");
-        app.Repo.Config.Tickets.AiPoints = true;
-        using var off = App("");
-        off.Repo.Config.Components["file-finder"] = false;
-        StangentComponents.Apply(off.Repo.Config);
-        Assert.NotEqual("off", (string)Points(app, "SON-20", "Orders fail")["ai"]!["status"]!);
-        Assert.Equal("off", (string)Points(off, "SON-20", "Orders fail")["ai"]!["status"]!);
-    }
-
-    [Fact]
     public void A_stack_frame_finds_its_method_by_file_and_line_or_by_name()
     {
         using var app = CodeOnly();
@@ -58,7 +46,7 @@ public class TicketPointsTests
         var points = List(p);
         Assert.Contains((StartingPoint.Symbol, SpecApp.Place, "stack-frame"), points);
         Assert.Contains((StartingPoint.Symbol, SpecApp.Create, "stack-frame"), points);
-        Assert.Equal("off", (string?)p["ai"]!["status"]);
+        Assert.Equal("needed", (string?)p["ai"]!["status"]);   // code's signals stand until the finder answers (D390)
     }
 
     [Fact]
@@ -105,11 +93,11 @@ public class TicketPointsTests
         new JsonObject { ["path"] = path, ["quote"] = quote, ["line"] = line, ["why"] = "Throws the error the ticket shows." }.ToJsonString();
 
     [Fact]
-    public void With_the_finder_on_code_signals_are_not_starting_points_and_the_finder_gets_the_ticket_only()
+    public void Until_the_finder_answers_code_signals_are_the_starting_points_and_the_finder_gets_the_ticket_only()
     {
         using var app = App();
         var p = Points(app, "SHOP-5", Crash);
-        Assert.Empty(p["points"]!.AsArray());               // the stack frame is a lead for the finder, not a point (D101)
+        Assert.Contains((StartingPoint.Symbol, SpecApp.Place, "stack-frame"), List(p));   // until the finder answers (D390); after, only its files
         Assert.Equal("needed", (string?)p["ai"]!["status"]);
 
         var step = TicketPoints.Prepare(app.Repo, TicketContext.Load(app.Repo), "SHOP-5");
@@ -125,7 +113,8 @@ public class TicketPointsTests
     public void A_found_file_is_checked_by_path_quote_and_line_and_recorded_with_them()
     {
         using var app = App();
-        Points(app, "SHOP-5", Crash);
+        var before = Points(app, "SHOP-5", Crash);
+        Assert.Contains(List(before), p => p.Item3 == "stack-frame");   // code's signals until the finder answers (D390)
         var ctx = TicketContext.Load(app.Repo);
         TicketPoints.Prepare(app.Repo, ctx, "SHOP-5");
         Canned(app, "SHOP-5", $$"""{"files":[{{File1("./Core/OrderService.cs")}},{{File1()}}]}""");
@@ -268,15 +257,8 @@ public class TicketPointsTests
     }
 
     [Fact]
-    public void With_the_finder_off_or_ai_off_code_signals_are_the_starting_points()
+    public void With_ai_off_code_signals_are_the_starting_points()
     {
-        using (var app = CodeOnly())
-        {
-            var p = Points(app, "SHOP-8", Crash);
-            Assert.Equal("off", (string?)p["ai"]!["status"]);
-            Assert.Contains((StartingPoint.Symbol, SpecApp.Place, "stack-frame"), List(p));
-            Assert.Equal("current", TicketPoints.Prepare(app.Repo, TicketContext.Load(app.Repo), "SHOP-8").Status);
-        }
         using (var app = new SpecApp("version: 1\nai:\n  enabled: false\ntickets:\n  replay: replay\n"))
         {
             var p = Points(app, "SHOP-9", Crash);

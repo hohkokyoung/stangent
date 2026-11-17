@@ -121,14 +121,14 @@ impact walk never follows them.
 
 ## Enums, for comparing tables (C.2, D124)
 
-With `table-facts` on (`fsd.compareTables`), `graph build` also reads each enum's name, members and values from the C# and TypeScript extractors, and writes them to `.stangent/graph-enums.json`, with the commit they were read at. A value the compiler can't work out is null, never a guess.
+`graph build` also reads (table facts, D124; always since D381) each enum's name, members and values from the C# and TypeScript extractors, and writes them to `.stangent/graph-enums.json`, with the commit they were read at. A value the compiler can't work out is null, never a guess.
 
-**Kept apart.** They aren't points, lines or facts, and the file isn't the graph. So the impact walk can't see them, and `graph export` gives the same bytes with the switch on or off, which a test holds. `code-graph`'s version doesn't move for them. CI sharing an exported graph doesn't get them: `fsd compare-tables` then says to run `graph build`. Turned on with no file there, the next build reads every project again. Off, the file is removed.
+**Kept apart.** They aren't points, lines or facts, and the file isn't the graph. So the impact walk can't see them, and `graph export` gives the same bytes whether they're read or not. `code-graph`'s version doesn't move for them. CI sharing an exported graph doesn't get them: `fsd compare-tables` then says to run `graph build`. Turned on with no file there, the next build reads every project again. Off, the file is removed.
 
 ## Screens with no route: `root-screens` (D127)
 
-A React app can show a component straight from its root, with no route: `token ? <Routed/> : <SignIn/>`. With the component
-`root-screens` on (`components: { root-screens: true }`, off by default because it adds pages), each one is a `page` point named
+A React app can show a component straight from its root, with no route: `token ? <Routed/> : <SignIn/>`. Each
+one (`root-screens`, always on since D381) is a `page` point named
 `(no route) <Component>`, with a ✅ `routes-to` line to it, so it gets a reference page and can be a candidate for an FSD section.
 Two components of one name are told apart by file. Worked out from the JSX by the TypeScript compiler. No component or folder name decides.
 
@@ -155,13 +155,13 @@ Off, the output is the same as before the component existed.
 ## Routes written with `render` or `children`: `route-render` (D127)
 
 Older React Router writes a route as `<Route path="/x" render={props => <X/>} />`, `children={<X/>}` or `<Route path="/x"><X/></Route>`.
-With the component `route-render` on (`components: { route-render: true }`, off by default because it adds pages), each is a `page`
+Each (`route-render`, always on since D381) is a `page`
 with a ✅ `routes-to` line, detector `route-render`, to every component named in that JSX, or in the function `render` names.
 A route naming `component` or `element` keeps that, and nested `<Route>`s stay routes of their own.
 
-No component of the app to read (`render={picked}` from a prop, only library tags such as a redirect, only `<div>`s) still gives the page, with a ❓ from detector `route-render`, never a guess. With the component on, `graph build`'s result has `routeRender: { routes, unresolved }`.
+No component of the app to read (`render={picked}` from a prop, only library tags such as a redirect, only `<div>`s) still gives the page, with a ❓ from detector `route-render`, never a guess. `graph build`'s result has `routeRender: { routes, unresolved }`.
 
-**Who's read.** A plain React app (a `package.json` naming React, no tsconfig) is read in a repo with Python, or with `root-screens` or `route-render` on. Any other repo keeps the map it had. With a tsconfig, an app is always read.
+**Who's read.** A plain React app (a `package.json` naming React, no tsconfig) is always read since D381 turned `root-screens` and `route-render` on; it needs Node, as any frontend does. With a tsconfig, an app is always read.
 
 Off, the output is the same as before the component existed.
 
@@ -233,8 +233,7 @@ Kavita (2026-11-17): `EmailService`'s `TemplatePath = "{0}.html"` and its 14 nam
 
 ## Detectors (D17)
 
-Detectors are switched on per repo in `stangent.yaml`. `detectors: []` (the default) runs all of
-them; list names to run only those; `[none]` runs none. Per-detector settings go in `detectorSettings`:
+Every detector runs on every repo (D381; the old `detectors:` list is ignored with a warning). Per-detector settings go in `detectorSettings`:
 
 | Detector | Settings |
 |---|---|

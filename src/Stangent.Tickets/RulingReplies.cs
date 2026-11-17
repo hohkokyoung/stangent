@@ -25,7 +25,6 @@ public static class RulingReplies
 
     public static JsonObject Read(StangentRepo repo, string key, JsonObject pulled)
     {
-        if (!TruthList.On(repo.Config)) return new JsonObject { ["state"] = "off" };
         var paths = new TicketPaths(repo.Root, key);
         var dir = TicketDrafts.Dir(paths);
         var drafts = Directory.Exists(dir)

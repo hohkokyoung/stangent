@@ -693,13 +693,6 @@ public class FixLoopTests
         Assert.Empty(SchemaRegistry.Embedded.Validate(FixLoop.OutputSchema, Rig.Plan().ToJsonString()));
     }
 
-    [Fact]
-    public void The_fix_component_off_refuses_every_step()
-    {
-        using var rig = new Rig("components:\n  fix: false\n");
-        Assert.Equal("fix_off", Assert.Throws<StangentException>(() => rig.Start()).Code);
-    }
-
     /// <summary>Stands in for dotnet: canned reports written where the command asks, and where each command ran.</summary>
     sealed class Runner : ICommandRunner
     {

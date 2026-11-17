@@ -12,11 +12,10 @@ public sealed record PageShape(string Hash, IReadOnlyDictionary<string, string> 
 /// I.4 (D131). A page's input hash covers line numbers and paths, so code that only moved reads as changed and asks for a paid run. This compares the rest:
 /// the same instructions and schema, the same points and lines, the same code. Same shape: the page's statements are still as good as they were, so code moves
 /// its citations and its hash on, with no AI. Anything else stays stale. A file renamed where the symbol's id holds its path (TypeScript) has new ids, so it stays stale too.
-/// Off by default (<c>follow-moves</c>), because it rewrites a saved hash. The file beside the page is written only with this or <c>statement-update</c> on.
+/// On since D381 (it was off by default, because it rewrites a saved hash). The file beside the page is written for this and <c>statement-update</c> on.
 /// </summary>
 public static class PageMoves
 {
-    public const string Component = "follow-moves";
 
     public static string FileFor(string pageJson) => pageJson[..^".json".Length] + ".shape.json";
 
@@ -90,7 +89,6 @@ public static class PageMoves
     /// <summary><c>spec follow</c>: pages whose code only moved go on; a current page with no shape on file gets one, for next time.</summary>
     public static JsonObject Run(PageSet set, StangentConfig config, SpecPaths paths)
     {
-        if (!set.Settings.FollowMoves) throw new StangentException("component_off", $"{Component} is off. Turn on `components.{Component}`: it rewrites a saved hash.", ExitCodes.Usage);
         var followed = new JsonArray();
         int started = 0, stale = 0;
         foreach (var page in set.Pages)

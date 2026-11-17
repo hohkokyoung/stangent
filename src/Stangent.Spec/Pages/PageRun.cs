@@ -151,12 +151,6 @@ public static class PageRun
                 }
                 state["staged"] = output!.DeepClone();
                 if (stage == "fix") return Record(set, repo.Config, paths, page, state, work, bundle);
-                // Switched off (D121): recorded as written, and the page says no one checked it, so no findings can't read as none found.
-                if (!StangentComponents.IsOn(repo.Config, "page-verifier"))
-                {
-                    state["verifierOff"] = true;
-                    return Record(set, repo.Config, paths, page, state, work, bundle);
-                }
                 // I.2: nothing new to check, so nothing for a verifier to read. It isn't "off": what's kept was checked when it was written.
                 var keptWords = StatementUpdate.KeptWords(state["keep"] as JsonArray);
                 if (keptWords.Count > 0 && PageChecks.Statements((JsonObject)output).All(s => keptWords.Contains(Quotes.Normalize((string)s.Statement["text"]!))))
@@ -334,7 +328,7 @@ public static class PageRun
     /// <summary>A page's lines and Markdown from its JSON. Says whether it has line citations. Off (D121): no lines file, not even an old one that would read as this page's.</summary>
     internal static bool WriteRendered(PageSet set, StangentConfig config, SpecPaths paths, PageDef page, JsonObject record)
     {
-        var citing = StangentComponents.IsOn(config, "line-citations");
+        var citing = true;
         var lines = citing ? PageLines.Build(record, set.Graph, SymbolLines.Lookup(set.Graph)) : null;
         if (lines is not null) PageLines.Write(paths.PageJson(page), lines);
         else File.Delete(PageLines.FileFor(paths.PageJson(page)));

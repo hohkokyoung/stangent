@@ -333,11 +333,4 @@ public sealed class TableFactsTests : IDisposable
         Assert.True((bool)check["ok"]!, string.Join("; ", check["problems"]!.AsArray().Select(p => (string)p!)));
     }
 
-    [Fact]
-    public void It_is_off_by_default()
-    {
-        Assert.False(new StangentConfig().Fsd.CompareTables);
-        Assert.False(StangentComponents.IsOn(new StangentConfig(), "table-facts"));
-        Assert.False((bool)TableFacts.Off()["compared"]!);
-    }
 }

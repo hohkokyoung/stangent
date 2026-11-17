@@ -5,7 +5,7 @@ namespace Stangent.Flows;
 /// <summary>
 /// One page per area (D230, D233): <c>specs/areas/&lt;slug&gt;/page.md</c>, written by <c>stangent areas check</c>: a generated-file marker,
 /// the area's name and counts, the place for layer 4's words, its start flows as links grouped by kind, then every shared flow they reach
-/// as links, wherever it sits. With <c>components.pages</c> on, layer 4's place holds the developer page by code (D278–D285) and the
+/// as links, wherever it sits. Layer 4's place holds the developer page by code (D278–D285) and the
 /// page opens with its note (D283); off, what's there is kept as found, except a developer page, which is dropped.
 /// </summary>
 public static class AreaPages

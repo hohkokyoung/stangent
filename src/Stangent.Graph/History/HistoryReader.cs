@@ -192,11 +192,6 @@ public static class HistoryStep
     {
         var settings = repo.Config.History;
         var empty = new Dictionary<string, int>();
-        if (!settings.Enabled)
-        {
-            graph.History = new HistoryInfo("off", "", "", 0, 0, empty, false, "", "history.enabled is false");
-            return;
-        }
         if (graph.Commit.Length == 0)
         {
             graph.History = new HistoryInfo("none", "", "", 0, 0, empty, false, "", "not a git repository");
@@ -221,7 +216,7 @@ public static class HistoryStep
         }
         // Recomputed in full only when something it depends on changed (D41).
         var fingerprint = CanonicalJson.Hash(string.Join("\n",
-            AlgorithmVersion, graph.Commit, settings.Enabled, settings.Window, settings.MinShared, settings.MinShare.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            AlgorithmVersion, graph.Commit, true /* history.enabled before D381; kept so saved fingerprints hold */, settings.Window, settings.MinShared, settings.MinShare.ToString(System.Globalization.CultureInfo.InvariantCulture),
             settings.MaxFiles, followRenames, string.Join(",", settings.BotAuthors.Order(StringComparer.Ordinal)),
             string.Join(",", ignoreRevs), string.Join("\n", mapFiles.Order(StringComparer.Ordinal))));
         if (previous?.History is { Status: "full" or "shallow" } same && same.Fingerprint == fingerprint)

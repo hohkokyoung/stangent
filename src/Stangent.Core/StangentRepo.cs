@@ -14,7 +14,6 @@ public sealed class StangentConfig
     /// Code-graph link detectors to run (D17). Empty means every built-in detector; list names to
     /// run only those; <c>[none]</c> runs none.
     /// </summary>
-    public List<string> Detectors { get; set; } = [];
     /// <summary>Per-detector settings, e.g. <c>publish-handle: { handlerInterfaces: [...] }</c>.</summary>
     public Dictionary<string, Dictionary<string, List<string>>> DetectorSettings { get; set; } = [];
     public AdaptersConfig Adapters { get; set; } = new();
@@ -28,12 +27,12 @@ public sealed class StangentConfig
     public TicketsConfig Tickets { get; set; } = new();
     /// <summary>The fix loop (Phase 4, D343, D348): each fixer call's cap and the ticket's whole cap.</summary>
     public FixConfig Fix { get; set; } = new();
-    /// <summary>Layer 4's developer page (D281, D282): what it shows. Written only while <c>components.pages</c> is on.</summary>
+    /// <summary>Layer 4's developer page (D281, D282): what it shows. Always written (D381).</summary>
     public PagesConfig Pages { get; set; } = new();
     public FlowsConfig Flows { get; set; } = new();
-    /// <summary>One place to switch any component on or off (D121): <c>components: { page-verifier: false }</c>. Unset keeps today's behaviour, and the
-    /// older keys (<c>history.enabled</c>, <c>fsd.findings</c>, ...) keep working; this wins where both are set. <see cref="StangentComponents"/> lists them.</summary>
-    public Dictionary<string, bool> Components { get; set; } = [];
+    /// <summary>Settings from before D381 that a stangent.yaml still holds (<c>components:</c>, <c>detectors:</c>, <c>history.enabled</c>, …): read, ignored
+    /// and named in a warning, since every feature is now on. Never written.</summary>
+    [YamlIgnore] public List<string> RemovedSettings { get; } = [];
 
     public sealed class FixConfig
     {
@@ -77,7 +76,6 @@ public sealed class StangentConfig
     public sealed class HistoryConfig
     {
         // Tuned on nopCommerce and Sonarr, then frozen before judging (D43; benchmark/results/2026-10-19-phase1c-tuning.json).
-        public bool Enabled { get; set; } = true;
         public int Window { get; set; } = 10;
         public int MinShared { get; set; } = 3;
         public double MinShare { get; set; } = 0.2;
@@ -131,22 +129,15 @@ public sealed class StangentConfig
         /// <summary>The areas the FSD covers: routes or route prefixes (<c>/settings</c> covers <c>/settings/tags</c>).
         /// Empty: every screen. Screens outside it are never listed as undocumented.</summary>
         public List<string> Scope { get; set; } = [];
-        /// <summary>Discrepancy findings (gap, conflict, undocumented) in <c>specs/trace.yaml</c>. Off by default: Phase
-        /// 2b's "not too noisy" bar failed on Sonarr (D57, D68), so only links are recorded until a project turns them on.</summary>
-        public bool Findings { get; set; }
         /// <summary><c>fsd export</c>: a chapter longer than this many lines is cut at its next heading level (D122). <c>--max-lines</c> overrides it.</summary>
         public int ExportMaxLines { get; set; } = 1500;
         /// <summary><c>fsd review</c>'s cap per run (D341): turns and dollars, its one retry inside it. D321 used 105K tokens, Kavita 205–242K.</summary>
         public ReviewBudgetConfig ReviewBudget { get; set; } = new();
         /// <summary>How many review runs <c>fsd review-merge</c> unions (D341, D324: two merged found 28–29 of 30).</summary>
         public int ReviewRuns { get; set; } = 2;
-        /// <summary>Files with no place in a document's text get a section of their own at its end (I.8, D126). Off by default: on, such a document has one more section, so its text and sections change.</summary>
-        public bool AttachmentHome { get; set; }
         /// <summary>An attachment holding more text than this is marked "not checked" in the import report and its record (D123). A stated setting, not a measured one.</summary>
         public int AttachmentChars { get; set; } = 40000;
         public ExcelConfig Excel { get; set; } = new();
-        /// <summary>Table facts compared with the code (C.2, D124): a second route to code, off by default until the owner answers D68's question. Off, <c>graph build</c> reads no enums and <c>fsd compare-tables</c> writes nothing.</summary>
-        public bool CompareTables { get; set; }
     }
 
     /// <summary>When a workbook is flagged as very large in the import report (D123). It's still imported; these only say when to look. Stated settings, not measured ones.</summary>
@@ -191,9 +182,6 @@ public sealed class StangentConfig
         public int BundleChars { get; set; } = 40_000;
         /// <summary>How much of one text attachment goes into the bundle (D72); the rest is a pointer to the file.</summary>
         public int AttachmentChars { get; set; } = 8_000;
-        /// <summary>The file finder (D101): an agent searches the repo for the ticket's files. Off (or <c>ai.enabled</c>
-        /// false): code's own signals (D70) are the starting points instead.</summary>
-        public bool AiPoints { get; set; } = true;
         /// <summary>A folder of saved MCP results (<c>&lt;KEY&gt;/raw</c>, <c>&lt;KEY&gt;/attachments</c>): tickets are read from it
         /// instead of Jira, so a score replays exactly what was read (D77). Relative to the repo.</summary>
         public string? Replay { get; set; }
@@ -271,7 +259,7 @@ public sealed class StangentRepo
     public const string ConfigFile = "stangent.yaml";
 
     /// <summary>Lines <c>stangent init</c> adds to the repo's .gitignore: derived and run data, never committed (D7, D21; AI run files, D52).</summary>
-    public static readonly string[] GitIgnoreLines = [".stangent/index.sqlite*", ".stangent/graph.sqlite*", ".stangent/graph-crosscheck.json", ".stangent/telemetry/", ".stangent/spec/", ".stangent/fsd/", ".stangent/fsd-disprove/", ".stangent/req/", ".stangent/tickets/", ".stangent/fix/"];
+    public static readonly string[] GitIgnoreLines = [".stangent/index.sqlite*", ".stangent/graph.sqlite*", ".stangent/graph-crosscheck.json", ".stangent/graph-enums.json", ".stangent/telemetry/", ".stangent/spec/", ".stangent/fsd/", ".stangent/fsd-disprove/", ".stangent/req/", ".stangent/tickets/", ".stangent/fix/"];
 
     static readonly IDeserializer Reader = new DeserializerBuilder()
         .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -335,8 +323,9 @@ public sealed class StangentRepo
     {
         try
         {
-            var config = Reader.Deserialize<StangentConfig?>(File.ReadAllText(path)) ?? new StangentConfig();
-            StangentComponents.Apply(config);
+            var (text, removed) = RemovedSettingsOf(File.ReadAllText(path));
+            var config = Reader.Deserialize<StangentConfig?>(text) ?? new StangentConfig();
+            config.RemovedSettings.AddRange(removed);
             if (config.Pages.FrameworkShare is < 1 or > 100)
                 throw new StangentException("invalid_config", $"{path}: pages.frameworkShare is {config.Pages.FrameworkShare}; it is a percent of the app's flows, 1 to 100.");
             if (config.Pages.ChartCap < 1)
@@ -354,6 +343,36 @@ public sealed class StangentRepo
             var cut = CutKeys.FirstOrDefault(k => e.Message.Contains($"Property '{k}' not found", StringComparison.Ordinal));
             throw new StangentException("invalid_config", cut is null ? $"{path}: {e.Message}" : $"{path}: {e.Message} `{cut}` was cut with the old link route (D342); take it out of stangent.yaml.");
         }
+    }
+
+    /// <summary>Switches removed by D381 (D388): a key path, top level or one level down. <c>ai.enabled</c> stays: it is a client's
+    /// "no external AI" rule (D24), not a component switch.</summary>
+    public static readonly string[] RemovedKeys =
+        ["components", "detectors", "history.enabled", "fsd.findings", "fsd.attachmentHome", "fsd.compareTables", "tickets.aiPoints"];
+
+    /// <summary>Takes the removed keys out of the YAML, so a stangent.yaml written before D381 still loads, and names those it held.</summary>
+    internal static (string Text, List<string> Removed) RemovedSettingsOf(string text)
+    {
+        var stream = new YamlDotNet.RepresentationModel.YamlStream();
+        try { stream.Load(new StringReader(text)); }
+        catch (YamlException) { return (text, []); } // the deserializer reports it with its line
+        if (stream.Documents.Count == 0 || stream.Documents[0].RootNode is not YamlDotNet.RepresentationModel.YamlMappingNode root) return (text, []);
+        var removed = new List<string>();
+        foreach (var key in RemovedKeys)
+        {
+            var parts = key.Split('.');
+            var map = root;
+            if (parts.Length == 2)
+            {
+                if (!map.Children.TryGetValue(new YamlDotNet.RepresentationModel.YamlScalarNode(parts[0]), out var inner) || inner is not YamlDotNet.RepresentationModel.YamlMappingNode m) continue;
+                map = m;
+            }
+            if (map.Children.Remove(new YamlDotNet.RepresentationModel.YamlScalarNode(parts[^1]))) removed.Add(key);
+        }
+        if (removed.Count == 0) return (text, removed);
+        var w = new StringWriter();
+        stream.Save(w, assignAnchors: false);
+        return (w.ToString(), removed);
     }
 
     /// <summary>The <c>fsd:</c> and <c>spec:</c> settings D342 cut, named in the error a stangent.yaml still holding one gets.</summary>

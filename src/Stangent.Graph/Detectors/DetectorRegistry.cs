@@ -30,17 +30,8 @@ public static class DetectorRegistry
         new PlaywrightDetector(), // existing specs' goto → screens, stored apart and never walked (D115)
     ];
 
-    /// <summary>Empty list → all built-ins; <c>[none]</c> → none; otherwise the named ones (D17). <c>components.detector-x</c> wins over the list (D121).</summary>
-    public static IReadOnlyList<IDetector> Enabled(StangentConfig config)
-    {
-        if (config.Detectors.Count == 0 && config.Components.Count == 0) return BuiltIn;
-        if (config.Detectors is ["none"] && config.Components.Count == 0) return [];
-        var unknown = config.Detectors.Except(BuiltIn.Select(d => d.Name)).Where(_ => config.Detectors is not ["none"]).ToList();
-        if (unknown.Count > 0)
-            throw new StangentException("unknown_detector",
-                $"stangent.yaml names unknown detector(s): {string.Join(", ", unknown)}. Known: {string.Join(", ", BuiltIn.Select(d => d.Name))}.");
-        return [.. BuiltIn.Where(d => StangentComponents.DetectorOn(config, d.Name))];
-    }
+    /// <summary>Every built-in detector runs (D381): a detector that finds nothing in a repo adds nothing.</summary>
+    public static IReadOnlyList<IDetector> Enabled(StangentConfig config) => BuiltIn;
 
     public static IReadOnlyDictionary<string, List<string>> Settings(StangentConfig config, string detector) =>
         config.DetectorSettings.TryGetValue(detector, out var s) ? s : new Dictionary<string, List<string>>();

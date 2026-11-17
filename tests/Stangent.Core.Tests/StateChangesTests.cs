@@ -195,7 +195,7 @@ public partial class StateChangesTests
         [("src/Stangent.Tickets/Ticket.cs", "status")] = (2, "Jira's status, copied at pull; Jira owns it"),
         [("src/Stangent.Tickets/Bundle.cs", "status")] = (1, "a copy of Jira's status"),
         [("src/Stangent.Tickets/Bundle.cs", "decision")] = (1, "a copy of the trace decision into a bundle"),
-        [("src/Stangent.Tickets/Points.cs", "status")] = (5, "the file finder's last answer, worked out again from its inputs on every pull; its run's stage is the lifecycle"),
+        [("src/Stangent.Tickets/Points.cs", "status")] = (4, "the file finder's last answer, worked out again from its inputs on every pull; its run's stage is the lifecycle"),
         [("src/Stangent.Tickets/Proof/BugProof.cs", "outcome")] = (4, "one attempt's result, appended and never changed; the proof's own outcome is on the module"),
         [("src/Stangent.Tickets/Proof/BugProof.cs", "verdict")] = (4, "an attempt's truth map verdict (D361), what one attempt said as code settled it, appended and never changed: not a state that moves"),
 

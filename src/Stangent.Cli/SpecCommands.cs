@@ -55,14 +55,14 @@ static class SpecCommands
 
         var assembleFile = new Argument<string>("file") { Description = "A step's input file, as `next.prompt` names it." };
         var assembleInPlace = new Option<bool>("--in-place") { Description = "Write the full text back to the file, for a subagent that reads the file itself." };
-        var assembleBatch = new Option<bool>("--for-batch") { Description = "This call also sends the schema through Claude Code's option: with schema-once on, it's left out of the text (J.4)." };
+        var assembleBatch = new Option<bool>("--for-batch") { Description = "This call also sends the schema through Claude Code's option, so it's left out of the text (J.4, schema-once; always since D381)." };
         var assemble = new Command("assemble", "Print a step's whole input: its stored file with the shared instructions and schema put back, byte for byte (D130). Any other file comes back as it is.") { assembleFile, assembleInPlace, assembleBatch };
         assemble.SetAction(pr => Cli.Run(pr, "spec assemble", ctx =>
         {
             var file = pr.GetValue(assembleFile)!;
             // A step's "previous attempt" may be missing when the agent wrote nothing: an empty input part, as `cat` gave.
             var stored = File.Exists(file) ? File.ReadAllText(file) : "";
-            var once = pr.GetValue(assembleBatch) && ctx.HasRepo && Stangent.Core.StangentComponents.IsOn(ctx.Repo.Config, "schema-once");
+            var once = pr.GetValue(assembleBatch);
             var text = SharedHead.Assemble(stored, once);
             if (pr.GetValue(assembleInPlace) && !ReferenceEquals(text, stored)) File.WriteAllText(file, text);
             return new JsonObject { ["text"] = pr.GetValue(assembleInPlace) ? "" : text };
@@ -79,7 +79,7 @@ static class SpecCommands
         var cite = new Command("cite", "Fill recorded pages' line citations from the graph and make their statement ids permanent. Code only: no AI, and no page's JSON changes (2.3).") { citePage };
         cite.SetAction(pr => Cli.Run(pr, "spec cite", ctx =>
         {
-            var report = PageLines.Refresh(ctx.Repo.Root, Cli.LoadGraph(ctx), pr.GetValue(citePage), Stangent.Core.StangentComponents.IsOn(ctx.Repo.Config, "line-citations"), ctx.Repo.Config);
+            var report = PageLines.Refresh(ctx.Repo.Root, Cli.LoadGraph(ctx), pr.GetValue(citePage), true, ctx.Repo.Config);
             ctx.Span.Attributes["stangent.artifact.count"] = (int)report["pages"]!;
             return report;
         }));
@@ -132,7 +132,7 @@ static class SpecCommands
         nav.SetAction(pr => Cli.Run(pr, "spec nav", ctx => new JsonObject { ["pages"] = PageNavigation.Write(new SpecPaths(ctx.Repo.Root)), ["file"] = "specs/reference/index.md" }));
         spec.Subcommands.Add(nav);
 
-        var follow = new Command("follow", "Pages whose code only moved: their citations and saved hash follow it, with no AI (I.4). Off unless follow-moves is on.");
+        var follow = new Command("follow", "Pages whose code only moved: their citations and saved hash follow it, with no AI (I.4; always on since D381).");
         follow.SetAction(pr => Cli.Run(pr, "spec follow", ctx => PageMoves.Run(Load(ctx, null), ctx.Repo.Config, new SpecPaths(ctx.Repo.Root))));
         spec.Subcommands.Add(follow);
 
@@ -233,7 +233,7 @@ static class SpecCommands
         ctx.Span.Attributes["gen_ai.usage.input_tokens"] = usage.InputTokens + usage.CacheReadTokens + usage.CacheWriteTokens;
         ctx.Span.Attributes["gen_ai.usage.output_tokens"] = usage.OutputTokens;
         ctx.Span.Attributes["gen_ai.usage.cost_usd"] = usage.CostUsd;
-        // Effort and mode stay on the call's own record (D161): telemetry-event v2 has no field for them, and an event carrying them was dropped whole.
+        // Effort and mode stay on the call's own record (D161): telemetry-event v3 has no field for them, and an event carrying them was dropped whole.
         return usage;
     }
 

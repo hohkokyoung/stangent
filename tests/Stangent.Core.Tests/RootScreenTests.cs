@@ -54,10 +54,4 @@ public class RootScreenTests
         Assert.Contains(set.Slices[page.Id].Nodes, n => n.Node.Id == "ts|src/Help.tsx#Help");
     }
 
-    [Fact]
-    public void The_switch_is_off_until_a_repo_turns_it_on()
-    {
-        Assert.False(StangentComponents.IsOn(new StangentConfig(), "root-screens"));
-        Assert.True(StangentComponents.IsOn(new StangentConfig { Components = { ["root-screens"] = true } }, "root-screens"));
-    }
 }

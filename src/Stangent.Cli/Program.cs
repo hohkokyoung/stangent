@@ -30,9 +30,6 @@ init.SetAction(pr => Cli.Run(pr, "init", ctx =>
 }));
 root.Subcommands.Add(init);
 
-var components = new Command("components", "Every component: on or off, the setting that controls it, what depends on it, and what isn't connected yet (D121).");
-components.SetAction(pr => Cli.Run(pr, "components", ctx => ComponentReport.Build(ctx.Repo.Config)));
-root.Subcommands.Add(components);
 
 var status = new Command("status", "What's in the store, whether AI is on, and where telemetry goes.");
 status.SetAction(pr => Cli.Run(pr, "status", ctx =>
@@ -48,7 +45,6 @@ status.SetAction(pr => Cli.Run(pr, "status", ctx =>
         ["version"] = TelemetryWriter.ServiceVersion,
         ["ai"] = new JsonObject { ["enabled"] = ctx.Repo.Config.Ai.Enabled, ["model"] = ctx.Repo.Config.Ai.Model, ["effort"] = ctx.Repo.Config.Ai.Effort },
         ["artifacts"] = new JsonObject { ["total"] = entries.Count, ["byType"] = byType },
-        ["detectors"] = new JsonArray([.. ctx.Repo.Config.Detectors.Select(d => (JsonNode)d)]),
         ["telemetryDir"] = ctx.Telemetry.Dir,
     };
 }));
@@ -255,8 +251,6 @@ var screenTests = new Command("screen-tests", "Existing Playwright specs that op
 screenTests.SetAction(pr => Cli.Run(pr, "graph screen-tests", ctx =>
 {
     var answer = PlaywrightLinks.Answer(Cli.LoadGraph(ctx), SymbolLines.RepoName(ctx.Repo.Root), pr.GetValue(screenOption));
-    // Off (D121): none were looked for, which isn't the same as none existing.
-    if (!StangentComponents.IsOn(ctx.Repo.Config, "detector-playwright-specs")) answer["playwrightSpecs"] = "off";
     ctx.Span.Attributes["stangent.artifact.count"] = answer["links"]!.AsArray().Count;
     return answer;
 }));
@@ -318,6 +312,8 @@ sealed class CliContext(string? repoPath, TelemetryWriter telemetry, Span span)
             Telemetry = new TelemetryWriter(r.TelemetryDir, SchemaRegistry.Embedded, TimeProvider.System, Console.Error);
         Span.Attributes["stangent.repo.id"] = r.Id;
         Span.Attributes["stangent.ai.enabled"] = r.Config.Ai.Enabled;
+        if (r.Config.RemovedSettings.Count > 0)
+            Console.Error.WriteLine($"warning: stangent.yaml still has {string.Join(", ", r.Config.RemovedSettings)}, which no longer do anything: every feature is on (D381). Take them out.");
         return r;
     }
 }
@@ -374,15 +370,6 @@ static class Cli
 
     public static int Run(ParseResult pr, string command, Func<CliContext, JsonNode?> body) => Run(pr, command, body, null);
 
-    /// <summary>Which components this command uses were on (D121): beside the result in the envelope, and on its telemetry event. Never in a result, so never in a hash. Null with no repo, or none used.</summary>
-    static JsonObject? Components(CliContext ctx, string command)
-    {
-        if (!ctx.HasRepo || StangentComponents.ForCommand(ctx.Repo.Config, command) is not { } used) return null;
-        ctx.Span.Attributes["stangent.components.on"] = string.Join(',', used.On);
-        ctx.Span.Attributes["stangent.components.off"] = string.Join(',', used.Off);
-        return new JsonObject { ["on"] = new JsonArray([.. used.On.Select(n => (JsonNode)n)]), ["off"] = new JsonArray([.. used.Off.Select(n => (JsonNode)n)]) };
-    }
-
     /// <summary><paramref name="render"/>, when given, prints its text instead of the JSON envelope on success.</summary>
     public static int Run(ParseResult pr, string command, Func<CliContext, JsonNode?> body, Func<JsonNode?, string>? render)
     {
@@ -398,9 +385,7 @@ static class Cli
             // Commands that need a repo fail inside body() when there is none.
             if (command != "init" && StangentRepo.TryDiscover(repoPath ?? Directory.GetCurrentDirectory()) is { } found)
                 ctx.UseRepo(found);
-            var components = Components(ctx, command);
             output = Envelope(true, body(ctx), null, null, []);
-            if (components is not null) output["components"] = components;
             exit = ExitCodes.Ok;
         }
         catch (CheckFailed e)

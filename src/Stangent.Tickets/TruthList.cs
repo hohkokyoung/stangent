@@ -16,9 +16,6 @@ namespace Stangent.Tickets;
 /// </summary>
 public static class TruthList
 {
-    public const string Component = "truth-verdict";
-
-    public static bool On(StangentConfig config) => StangentComponents.IsOn(config, Component);
 
     /// <summary>Whether an entry can back a ticket, and why not (D364, D366 (4)): ruled, or a confirmed match, or an
     /// unconfirmed match of high confidence (shown as not confirmed); never blank, flagged, not found again, not a match,
@@ -37,7 +34,6 @@ public static class TruthList
 
     public static JsonObject Build(StangentRepo repo, IReadOnlyCollection<string> files)
     {
-        if (!On(repo.Config)) return new JsonObject { ["state"] = "off", ["docs"] = new JsonArray(), ["entries"] = new JsonArray(), ["sections"] = new JsonArray() };
         var dir = Path.Combine(repo.Root, "specs", "fsd");
         var maps = Directory.Exists(dir)
             ? Directory.GetDirectories(dir).Select(d => Path.Combine(d, "truth-map.json")).Where(File.Exists).Order(StringComparer.Ordinal).ToList()

@@ -36,20 +36,15 @@ public sealed record TableMap(IReadOnlyList<TableMapping> Tables, IReadOnlyDicti
 
 /// <summary>
 /// Compares a document's tables with facts from the code, by code, with no AI (C.2, D124). This is a second route to code beside pages: D68 kept direct links out as noisy and that question is
-/// still the owner's, so it's off by default and every result says which route it took. A name matches in any case and nothing else: any other difference is declared as an alias.
+/// still the owner's, so every result says which route it took (on since D381). A name matches in any case and nothing else: any other difference is declared as an alias.
 /// </summary>
 public static class TableFacts
 {
     public const string Route = "table-facts";
-    const string RouteLabel = "table facts compared by code: a second route to code beside the pages, off by default, D68's question still open for the owner";
+    const string RouteLabel = "table facts compared by code: a second route to code beside the pages, on since D381, D68's question still open for the owner";
 
     sealed record CodeFact(string Name, string? Value, string Symbol, string? File, int Line, int EndLine, int FrontendFields = 0);
     sealed record CodeTarget(string Symbol, string? File, int Line, int EndLine, List<CodeFact> Facts);
-
-    public static JsonObject Off() => new()
-    {
-        ["compared"] = false, ["off"] = "table-facts is off (fsd.compareTables), so nothing was compared or written. That isn't a pass.",
-    };
 
     public static JsonObject Compare(string root, string doc, CodeGraph graph)
     {

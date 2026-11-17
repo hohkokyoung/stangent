@@ -227,27 +227,23 @@ public class PythonGraphTests(FlaskShop shop) : IClassFixture<FlaskShop>
         Assert.Equal(File.ReadAllBytes(first), File.ReadAllBytes(second));
     }
 
-    [Theory]
-    [InlineData("components:\n  python: false\n", false, false)]
-    [InlineData("components:\n  detector-flask-routes: false\n", true, false)]
-    public async Task The_switches_take_python_or_its_routes_out(string config, bool python, bool routes)
+    [Fact]
+    public async Task An_old_switch_no_longer_takes_python_or_its_routes_out()
     {
-        var root = FlaskShop.Create(config);
+        var root = FlaskShop.Create("components:\n  python: false\n  detector-flask-routes: false\n");   // ignored since D381, with a warning
         try
         {
             var repo = StangentRepo.Discover(root);
             var (graph, stats) = await GraphBuilder.BuildAsync(repo, new BuildOptions(Restore: false), TestContext.Current.CancellationToken);
-            Assert.Equal(python, graph.AllNodes.Any(n => n.Id.StartsWith("py|", StringComparison.Ordinal)));
-            Assert.Equal(python, stats.Python is not null);
-            Assert.Equal(python, graph.AllNodes.Any(n => n.Id == "project:frontend/package.json"));
-            Assert.Equal(routes, graph.AllNodes.Any(n => n.Kind == NodeKind.Endpoint));
-            Assert.Equal(routes, graph.AllBlindSpots.Any(b => b.Detector == "flask-routes"));
+            Assert.Contains(graph.AllNodes, n => n.Id.StartsWith("py|", StringComparison.Ordinal));
+            Assert.NotNull(stats.Python);
+            Assert.Contains(graph.AllNodes, n => n.Kind == NodeKind.Endpoint);
         }
         finally { Directory.Delete(root, recursive: true); }
     }
 
     [Fact]
-    public async Task A_repo_with_no_python_keeps_its_plain_react_app_off_the_map()
+    public async Task A_repo_with_no_python_still_reads_its_plain_react_app()
     {
         var root = FlaskShop.Create();
         try
@@ -257,8 +253,8 @@ public class PythonGraphTests(FlaskShop shop) : IClassFixture<FlaskShop>
             var repo = StangentRepo.Discover(root);
             var (graph, stats) = await GraphBuilder.BuildAsync(repo, new BuildOptions(Restore: false), TestContext.Current.CancellationToken);
             Assert.Null(stats.Python);
-            Assert.Equal(0, stats.Frontends);
-            Assert.DoesNotContain(graph.AllNodes, n => n.Id.StartsWith("py|", StringComparison.Ordinal) || n.Id.StartsWith("ts|", StringComparison.Ordinal));
+            Assert.Equal(1, stats.Frontends);   // root-screens and route-render are on (D381), so a plain React app is read
+            Assert.DoesNotContain(graph.AllNodes, n => n.Id.StartsWith("py|", StringComparison.Ordinal));
         }
         finally { Directory.Delete(root, recursive: true); }
     }

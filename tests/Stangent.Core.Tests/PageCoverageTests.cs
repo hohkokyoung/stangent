@@ -20,13 +20,6 @@ public class PageCoverageTests
     }
 
     [Fact]
-    public void Off_excluding_refuses()
-    {
-        using var app = new SpecApp("version: 1\ncomponents: { page-exclusions: false }\n");   // on by default since D373
-        Assert.Equal("component_off", Assert.Throws<StangentException>(() => PageExclusions.Exclude(app.Pages(), app.Repo, SpecApp.Post, "x", "me")).Code);
-    }
-
-    [Fact]
     public void An_excluded_page_is_gone_from_the_list_and_counted_with_its_reason()
     {
         using var app = App();

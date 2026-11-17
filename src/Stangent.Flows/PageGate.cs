@@ -60,7 +60,7 @@ public static class PageGate
         {
             ["ok"] = ok, ["areas"] = list, ["changes"] = changes, ["stops"] = stops, ["handled"] = handled, ["receivers"] = receivers, ["missing"] = missingCount, ["oneLineSharedGuards"] = oneLineGuards,
         };
-        if (list.OfType<JsonObject>().Any(x => (string)x["onDisk"]! != "same")) report["hint"] = "A page on disk isn't what code makes now: run `stangent areas check` with components.pages on.";
+        if (list.OfType<JsonObject>().Any(x => (string)x["onDisk"]! != "same")) report["hint"] = "A page on disk isn't what code makes now: run `stangent areas check`.";
         return report;
     }
 

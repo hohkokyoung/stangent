@@ -8,7 +8,7 @@ static class PageCommands
 {
     public static void Add(RootCommand root)
     {
-        var pages = new Command("pages", "Pages: each area's developer page by code, no AI (D278–D285), written into specs/areas/<area>/page.md by `stangent areas check` while components.pages is on; and the item summary layer 5 reads.");
+        var pages = new Command("pages", "Pages: each area's developer page by code, no AI (D278–D285), written into specs/areas/<area>/page.md by `stangent areas check`; and the item summary layer 5 reads.");
         root.Subcommands.Add(pages);
 
         var areaArg = new Argument<string>("area") { Description = "The area's name as specs/areas.yaml has it (\"Series › Add New\"), or its folder (series-add-new)." };
@@ -35,7 +35,7 @@ static class PageCommands
 
         var settingsNote = "Settings: pages.frameworkShare (D281, default 10) and pages.chartCap (D282, D286, default 60) in stangent.yaml.";
         var chartFormatOption = new Option<string>("--format") { Description = "md (default: the area's developer page body, as page.md holds it), counts (a Markdown table of nodes per chart) or json.", DefaultValueFactory = _ => "md" };
-        var chart = new Command("chart", $"The area's developer page by code, no AI (D278–D284): per changing click a flowchart (up to the chart cap), a scenario table and its lists, with flow-file step numbers; display-only flows one line each. Writes nothing; works with components.pages off. {settingsNote}") { areaArg, proposedOption, chartFormatOption };
+        var chart = new Command("chart", $"The area's developer page by code, no AI (D278–D284): per changing click a flowchart (up to the chart cap), a scenario table and its lists, with flow-file step numbers; display-only flows one line each. Writes nothing. {settingsNote}") { areaArg, proposedOption, chartFormatOption };
         chart.SetAction(pr =>
         {
             var format = pr.GetValue(chartFormatOption);
@@ -55,11 +55,9 @@ static class PageCommands
         pages.Subcommands.Add(chart);
 
         var verifyAreaArg = new Argument<string?>("area") { Description = "One area, by name or folder; every area when left out.", Arity = ArgumentArity.ZeroOrOne };
-        var verify = new Command("verify", "Gate 1 of D280, free: every change and every stop of each changing click's flow file is on its area's page, matched by step number (D284); the page rebuilds byte for byte and is what's on disk. Needs components.pages on (`stangent areas check` writes the pages).") { verifyAreaArg };
+        var verify = new Command("verify", "Gate 1 of D280, free: every change and every stop of each changing click's flow file is on its area's page, matched by step number (D284); the page rebuilds byte for byte and is what's on disk. `stangent areas check` writes the pages.") { verifyAreaArg };
         verify.SetAction(pr => Cli.Run(pr, "pages verify", ctx =>
         {
-            if (!StangentComponents.IsOn(ctx.Repo.Config, "pages"))
-                throw new StangentException("component_off", "pages is off, so no area has a developer page to check. Turn on `components.pages` in stangent.yaml, then run `stangent areas check`.", ExitCodes.Usage);
             var (a, layout) = Layout(ctx);
             var report = PageGate.Verify(ctx.Repo.Root, a, layout, PageSettings.From(ctx.Repo.Config), pr.GetValue(verifyAreaArg));
             ctx.Span.Attributes["stangent.artifact.count"] = report["areas"]!.AsArray().Count;

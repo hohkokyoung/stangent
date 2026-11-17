@@ -15,7 +15,8 @@ public static partial class FsdSectionApproval
 {
     public const string Component = "section-approval";
 
-    public static bool On(StangentConfig config) => StangentComponents.IsOn(config, Component);
+    /// <summary>Off for good: D385 replaces section approval with the comparison and the commit, and layer 5 of phase fs removes it (D388).</summary>
+    public static bool On(StangentConfig config) => false;
 
     /// <summary>One change a person answers: its kind, where it is on each side, and the id its answer is recorded under.</summary>
     public sealed record Change(string Key, string Label, string Kind, string? To, string? PermanentId, string? From, string Title, JsonObject Entry);
@@ -93,7 +94,7 @@ public static partial class FsdSectionApproval
     static void Require(StangentRepo repo)
     {
         if (!On(repo.Config))
-            throw new StangentException("section_approval_off", "Approving section by section needs components.section-approval on in stangent.yaml (D150).", ExitCodes.Usage);
+            throw new StangentException("section_approval_off", "Section approval was removed by D388: a new file is compared with the repo's FSD and the commit approves (D385, phase fs layer 5).", ExitCodes.Usage);
     }
 
     static (JsonObject Diff, JsonObject Current, JsonObject Pending) Load(string root, string doc)

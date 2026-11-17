@@ -321,18 +321,6 @@ public class HistoryTests
         Assert.Contains(warnings, w => w.StartsWith("history_renames_skipped:", StringComparison.Ordinal));
     }
 
-    [Fact]
-    public void Switched_off_means_no_lines()
-    {
-        using var repo = new HistoryRepo("version: 1\nhistory: { enabled: false }\n");
-        var graph = repo.Graph("A.cs");
-
-        HistoryStep.Apply(repo.Temp.Repo, graph, null, () => null, []);
-
-        Assert.Equal("off", graph.History!.Status);
-        Assert.Empty(graph.HistoryLines);
-    }
-
     // ---- Impact answers (impact-report v4, D40) ----------------------------------------------------
 
     const string AM = "App|M:App.A.Run", BM = "App|M:App.B.Run", CM = "App|M:App.C.Run";

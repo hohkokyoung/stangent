@@ -6,17 +6,16 @@ namespace Stangent.Spec.Pages;
 
 /// <summary>
 /// I.2 (D131): when a page is stale, only the statements citing code that changed go back to the AI. Code works out which, from each point's hash in the page's shape,
-/// tells the writer, and puts the rest back word for word; the verifier reads only what's new. Off by default (<c>statement-update</c>), because it changes what the writer
+/// tells the writer, and puts the rest back word for word; the verifier reads only what's new. Always on (D381; it was off by default, because it changes what the writer
 /// gets. The input hash doesn't change. A first page, a person's <c>page-wrong</c>, new instructions or no shape on file: the whole page, as ever.
 /// </summary>
 public static class StatementUpdate
 {
-    public const string Component = "statement-update";
 
     /// <summary>What code keeps, as the writer's own form: each with its section. Null when the whole page should run.</summary>
     public static JsonArray? Plan(PageSet set, StangentConfig config, SpecPaths paths, PageDef page, JsonObject? previous, bool reportedWrong)
     {
-        if (!StangentComponents.IsOn(config, Component) || previous is null || reportedWrong) return null;
+        if (previous is null || reportedWrong) return null;
         if (PageMoves.LoadFile(paths, page) is not { } saved || (string?)saved["head"] != PageMoves.Head(set)) return null;
         var old = saved["symbols"]!.AsObject();
         var now = PageMoves.Shape(set, page).Symbols;

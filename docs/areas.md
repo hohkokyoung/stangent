@@ -108,8 +108,8 @@ same bytes.
 ```
 
 Code writes no prose: the name, counts and links are rebuilt every time, sorted by name then id; the text between the two
-layer 4 lines is kept as found. With `components.pages` on, that place holds layer 4's developer page by code and the page
-opens with its note (`docs/pages.md`); off, a developer page left there is dropped. A page whose area is gone is removed,
+layer 4 lines is kept as found. That place holds layer 4's developer page by code and the page
+opens with its note (`docs/pages.md`; always on since D381). A page whose area is gone is removed,
 unless it holds other words between the lines: then it stays and `areas check` fails until a person moves them. `shared/` and `unplaced/` have no page.
 
 ## Proposing again on a confirmed file (D234)

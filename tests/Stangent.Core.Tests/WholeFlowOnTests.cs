@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 
 namespace Stangent.Core.Tests;
 
-/// <summary>The whole flow with D124's switches on: a fake AI answers each variant, and the code checks run on it. Real <c>claude</c> never runs.</summary>
+/// <summary>The whole flow with D124's stages (always on since D381): a fake AI answers each variant, and the code checks run on it. Real <c>claude</c> never runs.</summary>
 public sealed class WholeFlowOn : IDisposable
 {
     public WholeFlow Flow { get; } = WholeFlow.AllSwitchedOn();
@@ -15,7 +15,7 @@ public class WholeFlowOnTests(WholeFlowOn on) : IClassFixture<WholeFlowOn>
     readonly WholeFlow flow = on.Flow;
 
     [Fact]
-    public void The_flow_gets_through_with_every_switch_on_and_every_file_fits_its_contract()
+    public void The_flow_gets_through_and_every_file_fits_its_contract()
     {
         Assert.Equal(int.MaxValue, flow.BrokeAt);
         Assert.Empty(flow.SchemaErrors);
@@ -51,21 +51,9 @@ public class WholeFlowOnTests(WholeFlowOn on) : IClassFixture<WholeFlowOn>
     }
 
     [Fact]
-    public void Each_switch_shows_on_in_components()
+    public void A_rebuild_that_reuses_every_project_keeps_the_enums_on_file()
     {
         flow.Reached(4);
-        var list = flow.Cli("components")["result"]!["components"]!.AsArray();
-        Assert.True((bool)list.Single(c => (string?)c!["name"] == "table-facts")!["on"]!);
-    }
-
-    [Fact]
-    public void Switched_off_the_graph_export_is_the_same_bytes_and_compare_says_off()
-    {
-        flow.Reached(4);
-        Assert.True((bool)flow.Seen("export.same"));
-        Assert.True((bool)flow.Seen("enums.removed"));
-        Assert.True((bool)flow.Seen("enums.back"));
         Assert.True((bool)flow.Seen("enums.kept"));
-        Assert.False((bool)flow.Seen("compare.off")["compared"]!);
     }
 }
