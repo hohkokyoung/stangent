@@ -51,7 +51,7 @@ stangent fsd export <doc> --whole  one Markdown file outside git                
    uncommitted changes under `specs/fsd/<doc>/`. The Kavita and Sonarr benchmark clones are migrated free.
 4. **`source-document` goes to v4 once**, at layer 2, and layer 5's comparison fields extend v4 before the phase ends.
    No consumer is updated in between, so a second bump would mark the same phases twice.
-5. **Word export** (D378's "or Word") is the last layer, built only after layers 0–5 are fresh-checked.
+5. **Word export** (D378's "or Word") was to be the last layer. **Cut by the owner (D397, 2026-11-18):** no client needs a Word copy now; the whole-document view is the Markdown `fsd export --whole`.
 
 ## Layers, in order (each with tests, then a narrow fresh check before the next, D158)
 
@@ -195,7 +195,9 @@ the `fsd-candidate` and `fsd-section-answer` lifecycles. `docs/spec.md` "A new f
   removal is undone before the commit (`FsdCarry`). Tests in `EmbeddedFilesTests` (4) and `FsdCheckTests` (1). Fresh
   check: Sonnet, about 107K; 2 defects fixed (a restored entry's number, a taken record's `sectionNumber`).
 
-### Layer 6 · Word export (D378)
+### Layer 6 · Word export (D378) — cut (D397)
+
+Not built: the owner cut it on 2026-11-18 (D397). What it would have been, kept for the record:
 
 - `fsd export <doc> --whole --format docx`: headings, numbers as written, tables and pictures, no markers.
 - **Tests:** export → import gives the same sections. **Fresh check:** narrow, about 60K.
