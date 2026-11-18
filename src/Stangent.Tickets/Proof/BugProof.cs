@@ -229,7 +229,7 @@ public static partial class BugProof
 
         if (truth)
             sb.Append("# The truth map and your verdict\n\n")
-                .Append("The bundle's truth map section lists what the PM agreed about this ticket's files (T1, T2, …). Before you write a test, ")
+                .Append("The bundle's truth map section lists what the PM agreed about this ticket's files and the flows and screens its code is on (T1, T2, …). Before you write a test, ")
                 .Append("decide whether the PM's agreed rules back what the ticket expects, and give `verdict`:\n\n")
                 .Append("- **backed**: an entry that can back a ticket says the ticket's expected result is right (the FSD is right and the code has a bug, ")
                 .Append(targets.Count > 0 ? "or a match the code no longer keeps). Write the test as below, and give the entry and words from it.\n"
@@ -237,6 +237,8 @@ public static partial class BugProof
                 .Append("- **contradicted**: an entry says the code is right as it is (ruled \"the code is right\", or the PM's words say what the code does). ")
                 .Append("Write no test: return outcome `stopped` with the entry and words from it.\n")
                 .Append("- **unclear**: no entry settles what the ticket expects, or the ones that would can't back a ticket. Write no test: return outcome `stopped`.\n\n")
+                .Append("An entry ruled \"keep this code\" that has the PM's words keeps the feature, working as the words say: judge the ticket against those words, ")
+                .Append("and if the code doesn't do what they say, the words back the ticket (quote at least four of them).\n\n")
                 .Append("Cite the entry by its id and copy `quote` word for word from it (its FSD sentence, the PM's words, its section's text or the review's note). ")
                 .Append("Code checks both, and makes the verdict unclear when the entry can't back a ticket.\n\n");
         var mtp = UsesMtp(repo.Root);
@@ -506,7 +508,13 @@ public static partial class BugProof
         if (entry is not null && quote is not null && !TruthList.Quotable(truth, entry).Any(t => Quotes.InText(quote, t)))
             errors.Add($"quote \"{Short(quote)}\" isn't in {id} word for word (its FSD sentence, the PM's words, its section's text or the review's note; at least 4 words, or a whole line).");
         // A ruling that says the code is right can't back a bug, and one that says the code is wrong can't contradict it.
+        // One exception (D411): "keep" on code the FSD never mentions keeps the feature, and the PM's words beside it say how
+        // it should work, so a backed verdict quoting at least four of those words stands. Only that pairing: the other
+        // rulings' names already say which way the PM meant, and code can't tell which way the words point.
         var ruling = (string?)entry?["ruling"];
+        if (said == "backed" && ruling == "keep" && quote is not null && (string?)entry?["statement"] is { } words
+            && Quotes.Normalize(quote).Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 4 && Quotes.InText(quote, words))
+            ruling = null;
         if (said == "backed" && ruling is "code-right" or "keep")
             errors.Add($"{id} is ruled \"{Stangent.Spec.Fsd.TruthMap.RulingWords(ruling!)}\": that says the code is right as it is, so it can't back this bug. Say contradicted, or cite the entry that backs it.");
         if (said == "contradicted" && ruling is "fsd-right" or "remove" or "not-a-match")

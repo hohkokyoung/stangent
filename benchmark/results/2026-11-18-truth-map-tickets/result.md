@@ -54,3 +54,39 @@ as the rulings say. Re-run cost $0.29; the whole measurement $1.65.
 
 Caution: D408 was built after seeing the first result, aimed at the failure it showed, so the second result is not
 blind to it; and it is 9 tickets on one repo. The first result stands beside it.
+
+## Third result, after D410 (rules reach a ticket through its flow or screen), 2026-11-19
+
+Only the bundle's matching changed (D410, fresh-checked); same truth map, tickets and key. Bundles rebuilt for all nine
+(free): the key's entry is in the bundle for **9 of 9** (was 8), finder misses **0**. KAVR-8 proved again ($0.38, two
+calls); the others not re-proved (their bundles gained nothing that bears on their entry, but for KAVR-4's one extra
+entry). Scored `score-d410.json`.
+
+| | after D408 | after D410 |
+|---|---|---|
+| verdict right | 8 of 9 | **8 of 9** |
+| key's entry in the bundle | 8 of 9 | **9 of 9** |
+| finder misses | 1 | **0** |
+| wrong tickets with a test | 0 | 0 |
+
+KAVR-8 now reaches its entry (128, by the Browse Genres screen) and is still judged **unclear**: the planter ruled that
+undocumented entry "keep" and gave PM words that say what the ticket expects; the reproducer read "keep" as "the code
+is right as it is", saw the words point the other way, and wrote no test. A safe miss (it asks the PM), but not the
+key's "backed". The cause is how a "keep" ruling with PM words is read, not the matching. Whole measurement now $2.03.
+
+## Fourth result, after D411 (a "keep" ruling with PM words keeps the feature working as the words say), 2026-11-19
+
+Only the reading of a "keep" entry with PM words changed (the reproducer's input, and the code check that refused a
+backed verdict on it; narrowed after the run by its fresh check, and KAVR-8's verdict still passes the narrowed check); same truth map, tickets and key. KAVR-8 proved again ($0.25: the first answer said backed on
+entry 128 but its test failed on another assertion; the retry's test failed on the named one). Scored `score-d411.json`.
+
+| | after D408 | after D410 | after D411 | bar |
+|---|---|---|---|---|
+| verdict right | 8 of 9 | 8 of 9 | **9 of 9** | 8 of 9 |
+| backed reproduced | 2 of 3 | 2 of 3 | **3 of 3** | 2 of 3 |
+| wrong tickets with a test | 0 | 0 | **0** | 0 |
+| replies right | 2 of 2 | 2 of 2 | **2 of 2** | 2 of 2 |
+| finder misses | 1 | 0 | **0** | apart |
+
+Caution: D410 and D411 were built after seeing KAVR-8 fail and aimed at it; only KAVR-8 was proved again under them,
+so the other eight verdicts date from D408's run. Nine tickets, one repo, one planter. Whole measurement $2.28.

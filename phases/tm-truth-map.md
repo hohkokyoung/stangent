@@ -229,6 +229,8 @@ called it contradicted, quoted the ruling, wrote no test, and `fix start` refuse
 | 4 · Bundle, verdict, question (D372; `ticket-bundle` v3, `bug-proof` v2) | the bundle's `truth`, the reproducer's verdict checked by code, the PM's question | `896dd8f` | done (D372) |
 | 5 · `Ruling:` replies (D374) | `ticket pull` drafts replies into `rulings.yaml`, uncommitted; `rulings-check` shows the Jira author beside the committer | `59782c4` | done: 5 defects and 7 risks, fixed or listed (D374) |
 | The verdict before the test check (D408) | with no test target, `ticket prove` still asks for a verdict; only backed then needs a test | `8c8ccb9` | ~95K tokens, no bugs |
+| Entries through flows and screens (D410) | an entry also reaches a ticket through the flow its method is on, or that flow's screen (`via`, `reach`) | uncommitted | ~78K tokens: 3 defects, 2 minor, fixed |
+| A kept feature works as the PM's words say (D411) | backed on a "keep" entry quoting four or more of its PM words isn't refused | uncommitted | ~75K tokens: 1 defect (too wide) and a short-quote gap, narrowed |
 
 Phase fs then changed this phase's own contracts (`rulings` v2, `truth-map` v2, D394), and layer 5 fed it (the review
 on D323's prompt, the left-out list as its own call, matches from that list: D401, D404, D405, `fsd-review` v3).
@@ -259,7 +261,7 @@ are about the proof, not the truth map.
 ### 3. Decisions made or changed
 
 D361–D364 (the design), D365 (the plan), D366 (matches), D367–D374 (one per layer), D375 (the measurement plan), D406
-(adapted to the live review), D407 (first result), D408 (verdict first), D409 (closing). Changed by others: D394 (phase
+(adapted to the live review), D407 (first result), D408 (verdict first), D409 (closing), D410 (KAVR-8's fix), D411 (a kept feature works as the PM's words say). Changed by others: D394 (phase
 fs: `inFsd` gone, `writtenFrom` added), D401–D405 (layer 5: the review's prompt, the left-out list, matches back).
 
 ### 4. Known gaps
@@ -269,7 +271,12 @@ fs: `inFsd` gone, `writtenFrom` added), D401–D405 (layer 5: the review's promp
   The bundle takes an entry only when one of its evidence files is a ticket file (D372 left screens out). On Kavita 115
   of 118 entries cite only frontend files, so any ticket whose finder lands on backend code misses nearly all of them.
   The screen's own flow (`screen-opens-browse-genres`) walks into `GetBrowseableGenre`, so the link is already there.
-  Proposal in `improvements.md` §6, not built.
+  **Fixed by D410 (2026-11-19):** an entry also reaches a ticket through the flow the ticket's own method is on, or the
+  screen that flow opens; free check: the key's entry is in the bundle for 9 of 9 tickets. KAVR-8 re-proved ($0.38): its entry reaches
+  the verdict, still unclear: the planter ruled it `keep` with PM words that say what the ticket expects, and `keep` is
+  read as "the code is right as it is". **D411** reads "keep" with PM words as keeping the feature working as the words say; re-proved, KAVR-8
+  is backed and reproduced: **9 of 9 verdicts right, 3 of 3 backed reproduced** (result.md's fourth section; both fixes
+  built after seeing KAVR-8 fail, and only KAVR-8 re-proved under them).
 - **`tickets.app` isn't set for Kavita,** so a backed frontend bug can't get a Playwright test (D408's fix 2); set it
   when a ticket needs it.
 - **A written ruling (`writtenFrom`, phase fs's `fsd write`) has never reached `fsd rule`, a bundle or a draft:** no
@@ -294,7 +301,7 @@ tickets); that is left for Phase 4's own review. `phases check` shows tm current
 
 ### 6. Follow-ups
 
-- KAVR-8: an entry applies to a ticket through its flow or screen, not only its files (`improvements.md` §6); owner's call.
+- Re-prove the other eight tickets under D410 and D411 (paid, about $1), or better, a blind second measurement on another repo.
 - `tickets.app` for Kavita when a backed frontend bug needs a Playwright test.
 - The first live `fsd write`, then `fsd rule` on a written entry and a bundle and draft that carry it (tm, Phase 3).
 - A second measurement on another repo, blind to D408, before trusting 8 of 9 widely.

@@ -772,6 +772,26 @@
             "built"
           ]
         },
+        "reach": {
+          "description": "The flows the ticket's own code sits in (D410), and whether there were too many (more than 5 beside shared ones) for their flows and screens to bring in entries. Absent in bundles from before D410.",
+          "type": "object",
+          "required": [
+            "flows",
+            "tooMany"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "flows": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "tooMany": {
+              "type": "boolean"
+            }
+          }
+        },
         "docs": {
           "type": "array",
           "items": {
@@ -902,6 +922,11 @@
                   "string",
                   "null"
                 ]
+              },
+              "via": {
+                "description": "How it reaches the ticket (D410): file (an evidence line in a ticket file), flow:<id> (its link is a flow the ticket's own code sits in), screen:<id> (its link is the screen that screen-opens flow opens). Absent in bundles from before D410.",
+                "type": "string",
+                "pattern": "^(file|flow:.+|screen:.+)$"
               }
             }
           }

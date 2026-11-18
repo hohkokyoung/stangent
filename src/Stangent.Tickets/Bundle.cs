@@ -69,7 +69,14 @@ public static class TicketBundle
             .Concat(written.Where(d => pagePoints.Contains(d.Id))
                 .SelectMany(d => PageChecks.Statements(ctx.Index.Pages[d.Id]).SelectMany(s => s.Statement["cites"]!.AsArray().Select(c => ctx.Analyzer.Find((string)c!)?.File))).OfType<string>())
             .Distinct(StringComparer.Ordinal).ToList();
-        var truth = TruthList.Build(repo, truthFiles);
+        // D410: and the entries on the flows the ticket's own code is on, and the screens they open: the method each found
+        // file's quoted line sits in, and each symbol point's span.
+        var truthSpans = list.Where(p => p.Kind == StartingPoint.File && p.Line is not null)
+            .SelectMany(p => TruthList.SpansOfLine(repo.Root, p.Id, p.Line!, ctx.Analyzer.InFile))
+            .Concat(list.Where(p => p.Kind == StartingPoint.Symbol).Select(p => ctx.Analyzer.Find(p.Id))
+                .OfType<Node>().Where(n => n.File is not null && n.Line > 0 && n.EndLine >= n.Line).Select(n => new TruthList.Span(n.File!, n.Line, n.EndLine)))
+            .Distinct().ToList();
+        var truth = TruthList.Build(repo, truthFiles, truthSpans);
 
         // Whether the finder's answer is stale is judged now, against the code the bundle is built on (D101).
         var codeNow = points["ai"]?["commit"] is null ? "" : TicketPoints.CodeState(repo.Root);

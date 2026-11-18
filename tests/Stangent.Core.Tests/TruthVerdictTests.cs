@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Graph;
 using Stangent.Spec.Pages;
 using Stangent.Tickets;
 using Stangent.Tickets.Proof;
@@ -246,6 +247,37 @@ public sealed class TruthVerdictTests : IDisposable
     }
 
     [Fact]
+    public void The_pms_words_decide_over_a_keep_ruling()
+    {
+        // Only backed on keep: contradicted on "remove", even quoting the PM's words, still goes against its ruling.
+        Map(Entry(1, "undocumented", "ruled", "remove", null, "Core/OrderService.cs:5", statement: "Take this approval step out of the order flow."));
+        Prepare();
+        var removed = Check(Stopped(Verdict("contradicted", quote: "Take this approval step out of the order flow.")));
+        Assert.Contains(removed.Errors!, e => e.Contains("can't contradict this bug", StringComparison.Ordinal));
+
+        // D411: undocumented code ruled "keep", with the PM's words saying how it should work. A backed verdict that quotes
+        // those words stands; one resting on anything else of that entry still goes against "keep".
+        const string Words = "An order over 100 waits for someone to approve it.";
+        Map(Entry(1, "undocumented", "ruled", "keep", null, "Core/OrderService.cs:5", statement: Words));
+        Assert.Equal("prepared", Prepare().Status);
+        var input = File.ReadAllText(Path.Combine(Root, ".stangent", "tickets", Key, "prove", "input.md"));
+        Assert.Contains("keeps the feature, working as the words say", input);
+        Assert.Contains("The PM's words (how the kept code should work)", File.ReadAllText(new TicketPaths(Root, Key).BundleMarkdown));
+        WriteTest();
+        var other = Check(Written(Verdict("backed", quote: "The review's note.")));
+        Assert.Equal("retry", other.Status);
+        Assert.Contains(other.Errors!, e => e.Contains("can't back this bug", StringComparison.Ordinal));
+        Prepare();
+        var shortQuote = Check(Written(Verdict("backed", quote: "waits for someone")));   // under four words: the ruling stands
+        Assert.Contains(shortQuote.Errors!, e => e.Contains("can't back this bug", StringComparison.Ordinal));
+        Prepare();
+        runner.Tests.Enqueue(TestReportTests.Trx((TestName, "Failed", "Assert.Throws() Failure: No exception was thrown", $"   at Shop.Tests.OrderTests.Rejects_orders_over_100() in /ci/{TestFile}:line 8")));
+        runner.All = TestReportTests.Trx((TestName, "Failed", "Assert.Throws() Failure", ""));
+        Assert.Equal("recorded", Check(Written(Verdict("backed", quote: Words))).Status);
+        Assert.Equal(("backed", false), ((string)Attempt["verdict"]!["verdict"]!, (bool)Attempt["verdict"]!["forced"]!));
+    }
+
+    [Fact]
     public void A_reproduced_proof_is_kept_when_its_rule_later_needs_the_pm_and_a_stale_bundle_is_refused()
     {
         Map(Entry(1, "gap", "ruled", "fsd-right", Rule, "Core/OrderService.cs:5"));
@@ -290,4 +322,103 @@ public sealed class TruthVerdictTests : IDisposable
         Assert.DoesNotContain("`Core", f);
     }
 
+    /// <summary>A flows index with these flows, each <c>(id, kind, point, links, step lines)</c>.</summary>
+    void Flows(params (string Id, string Kind, string? Point, string[] Links, string[] Ats)[] flows)
+    {
+        var index = new JsonArray();
+        foreach (var f in flows)
+        {
+            var file = $"specs/flows/{f.Id}.json";
+            index.Add(new JsonObject
+            {
+                ["id"] = f.Id, ["kind"] = f.Kind, ["point"] = f.Point, ["file"] = file, ["links"] = new JsonArray([.. f.Links.Select(l => (JsonNode)l)]),
+            });
+            app.Write(file, new JsonObject
+            {
+                ["id"] = f.Id,
+                ["steps"] = new JsonArray([.. f.Ats.Select((at, i) => (JsonNode)new JsonObject { ["n"] = i + 1, ["at"] = at, ["conditions"] = new JsonArray() })]),
+            }.ToJsonString());
+        }
+        app.Write("specs/flows/index.json", new JsonObject { ["contract"] = "flows", ["flows"] = index }.ToJsonString());
+    }
+
+    static JsonObject Linked(JsonObject entry, string kind, string id) => entry.Also(e => e["link"] = new JsonObject { ["kind"] = kind, ["id"] = id });
+
+    [Fact]
+    public void An_entry_reaches_the_ticket_through_the_flow_its_code_is_on_or_the_screen_that_flow_opens()
+    {
+        // D410: the ticket's point is OrderService.Place (lines 3–8). The orders screen's opening flow walks into it at
+        // line 5; the refund click never does. A rule cited only by the screen's template still judges the ticket.
+        Flows(("screen-opens-orders", "screen-opens", "page:Web|/orders", [], ["Web/Orders.tsx:2", "Core/OrderService.cs:5"]),
+            ("click-refund", "click", null, [], ["Web/Refunds.cs:3", "Core/OrderService.cs:12"]));
+        Map(Entry(1, "gap", "ruled", "fsd-right", Rule, "Core/OrderService.cs:5"),
+            Linked(Entry(2, "undocumented", "ruled", "keep", null, "Web/orders.html:4"), "screen", "page:Web|/orders"),
+            Linked(Entry(3, "undocumented", "ruled", "keep", null, "Web/Orders.tsx:9"), "flow", "screen-opens-orders"),
+            Linked(Entry(4, "undocumented", "ruled", "keep", null, "Web/Refunds.cs:3"), "flow", "click-refund"),
+            Linked(Entry(5, "undocumented", "ruled", "keep", null, "Web/other.html:1"), "screen", "page:Web|/other"));
+        var truth = TicketBundle.LoadOrFail(Root, Key)["truth"]!;
+        var got = truth["entries"]!.AsArray().Select(e => ((int)e!["n"]!, (string)e["via"]!)).ToList();
+        Assert.Equal([(1, "file"), (2, "screen:screen-opens-orders"), (3, "flow:screen-opens-orders")], got);
+        Assert.Equal(["screen-opens-orders"], truth["reach"]!["flows"]!.AsArray().Select(f => (string)f!));
+        Assert.False((bool)truth["reach"]!["tooMany"]!);
+        var md = File.ReadAllText(new TicketPaths(Root, Key).BundleMarkdown);
+        Assert.Contains("Found through its screen, which the flow `screen-opens-orders` opens", md);
+        Assert.Contains("Found through the flow `screen-opens-orders`, which the ticket's code is on (not by file)", md);
+        Assert.Equal("prepared", Prepare().Status);
+        Assert.Contains("and the flows and screens its code is on", File.ReadAllText(Path.Combine(Root, ".stangent", "tickets", Key, "prove", "input.md")));
+    }
+
+    [Fact]
+    public void Shared_code_reaches_the_flows_that_continue_into_it_and_code_on_too_many_flows_brings_in_none()
+    {
+        // One hop up from a shared flow: the checkout click continues into shared-place, which walks Place.
+        Flows(("shared-place", "shared", null, [], ["Core/OrderService.cs:6"]),
+            ("click-checkout", "click", null, ["shared-place"], ["Web/Checkout.tsx:4"]),
+            ("click-other", "click", null, [], ["Web/Other.tsx:1"]));
+        Map(Linked(Entry(1, "undocumented", "ruled", "keep", null, "Web/Checkout.tsx:4"), "flow", "click-checkout"),
+            Linked(Entry(2, "undocumented", "ruled", "keep", null, "Web/Other.tsx:1"), "flow", "click-other"));
+        var truth = TicketBundle.LoadOrFail(Root, Key)["truth"]!;
+        Assert.Equal([(1, "flow:click-checkout")], truth["entries"]!.AsArray().Select(e => ((int)e!["n"]!, (string)e["via"]!)));
+        Assert.Equal(["click-checkout", "shared-place"], truth["reach"]!["flows"]!.AsArray().Select(f => (string)f!));
+
+        // Place on six screens' flows: too widely shared to tell which one the ticket is about.
+        Flows([.. Enumerable.Range(1, TruthList.MaxFlows + 1).Select(i => ($"screen-opens-s{i}", "screen-opens", (string?)$"page:Web|/s{i}", Array.Empty<string>(), new[] { "Core/OrderService.cs:4" }))]);
+        Map(Linked(Entry(1, "undocumented", "ruled", "keep", null, "Web/s1.html:1"), "screen", "page:Web|/s1"));
+        truth = TicketBundle.LoadOrFail(Root, Key)["truth"]!;
+        Assert.Empty(truth["entries"]!.AsArray());
+        Assert.True((bool)truth["reach"]!["tooMany"]!);
+        Assert.Equal(TruthList.MaxFlows + 1, truth["reach"]!["flows"]!.AsArray().Count);
+        Assert.Contains($"sits in more than {TruthList.MaxFlows} flows (shared code aside), too many to tell which screen", File.ReadAllText(new TicketPaths(Root, Key).BundleMarkdown));
+
+        // Flow files and index lines that don't read are skipped, never a failed bundle.
+        Flows(("screen-opens-orders", "screen-opens", "page:Web|/orders", [], ["Core/OrderService.cs:5"]));
+        app.Write("specs/flows/broken.json", "not json");
+        app.Write("specs/flows/array.json", "[]");
+        var index = JsonNode.Parse(File.ReadAllText(Path.Combine(Root, "specs/flows/index.json")))!.AsObject();
+        index["flows"]!.AsArray().Add(new JsonObject { ["id"] = "broken", ["file"] = "specs/flows/broken.json" });
+        index["flows"]!.AsArray().Add(new JsonObject { ["id"] = "array", ["file"] = "specs/flows/array.json" });
+        index["flows"]!.AsArray().Add(new JsonObject { ["id"] = 5, ["file"] = "specs/flows/screen-opens-orders.json", ["links"] = new JsonArray(5) });
+        app.Write("specs/flows/index.json", index.ToJsonString());
+        Map(Linked(Entry(1, "undocumented", "ruled", "keep", null, "Web/orders.html:4"), "screen", "page:Web|/orders"),
+            Entry(2, "undocumented", "ruled", "keep", null, "Web/x.html:1").Also(e => e["link"] = new JsonObject { ["kind"] = "flow", ["id"] = 7 }));
+        truth = TicketBundle.LoadOrFail(Root, Key)["truth"]!;
+        Assert.Equal([(1, "screen:screen-opens-orders")], truth["entries"]!.AsArray().Select(e => ((int)e!["n"]!, (string)e["via"]!)));
+    }
+
+    [Fact]
+    public void A_found_files_quoted_line_is_read_back_to_the_smallest_node_holding_it()
+    {
+        Node[] nodes = [new("t", NodeKind.Type, "OrderService", null, "Core/OrderService.cs", 1, 9), new("m", NodeKind.Method, "OrderService.Place", null, "Core/OrderService.cs", 3, 8)];
+        Assert.Equal([new TruthList.Span("Core/OrderService.cs", 3, 8)],
+            TruthList.SpansOfLine(Root, "Core/OrderService.cs", "  if (total > 100) throw new ArgumentException(\"Orders over 100 need approval\");", _ => nodes));
+        Assert.Empty(TruthList.SpansOfLine(Root, "Core/OrderService.cs", "not in the file", _ => nodes));
+        Assert.Empty(TruthList.SpansOfLine(Root, "Core/Missing.cs", "public class OrderService", _ => nodes));
+        Assert.Empty(TruthList.SpansOfLine(Root, "Core/OrderService.cs", "   ", _ => nodes));
+        // A line outside any method gives no span (the class would be too wide); one that reads the same in two methods gives none.
+        Assert.Empty(TruthList.SpansOfLine(Root, "Core/OrderService.cs", "public class OrderService", _ => nodes));
+        app.Write("Core/Twice.cs", "class T\n{\n  int A() {\n    return 1;\n  }\n  int B() {\n    return 1;\n  }\n}\n");
+        Node[] twice = [new("a", NodeKind.Method, "T.A", null, "Core/Twice.cs", 3, 5), new("b", NodeKind.Method, "T.B", null, "Core/Twice.cs", 6, 8)];
+        Assert.Empty(TruthList.SpansOfLine(Root, "Core/Twice.cs", "return 1;", _ => twice));
+        Assert.Equal([new TruthList.Span("Core/Twice.cs", 6, 8)], TruthList.SpansOfLine(Root, "Core/Twice.cs", "int B() {", _ => twice));
+    }
 }

@@ -134,6 +134,15 @@ a symbol point's file, a file a page point's statements cite; not the impact ans
 state, standing, ruling, the PM's words, confidence, who ruled, the review's notes and its lines, whether it **can back
 a ticket** (ruled, a confirmed match, or an unconfirmed match of high confidence; never blank, flagged, not found
 again, not a match, or an unconfirmed medium or low match, D366 (4)), and the full text of each section they sit in.
+**Also through flows and screens (D410):** the ticket's own code is the method each file point's quoted line sits in
+(the smallest graph node below a type holding it; none when the line is in no method, or reads the same in two) and each symbol point's span; the flows with a step on a line inside it (from
+`specs/flows/index.json`), plus the flows that continue into a shared one among them (one hop), are listed as
+`reach.flows`. An entry whose link is one of those flows, or the screen a screen-opens flow among them opens, applies
+too. Each entry's `via` says how: `file`, `flow:<id>` or `screen:<id>`; `bundle.md` prints "Found through …" for the
+last two. When the code sits in more than 5 flows (shared ones aside), `reach.tooMany` is true and only file matches
+count: the code is shared too widely to tell which screen the ticket is about. Example: KAVR-8's finder named
+`GenreRepository.cs`; the backing rule cites only the Browse Genres template, and reaches the ticket through
+`screen-opens-browse-genres`, which walks `GetBrowseableGenre`. No flows built: file matches only, as before. A flow file or index line that doesn't read is skipped.
 `state`: `none` (the repo has no truth map: nothing about the FSD is judged, as before); `built` (no entries:
 nothing the PM agreed covers the ticket's files). `off` is no longer written (D381); a bundle built before it with `off` is read
 as no truth map. The sections' text is the committed FSD's (D380), as `fsd rulings-check` wrote it into `truth-map.json`. `bundle.md` prints them under "The truth map (what the PM agreed)".
@@ -173,7 +182,11 @@ as no truth map. The sections' text is the committed FSD's (D380), as `fsd rulin
   `verdict` (`backed`, `contradicted`, `unclear`) with the entry (`T1` …) and words from it (its FSD sentence, the PM's
   words, its section's text, the review's note), word for word. Code checks the entry is in the input and the quote in
   it (one retry), that backed comes with the test and the others with outcome `stopped`, and makes it **unclear**
-  (`forced`, `said` kept) when the cited entry can't back a ticket. Contradicted and unclear write no test and run
+  (`forced`, `said` kept) when the cited entry can't back a ticket. A verdict that goes against its entry's ruling
+  (backed on "the code is right" or "keep"; contradicted on "the FSD is right", "remove" or "not a match") gets the
+  retry, with one exception (D411): **backed on a "keep" entry whose quote is at least four of the PM's own words in
+  it** stands, since "keep this code" on undocumented code keeps the feature and the words say how it should work; the
+  input and `bundle.md` say so. Every other pairing keeps the check. Contradicted and unclear write no test and run
   none: `not-provable`, `noProof: contradicted | unclear`, `verdict` on the attempt (`bug-proof` v2). Backed goes on to
   the test as before, its verdict kept, `pmConfirmed: false` on an unconfirmed high match. Off, the reproducer reads
   exactly what it read before (v1).
