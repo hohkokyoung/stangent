@@ -1,0 +1,2872 @@
+version: 4
+entries:
+  - id: "S001"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "1"
+      quote: "Each row on the Home screen can be collapsed, and Kavita remembers the choice on the next visit."
+    page: null
+    note: "Neither the dashboard nor the carousel rows have any collapse behaviour or remembered state."
+  - id: "S002"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "1"
+      quote: "The On Deck row shows up to 50 series."
+    page: null
+    note: "The On Deck row requests only the first 20 series."
+  - id: "S003"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "2.1"
+      quote: "A Random button on the library screen opens a randomly chosen series from that library."
+    page: null
+    note: "The library screen has no Random button; only the name, actions menu, series count, filter and bulk operations."
+  - id: "S004"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: "Users can keep a private note on a series that only they can see."
+    page: null
+    note: "The series screen has no private note feature (only an annotations tab)."
+  - id: "S005"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: "Manga series open on the Volumes tab by default."
+    page: null
+    note: "For manga libraries the default tab is Storyline, not Volumes (Volumes is default only for book and light novel libraries)."
+  - id: "S006"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button with no label (`handleClick` in the code) on /library/:libraryId/series/:seriesId. Clicking an external (Kavita+) series card opens it."
+    note: "The FSD doesn't mention the button with no label (`handleClick` in the code) on /library/:libraryId/series/:seriesId. Clicking an external (Kavita+) series card opens it."
+  - id: "S007"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button with no label (`handleClick` in the code) on /library/:libraryId/series/:seriesId. Clicking an external (Kavita+) series card opens it."
+    note: "The FSD doesn't mention the button with no label (`handleClick` in the code) on /library/:libraryId/series/:seriesId. Clicking an external (Kavita+) series card opens it."
+  - id: "S008"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cAll\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip filter showing all events."
+    note: "The FSD doesn't mention the button \u201cAll\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip filter showing all events."
+  - id: "S009"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cMetadata\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip filter for metadata events."
+    note: "The FSD doesn't mention the button \u201cMetadata\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip filter for metadata events."
+  - id: "S010"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cScrobble\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip filter for scrobble events."
+    note: "The FSD doesn't mention the button \u201cScrobble\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip filter for scrobble events."
+  - id: "S011"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cMatch\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip filter for match events."
+    note: "The FSD doesn't mention the button \u201cMatch\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip filter for match events."
+  - id: "S012"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cMy Activity\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip view of the user's own activity."
+    note: "The FSD doesn't mention the button \u201cMy Activity\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip view of the user's own activity."
+  - id: "S013"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cAdmin feed\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip view of the admin feed."
+    note: "The FSD doesn't mention the button \u201cAdmin feed\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip view of the admin feed."
+  - id: "S014"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cThis series has files with problems\u201d on /library/:libraryId/series/:seriesId. Warning button showing the series has files with problems."
+    note: "The FSD doesn't mention the button \u201cThis series has files with problems\u201d on /library/:libraryId/series/:seriesId. Warning button showing the series has files with problems."
+  - id: "S015"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201c{{settings.scrobbling}}: {{value}}\u201d on /library/:libraryId/series/:seriesId. Shows scrobbling status for the series."
+    note: "The FSD doesn't mention the button \u201c{{settings.scrobbling}}: {{value}}\u201d on /library/:libraryId/series/:seriesId. Shows scrobbling status for the series."
+  - id: "S016"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cKavita+ Activity\u201d on /library/:libraryId/series/:seriesId. Opens the Kavita+ activity for the series."
+    note: "The FSD doesn't mention the button \u201cKavita+ Activity\u201d on /library/:libraryId/series/:seriesId. Opens the Kavita+ activity for the series."
+  - id: "S017"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId. Opens a filtered series list from a metadata item."
+    note: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId. Opens a filtered series list from a metadata item."
+  - id: "S018"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId. Opens a filtered series list from a metadata item."
+    note: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId. Opens a filtered series list from a metadata item."
+  - id: "S019"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/volume/:volumeId"
+      quote: "The FSD doesn't mention the button \u201cEdit Information\u201d on /library/:libraryId/series/:seriesId/volume/:volumeId. Opens the volume edit dialog."
+    note: "The FSD doesn't mention the button \u201cEdit Information\u201d on /library/:libraryId/series/:seriesId/volume/:volumeId. Opens the volume edit dialog."
+  - id: "S020"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/volume/:volumeId"
+      quote: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/volume/:volumeId. Opens a filtered series list from a metadata item."
+    note: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/volume/:volumeId. Opens a filtered series list from a metadata item."
+  - id: "S021"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/volume/:volumeId"
+      quote: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/volume/:volumeId. Opens a filtered series list from a metadata item."
+    note: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/volume/:volumeId. Opens a filtered series list from a metadata item."
+  - id: "S022"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.3"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/chapter/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`read` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Read button for the chapter."
+    note: "The FSD doesn't mention the button with no label (`read` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Read button for the chapter."
+  - id: "S023"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.3"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/chapter/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`read` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Read in incognito button for the chapter."
+    note: "The FSD doesn't mention the button with no label (`read` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Read in incognito button for the chapter."
+  - id: "S024"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.3"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/chapter/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cEdit Information\u201d on /library/:libraryId/series/:seriesId/chapter/:chapterId. Opens the chapter edit dialog."
+    note: "The FSD doesn't mention the button \u201cEdit Information\u201d on /library/:libraryId/series/:seriesId/chapter/:chapterId. Opens the chapter edit dialog."
+  - id: "S025"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.3"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/chapter/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Opens a filtered series list from a metadata item."
+    note: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Opens a filtered series list from a metadata item."
+  - id: "S026"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.3"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/chapter/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Opens a filtered series list from a metadata item."
+    note: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Opens a filtered series list from a metadata item."
+  - id: "S027"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.1"
+      quote: "A slideshow mode turns the page automatically after a set number of seconds."
+    page: null
+    note: "The image reader settings contain no slideshow or auto-advance option."
+  - id: "S028"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.1"
+      quote: "Brightness can be set anywhere from 0% to 100%."
+    page: null
+    note: "The brightness (darkness) setting has a minimum of 10, so the range is 10% to 100%."
+  - id: "S029"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: "Selected text can be read aloud using the device's text-to-speech voice."
+    page: null
+    note: "No text-to-speech / speech synthesis feature exists in the UI."
+  - id: "S030"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the field with no label (`formGroup.name` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Name field for the annotation or bookmark."
+    note: "The FSD doesn't mention the field with no label (`formGroup.name` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Name field for the annotation or bookmark."
+  - id: "S031"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cSave\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Saves the annotation form."
+    note: "The FSD doesn't mention the button \u201cSave\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Saves the annotation form."
+  - id: "S032"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cSkip to main content\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Accessibility link to skip to main content."
+    note: "The FSD doesn't mention the button \u201cSkip to main content\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Accessibility link to skip to main content."
+  - id: "S033"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`movePage` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Moves to the previous page."
+    note: "The FSD doesn't mention the button with no label (`movePage` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Moves to the previous page."
+  - id: "S034"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`movePage` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Moves to the next page."
+    note: "The FSD doesn't mention the button with no label (`movePage` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Moves to the next page."
+  - id: "S035"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`handleReaderClick` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Reader click area that handles taps."
+    note: "The FSD doesn't mention the button with no label (`handleReaderClick` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Reader click area that handles taps."
+  - id: "S036"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`toggleMenu` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Toggles the reader menu."
+    note: "The FSD doesn't mention the button with no label (`toggleMenu` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Toggles the reader menu."
+  - id: "S037"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`div` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Clickable overlay area in the reader."
+    note: "The FSD doesn't mention the button with no label (`div` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Clickable overlay area in the reader."
+  - id: "S038"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`toggleDrawer` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Toggles a reader drawer."
+    note: "The FSD doesn't mention the button with no label (`toggleDrawer` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Toggles a reader drawer."
+  - id: "S039"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cIncognito mode is on. Toggle to turn off.\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Turns incognito mode off in the book reader."
+    note: "The FSD doesn't mention the button \u201cIncognito mode is on. Toggle to turn off.\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Turns incognito mode off in the book reader."
+  - id: "S040"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cB\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Keyboard hint button B."
+    note: "The FSD doesn't mention the button \u201cB\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Keyboard hint button B."
+  - id: "S041"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cV\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Keyboard hint button V."
+    note: "The FSD doesn't mention the button \u201cV\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Keyboard hint button V."
+  - id: "S042"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cKeyboard Shortcuts Modal\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Opens the keyboard shortcuts modal."
+    note: "The FSD doesn't mention the button \u201cKeyboard Shortcuts Modal\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Opens the keyboard shortcuts modal."
+  - id: "S043"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`closeReader` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Closes the reader."
+    note: "The FSD doesn't mention the button with no label (`closeReader` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Closes the reader."
+  - id: "S044"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cPrevious\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Goes to the previous chapter."
+    note: "The FSD doesn't mention the button \u201cPrevious\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Goes to the previous chapter."
+  - id: "S045"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cGo to page\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Jumps to a typed page."
+    note: "The FSD doesn't mention the button \u201cGo to page\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Jumps to a typed page."
+  - id: "S046"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cNext\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Goes to the next chapter."
+    note: "The FSD doesn't mention the button \u201cNext\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Goes to the next chapter."
+  - id: "S047"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "5"
+      quote: "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it."
+    page: null
+    note: "No removal happens on finishing; a cleanup task removes fully-read series from Want to Read instead."
+  - id: "S048"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "5"
+      quote: "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it."
+    page: null
+    note: "Removal is done by a recurring scheduled cleanup task (CleanupWantToRead), not immediately on finishing."
+  - id: "S049"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "6.2"
+      quote: "The series in a collection can be exported to a CSV file."
+    page: null
+    note: "The collection details screen has no export action; Export exists only for annotations."
+  - id: "S050"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.1"
+      quote: ""
+    page:
+      id: "page:/lists"
+      quote: "The FSD doesn't mention the button with no label (`handleSelection` in the code) on /lists. Selects a reading list card for bulk action."
+    note: "The FSD doesn't mention the button with no label (`handleSelection` in the code) on /lists. Selects a reading list card for bulk action."
+  - id: "S051"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.1"
+      quote: ""
+    page:
+      id: "page:/lists"
+      quote: "The FSD doesn't mention the field \u201cSelect\u201d on /lists. Selection checkbox on a reading list card."
+    note: "The FSD doesn't mention the field \u201cSelect\u201d on /lists. Selection checkbox on a reading list card."
+  - id: "S052"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "The owner can share a reading list through a public link that opens without signing in."
+    page: null
+    note: "No public share link exists for reading lists; the detail route requires authGuard."
+  - id: "S053"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "A filter box for finding items appears once a list has more than 25 items."
+    page: null
+    note: "The filter box appears when the list has more than 10 items."
+  - id: "S054"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: ""
+    page: null
+    note: "In reorder mode the owner of a non-promoted list also gets a 'Remove Read' button that removes all read items."
+  - id: "S055"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: ""
+    page:
+      id: "page:/lists/:readingListId"
+      quote: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /lists/:readingListId. Opens a filtered series list from a metadata item."
+    note: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /lists/:readingListId. Opens a filtered series list from a metadata item."
+  - id: "S056"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: ""
+    page:
+      id: "page:/lists/:readingListId"
+      quote: "The FSD doesn't mention the button \u201cRemove Read\u201d on /lists/:readingListId. Removes all read items from the list."
+    note: "The FSD doesn't mention the button \u201cRemove Read\u201d on /lists/:readingListId. Removes all read items from the list."
+  - id: "S057"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: ""
+    page:
+      id: "page:/lists/:readingListId"
+      quote: "The FSD doesn't mention the button \u201cRead\u201d on /lists/:readingListId. Reads a list item."
+    note: "The FSD doesn't mention the button \u201cRead\u201d on /lists/:readingListId. Reads a list item."
+  - id: "S058"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: ""
+    page:
+      id: "page:/lists/:readingListId"
+      quote: "The FSD doesn't mention the button \u201cRead\u201d on /lists/:readingListId. Reads a list item."
+    note: "The FSD doesn't mention the button \u201cRead\u201d on /lists/:readingListId. Reads a list item."
+  - id: "S059"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "8"
+      quote: ""
+    page:
+      id: "page:/browse/genres"
+      quote: "A Browse Genres screen exists but the FSD does not describe it."
+    note: "A Browse Genres screen exists but the FSD does not describe it."
+  - id: "S060"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "8"
+      quote: ""
+    page:
+      id: "page:/browse/annotations"
+      quote: "A Browse Annotations screen (all annotations with a filter) exists but the FSD does not describe it."
+    note: "A Browse Annotations screen (all annotations with a filter) exists but the FSD does not describe it."
+  - id: "S061"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "Users can turn on two-factor sign-in with an authenticator app."
+    page: null
+    note: "The Account page has no two-factor authentication option; only username, email, password, OIDC unlink and age restriction."
+  - id: "S062"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "A new password must be at least 8 characters long."
+    page: null
+    note: "The server requires a minimum password length of 6 (validation text: between 6 and 256 characters)."
+  - id: "S063"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "Changing the password requires the current password and is only open to administrators and users with the Change Password role."
+    page: null
+    note: "Only the new password and confirmation are required fields; the old password is not required (it is only compared with the confirmation by a validator). Read Only users are also excluded."
+  - id: "S064"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB."
+    page: null
+    note: "The size threshold for the download prompt is 100 MB (104,857,600 bytes)."
+  - id: "S065"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "A maintenance mode switch blocks all non-admin users from signing in until it is turned off."
+    page: null
+    note: "There is no maintenance mode setting in the general settings form or elsewhere in the code."
+  - id: "S066"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Changes on this page are stored only when the administrator presses Save."
+    page: null
+    note: "The General page has no Save button; valid changes are auto-saved after a 300 ms debounce."
+  - id: "S067"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.2"
+      quote: "An invite can be given an expiry date, after which its link stops working."
+    page: null
+    note: "The invite form has only email, libraries, roles and age restriction; no expiry option."
+  - id: "S068"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.2"
+      quote: ""
+    page: null
+    note: "Non-pending users' rows have a change-password button (key icon) in addition to edit and delete."
+  - id: "S069"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Manage Collections is turned on by default for a new library."
+    page: null
+    note: "A new library's Manage Collections default is off (false)."
+  - id: "S070"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/genres"
+      quote: "A Genres browse screen lists genres; the FSD only describes People and Tags under Browse."
+    note: "A Genres browse screen lists genres; the FSD only describes People and Tags under Browse."
+  - id: "S071"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/annotations"
+      quote: "An All Annotations browse screen exists and is not described in the FSD."
+    note: "An All Annotations browse screen exists and is not described in the FSD."
+  - id: "S072"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/annotations"
+      quote: "The FSD doesn't describe the screen /browse/annotations (\u201cAll Annotations\u201d). All Annotations screen listing the user's annotations."
+    note: "The FSD doesn't describe the screen /browse/annotations (\u201cAll Annotations\u201d). All Annotations screen listing the user's annotations."
+  - id: "S073"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/annotations"
+      quote: "The FSD doesn't mention the button \u201cExport\u201d on /browse/annotations. Exports annotations."
+    note: "The FSD doesn't mention the button \u201cExport\u201d on /browse/annotations. Exports annotations."
+  - id: "S074"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/genres"
+      quote: "The FSD doesn't describe the screen /browse/genres (\u201cBrowse Genres\u201d). Browse Genres screen listing genres with series counts."
+    note: "The FSD doesn't describe the screen /browse/genres (\u201cBrowse Genres\u201d). Browse Genres screen listing genres with series counts."
+  - id: "S075"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/genres"
+      quote: "The FSD doesn't mention the button \u201c{{num}} Series\u201d on /browse/genres. Opens All Series filtered to the genre."
+    note: "The FSD doesn't mention the button \u201c{{num}} Series\u201d on /browse/genres. Opens All Series filtered to the genre."
+  - id: "S076"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "The FSD doesn't describe the screen /library/:libraryId/series/:seriesId/pdf/:chapterId. PDF reader screen."
+    note: "The FSD doesn't describe the screen /library/:libraryId/series/:seriesId/pdf/:chapterId. PDF reader screen."
+  - id: "S077"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cTurn off Incognito Mode\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Turns incognito mode off in the PDF reader."
+    note: "The FSD doesn't mention the button \u201cTurn off Incognito Mode\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Turns incognito mode off in the PDF reader."
+  - id: "S078"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cClose Reader\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Closes the PDF reader."
+    note: "The FSD doesn't mention the button \u201cClose Reader\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Closes the PDF reader."
+  - id: "S079"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`toggleScrollMode` in the code) on /library/:libraryId/series/:seriesId/pdf/:chapterId. Toggles PDF scroll mode."
+    note: "The FSD doesn't mention the button with no label (`toggleScrollMode` in the code) on /library/:libraryId/series/:seriesId/pdf/:chapterId. Toggles PDF scroll mode."
+  - id: "S080"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cKeyboard Shortcuts Modal\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Opens the keyboard shortcuts modal."
+    note: "The FSD doesn't mention the button \u201cKeyboard Shortcuts Modal\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Opens the keyboard shortcuts modal."
+  - id: "S081"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`toggleSpreadMode` in the code) on /library/:libraryId/series/:seriesId/pdf/:chapterId. Toggles PDF spread mode."
+    note: "The FSD doesn't mention the button with no label (`toggleSpreadMode` in the code) on /library/:libraryId/series/:seriesId/pdf/:chapterId. Toggles PDF spread mode."
+  - id: "S082"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cLight Theme\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Switches the PDF reader to light theme."
+    note: "The FSD doesn't mention the button \u201cLight Theme\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Switches the PDF reader to light theme."
+  - id: "S083"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`deviceForm.name` in the code) on /settings. Device name field."
+    note: "The FSD doesn't mention the field with no label (`deviceForm.name` in the code) on /settings. Device name field."
+  - id: "S084"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves the client device name."
+    note: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves the client device name."
+  - id: "S085"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cLoad more\u201d on /settings. Loads more Kavita+ timeline entries."
+    note: "The FSD doesn't mention the button \u201cLoad more\u201d on /settings. Loads more Kavita+ timeline entries."
+  - id: "S086"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`fileFormGroup.files` in the code) on /settings. File picker for mapping import."
+    note: "The FSD doesn't mention the field with no label (`fileFormGroup.files` in the code) on /settings. File picker for mapping import."
+  - id: "S087"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cImport mode\u201d on /settings. Import mode choice."
+    note: "The FSD doesn't mention the field \u201cImport mode\u201d on /settings. Import mode choice."
+  - id: "S088"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cConflict resolution\u201d on /settings. Conflict resolution choice for import."
+    note: "The FSD doesn't mention the field \u201cConflict resolution\u201d on /settings. Conflict resolution choice for import."
+  - id: "S089"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cTags whitelist\u201d on /settings. Tags whitelist for import."
+    note: "The FSD doesn't mention the field \u201cTags whitelist\u201d on /settings. Tags whitelist for import."
+  - id: "S090"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cTags blacklist\u201d on /settings. Tags blacklist for import."
+    note: "The FSD doesn't mention the field \u201cTags blacklist\u201d on /settings. Tags blacklist for import."
+  - id: "S091"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cAge rating mappings\u201d on /settings. Age rating mappings for import."
+    note: "The FSD doesn't mention the field \u201cAge rating mappings\u201d on /settings. Age rating mappings for import."
+  - id: "S092"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cField mappings\u201d on /settings. Field mappings for import."
+    note: "The FSD doesn't mention the field \u201cField mappings\u201d on /settings. Field mappings for import."
+  - id: "S093"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`conflictField` in the code) on /settings. Conflict resolution field for a mapping."
+    note: "The FSD doesn't mention the field with no label (`conflictField` in the code) on /settings. Conflict resolution field for a mapping."
+  - id: "S094"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cPrev\u201d on /settings. Goes back a step in the import wizard."
+    note: "The FSD doesn't mention the button \u201cPrev\u201d on /settings. Goes back a step in the import wizard."
+  - id: "S095"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`nextStep` in the code) on /settings. Goes to the next step in the import wizard."
+    note: "The FSD doesn't mention the button with no label (`nextStep` in the code) on /settings. Goes to the next step in the import wizard."
+  - id: "S096"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cLicense Key\u201d on /settings. Kavita+ license key field."
+    note: "The FSD doesn't mention the field \u201cLicense Key\u201d on /settings. Kavita+ license key field."
+  - id: "S097"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cEmail\u201d on /settings. Kavita+ license email field."
+    note: "The FSD doesn't mention the field \u201cEmail\u201d on /settings. Kavita+ license email field."
+  - id: "S098"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSkip to dashboard\u201d on /settings. Skips provider setup to the dashboard."
+    note: "The FSD doesn't mention the button \u201cSkip to dashboard\u201d on /settings. Skips provider setup to the dashboard."
+  - id: "S099"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSkip for now\u201d on /settings. Skips connecting providers."
+    note: "The FSD doesn't mention the button \u201cSkip for now\u201d on /settings. Skips connecting providers."
+  - id: "S100"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cGo to dashboard\u201d on /settings. Goes to the dashboard."
+    note: "The FSD doesn't mention the button \u201cGo to dashboard\u201d on /settings. Goes to the dashboard."
+  - id: "S101"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRemove Scrobble Error\u201d on /settings. Removes a scrobble error entry."
+    note: "The FSD doesn't mention the button \u201cRemove Scrobble Error\u201d on /settings. Removes a scrobble error entry."
+  - id: "S102"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRetry\u201d on /settings. Retries a Kavita+ event."
+    note: "The FSD doesn't mention the button \u201cRetry\u201d on /settings. Retries a Kavita+ event."
+  - id: "S103"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cMatch\u201d on /settings. Fixes a series match."
+    note: "The FSD doesn't mention the button \u201cMatch\u201d on /settings. Fixes a series match."
+  - id: "S104"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`collapsed` in the code) on /settings. Expands or collapses an audit entry."
+    note: "The FSD doesn't mention the button with no label (`collapsed` in the code) on /settings. Expands or collapses an audit entry."
+  - id: "S105"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cLast 30 days\u201d on /settings. API stats for the last 30 days."
+    note: "The FSD doesn't mention the button \u201cLast 30 days\u201d on /settings. API stats for the last 30 days."
+  - id: "S106"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cLifetime\u201d on /settings. API stats for lifetime."
+    note: "The FSD doesn't mention the button \u201cLifetime\u201d on /settings. API stats for lifetime."
+  - id: "S107"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cManage\u201d on /settings. Manages the Kavita+ license."
+    note: "The FSD doesn't mention the button \u201cManage\u201d on /settings. Manages the Kavita+ license."
+  - id: "S108"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cEdit license\u201d on /settings. Edits the Kavita+ license."
+    note: "The FSD doesn't mention the button \u201cEdit license\u201d on /settings. Edits the Kavita+ license."
+  - id: "S109"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cCheck\u201d on /settings. Checks the license."
+    note: "The FSD doesn't mention the button \u201cCheck\u201d on /settings. Checks the license."
+  - id: "S110"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAll\u201d on /settings. Activity filter: all."
+    note: "The FSD doesn't mention the button \u201cAll\u201d on /settings. Activity filter: all."
+  - id: "S111"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cMatch\u201d on /settings. Activity filter: match."
+    note: "The FSD doesn't mention the button \u201cMatch\u201d on /settings. Activity filter: match."
+  - id: "S112"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cMetadata\u201d on /settings. Activity filter: metadata."
+    note: "The FSD doesn't mention the button \u201cMetadata\u201d on /settings. Activity filter: metadata."
+  - id: "S113"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cScrobble\u201d on /settings. Activity filter: scrobble."
+    note: "The FSD doesn't mention the button \u201cScrobble\u201d on /settings. Activity filter: scrobble."
+  - id: "S114"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSync\u201d on /settings. Activity filter: sync."
+    note: "The FSD doesn't mention the button \u201cSync\u201d on /settings. Activity filter: sync."
+  - id: "S115"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSystem\u201d on /settings. Activity filter: system."
+    note: "The FSD doesn't mention the button \u201cSystem\u201d on /settings. Activity filter: system."
+  - id: "S116"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cScrobble provider\u201d on /settings. Scrobble provider filter."
+    note: "The FSD doesn't mention the field \u201cScrobble provider\u201d on /settings. Scrobble provider filter."
+  - id: "S117"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cStatus filter\u201d on /settings. Status filter."
+    note: "The FSD doesn't mention the field \u201cStatus filter\u201d on /settings. Status filter."
+  - id: "S118"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSubject\u201d on /settings. Subject filter."
+    note: "The FSD doesn't mention the field \u201cSubject\u201d on /settings. Subject filter."
+  - id: "S119"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cUser\u201d on /settings. User filter."
+    note: "The FSD doesn't mention the field \u201cUser\u201d on /settings. User filter."
+  - id: "S120"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cTime Frame\u201d on /settings. Time frame filter."
+    note: "The FSD doesn't mention the field \u201cTime Frame\u201d on /settings. Time frame filter."
+  - id: "S121"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSearch events\u201d on /settings. Searches events."
+    note: "The FSD doesn't mention the field \u201cSearch events\u201d on /settings. Searches events."
+  - id: "S122"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cMatch State\u201d on /settings. Match state filter."
+    note: "The FSD doesn't mention the field \u201cMatch State\u201d on /settings. Match state filter."
+  - id: "S123"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cMatch {{seriesName}}\u201d on /settings. Matches a series."
+    note: "The FSD doesn't mention the button \u201cMatch {{seriesName}}\u201d on /settings. Matches a series."
+  - id: "S124"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cMatch {{seriesName}}\u201d on /settings. Matches a series."
+    note: "The FSD doesn't mention the button \u201cMatch {{seriesName}}\u201d on /settings. Matches a series."
+  - id: "S125"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters scrobble errors."
+    note: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters scrobble errors."
+  - id: "S126"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cClear Errors\u201d on /settings. Clears scrobble errors."
+    note: "The FSD doesn't mention the button \u201cClear Errors\u201d on /settings. Clears scrobble errors."
+  - id: "S127"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`fixMatch` in the code) on /settings. Fixes a scrobble match."
+    note: "The FSD doesn't mention the button with no label (`fixMatch` in the code) on /settings. Fixes a scrobble match."
+  - id: "S128"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`fixMatch` in the code) on /settings. Fixes a scrobble match."
+    note: "The FSD doesn't mention the button with no label (`fixMatch` in the code) on /settings. Fixes a scrobble match."
+  - id: "S129"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cActivate License\u201d on /settings. Activates the Kavita+ license."
+    note: "The FSD doesn't mention the button \u201cActivate License\u201d on /settings. Activates the Kavita+ license."
+  - id: "S130"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRefresh provider health\u201d on /settings. Refreshes provider health."
+    note: "The FSD doesn't mention the button \u201cRefresh provider health\u201d on /settings. Refreshes provider health."
+  - id: "S131"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cTest\u201d on /settings. Tests email settings."
+    note: "The FSD doesn't mention the button \u201cTest\u201d on /settings. Tests email settings."
+  - id: "S132"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSender Address\u201d on /settings. Email sender address."
+    note: "The FSD doesn't mention the field \u201cSender Address\u201d on /settings. Email sender address."
+  - id: "S133"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cDisplay Name\u201d on /settings. Email display name."
+    note: "The FSD doesn't mention the field \u201cDisplay Name\u201d on /settings. Email display name."
+  - id: "S134"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cHost\u201d on /settings. Email server host."
+    note: "The FSD doesn't mention the field \u201cHost\u201d on /settings. Email server host."
+  - id: "S135"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cGmail\u201d on /settings. Fills in Gmail settings."
+    note: "The FSD doesn't mention the button \u201cGmail\u201d on /settings. Fills in Gmail settings."
+  - id: "S136"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cOutlook\u201d on /settings. Fills in Outlook settings."
+    note: "The FSD doesn't mention the button \u201cOutlook\u201d on /settings. Fills in Outlook settings."
+  - id: "S137"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cPort\u201d on /settings. Email server port."
+    note: "The FSD doesn't mention the field \u201cPort\u201d on /settings. Email server port."
+  - id: "S138"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cUse SSL on Email Server\u201d on /settings. SSL switch for the email server."
+    note: "The FSD doesn't mention the field \u201cUse SSL on Email Server\u201d on /settings. SSL switch for the email server."
+  - id: "S139"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cUsername\u201d on /settings. Email server username."
+    note: "The FSD doesn't mention the field \u201cUsername\u201d on /settings. Email server username."
+  - id: "S140"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cPassword\u201d on /settings. Email server password."
+    note: "The FSD doesn't mention the field \u201cPassword\u201d on /settings. Email server password."
+  - id: "S141"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSize Limit\u201d on /settings. Email attachment size limit."
+    note: "The FSD doesn't mention the field \u201cSize Limit\u201d on /settings. Email attachment size limit."
+  - id: "S142"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCustomized Templates\u201d on /settings. Customized email templates switch."
+    note: "The FSD doesn't mention the field \u201cCustomized Templates\u201d on /settings. Customized email templates switch."
+  - id: "S143"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cInclude copying Library type\u201d on /settings. Option to copy library type."
+    note: "The FSD doesn't mention the field \u201cInclude copying Library type\u201d on /settings. Option to copy library type."
+  - id: "S144"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cApply\u201d on /settings. Applies the bulk library action."
+    note: "The FSD doesn't mention the button \u201cApply\u201d on /settings. Applies the bulk library action."
+  - id: "S145"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`libraryTracker.isSelected(library)` in the code) on /settings. Selects a library row."
+    note: "The FSD doesn't mention the field with no label (`libraryTracker.isSelected(library)` in the code) on /settings. Selects a library row."
+  - id: "S146"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`libraryTracker.isSelected(library)` in the code) on /settings. Selects a library row."
+    note: "The FSD doesn't mention the field with no label (`libraryTracker.isSelected(library)` in the code) on /settings. Selects a library row."
+  - id: "S147"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cClear all\u201d on /settings. Clears all media issues."
+    note: "The FSD doesn't mention the button \u201cClear all\u201d on /settings. Clears all media issues."
+  - id: "S148"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters media issues."
+    note: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters media issues."
+  - id: "S149"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cLibrary\u201d on /settings. Library filter for media issues."
+    note: "The FSD doesn't mention the field \u201cLibrary\u201d on /settings. Library filter for media issues."
+  - id: "S150"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSeries\u201d on /settings. Series filter for media issues."
+    note: "The FSD doesn't mention the field \u201cSeries\u201d on /settings. Series filter for media issues."
+  - id: "S151"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cReason\u201d on /settings. Reason filter for media issues."
+    note: "The FSD doesn't mention the field \u201cReason\u201d on /settings. Reason filter for media issues."
+  - id: "S152"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRestore selected ({{count}})\u201d on /settings. Restores selected media issues."
+    note: "The FSD doesn't mention the button \u201cRestore selected ({{count}})\u201d on /settings. Restores selected media issues."
+  - id: "S153"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSelect {{file}}\u201d on /settings. Selects a media issue file."
+    note: "The FSD doesn't mention the field \u201cSelect {{file}}\u201d on /settings. Selects a media issue file."
+  - id: "S154"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cHide details\u201d on /settings. Hides issue details."
+    note: "The FSD doesn't mention the button \u201cHide details\u201d on /settings. Hides issue details."
+  - id: "S155"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRestore\u201d on /settings. Restores a media issue."
+    note: "The FSD doesn't mention the button \u201cRestore\u201d on /settings. Restores a media issue."
+  - id: "S156"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSave Media As\u201d on /settings. Image format for saved media."
+    note: "The FSD doesn't mention the field \u201cSave Media As\u201d on /settings. Image format for saved media."
+  - id: "S157"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cPDF Render Resolution\u201d on /settings. PDF render resolution."
+    note: "The FSD doesn't mention the field \u201cPDF Render Resolution\u201d on /settings. PDF render resolution."
+  - id: "S158"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCover Image Size\u201d on /settings. Cover image size."
+    note: "The FSD doesn't mention the field \u201cCover Image Size\u201d on /settings. Cover image size."
+  - id: "S159"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cBookmarks Directory\u201d on /settings. Bookmarks directory path."
+    note: "The FSD doesn't mention the field \u201cBookmarks Directory\u201d on /settings. Bookmarks directory path."
+  - id: "S160"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cChange\u201d on /settings. Changes the bookmarks directory."
+    note: "The FSD doesn't mention the button \u201cChange\u201d on /settings. Changes the bookmarks directory."
+  - id: "S161"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cGenres\u201d on /settings. Genre mappings."
+    note: "The FSD doesn't mention the field \u201cGenres\u201d on /settings. Genre mappings."
+  - id: "S162"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cTags\u201d on /settings. Tag mappings."
+    note: "The FSD doesn't mention the field \u201cTags\u201d on /settings. Tag mappings."
+  - id: "S163"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cBlacklist Genres/Tags\u201d on /settings. Genre/tag blacklist."
+    note: "The FSD doesn't mention the field \u201cBlacklist Genres/Tags\u201d on /settings. Genre/tag blacklist."
+  - id: "S164"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cWhitelist Tags\u201d on /settings. Tag whitelist."
+    note: "The FSD doesn't mention the field \u201cWhitelist Tags\u201d on /settings. Tag whitelist."
+  - id: "S165"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter Tags above weight (Mangabaka only)\u201d on /settings. Tag weight filter."
+    note: "The FSD doesn't mention the field \u201cFilter Tags above weight (Mangabaka only)\u201d on /settings. Tag weight filter."
+  - id: "S166"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.sourceType` in the code) on /settings. Field mapping source type."
+    note: "The FSD doesn't mention the field with no label (`mapping.sourceType` in the code) on /settings. Field mapping source type."
+  - id: "S167"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.sourceValue` in the code) on /settings. Field mapping source value."
+    note: "The FSD doesn't mention the field with no label (`mapping.sourceValue` in the code) on /settings. Field mapping source value."
+  - id: "S168"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.destinationType` in the code) on /settings. Field mapping destination type."
+    note: "The FSD doesn't mention the field with no label (`mapping.destinationType` in the code) on /settings. Field mapping destination type."
+  - id: "S169"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.destinationValue` in the code) on /settings. Field mapping destination value."
+    note: "The FSD doesn't mention the field with no label (`mapping.destinationValue` in the code) on /settings. Field mapping destination value."
+  - id: "S170"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.excludeFromSource` in the code) on /settings. Field mapping exclude-from-source switch."
+    note: "The FSD doesn't mention the field with no label (`mapping.excludeFromSource` in the code) on /settings. Field mapping exclude-from-source switch."
+  - id: "S171"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRemove field mapping\u201d on /settings. Removes a field mapping."
+    note: "The FSD doesn't mention the button \u201cRemove field mapping\u201d on /settings. Removes a field mapping."
+  - id: "S172"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd Field Mapping\u201d on /settings. Adds a field mapping."
+    note: "The FSD doesn't mention the button \u201cAdd Field Mapping\u201d on /settings. Adds a field mapping."
+  - id: "S173"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd Field Mapping\u201d on /settings. Adds a field mapping."
+    note: "The FSD doesn't mention the button \u201cAdd Field Mapping\u201d on /settings. Adds a field mapping."
+  - id: "S174"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cEnable Metadata Download\u201d on /settings. Enables metadata download."
+    note: "The FSD doesn't mention the field \u201cEnable Metadata Download\u201d on /settings. Enables metadata download."
+  - id: "S175"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cExtended metadata processing\u201d on /settings. Extended metadata processing switch."
+    note: "The FSD doesn't mention the field \u201cExtended metadata processing\u201d on /settings. Extended metadata processing switch."
+  - id: "S176"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cExport\u201d on /settings. Exports metadata settings."
+    note: "The FSD doesn't mention the button \u201cExport\u201d on /settings. Exports metadata settings."
+  - id: "S177"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRun Metadata Mappings\u201d on /settings. Runs metadata mappings."
+    note: "The FSD doesn't mention the button \u201cRun Metadata Mappings\u201d on /settings. Runs metadata mappings."
+  - id: "S178"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`field` in the code) on /settings. Metadata field selector."
+    note: "The FSD doesn't mention the field with no label (`field` in the code) on /settings. Metadata field selector."
+  - id: "S179"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a library override."
+    note: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a library override."
+  - id: "S180"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cLibrary\u201d on /settings. Library selector for override."
+    note: "The FSD doesn't mention the field \u201cLibrary\u201d on /settings. Library selector for override."
+  - id: "S181"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRemove override\u201d on /settings. Removes an override."
+    note: "The FSD doesn't mention the button \u201cRemove override\u201d on /settings. Removes an override."
+  - id: "S182"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSeries Name\u201d on /settings. Series name field toggle."
+    note: "The FSD doesn't mention the field \u201cSeries Name\u201d on /settings. Series name field toggle."
+  - id: "S183"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cLocalized Series Name\u201d on /settings. Localized series name toggle."
+    note: "The FSD doesn't mention the field \u201cLocalized Series Name\u201d on /settings. Localized series name toggle."
+  - id: "S184"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSummary\u201d on /settings. Summary field toggle."
+    note: "The FSD doesn't mention the field \u201cSummary\u201d on /settings. Summary field toggle."
+  - id: "S185"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cRelationships\u201d on /settings. Relationships toggle."
+    note: "The FSD doesn't mention the field \u201cRelationships\u201d on /settings. Relationships toggle."
+  - id: "S186"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cStart Date\u201d on /settings. Start date toggle."
+    note: "The FSD doesn't mention the field \u201cStart Date\u201d on /settings. Start date toggle."
+  - id: "S187"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cTitle\u201d on /settings. Chapter title toggle."
+    note: "The FSD doesn't mention the field \u201cTitle\u201d on /settings. Chapter title toggle."
+  - id: "S188"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSummary\u201d on /settings. Chapter summary toggle."
+    note: "The FSD doesn't mention the field \u201cSummary\u201d on /settings. Chapter summary toggle."
+  - id: "S189"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cPublisher\u201d on /settings. Publisher toggle."
+    note: "The FSD doesn't mention the field \u201cPublisher\u201d on /settings. Publisher toggle."
+  - id: "S190"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cChapter Cover\u201d on /settings. Chapter cover toggle."
+    note: "The FSD doesn't mention the field \u201cChapter Cover\u201d on /settings. Chapter cover toggle."
+  - id: "S191"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cVolume Cover\u201d on /settings. Volume cover toggle."
+    note: "The FSD doesn't mention the field \u201cVolume Cover\u201d on /settings. Volume cover toggle."
+  - id: "S192"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cPeople\u201d on /settings. People toggle."
+    note: "The FSD doesn't mention the field \u201cPeople\u201d on /settings. People toggle."
+  - id: "S193"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFirst Last Naming\u201d on /settings. First-last naming toggle."
+    note: "The FSD doesn't mention the field \u201cFirst Last Naming\u201d on /settings. First-last naming toggle."
+  - id: "S194"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`formGroup.personRoles[role]` in the code) on /settings. Per-role person toggle."
+    note: "The FSD doesn't mention the field with no label (`formGroup.personRoles[role]` in the code) on /settings. Per-role person toggle."
+  - id: "S195"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`formGroup.overrides[field]` in the code) on /settings. Per-field override toggle."
+    note: "The FSD doesn't mention the field with no label (`formGroup.overrides[field]` in the code) on /settings. Per-field override toggle."
+  - id: "S196"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cAuthority\u201d on /settings. OIDC authority URL."
+    note: "The FSD doesn't mention the field \u201cAuthority\u201d on /settings. OIDC authority URL."
+  - id: "S197"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cClient ID\u201d on /settings. OIDC client ID."
+    note: "The FSD doesn't mention the field \u201cClient ID\u201d on /settings. OIDC client ID."
+  - id: "S198"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cClient secret\u201d on /settings. OIDC client secret."
+    note: "The FSD doesn't mention the field \u201cClient secret\u201d on /settings. OIDC client secret."
+  - id: "S199"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cReset external ids from all users, use this to reset links between users in Kavita and your identity provider\u201d on /settings. Resets external IDs of all users."
+    note: "The FSD doesn't mention the button \u201cReset external ids from all users, use this to reset links between users in Kavita and your identity provider\u201d on /settings. Resets external IDs of all users."
+  - id: "S200"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves OIDC settings."
+    note: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves OIDC settings."
+  - id: "S201"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cProvider name\u201d on /settings. OIDC provider name."
+    note: "The FSD doesn't mention the field \u201cProvider name\u201d on /settings. OIDC provider name."
+  - id: "S202"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cProvision accounts\u201d on /settings. Provision accounts switch."
+    note: "The FSD doesn't mention the field \u201cProvision accounts\u201d on /settings. Provision accounts switch."
+  - id: "S203"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cRequire verified emails\u201d on /settings. Require verified emails switch."
+    note: "The FSD doesn't mention the field \u201cRequire verified emails\u201d on /settings. Require verified emails switch."
+  - id: "S204"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSync user settings with OIDC roles\u201d on /settings. Sync user settings with OIDC roles."
+    note: "The FSD doesn't mention the field \u201cSync user settings with OIDC roles\u201d on /settings. Sync user settings with OIDC roles."
+  - id: "S205"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cAuto login\u201d on /settings. Auto login switch."
+    note: "The FSD doesn't mention the field \u201cAuto login\u201d on /settings. Auto login switch."
+  - id: "S206"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cDisable password authentication\u201d on /settings. Disables password authentication."
+    note: "The FSD doesn't mention the field \u201cDisable password authentication\u201d on /settings. Disables password authentication."
+  - id: "S207"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cInclude unknowns\u201d on /settings. Include unknown age ratings."
+    note: "The FSD doesn't mention the field \u201cInclude unknowns\u201d on /settings. Include unknown age ratings."
+  - id: "S208"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cLibraries\u201d on /settings. Default libraries for OIDC users."
+    note: "The FSD doesn't mention the field \u201cLibraries\u201d on /settings. Default libraries for OIDC users."
+  - id: "S209"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`formGroup.defaultRoles` in the code) on /settings. Default roles for OIDC users."
+    note: "The FSD doesn't mention the field with no label (`formGroup.defaultRoles` in the code) on /settings. Default roles for OIDC users."
+  - id: "S210"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cRoles prefix\u201d on /settings. OIDC roles prefix."
+    note: "The FSD doesn't mention the field \u201cRoles prefix\u201d on /settings. OIDC roles prefix."
+  - id: "S211"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cRoles claim\u201d on /settings. OIDC roles claim."
+    note: "The FSD doesn't mention the field \u201cRoles claim\u201d on /settings. OIDC roles claim."
+  - id: "S212"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCustom scopes\u201d on /settings. OIDC custom scopes."
+    note: "The FSD doesn't mention the field \u201cCustom scopes\u201d on /settings. OIDC custom scopes."
+  - id: "S213"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cExtended metadata processing\u201d on /settings. Extended metadata processing switch."
+    note: "The FSD doesn't mention the field \u201cExtended metadata processing\u201d on /settings. Extended metadata processing switch."
+  - id: "S214"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cExport\u201d on /settings. Exports public metadata settings."
+    note: "The FSD doesn't mention the button \u201cExport\u201d on /settings. Exports public metadata settings."
+  - id: "S215"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRun Metadata Mappings\u201d on /settings. Runs metadata mappings."
+    note: "The FSD doesn't mention the button \u201cRun Metadata Mappings\u201d on /settings. Runs metadata mappings."
+  - id: "S216"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets the base URL field."
+    note: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets the base URL field."
+  - id: "S217"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets the IP addresses field."
+    note: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets the IP addresses field."
+  - id: "S218"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cLogging Level\u201d on /settings. Server logging level."
+    note: "The FSD doesn't mention the field \u201cLogging Level\u201d on /settings. Server logging level."
+  - id: "S219"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the menu entry with no label (`kavitareader.com` in the code) on /settings. Link to the Kavita website."
+    note: "The FSD doesn't mention the menu entry with no label (`kavitareader.com` in the code) on /settings. Link to the Kavita website."
+  - id: "S220"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the menu entry with no label (`wiki.kavitareader.com` in the code) on /settings. Link to the wiki."
+    note: "The FSD doesn't mention the menu entry with no label (`wiki.kavitareader.com` in the code) on /settings. Link to the wiki."
+  - id: "S221"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the menu entry \u201cdiscord.gg/b52wT37kt7\u201d on /settings. Link to Discord."
+    note: "The FSD doesn't mention the menu entry \u201cdiscord.gg/b52wT37kt7\u201d on /settings. Link to Discord."
+  - id: "S222"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the menu entry \u201copencollective.com/kavita\u201d on /settings. Link to Open Collective."
+    note: "The FSD doesn't mention the menu entry \u201copencollective.com/kavita\u201d on /settings. Link to Open Collective."
+  - id: "S223"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the menu entry \u201cgithub.com/Kareadita/Kavita\u201d on /settings. Link to GitHub."
+    note: "The FSD doesn't mention the menu entry \u201cgithub.com/Kareadita/Kavita\u201d on /settings. Link to GitHub."
+  - id: "S224"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the menu entry \u201cWeblate\u201d on /settings. Link to Weblate."
+    note: "The FSD doesn't mention the menu entry \u201cWeblate\u201d on /settings. Link to Weblate."
+  - id: "S225"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the menu entry \u201chttps://github.com/Kareadita/Kavita/discussions/\u201d on /settings. Link to GitHub discussions."
+    note: "The FSD doesn't mention the menu entry \u201chttps://github.com/Kareadita/Kavita/discussions/\u201d on /settings. Link to GitHub discussions."
+  - id: "S226"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`runAdhoc` in the code) on /settings. Runs a task ad hoc."
+    note: "The FSD doesn't mention the button with no label (`runAdhoc` in the code) on /settings. Runs a task ad hoc."
+  - id: "S227"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cTrack\u201d on /settings. Tracks a MAL collection import."
+    note: "The FSD doesn't mention the button \u201cTrack\u201d on /settings. Tracks a MAL collection import."
+  - id: "S228"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`select` in the code) on /settings. Cron schedule selector."
+    note: "The FSD doesn't mention the field with no label (`select` in the code) on /settings. Cron schedule selector."
+  - id: "S229"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCustom Schedule (Cron Notation)\u201d on /settings. Custom cron schedule field."
+    note: "The FSD doesn't mention the field \u201cCustom Schedule (Cron Notation)\u201d on /settings. Custom cron schedule field."
+  - id: "S230"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cKeybind {{index}} for {{target}} has been used for an other target as well\u201d on /settings. Duplicate keybind warning."
+    note: "The FSD doesn't mention the button \u201cKeybind {{index}} for {{target}} has been used for an other target as well\u201d on /settings. Duplicate keybind warning."
+  - id: "S231"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`allSelected()` in the code) on /settings. Select-all checkbox in a multi-select."
+    note: "The FSD doesn't mention the field with no label (`allSelected()` in the code) on /settings. Select-all checkbox in a multi-select."
+  - id: "S232"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`onContainerClick` in the code) on /settings. Opens a multi-select box."
+    note: "The FSD doesn't mention the button with no label (`onContainerClick` in the code) on /settings. Opens a multi-select box."
+  - id: "S233"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`isChecked(opt)` in the code) on /settings. Option checkbox in a multi-select."
+    note: "The FSD doesn't mention the field with no label (`isChecked(opt)` in the code) on /settings. Option checkbox in a multi-select."
+  - id: "S234"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`textFieldValue()` in the code) on /settings. Multi text field input."
+    note: "The FSD doesn't mention the field with no label (`textFieldValue()` in the code) on /settings. Multi text field input."
+  - id: "S235"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.str` in the code) on /settings. Age rating mapping text."
+    note: "The FSD doesn't mention the field with no label (`mapping.str` in the code) on /settings. Age rating mapping text."
+  - id: "S236"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.str` in the code) on /settings. Age rating mapping text."
+    note: "The FSD doesn't mention the field with no label (`mapping.str` in the code) on /settings. Age rating mapping text."
+  - id: "S237"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.rating` in the code) on /settings. Age rating mapping rating."
+    note: "The FSD doesn't mention the field with no label (`mapping.rating` in the code) on /settings. Age rating mapping rating."
+  - id: "S238"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`removeRow` in the code) on /settings. Removes a mapping row."
+    note: "The FSD doesn't mention the button with no label (`removeRow` in the code) on /settings. Removes a mapping row."
+  - id: "S239"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`addRow` in the code) on /settings. Adds a mapping row."
+    note: "The FSD doesn't mention the button with no label (`addRow` in the code) on /settings. Adds a mapping row."
+  - id: "S240"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`addRow` in the code) on /settings. Adds a mapping row."
+    note: "The FSD doesn't mention the button with no label (`addRow` in the code) on /settings. Adds a mapping row."
+  - id: "S241"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`clear` in the code) on /settings. Clears a search input."
+    note: "The FSD doesn't mention the button with no label (`clear` in the code) on /settings. Clears a search input."
+  - id: "S242"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters dashboard streams."
+    note: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters dashboard streams."
+  - id: "S243"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a dashboard stream."
+    note: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a dashboard stream."
+  - id: "S244"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters sidenav streams."
+    note: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters sidenav streams."
+  - id: "S245"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cBulk Mode\u201d on /settings. Bulk mode switch."
+    note: "The FSD doesn't mention the field \u201cBulk Mode\u201d on /settings. Bulk mode switch."
+  - id: "S246"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters sidenav streams."
+    note: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters sidenav streams."
+  - id: "S247"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a sidenav stream."
+    note: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a sidenav stream."
+  - id: "S248"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters sidenav streams."
+    note: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters sidenav streams."
+  - id: "S249"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a sidenav stream."
+    note: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a sidenav stream."
+  - id: "S250"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRemove\u201d on /settings. Removes a dashboard stream."
+    note: "The FSD doesn't mention the button \u201cRemove\u201d on /settings. Removes a dashboard stream."
+  - id: "S251"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a dashboard stream."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a dashboard stream."
+  - id: "S252"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits an external source."
+    note: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits an external source."
+  - id: "S253"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes an external source."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes an external source."
+  - id: "S254"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cName\u201d on /settings. External source name."
+    note: "The FSD doesn't mention the field \u201cName\u201d on /settings. External source name."
+  - id: "S255"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cHost\u201d on /settings. External source host."
+    note: "The FSD doesn't mention the field \u201cHost\u201d on /settings. External source host."
+  - id: "S256"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cAPI Key\u201d on /settings. External source API key."
+    note: "The FSD doesn't mention the field \u201cAPI Key\u201d on /settings. External source API key."
+  - id: "S257"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves an external source."
+    note: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves an external source."
+  - id: "S258"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters external sources."
+    note: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters external sources."
+  - id: "S259"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds an external source."
+    note: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds an external source."
+  - id: "S260"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRemove\u201d on /settings. Removes a sidenav stream."
+    note: "The FSD doesn't mention the button \u201cRemove\u201d on /settings. Removes a sidenav stream."
+  - id: "S261"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a sidenav stream."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a sidenav stream."
+  - id: "S262"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDownload files Report for {{extension}}\u201d on /settings. Downloads a file report."
+    note: "The FSD doesn't mention the button \u201cDownload files Report for {{extension}}\u201d on /settings. Downloads a file report."
+  - id: "S263"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDownload files Report for {{extension}}\u201d on /settings. Downloads a file report."
+    note: "The FSD doesn't mention the button \u201cDownload files Report for {{extension}}\u201d on /settings. Downloads a file report."
+  - id: "S264"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSelect user to filter\u201d on /settings. Filters reading activity by user."
+    note: "The FSD doesn't mention the field \u201cSelect user to filter\u201d on /settings. Filters reading activity by user."
+  - id: "S265"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`onItemClick` in the code) on /settings. Clicks a stat list item."
+    note: "The FSD doesn't mention the button with no label (`onItemClick` in the code) on /settings. Clicks a stat list item."
+  - id: "S266"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`onItemClick` in the code) on /settings. Clicks a stat list item."
+    note: "The FSD doesn't mention the button with no label (`onItemClick` in the code) on /settings. Clicks a stat list item."
+  - id: "S267"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRemove OIDC link\u201d on /settings. Removes the OIDC link of the account."
+    note: "The FSD doesn't mention the button \u201cRemove OIDC link\u201d on /settings. Removes the OIDC link of the account."
+  - id: "S268"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`value()` in the code) on /settings. API key display."
+    note: "The FSD doesn't mention the field with no label (`value()` in the code) on /settings. API key display."
+  - id: "S269"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cCopy\u201d on /settings. Copies the API key."
+    note: "The FSD doesn't mention the button \u201cCopy\u201d on /settings. Copies the API key."
+  - id: "S270"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a CBL."
+    note: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a CBL."
+  - id: "S271"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cBrowse CBLs\u201d on /settings. Browses CBLs."
+    note: "The FSD doesn't mention the button \u201cBrowse CBLs\u201d on /settings. Browses CBLs."
+  - id: "S272"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSearch reading lists...\u201d on /settings. Searches reading lists."
+    note: "The FSD doesn't mention the field \u201cSearch reading lists...\u201d on /settings. Searches reading lists."
+  - id: "S273"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cHas update\u201d on /settings. Has-update filter."
+    note: "The FSD doesn't mention the field \u201cHas update\u201d on /settings. Has-update filter."
+  - id: "S274"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAll\u201d on /settings. CBL filter: all."
+    note: "The FSD doesn't mention the button \u201cAll\u201d on /settings. CBL filter: all."
+  - id: "S275"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cLocal\u201d on /settings. CBL filter: local."
+    note: "The FSD doesn't mention the button \u201cLocal\u201d on /settings. CBL filter: local."
+  - id: "S276"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cFile\u201d on /settings. CBL filter: file."
+    note: "The FSD doesn't mention the button \u201cFile\u201d on /settings. CBL filter: file."
+  - id: "S277"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cURL\u201d on /settings. CBL filter: URL."
+    note: "The FSD doesn't mention the button \u201cURL\u201d on /settings. CBL filter: URL."
+  - id: "S278"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a CBL."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a CBL."
+  - id: "S279"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSync\u201d on /settings. Syncs a CBL."
+    note: "The FSD doesn't mention the button \u201cSync\u201d on /settings. Syncs a CBL."
+  - id: "S280"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSync (Manual)\u201d on /settings. Manually syncs a CBL."
+    note: "The FSD doesn't mention the button \u201cSync (Manual)\u201d on /settings. Manually syncs a CBL."
+  - id: "S281"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201c{{num}} missing\u201d on /settings. Shows missing CBL items."
+    note: "The FSD doesn't mention the button \u201c{{num}} missing\u201d on /settings. Shows missing CBL items."
+  - id: "S282"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets the age restriction form."
+    note: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets the age restriction form."
+  - id: "S283"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets the email form."
+    note: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets the email form."
+  - id: "S284"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves the new email."
+    note: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves the new email."
+  - id: "S285"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cConfirm Password\u201d on /settings. Confirm password field."
+    note: "The FSD doesn't mention the field \u201cConfirm Password\u201d on /settings. Confirm password field."
+  - id: "S286"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets the password form."
+    note: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets the password form."
+  - id: "S287"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves the new password."
+    note: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves the new password."
+  - id: "S288"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets the username form."
+    note: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets the username form."
+  - id: "S289"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves the new username."
+    note: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves the new username."
+  - id: "S290"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`keyBindControl` in the code) on /settings. Key bind input."
+    note: "The FSD doesn't mention the field with no label (`keyBindControl` in the code) on /settings. Key bind input."
+  - id: "S291"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd alternative key\u201d on /settings. Adds an alternative key."
+    note: "The FSD doesn't mention the button \u201cAdd alternative key\u201d on /settings. Adds an alternative key."
+  - id: "S292"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cReset {{target}}\u201d on /settings. Resets a key bind."
+    note: "The FSD doesn't mention the button \u201cReset {{target}}\u201d on /settings. Resets a key bind."
+  - id: "S293"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd font\u201d on /settings. Adds a font."
+    note: "The FSD doesn't mention the button \u201cAdd font\u201d on /settings. Adds a font."
+  - id: "S294"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCustom only\u201d on /settings. Shows only custom fonts."
+    note: "The FSD doesn't mention the field \u201cCustom only\u201d on /settings. Shows only custom fonts."
+  - id: "S295"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cVariable\u201d on /settings. Variable font marker."
+    note: "The FSD doesn't mention the button \u201cVariable\u201d on /settings. Variable font marker."
+  - id: "S296"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a font."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a font."
+  - id: "S297"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cWeight axis\u201d on /settings. Font weight axis."
+    note: "The FSD doesn't mention the field \u201cWeight axis\u201d on /settings. Font weight axis."
+  - id: "S298"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cfile\u201d on /settings. Font file link."
+    note: "The FSD doesn't mention the button \u201cfile\u201d on /settings. Font file link."
+  - id: "S299"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter activity\u201d on /settings. Filters Kavita+ activity."
+    note: "The FSD doesn't mention the field \u201cFilter activity\u201d on /settings. Filters Kavita+ activity."
+  - id: "S300"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`opdsAuthKeyForm` in the code) on /settings. Auth key name form."
+    note: "The FSD doesn't mention the field with no label (`opdsAuthKeyForm` in the code) on /settings. Auth key name form."
+  - id: "S301"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cNew\u201d on /settings. Creates a new auth key."
+    note: "The FSD doesn't mention the button \u201cNew\u201d on /settings. Creates a new auth key."
+  - id: "S302"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`copy` in the code) on /settings. Copies an auth key."
+    note: "The FSD doesn't mention the button with no label (`copy` in the code) on /settings. Copies an auth key."
+  - id: "S303"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRotate\u201d on /settings. Rotates an auth key."
+    note: "The FSD doesn't mention the button \u201cRotate\u201d on /settings. Rotates an auth key."
+  - id: "S304"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes an auth key."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes an auth key."
+  - id: "S305"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`copy` in the code) on /settings. Copies an auth key."
+    note: "The FSD doesn't mention the button with no label (`copy` in the code) on /settings. Copies an auth key."
+  - id: "S306"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRotate\u201d on /settings. Rotates an auth key."
+    note: "The FSD doesn't mention the button \u201cRotate\u201d on /settings. Rotates an auth key."
+  - id: "S307"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes an auth key."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes an auth key."
+  - id: "S308"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a device."
+    note: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a device."
+  - id: "S309"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a device."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a device."
+  - id: "S310"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits a device."
+    note: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits a device."
+  - id: "S311"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits a device."
+    note: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits a device."
+  - id: "S312"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a device."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a device."
+  - id: "S313"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cYour new profile will be saved after making a change to it\u201d on /settings. Creates a new reading profile."
+    note: "The FSD doesn't mention the button \u201cYour new profile will be saved after making a change to it\u201d on /settings. Creates a new reading profile."
+  - id: "S314"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`formGroup.name` in the code) on /settings. Reading profile name."
+    note: "The FSD doesn't mention the field with no label (`formGroup.name` in the code) on /settings. Reading profile name."
+  - id: "S315"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSet Devices\u201d on /settings. Sets devices for a profile."
+    note: "The FSD doesn't mention the button \u201cSet Devices\u201d on /settings. Sets devices for a profile."
+  - id: "S316"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a reading profile."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a reading profile."
+  - id: "S317"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`a` in the code) on /settings. Reading profile section link."
+    note: "The FSD doesn't mention the button with no label (`a` in the code) on /settings. Reading profile section link."
+  - id: "S318"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cAuto Close Menu\u201d on /settings. Auto close menu option."
+    note: "The FSD doesn't mention the field \u201cAuto Close Menu\u201d on /settings. Auto close menu option."
+  - id: "S319"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cShow Screen Hints\u201d on /settings. Show screen hints option."
+    note: "The FSD doesn't mention the field \u201cShow Screen Hints\u201d on /settings. Show screen hints option."
+  - id: "S320"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cEmulate comic book\u201d on /settings. Emulate comic book option."
+    note: "The FSD doesn't mention the field \u201cEmulate comic book\u201d on /settings. Emulate comic book option."
+  - id: "S321"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSwipe to Paginate\u201d on /settings. Swipe to paginate option."
+    note: "The FSD doesn't mention the field \u201cSwipe to Paginate\u201d on /settings. Swipe to paginate option."
+  - id: "S322"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cAutomatic Webtoon Reader Mode\u201d on /settings. Automatic webtoon mode option."
+    note: "The FSD doesn't mention the field \u201cAutomatic Webtoon Reader Mode\u201d on /settings. Automatic webtoon mode option."
+  - id: "S323"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets width override."
+    note: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets width override."
+  - id: "S324"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cWidth Override\u201d on /settings. Width override."
+    note: "The FSD doesn't mention the field \u201cWidth Override\u201d on /settings. Width override."
+  - id: "S325"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cDisable width override\u201d on /settings. Disables width override."
+    note: "The FSD doesn't mention the field \u201cDisable width override\u201d on /settings. Disables width override."
+  - id: "S326"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`a` in the code) on /settings. Reading profile section link."
+    note: "The FSD doesn't mention the button with no label (`a` in the code) on /settings. Reading profile section link."
+  - id: "S327"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cDisable Bookmark Icon\u201d on /settings. Disables the bookmark icon."
+    note: "The FSD doesn't mention the field \u201cDisable Bookmark Icon\u201d on /settings. Disables the bookmark icon."
+  - id: "S328"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`a` in the code) on /settings. Reading profile section link."
+    note: "The FSD doesn't mention the button with no label (`a` in the code) on /settings. Reading profile section link."
+  - id: "S329"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSpread Mode\u201d on /settings. PDF spread mode."
+    note: "The FSD doesn't mention the field \u201cSpread Mode\u201d on /settings. PDF spread mode."
+  - id: "S330"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cTheme\u201d on /settings. PDF theme."
+    note: "The FSD doesn't mention the field \u201cTheme\u201d on /settings. PDF theme."
+  - id: "S331"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cScroll Mode\u201d on /settings. PDF scroll mode."
+    note: "The FSD doesn't mention the field \u201cScroll Mode\u201d on /settings. PDF scroll mode."
+  - id: "S332"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDefault\u201d on /settings. Sets the default profile."
+    note: "The FSD doesn't mention the button \u201cDefault\u201d on /settings. Sets the default profile."
+  - id: "S333"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCBL Series Name\u201d on /settings. CBL series name in a remap rule."
+    note: "The FSD doesn't mention the field \u201cCBL Series Name\u201d on /settings. CBL series name in a remap rule."
+  - id: "S334"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCBL Volume\u201d on /settings. CBL volume in a remap rule."
+    note: "The FSD doesn't mention the field \u201cCBL Volume\u201d on /settings. CBL volume in a remap rule."
+  - id: "S335"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCBL Issue #\u201d on /settings. CBL issue number in a remap rule."
+    note: "The FSD doesn't mention the field \u201cCBL Issue #\u201d on /settings. CBL issue number in a remap rule."
+  - id: "S336"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves a remap rule."
+    note: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves a remap rule."
+  - id: "S337"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cCreate Rule\u201d on /settings. Creates a remap rule."
+    note: "The FSD doesn't mention the button \u201cCreate Rule\u201d on /settings. Creates a remap rule."
+  - id: "S338"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits a remap rule."
+    note: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits a remap rule."
+  - id: "S339"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a remap rule."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a remap rule."
+  - id: "S340"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cPromote to global rule\u201d on /settings. Promotes a rule to global."
+    note: "The FSD doesn't mention the button \u201cPromote to global rule\u201d on /settings. Promotes a rule to global."
+  - id: "S341"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits a remap rule."
+    note: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits a remap rule."
+  - id: "S342"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`deleteRule` in the code) on /settings. Deletes a remap rule."
+    note: "The FSD doesn't mention the button with no label (`deleteRule` in the code) on /settings. Deletes a remap rule."
+  - id: "S343"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`promoteRule` in the code) on /settings. Promotes a rule."
+    note: "The FSD doesn't mention the button with no label (`promoteRule` in the code) on /settings. Promotes a rule."
+  - id: "S344"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDemote to user rule\u201d on /settings. Demotes a rule to user rule."
+    note: "The FSD doesn't mention the button \u201cDemote to user rule\u201d on /settings. Demotes a rule to user rule."
+  - id: "S345"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDemote\u201d on /settings. Demotes a rule."
+    note: "The FSD doesn't mention the button \u201cDemote\u201d on /settings. Demotes a rule."
+  - id: "S346"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cPromote to global rule\u201d on /settings. Promotes a rule to global."
+    note: "The FSD doesn't mention the button \u201cPromote to global rule\u201d on /settings. Promotes a rule to global."
+  - id: "S347"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`promoteRule` in the code) on /settings. Promotes a rule."
+    note: "The FSD doesn't mention the button with no label (`promoteRule` in the code) on /settings. Promotes a rule."
+  - id: "S348"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cBackfill Events\u201d on /settings. Backfills scrobble events."
+    note: "The FSD doesn't mention the button \u201cBackfill Events\u201d on /settings. Backfills scrobble events."
+  - id: "S349"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRegenerate\u201d on /settings. Regenerates a provider token."
+    note: "The FSD doesn't mention the button \u201cRegenerate\u201d on /settings. Regenerates a provider token."
+  - id: "S350"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDisconnect\u201d on /settings. Disconnects a scrobble provider."
+    note: "The FSD doesn't mention the button \u201cDisconnect\u201d on /settings. Disconnects a scrobble provider."
+  - id: "S351"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cConnect\u201d on /settings. Connects a scrobble provider."
+    note: "The FSD doesn't mention the button \u201cConnect\u201d on /settings. Connects a scrobble provider."
+  - id: "S352"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSync Progress\u201d on /settings. Sync progress switch."
+    note: "The FSD doesn't mention the field \u201cSync Progress\u201d on /settings. Sync progress switch."
+  - id: "S353"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSync Ratings\u201d on /settings. Sync ratings switch."
+    note: "The FSD doesn't mention the field \u201cSync Ratings\u201d on /settings. Sync ratings switch."
+  - id: "S354"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSync Want To Read list\u201d on /settings. Sync want-to-read switch."
+    note: "The FSD doesn't mention the field \u201cSync Want To Read list\u201d on /settings. Sync want-to-read switch."
+  - id: "S355"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSync reviews\u201d on /settings. Sync reviews switch."
+    note: "The FSD doesn't mention the field \u201cSync reviews\u201d on /settings. Sync reviews switch."
+  - id: "S356"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cReview target\u201d on /settings. Review target."
+    note: "The FSD doesn't mention the field \u201cReview target\u201d on /settings. Review target."
+  - id: "S357"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cAll libraries\u201d on /settings. All libraries switch for scrobbling."
+    note: "The FSD doesn't mention the field \u201cAll libraries\u201d on /settings. All libraries switch for scrobbling."
+  - id: "S358"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cHighest age ratings\u201d on /settings. Highest age ratings for scrobbling."
+    note: "The FSD doesn't mention the field \u201cHighest age ratings\u201d on /settings. Highest age ratings for scrobbling."
+  - id: "S359"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cInactive series threshold in days\u201d on /settings. Inactive series threshold."
+    note: "The FSD doesn't mention the field \u201cInactive series threshold in days\u201d on /settings. Inactive series threshold."
+  - id: "S360"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`inactiveSeriesRule.transitionStatus` in the code) on /settings. Inactive series transition status."
+    note: "The FSD doesn't mention the field with no label (`inactiveSeriesRule.transitionStatus` in the code) on /settings. Inactive series transition status."
+  - id: "S361"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cExcluded publication statuses for inactive series rule\u201d on /settings. Excluded statuses for inactive rule."
+    note: "The FSD doesn't mention the field \u201cExcluded publication statuses for inactive series rule\u201d on /settings. Excluded statuses for inactive rule."
+  - id: "S362"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cInactive series rule\u201d on /settings. Inactive series rule switch."
+    note: "The FSD doesn't mention the field \u201cInactive series rule\u201d on /settings. Inactive series rule switch."
+  - id: "S363"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cDropped series threshold in days\u201d on /settings. Dropped series threshold."
+    note: "The FSD doesn't mention the field \u201cDropped series threshold in days\u201d on /settings. Dropped series threshold."
+  - id: "S364"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`droppedSeriesRule.transitionStatus` in the code) on /settings. Dropped series transition status."
+    note: "The FSD doesn't mention the field with no label (`droppedSeriesRule.transitionStatus` in the code) on /settings. Dropped series transition status."
+  - id: "S365"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cExcluded publication statuses for dropped series rule\u201d on /settings. Excluded statuses for dropped rule."
+    note: "The FSD doesn't mention the field \u201cExcluded publication statuses for dropped series rule\u201d on /settings. Excluded statuses for dropped rule."
+  - id: "S366"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cDropped series rule\u201d on /settings. Dropped series rule switch."
+    note: "The FSD doesn't mention the field \u201cDropped series rule\u201d on /settings. Dropped series rule switch."
+  - id: "S367"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cBlur Unread Summaries\u201d on /settings. Blurs summaries of unread series."
+    note: "The FSD doesn't mention the field \u201cBlur Unread Summaries\u201d on /settings. Blurs summaries of unread series."
+  - id: "S368"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCollapse Series Relationships\u201d on /settings. Collapses series relationships."
+    note: "The FSD doesn't mention the field \u201cCollapse Series Relationships\u201d on /settings. Collapses series relationships."
+  - id: "S369"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cOn Deck Last Progress (days)\u201d on /settings. On Deck last progress days."
+    note: "The FSD doesn't mention the field \u201cOn Deck Last Progress (days)\u201d on /settings. On Deck last progress days."
+  - id: "S370"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cOn Deck Last Chapter Add (days)\u201d on /settings. On Deck last chapter add days."
+    note: "The FSD doesn't mention the field \u201cOn Deck Last Chapter Add (days)\u201d on /settings. On Deck last chapter add days."
+  - id: "S371"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cShare Profile\u201d on /settings. Shares the profile with other users."
+    note: "The FSD doesn't mention the field \u201cShare Profile\u201d on /settings. Shares the profile with other users."
+  - id: "S372"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cInclude unknowns\u201d on /settings. Include unknown age ratings."
+    note: "The FSD doesn't mention the field \u201cInclude unknowns\u201d on /settings. Include unknown age ratings."
+  - id: "S373"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cEmbed Progress Indicator\u201d on /settings. Embeds progress indicator."
+    note: "The FSD doesn't mention the field \u201cEmbed Progress Indicator\u201d on /settings. Embeds progress indicator."
+  - id: "S374"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cInclude Continue From Entry\u201d on /settings. Includes Continue From entry."
+    note: "The FSD doesn't mention the field \u201cInclude Continue From Entry\u201d on /settings. Includes Continue From entry."
+  - id: "S375"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cInclude Unknowns\u201d on /settings. Include unknown age ratings."
+    note: "The FSD doesn't mention the field \u201cInclude Unknowns\u201d on /settings. Include unknown age ratings."
+  - id: "S376"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSettings\u201d on /settings. Opens scrobble account settings."
+    note: "The FSD doesn't mention the button \u201cSettings\u201d on /settings. Opens scrobble account settings."
+  - id: "S377"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cConnect\u201d on /settings. Connects a scrobble account."
+    note: "The FSD doesn't mention the button \u201cConnect\u201d on /settings. Connects a scrobble account."
+  - id: "S378"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a theme."
+    note: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a theme."
+  - id: "S379"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a theme."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a theme."
+  - id: "S380"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSet Default\u201d on /settings. Sets default theme."
+    note: "The FSD doesn't mention the button \u201cSet Default\u201d on /settings. Sets default theme."
+  - id: "S381"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cApply\u201d on /settings. Applies a theme."
+    note: "The FSD doesn't mention the button \u201cApply\u201d on /settings. Applies a theme."
+  - id: "S382"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDownload\u201d on /settings. Downloads a theme."
+    note: "The FSD doesn't mention the button \u201cDownload\u201d on /settings. Downloads a theme."
+  - id: "S383"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`previewImage` in the code) on /settings. Previews a theme image."
+    note: "The FSD doesn't mention the button with no label (`previewImage` in the code) on /settings. Previews a theme image."
+  - id: "S384"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`previewImage` in the code) on /settings. Previews a theme image."
+    note: "The FSD doesn't mention the button with no label (`previewImage` in the code) on /settings. Previews a theme image."
+  - id: "S385"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cActive\u201d on /settings. Marks active theme."
+    note: "The FSD doesn't mention the button \u201cActive\u201d on /settings. Marks active theme."
+  - id: "S386"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRemove\u201d on /settings. Removes a scrobbling hold."
+    note: "The FSD doesn't mention the button \u201cRemove\u201d on /settings. Removes a scrobbling hold."
+  - id: "S387"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRemove\u201d on /settings. Removes a scrobbling hold."
+    note: "The FSD doesn't mention the button \u201cRemove\u201d on /settings. Removes a scrobbling hold."

@@ -1,0 +1,304 @@
+version: 4
+entries:
+  - id: "S001"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.1"
+      quote: "Up to 10 series can be selected from the search results and added together in one step."
+    page: null
+    note: "Add New has no multi-select or batch add; each search result is added individually."
+  - id: "S002"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.2"
+      quote: "Deleting a series always deletes its folder and all its files from disk."
+    page: null
+    note: "The delete modal has an optional 'delete files' toggle that defaults to off, plus an option to add an import list exclusion."
+  - id: "S003"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.2"
+      quote: "The episode list of a series can be exported as a CSV file."
+    page: null
+    note: "No CSV export exists in the frontend or backend."
+  - id: "S004"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "2"
+      quote: "Sonarr can share the calendar as an iCal feed, which covers the previous 14 days and the next 60 days."
+    page: null
+    note: "The iCal feed defaults to the previous 7 days and the next 28 days (pastDays=7, futureDays=28)."
+  - id: "S005"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "2"
+      quote: "Episodes can be dragged to another day to change their air date."
+    page: null
+    note: "The calendar has no drag-and-drop to change air dates."
+  - id: "S006"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.1"
+      quote: "The user can remove a release from the queue. Removing an item from the queue always adds the release to the blocklist."
+    page: null
+    note: "The remove modal lets the user choose: do not blocklist, blocklist and search, or blocklist only."
+  - id: "S007"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.1"
+      quote: "Each queue item has a priority (High, Normal or Low) that the user can change to reorder the downloads."
+    page: null
+    note: "The queue UI has no priority control (the only 'priority' hits are column responsiveness)."
+  - id: "S008"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.2"
+      quote: "Any history entry can be undone, which restores the episode file that an upgrade replaced."
+    page: null
+    note: "History only offers mark as failed on a grab; there is no undo that restores a replaced file."
+  - id: "S009"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Wanted / Missing episodes"
+      quote: "Search All starts straight away, without asking the user to confirm."
+    page: null
+    note: "Search All opens a confirmation modal first and only searches after the user confirms."
+  - id: "S010"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Wanted / Missing episodes"
+      quote: "A weekly email digest lists every missing episode."
+    page: null
+    note: "No weekly missing-episode email digest exists."
+  - id: "S011"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Tags"
+      quote: "Tag labels may contain letters, numbers, spaces and underscores."
+    page: null
+    note: "Tag labels must match ^[a-z0-9-]+$, i.e. letters, numbers and hyphens; spaces and underscores are rejected."
+  - id: "S012"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Tags"
+      quote: "Each tag has a colour, chosen from a palette of 12 colours, which is shown wherever the tag appears."
+    page: null
+    note: "Tags have only a label; there is no colour field or palette."
+  - id: "S013"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Profiles / Delay profiles"
+      quote: "The default delay profile can be given tags like any other."
+    page: null
+    note: "The default delay profile (Id 1) must have an empty tag collection; other profiles must have at least one tag."
+  - id: "S014"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Quality definitions"
+      quote: "Each quality can be limited to a maximum episode runtime."
+    page: null
+    note: "Quality definitions have min/preferred/max size only; there is no runtime limit."
+  - id: "S015"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / General / Logging"
+      quote: "Each log file can grow up to 50 megabytes before a new one is started."
+    page: null
+    note: "LogSizeLimit is validated between 1 and 10 MB."
+  - id: "S016"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / General / Backups"
+      quote: "Interval: how often an automatic backup is taken, from 1 to 30 days."
+    page: null
+    note: "Backup interval is validated from 1 to 7 days."
+  - id: "S017"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / General / Backups"
+      quote: "Retention: how long backups are kept, up to 365 days."
+    page: null
+    note: "Backup retention is validated from 1 to 90 days."
+  - id: "S018"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      quote: "The font size can be set to small, medium or large."
+    page: null
+    note: "The UI settings have no font size option."
+  - id: "S019"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      quote: ""
+    page:
+      id: "page:/settings/ui"
+      quote: "The Interface screen has a colour-impaired mode toggle that the FSD does not mention."
+    note: "The Interface screen has a colour-impaired mode toggle that the FSD does not mention."
+  - id: "S020"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "System / Backups"
+      quote: "Backups can be copied automatically to an S3 bucket."
+    page: null
+    note: "No S3 backup copy exists."
+  - id: "S021"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/add/import"
+      quote: "Import existing series: select a root folder to import from."
+    note: "Import existing series: select a root folder to import from."
+  - id: "S022"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/add/import/:rootFolderId"
+      quote: "Import series from a root folder screen is not described."
+    note: "Import series from a root folder screen is not described."
+  - id: "S023"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/serieseditor"
+      quote: "Series editor (bulk edit) screen is not described."
+    note: "Series editor (bulk edit) screen is not described."
+  - id: "S024"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/seasonpass"
+      quote: "Season Pass screen is not described."
+    note: "Season Pass screen is not described."
+  - id: "S025"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/activity/blocklist"
+      quote: "Blocklist screen is not described."
+    note: "Blocklist screen is not described."
+  - id: "S026"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/wanted/cutoffunmet"
+      quote: "Cutoff Unmet screen is not described."
+    note: "Cutoff Unmet screen is not described."
+  - id: "S027"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/mediamanagement"
+      quote: "Media Management settings are not described."
+    note: "Media Management settings are not described."
+  - id: "S028"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/customformats"
+      quote: "Custom Formats settings are not described."
+    note: "Custom Formats settings are not described."
+  - id: "S029"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/indexers"
+      quote: "Indexer settings are not described."
+    note: "Indexer settings are not described."
+  - id: "S030"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/downloadclients"
+      quote: "Download client settings are not described."
+    note: "Download client settings are not described."
+  - id: "S031"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/importlists"
+      quote: "Import list settings are not described."
+    note: "Import list settings are not described."
+  - id: "S032"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/connect"
+      quote: "Connect (notifications) settings are not described."
+    note: "Connect (notifications) settings are not described."
+  - id: "S033"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/metadata"
+      quote: "Metadata settings are not described."
+    note: "Metadata settings are not described."
+  - id: "S034"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/metadatasource"
+      quote: "Metadata source settings are not described."
+    note: "Metadata source settings are not described."
+  - id: "S035"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/status"
+      quote: "System Status screen is not described."
+    note: "System Status screen is not described."
+  - id: "S036"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/tasks"
+      quote: "System Tasks screen is not described."
+    note: "System Tasks screen is not described."
+  - id: "S037"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/updates"
+      quote: "System Updates screen is not described."
+    note: "System Updates screen is not described."
+  - id: "S038"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/events"
+      quote: "System Log events screen is not described."
+    note: "System Log events screen is not described."
+  - id: "S039"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/logs/files"
+      quote: "Log files screen is not described."
+    note: "Log files screen is not described."
+  - id: "S040"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/logs/files/update"
+      quote: "Update log files screen is not described."
+    note: "Update log files screen is not described."

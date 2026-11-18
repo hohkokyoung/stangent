@@ -1,4 +1,4 @@
-# The spec (Phase 2: contracts `reference-page`, `reference-lines`, `source-document` v4, `trace-links`; layer 5: `fsd-review` v2)
+# The spec (Phase 2: contracts `reference-page`, `reference-lines`, `source-document` v4, `trace-links`; layer 5: `fsd-review` v3)
 
 **Layer 4 note (D258, D342):** the reference pages are being replaced by each area's page (`docs/pages.md`). They retire one
 reader at a time: old linking no longer reads them (cut in layer 7, D342); tickets still do (starting points and the bundle), so the
@@ -323,7 +323,7 @@ A first import goes straight in, and committing its chapters approves it (first-
   the repo or a second git repo, which gets a commit) and is cited by archive name, path and content hash.
   A file with a known hash is imported once.
 
-## The FSD review (layer 5, D341; contract `fsd-review` v2, matches D366)
+## The FSD review (layer 5, D341; contract `fsd-review` v3, matches D366, the checklist D403)
 
 The route measured better than the old linking (D321–D324: 26–29 of 30 planted items against 24, 0–8% false alarms
 against 31%): an agent reads the FSD and the source, two runs side by side, and code checks what it says. The old route,
@@ -345,6 +345,23 @@ stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and r
   still accepts D366's match; the prompt doesn't ask for matches, D401). Why: the built prompt (FSD inline, structured
   output, matches) scored 2–17 of 30 live where D323's scored 18 on the same harness (D399). A checked run with the same input on the same commit
   is `current`, no AI; `--again` runs it anyway. AI off (`ai.enabled: false`) refuses.
+- **The checklist** (D403): "left out" comes from a list code makes, because the live reviewer working from the FSD's
+  sentences found 2 of 10 left-out items (D401). With `specs/inventory.json` built, `fsd review` lists every screen in
+  scope (the inventory's routes equal to an `fsd.scope` prefix or under it; all with an empty scope or `/`) and every
+  control on it (the screen's `lines`: buttons, fields, menu entries, a control listed twice on one screen kept once), each
+  with an id: `S03` for a screen, `S03.012` for a control. Code ticks off an item whose name a section already says word
+  for word (case folded, emphasis, table bars and list marks ignored, whole words): a label of two words or more
+  (`Days of Backups`), a screen's route (`/want-to-read`, not named by `/want-to-read/x`) or a two-word title. A one-word
+  label (`Save`, `All`, `Edit`) is in almost any FSD, so it goes to the lister. **The list is its own call (D404):** in one
+  call with the review it crowded out the conflict hunt (D403's live runs: conflicts 8–9 → 1–3). So each run has two
+  parts: the review (`run-N/`, D401's prompt unchanged) and the list (`run-N/list/`: `input.md` from `fsd-lister.md`,
+  `fsd.md`, `checklist.md` with the items code didn't tick off, `checklist.json`, its own `state.json`), answered by
+  `stangent-fsd-lister` under the same read-only limits, its own `fsd.reviewBudget`, and the reviewer's model and effort
+  (`ai.steps.stangent-fsd-reviewer`). `fsd review-check` checks whichever part waits: once the review is recorded it
+  names the lister as the next step, so the driver runs both in one loop. The lister answers each item in
+  `checklist` (`fsd-list-output.v1.json`): `covered` with the section and the FSD sentence (checked word for word in
+  that section, as findings' quotes), or `left-out` with an optional note (a whole screen also gives the line that
+  defines its route). With no inventory there is no list part. Kavita: 465 items, 39 ticked by code, 426 for the lister.
 - **Limits**, as the file finder's (D101): Read, Grep and Glob in a throwaway worktree of the commit the run was prepared on; never `.stangent/`,
   `.git/`, `specs/` (earlier reviews, the FSD's record) or `stangent.yaml`; Write only into a throwaway folder outside the
   repo that holds `fsd.md` and its answer (an `Edit(...)` rule; the driver copies the answer to the run's `output.json`); `fsd.reviewBudget`
@@ -360,6 +377,17 @@ stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and r
   nothing is recorded, and the next `fsd review` starts it again. A second check while the retry waits, with no new answer
   and no `--usage`, is refused (`no_output`). The run's stage (prepared, retry, checked, failed) moves through the state
   module (`fsd-review-run`); `stangent fsd review-status <doc>` shows each run's stage and commit and reads only.
+  **Checklist answers** (D403, D404; the list part's own one retry): an unknown id, an item answered twice, a covered answer whose section or quote fails, a
+  left-out answer with evidence that isn't real, a left-out screen with no `path:line`, and every item not answered all go
+  to the same one retry. After it nothing is sent back: a covered answer that still fails counts as left out (the reasons
+  kept in `why`), a left-out answer keeps the evidence that passes, and an item with no answer is `not-checked`, never
+  dropped. Each left-out item becomes an undocumented finding written by code: the screen's route, the item's own line,
+  `item` set to its id, and a note that names it ("The FSD doesn't mention the button “Export” on /browse/annotations.")
+  followed by the lister's. A schema error in the answer goes to the retry, but the answers are read one by one either
+  way, and a lister with no answer after its retry leaves every item not checked: the list never fails a run or costs it
+  the review's findings. The left-out findings, each item's `result` (`code`, `covered`, `left-out`, `not-checked`) and
+  the list's usage are added to the run's `checked.json`. Merge refuses a run whose list part isn't checked yet; a run
+  prepared without a list part is merged without one.
 - **Merge** (`fsd review-merge`): every run checked, on one commit and FSD version, or it refuses. Joined, one finding
   per run at most: a gap or conflict with the same section and quote; an undocumented screen with no section and the same
   route; an undocumented finding in a section only when the pair is unambiguous (same section, routes equal or one blank,
@@ -370,6 +398,19 @@ stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and r
   tokens, each run's counts and usage, the findings (`F-001` …, in section order, not permanent) and what was dropped;
   `review.md` is the same by section (gaps, conflicts, left out, matches), then screens no section covers. Both are generated:
   answers don't go here: the PM rules on the findings through the truth map (below: `truth-map.md`'s numbered questions, `fsd rule`; the old route's `trace.yaml` decisions stay with it).
+- **Matches from the checklist** (D405): an item a run covered with a checked quote, and no run left out, becomes a
+  `match` finding (its section, the quote, the item's `file:line`, `item`), joined across runs by item; a screen item has no
+  line and gives none. Code checked the quote and the line, not that the code does what the sentence says: the PM confirms
+  each section's matches or answers one no (`fsd rule`, D402). `review.md` lists them under each section's "Matches".
+- **The checklist in the merge** (D403): every run must have had the same list, or it refuses (`runs_differ`). Left-out
+  findings join by item id only, never with the reviewer's own undocumented findings. An item is left out when any run
+  left it out, else covered by the AI when a run covered it, else covered by code, else not checked; `review.json`'s
+  `checklist` keeps every item with each run's result (`byRun`) and its finding's id, and the counts. `review.md` adds
+  the coverage line (listed, covered by code, covered by the AI, left out, not checked; and the inventory's commit when it
+  isn't the reviewed one), a "Left out, by screen" list (each with its finding id, line, which runs, and the reviewer's
+  note) and a "Not checked" list; a checklist finding isn't listed again by section. No inventory: `checklist` is null
+  and `review.md` says the screens and controls weren't listed by code. Each left-out item is a finding the PM rules keep
+  or remove like any other (D361).
 - **What it doesn't show:** that a difference is real. The quote and line checks keep the AI honest about what it read;
   D322's checker found 0 of 20 false after the quote rule, on one app.
 - **Checked free (2026-11-15):** the saved Kavita runs through the built command: 29 of 30, 0 dropped

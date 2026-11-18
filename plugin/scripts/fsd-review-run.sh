@@ -60,6 +60,9 @@ stop_if_no_envelope() {
 review_search() {
   local step="$1" usage="$2" run="$3" out input limits transcript root prefix dir tmp="" io allowed=() denied=() f label rundir
   out="$(jq -r '.result.next.output' <<<"$step")"
+  # D404: the reviewer, or the lister after it in the same run.
+  local agent
+  agent="$(jq -r '.result.next.agent // "stangent-fsd-reviewer"' <<<"$step")"
   limits="$(jq -c '.result.next.limits' <<<"$step")"
   root="$(jq -r '.root' <<<"$limits")"
   dir="$PWD"
@@ -94,15 +97,27 @@ review_search() {
   fi
   io="$(cd "$(mktemp -d)" && pwd -P)"
   cp "$fsdsrc" "$io/fsd.md"
+  # D403: code's checklist of screens and controls in scope, a file beside the FSD when the run has one.
+  local listsrc
+  listsrc="$(jq -r '.result.next.prompt' <<<"$step" | sed -n 's/^Checklist: //p')"
+  if [ -n "$listsrc" ]; then
+    if [ ! -f "$listsrc" ]; then
+      printf 'error\t%s\trun-%s\tno checklist file for the reviewer (%s); prepare the run again with --again\n' "$DOC" "$run" "$listsrc" >&2
+      [ -z "$tmp" ] || { git worktree remove --force "$tmp/repo" >/dev/null 2>&1; rm -rf "$tmp"; trap - INT TERM; }
+      rm -rf "$io"; : >"$usage"; return 0
+    fi
+    cp "$listsrc" "$io/checklist.md"
+  fi
   # It may read the folder and write only its answer.
   allowed+=("Read(/$io/**)" "Edit(/$io/output.json)")
   input=""
   while IFS=$'\t' read -r label f; do
     # The input is the prompt itself; a retry's previous attempt and what to fix follow under their own headings.
     if [ "$label" = "Input" ]; then input+="$(cat "$f")"$'\n\n'; else input+="# $label"$'\n\n'"$(cat "$f")"$'\n\n'; fi
-  done < <(jq -r '.result.next.prompt' <<<"$step" | grep -E ': \.stangent/' | grep -v '^Write' | grep -v '^FSD:' | sed -E 's/^(.*): (\.stangent\/.*)$/\1\t\2/')
+  done < <(jq -r '.result.next.prompt' <<<"$step" | grep -E ': \.stangent/' | grep -v '^Write' | grep -v '^FSD:' | grep -v '^Checklist:' | sed -E 's/^(.*): (\.stangent\/.*)$/\1\t\2/')
   input="${input//\{\{FSD_FILE\}\}/$io/fsd.md}"
   input="${input//\{\{OUTPUT_FILE\}\}/$io/output.json}"
+  input="${input//\{\{CHECKLIST_FILE\}\}/$io/checklist.md}"
   mkdir -p ".stangent/fsd/$DOC/review/transcripts"
   transcript="$PWD/.stangent/fsd/$DOC/review/transcripts/run-$run-$(date +%Y%m%d-%H%M%S).jsonl"
   rm -f "$out"
@@ -115,7 +130,7 @@ review_search() {
       --setting-sources "" --settings "$REVIEW_SETTINGS" --strict-mcp-config --disable-slash-commands --no-session-persistence \
       --max-turns "$(jq -r '.maxTurns' <<<"$limits")" --max-budget-usd "$(jq -r '.maxBudgetUsd' <<<"$limits")" \
       --output-format stream-json --verbose \
-      --append-system-prompt "You are one of stangent's AI steps: the stangent-fsd-reviewer. Your prompt holds your instructions, where the FSD is and where to write your answer, and on a retry your previous attempt and what to fix. The repo is your current folder. Write the JSON to the file your instructions name.") \
+      --append-system-prompt "You are one of stangent's AI steps: the $agent. Your prompt holds your instructions, where the FSD (and for the lister, the checklist) is and where to write your answer, and on a retry your previous attempt and what to fix. The repo is your current folder. Write the JSON to the file your instructions name.") \
       >"$transcript" 2>"$usage.err" || true
   )
   cp "$transcript" "$usage.raw" 2>/dev/null || true
@@ -155,7 +170,7 @@ run_review() {
       rm -f "$usage" "$usage.raw" "$usage.err"
       exit 255
     fi
-    stamp_usage "$usage" "$AGENT" agentic
+    stamp_usage "$usage" "$(jq -r '.result.next.agent // empty' <<<"$step" | grep . || echo "$AGENT")" agentic
     step="$($STANGENT fsd review-check "$DOC" --run "$run" --usage "$usage" || true)"
     stop_if_no_envelope "$step" "$run"
     action="$(jq -r '.result.next.action // "none"' <<<"$step")"
@@ -178,11 +193,15 @@ if ! jq -e '.ok' <<<"$first" >/dev/null 2>&1; then
   exit 1
 fi
 # How many runs (fsd.reviewRuns), read only: nothing is prepared or cleared before the cost guard and --estimate.
-RUNS="$($STANGENT fsd review-status "$DOC" | jq -r '.result.runs // empty' 2>/dev/null || true)"
+status="$($STANGENT fsd review-status "$DOC" || true)"
+RUNS="$(jq -r '.result.runs // empty' <<<"$status" 2>/dev/null || true)"
 case "$RUNS" in ''|0|*[!0-9]*) echo "stangent fsd review-status gave no run count" >&2; exit 125 ;; esac
+# D404: with an inventory each run is two calls, the review and the list.
+PER="$(jq -r '.result.callsPerRun // 1' <<<"$status" 2>/dev/null || echo 1)"
+case "$PER" in ''|*[!0-9]*) PER=1 ;; esac
 
 guard_init "$MAXCOST" "$STOPUSAGE" "$RUNS" "$TYPED"
-guard_estimate "fsd review-check" "$RUNS"
+guard_estimate "fsd review-check" "$((RUNS * PER))"
 [ -z "$ESTIMATE" ] || exit 0
 [ ! -f "$STANGENT_COST_DIR/stopped" ] || guard_finish 0
 # The model and effort (D161): none pinned for the reviewer is a stop, never a default.

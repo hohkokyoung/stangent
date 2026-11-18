@@ -1,0 +1,304 @@
+version: 4
+entries:
+  - id: "S001"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.1"
+      quote: "Up to 10 series can be selected from the search results and added together in one step."
+    page: null
+    note: "The Add New search results have no multi-select; each result is added individually through its own modal."
+  - id: "S002"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.2"
+      quote: "The episode list of a series can be exported as a CSV file."
+    page: null
+    note: "No CSV export exists in the frontend."
+  - id: "S003"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.2"
+      quote: "Deleting a series always deletes its folder and all its files from disk."
+    page: null
+    note: "The delete modal has a Delete Files option that defaults to off (plus add-import-list-exclusion), so files are only deleted if chosen."
+  - id: "S004"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "2"
+      quote: "Episodes can be dragged to another day to change their air date."
+    page: null
+    note: "The calendar has no drag and drop of episodes."
+  - id: "S005"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "2"
+      quote: "Sonarr can share the calendar as an iCal feed, which covers the previous 14 days and the next 60 days."
+    page: null
+    note: "The feed defaults to the previous 7 days and next 28 days (pastDays/futureDays query parameters)."
+  - id: "S006"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.1"
+      quote: "Removing an item from the queue always adds the release to the blocklist."
+    page: null
+    note: "The remove dialog offers Do Not Blocklist, Blocklist and Search, or Blocklist Only."
+  - id: "S007"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.1"
+      quote: "Each queue item has a priority (High, Normal or Low) that the user can change to reorder the downloads."
+    page: null
+    note: "The queue has no user-changeable priority; the priority props in Queue.tsx are only column layout priorities."
+  - id: "S008"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "3.2"
+      quote: "Any history entry can be undone, which restores the episode file that an upgrade replaced."
+    page: null
+    note: "History only offers Mark as Failed on grabbed items; there is no undo restoring replaced files."
+  - id: "S009"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Wanted / Missing episodes"
+      quote: "Search All starts straight away, without asking the user to confirm."
+    page: null
+    note: "Search All opens a confirmation modal first."
+  - id: "S010"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Wanted / Missing episodes"
+      quote: "A weekly email digest lists every missing episode."
+    page: null
+    note: "No email digest feature exists in the code."
+  - id: "S011"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Tags"
+      quote: "Tag labels may contain letters, numbers, spaces and underscores."
+    page: null
+    note: "The validator allows only a-z, 0-9 and hyphen; no spaces or underscores."
+  - id: "S012"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Tags"
+      quote: "Each tag has a colour, chosen from a palette of 12 colours, which is shown wherever the tag appears."
+    page: null
+    note: "Tags have only a label; there is no colour field."
+  - id: "S013"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Profiles / Delay profiles"
+      quote: "The default delay profile can be given tags like any other."
+    page: null
+    note: "The default profile (Id 1) must have no tags; the validator enforces an empty collection and the UI shows 'applies to all series'."
+  - id: "S014"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Quality definitions"
+      quote: "Each quality can be limited to a maximum episode runtime."
+    page: null
+    note: "No runtime limit exists on quality definitions; only min, preferred and max size."
+  - id: "S015"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / General / Logging"
+      quote: "Each log file can grow up to 50 megabytes before a new one is started."
+    page: null
+    note: "Log size limit is validated between 1 and 10 MB."
+  - id: "S016"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / General / Backups"
+      quote: "Interval: how often an automatic backup is taken, from 1 to 30 days."
+    page: null
+    note: "Backup interval is validated between 1 and 7 days."
+  - id: "S017"
+    state: "conflict"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / General / Backups"
+      quote: "Retention: how long backups are kept, up to 365 days."
+    page: null
+    note: "Backup retention is validated between 1 and 90 days."
+  - id: "S018"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Interface"
+      quote: "The font size can be set to small, medium or large."
+    page: null
+    note: "The UI settings screen has no font size option."
+  - id: "S019"
+    state: "gap"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "System / Backups"
+      quote: "Backups can be copied automatically to an S3 bucket."
+    page: null
+    note: "No S3 backup support exists."
+  - id: "S020"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/add/import"
+      quote: "Import Existing Series screen (select root folder) is not described."
+    note: "Import Existing Series screen (select root folder) is not described."
+  - id: "S021"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/seasonpass"
+      quote: "Season Pass screen is not described."
+    note: "Season Pass screen is not described."
+  - id: "S022"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/serieseditor"
+      quote: "Series Editor screen is not described."
+    note: "Series Editor screen is not described."
+  - id: "S023"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/activity/blocklist"
+      quote: "Blocklist screen is not described."
+    note: "Blocklist screen is not described."
+  - id: "S024"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/wanted/cutoffunmet"
+      quote: "Cutoff Unmet screen is not described."
+    note: "Cutoff Unmet screen is not described."
+  - id: "S025"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/status"
+      quote: "System Status screen is not described."
+    note: "System Status screen is not described."
+  - id: "S026"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/tasks"
+      quote: "Tasks screen is not described."
+    note: "Tasks screen is not described."
+  - id: "S027"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/updates"
+      quote: "Updates screen is not described."
+    note: "Updates screen is not described."
+  - id: "S028"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/events"
+      quote: "Log events screen is not described."
+    note: "Log events screen is not described."
+  - id: "S029"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/system/logs/files"
+      quote: "Log files screen is not described."
+    note: "Log files screen is not described."
+  - id: "S030"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/mediamanagement"
+      quote: "Media Management settings screen is not described."
+    note: "Media Management settings screen is not described."
+  - id: "S031"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/indexers"
+      quote: "Indexers settings screen is not described."
+    note: "Indexers settings screen is not described."
+  - id: "S032"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/downloadclients"
+      quote: "Download Clients settings screen is not described."
+    note: "Download Clients settings screen is not described."
+  - id: "S033"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/customformats"
+      quote: "Custom Formats settings screen is not described."
+    note: "Custom Formats settings screen is not described."
+  - id: "S034"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/importlists"
+      quote: "Import Lists settings screen is not described."
+    note: "Import Lists settings screen is not described."
+  - id: "S035"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/connect"
+      quote: "Connect (notifications) settings screen is not described."
+    note: "Connect (notifications) settings screen is not described."
+  - id: "S036"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/settings/metadata"
+      quote: "Metadata settings screen is not described."
+    note: "Metadata settings screen is not described."
+  - id: "S037"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/statistics"
+      quote: "Statistics screen is not described."
+    note: "Statistics screen is not described."
+  - id: "S038"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "1.1"
+      quote: ""
+    page: null
+    note: "Add series also offers Season Folder, Start search for cutoff unmet episodes options, not mentioned."
+  - id: "S039"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "2"
+      quote: ""
+    page: null
+    note: "The iCal feed also has options to include unmonitored episodes and show events as all-day."
+  - id: "S040"
+    state: "undocumented"
+    fsd:
+      doc: "sonarr-fsd"
+      section: "Settings / Profiles / Delay profiles"
+      quote: ""
+    page: null
+    note: "Delay profiles also have bypass if highest quality and bypass above custom format score options, plus enabling usenet/torrent protocols."

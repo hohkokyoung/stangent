@@ -21,6 +21,7 @@ public sealed class FsdReviewTests : IDisposable
         It’s “quoted” here – with a dash.
         - Open the menu
         - Choose a theme
+        Help lives at /orders/:id/help.
         # 2 Settings
         | Option | Default |
         |---|---|
@@ -229,8 +230,11 @@ public sealed class FsdReviewTests : IDisposable
         Assert.Equal(3, (int)result["maybeSame"]!);
 
         var review = JsonNode.Parse(File.ReadAllText(FsdReview.ReviewJson(Root, "shop")))!.AsObject();
-        Assert.Empty(SchemaRegistry.Embedded.Validate("fsd-review.v2.json", review.ToJsonString()));
-        Assert.Equal(("fsd-review", 2), ((string)review["contract"]!, (int)review["version"]!));
+        Assert.Empty(SchemaRegistry.Embedded.Validate("fsd-review.v3.json", review.ToJsonString()));
+        Assert.Equal(("fsd-review", 3), ((string)review["contract"]!, (int)review["version"]!));
+        // No inventory: no checklist, and review.md says so (D403).
+        Assert.Null(review["checklist"]);
+        Assert.Contains("- No checklist: there was no `specs/inventory.json`", File.ReadAllText(FsdReview.ReviewMarkdown(Root, "shop")));
         var findings = review["findings"]!.AsArray().OfType<JsonObject>().ToList();
         // Section order, then gap, conflict, undocumented; a screen with no section last.
         Assert.Equal(["gap", "undocumented", "undocumented", "undocumented", "conflict", "undocumented", "undocumented"],
@@ -299,7 +303,7 @@ public sealed class FsdReviewTests : IDisposable
         var result = FsdReview.Merge(Repo, "shop");
         Assert.Equal(3, (int)result["findings"]!);
         var review = JsonNode.Parse(File.ReadAllText(FsdReview.ReviewJson(Root, "shop")))!.AsObject();
-        Assert.Empty(SchemaRegistry.Embedded.Validate("fsd-review.v2.json", review.ToJsonString()));
+        Assert.Empty(SchemaRegistry.Embedded.Validate("fsd-review.v3.json", review.ToJsonString()));
         Assert.Equal(2, (int)review["counts"]!["match"]!);
         var findings = review["findings"]!.AsArray().OfType<JsonObject>().ToList();
         Assert.Equal([("1", "match"), ("1.1", "conflict"), ("1.1", "match")], findings.Select(f => ((string)f["section"]!, (string)f["state"]!)));
@@ -366,5 +370,302 @@ public sealed class FsdReviewTests : IDisposable
         File.Delete(Path.Combine(FsdReview.RunDir(Root, "shop", 1), FsdReview.FsdFile));
         Answer(1);
         Assert.Equal("prepared_before", Code(() => FsdReview.Check(Repo, "shop", 1, null)));
+    }
+    // ---- the checklist (D403) ------------------------------------------------------------------------------------------
+
+    static JsonObject Line(string kind, string? name, string code, string at) => new()
+    {
+        ["kind"] = kind, ["name"] = name ?? $"❓ {code}: no visible text found", ["named"] = name is not null, ["code"] = code, ["at"] = at,
+    };
+
+    static JsonObject Screen(string route, string title, params JsonObject[] lines) => new()
+    {
+        ["id"] = $"page:web|{route}", ["title"] = title, ["lines"] = new JsonArray([.. lines]),
+    };
+
+    /// <summary>Screens: /orders (four controls), /orders/:id (a placeholder title), /orders/:id/help (its route is in the
+    /// FSD), /settings (one field), and /admin out of scope.</summary>
+    void Inventory()
+    {
+        var inventory = new JsonObject
+        {
+            ["contract"] = "inventory", ["commit"] = "c0ffee",
+            ["screens"] = new JsonArray(
+                Screen("/settings", "Settings (/settings)", Line("field", "Currency", "currency", "src/settings/currency.ts:1")),
+                Screen("/orders", "Orders (/orders)",
+                    Line("button", "Cancel", "cancel", "src/orders.ts:3"),                  // one word: the reviewer's
+                    Line("menu-entry", "choose a THEME", "theme", "src/orders.ts:4"),       // two words, in 1.2: code's
+                    Line("button", "Export orders", "exportOrders", "src/orders.ts:8"),
+                    Line("button", null, "toggle", "src/orders.ts:9"),
+                    Line("button", "Cancel", "cancel", "src/orders.ts:3")),                 // the same control twice: once
+                Screen("/orders/:id", "Loading... (/orders/:id)"),
+                Screen("/orders/:id/help", "❓ no visible text found (/orders/:id/help)"),
+                Screen("/admin", "Admin Area (/admin)", Line("button", "Delete everything", "nuke", "src/orders.ts:1"))),
+        };
+        File.WriteAllText(Path.Combine(Root, "specs", "inventory.json"), inventory.ToJsonString());
+    }
+
+    static JsonObject A(string id, string answer, string? section = null, string? quote = null, string? note = null, params string[] evidence)
+    {
+        var a = new JsonObject { ["id"] = id, ["answer"] = answer, ["section"] = section, ["fsdQuote"] = quote, ["note"] = note };
+        if (evidence.Length > 0) a["evidence"] = new JsonArray([.. evidence.Select(e => (JsonNode)e)]);
+        return a;
+    }
+
+    /// <summary>The lister's answer (D404), in the run's list part.</summary>
+    void AnswerList(int run, params JsonObject[] checklist) =>
+        File.WriteAllText(Path.Combine(FsdReview.ListDir(Root, "shop", run), "output.json"),
+            new JsonObject { ["checklist"] = new JsonArray([.. checklist.Select(a => a.DeepClone())]) }.ToJsonString());
+
+    /// <summary>A run with a list part: the review recorded with <see cref="Good"/>, and the lister named next.</summary>
+    void Reviewed(int run)
+    {
+        FsdReview.Prepare(Repo, "shop", run, again: true);
+        Answer(run, Good);
+        var step = FsdReview.Check(Repo, "shop", run, null);
+        Assert.Equal(("recorded", FsdReview.Lister), (step.Status, step.Agent));
+    }
+
+    [Fact]
+    public void Prepare_lists_the_screens_in_scope_and_their_controls_and_ticks_off_what_the_fsd_names()
+    {
+        Inventory();
+        var step = FsdReview.Prepare(Repo, "shop", 1, again: true);
+        // D404: the review first, its prompt D401's unchanged; the list part beside it, for the lister afterwards.
+        Assert.Equal(FsdReview.Reviewer, step.Agent);
+        Assert.DoesNotContain("Checklist:", step.Prompt);
+        Assert.DoesNotContain("checklist", File.ReadAllText(Path.Combine(FsdReview.RunDir(Root, "shop", 1), "input.md")), StringComparison.OrdinalIgnoreCase);
+        var dir = FsdReview.ListDir(Root, "shop", 1);
+        var input = File.ReadAllText(Path.Combine(dir, "input.md"));
+        Assert.Contains("- The checklist: `{{CHECKLIST_FILE}}`.", input);
+        Assert.Contains("- The FSD: `{{FSD_FILE}}`.", input);
+        Assert.Contains("Write a JSON file to `{{OUTPUT_FILE}}`", input);
+        Assert.Contains("- Scope: the FSD covers the screens whose routes start with these prefixes: `/orders`, `/settings`.", input);
+        Assert.True(File.Exists(Path.Combine(dir, FsdReview.FsdFile)));
+        Answer(1, Good);
+        var next = FsdReview.Check(Repo, "shop", 1, null);
+        Assert.Equal(("recorded", "review", FsdReview.Lister, FsdReview.ListOutputSchema), (next.Status, next.Action, next.Agent, next.Schema));
+        Assert.Contains($"Checklist: .stangent/fsd/shop/review/run-1/list/{FsdReview.ChecklistFile}", next.Prompt);
+        Assert.Contains("Write your JSON to: .stangent/fsd/shop/review/run-1/list/output.json", next.Prompt);
+        Assert.Equal("checked", (string)FsdReview.Status(Repo, "shop")["run"]![0]!["stage"]!);
+        Assert.Equal("prepared", (string)FsdReview.Status(Repo, "shop")["run"]![0]!["list"]!);
+        Assert.Equal("not_checked", Code(() => FsdReview.Merge(Repo, "shop")));
+
+        var items = JsonNode.Parse(File.ReadAllText(Path.Combine(dir, FsdReview.ChecklistJson)))!["items"]!.AsArray().OfType<JsonObject>().ToList();
+        Assert.Equal(["S01", "S01.001", "S01.002", "S01.003", "S01.004", "S02", "S03", "S04", "S04.001"], items.Select(i => (string)i["id"]!));
+        Assert.Equal(["/orders", "/orders/:id", "/orders/:id/help", "/settings"], items.Where(i => (string)i["kind"]! == "screen").Select(i => (string)i["screen"]!));
+        // Code's ticks: a two-word label in any case and the screen whose route the FSD names; not "Cancel" (one word),
+        // not "Currency" (one word, though the table has it), not /orders (only named inside /orders/:id/help).
+        Assert.Equal([("S01.002", "1.2"), ("S03", "1.2")], items.Where(i => i["coveredBy"] is not null).Select(i => ((string)i["id"]!, (string)i["coveredBy"]!)));
+        Assert.Null((string?)items.Single(i => (string)i["id"]! == "S02")["label"]);    // "Loading..." is no title
+
+        var list = File.ReadAllText(Path.Combine(dir, FsdReview.ChecklistFile));
+        Assert.Contains("9 items. 2 of them are not listed here", list);
+        Assert.Contains("- S01.001 · button · “Cancel” · `src/orders.ts:3`", list);
+        Assert.Contains("- S01.004 · button · (no label; in the code: `toggle`) · `src/orders.ts:9`", list);
+        Assert.Contains("- S01 · screen · the whole screen `/orders` (“Orders”)", list);
+        Assert.DoesNotContain("S01.002", list);
+        Assert.DoesNotContain("help", list);
+        Assert.DoesNotContain("/admin", list);
+    }
+
+    JsonObject[] Answers => [
+        A("S01", "covered", "1", "Orders ship within two days of payment."),
+        A("S01.001", "covered", "1", "Each order shows a Cancel button until it ships."),
+        A("S01.002", "left-out", note: "Ticked by code: ignored."),
+        A("S01.003", "left-out", null, null, "Exports the list as CSV.", "src/orders.ts:8", "src/nowhere.ts:1"),
+        A("S01.004", "covered", "1.1", "The order list shows 50 orders per page."),
+        A("S02", "left-out", note: "An order's own page."),
+        A("S04.001", "covered", "2", "Currency"),
+        A("S09", "covered", "1", "Orders ship within two days of payment."),
+    ];
+
+    [Fact]
+    public void Each_checklist_answer_is_checked_a_failed_quote_counts_as_left_out_and_a_skipped_item_as_not_checked()
+    {
+        Inventory();
+        Reviewed(1);
+        AnswerList(1, Answers);
+        var step = FsdReview.Check(Repo, "shop", 1, null);
+        Assert.Equal(("retry", FsdReview.Lister), (step.Status, step.Agent));
+        Assert.Contains(step.Errors!, e => e.StartsWith("checklist: S01.004: the fsdQuote", StringComparison.Ordinal));
+        Assert.Contains(step.Errors!, e => e.StartsWith("checklist: S01.003: evidence \"src/nowhere.ts:1\"", StringComparison.Ordinal));
+        Assert.Contains(step.Errors!, e => e.StartsWith("checklist: S02: a left-out screen gives the line", StringComparison.Ordinal));
+        Assert.Contains(step.Errors!, e => e.StartsWith("checklist: there's no item \"S09\"", StringComparison.Ordinal));
+        Assert.Contains("checklist: 1 items not answered: S04", step.Errors!);
+        Assert.DoesNotContain(step.Errors!, e => e.Contains("S01.002", StringComparison.Ordinal) || e.StartsWith("checklist: S01:", StringComparison.Ordinal));
+        Assert.Contains("every answer included", File.ReadAllText(Path.Combine(FsdReview.ListDir(Root, "shop", 1), "feedback.md")));
+        Assert.Contains("Your previous attempt: .stangent/fsd/shop/review/run-1/list/previous-output.json", step.Prompt);
+
+        // The same answer again: settled, never sent back.
+        AnswerList(1, Answers);
+        Assert.Equal("recorded", FsdReview.Check(Repo, "shop", 1, null).Status);
+        var result = Checked(1);
+        var outcomes = result["checklist"]!.AsArray().OfType<JsonObject>().ToDictionary(i => (string)i["id"]!, i => (string)i["result"]!);
+        Assert.Equal(new Dictionary<string, string>
+        {
+            ["S01"] = "covered", ["S01.001"] = "covered", ["S01.002"] = "code", ["S01.003"] = "left-out", ["S01.004"] = "left-out",
+            ["S02"] = "left-out", ["S03"] = "code", ["S04"] = "not-checked", ["S04.001"] = "covered",
+        }, outcomes);
+        var leftOut = result["findings"]!.AsArray().OfType<JsonObject>().Where(f => f["item"] is not null).ToList();
+        Assert.Equal(["S01.003", "S01.004", "S02"], leftOut.Select(f => (string)f["item"]!));
+        Assert.All(leftOut, f => Assert.Equal(("undocumented", (string?)null), ((string)f["state"]!, (string?)f["fsdQuote"])));
+        // The item's own line, and the agent's evidence that passes; a screen with none has none.
+        Assert.Equal(["src/orders.ts:8"], leftOut[0]["evidence"]!.AsArray().Select(e => (string)e!));
+        Assert.Equal("The FSD doesn't mention the button “Export orders” on /orders. Exports the list as CSV.", (string)leftOut[0]["note"]!);
+        Assert.Equal("The FSD doesn't mention the button with no label (`toggle` in the code) on /orders.", (string)leftOut[1]["note"]!);
+        Assert.Equal(("/orders/:id", 0), ((string)leftOut[2]["screen"]!, leftOut[2]["evidence"]!.AsArray().Count));
+        Assert.NotNull(result["checklist"]!.AsArray().OfType<JsonObject>().Single(i => (string)i["id"]! == "S01.004")["why"]);
+        Assert.Contains(result["findings"]!.AsArray().OfType<JsonObject>(), f => (string)f["state"]! == "conflict");    // the review's, kept
+        Assert.Equal("current", FsdReview.Check(Repo, "shop", 1, null).Status);
+        Assert.Equal("current", FsdReview.Prepare(Repo, "shop", 1, again: false).Status);
+    }
+
+    [Fact]
+    public void A_lister_with_no_answer_after_its_retry_leaves_every_item_not_checked_and_the_run_recorded()
+    {
+        Inventory();
+        Reviewed(1);
+        Assert.Equal("retry", FsdReview.Check(Repo, "shop", 1, Usage.None with { Calls = 1 }).Status);
+        Assert.Equal("no_output", Code(() => FsdReview.Check(Repo, "shop", 1, null)));
+        var step = FsdReview.Check(Repo, "shop", 1, Usage.None with { Calls = 1 });
+        Assert.Equal("recorded", step.Status);
+        var results = Checked(1)["checklist"]!.AsArray().OfType<JsonObject>().Select(i => (string)i["result"]!).ToList();
+        Assert.Equal(7, results.Count(r => r == "not-checked"));
+        Assert.Equal(2, results.Count(r => r == "code"));
+        Assert.Single(Checked(1)["findings"]!.AsArray());
+    }
+
+    void Settle(int run, params JsonObject[] checklist)
+    {
+        Reviewed(run);
+        AnswerList(run, checklist);
+        var step = FsdReview.Check(Repo, "shop", run, null);
+        if (step.Status == "retry")
+        {
+            AnswerList(run, checklist);
+            step = FsdReview.Check(Repo, "shop", run, null);
+        }
+        Assert.Equal("recorded", step.Status);
+    }
+
+    [Fact]
+    public void Merge_unions_the_checklists_lists_left_out_by_screen_and_counts_coverage()
+    {
+        Inventory();
+        // S04 is skipped by both runs: one retry each, then not checked.
+        Settle(1, A("S01", "covered", "1", "Orders ship within two days of payment."), A("S01.001", "covered", "1", "Each order shows a Cancel button until it ships."),
+            A("S01.003", "left-out", null, null, "Exports the list as CSV.", "src/orders.ts:8"), A("S01.004", "left-out", note: "Shows or hides the filters."),
+            A("S02", "left-out", "1", null, null, "src/orders.ts:20"), A("S04.001", "covered", "2", "Currency"));
+        Settle(2, A("S01", "covered", "1", "Orders ship within two days of payment."), A("S01.001", "left-out"),
+            A("S01.003", "covered", "1", "Orders ship within two days of payment."), A("S01.004", "left-out"),
+            A("S02", "covered", "1", "Orders ship within two days of payment."), A("S04.001", "covered", "2", "Currency"));
+
+        var result = FsdReview.Merge(Repo, "shop");
+        Assert.Equal(4, (int)result["counts"]!["undocumented"]!);     // S01.001, S01.003, S01.004 (both runs), S02
+        Assert.Equal((9, 2, 2, 4, 1), ((int)result["checklist"]!["listed"]!, (int)result["checklist"]!["coveredByCode"]!,
+            (int)result["checklist"]!["coveredByAgent"]!, (int)result["checklist"]!["leftOut"]!, (int)result["checklist"]!["notChecked"]!));
+        var review = JsonNode.Parse(File.ReadAllText(FsdReview.ReviewJson(Root, "shop")))!.AsObject();
+        Assert.Empty(SchemaRegistry.Embedded.Validate("fsd-review.v3.json", review.ToJsonString()));
+        var items = review["checklist"]!["items"]!.AsArray().OfType<JsonObject>().ToDictionary(i => (string)i["id"]!);
+        Assert.Equal(["left-out", "covered"], items["S01.003"]["byRun"]!.AsArray().Select(x => (string)x!));
+        Assert.Equal("left-out", (string)items["S01.003"]["result"]!);
+        Assert.Equal(["covered", "left-out"], items["S01.001"]["byRun"]!.AsArray().Select(x => (string)x!));
+        Assert.Equal(["not-checked", "not-checked"], items["S04"]["byRun"]!.AsArray().Select(x => (string)x!));
+        var findings = review["findings"]!.AsArray().OfType<JsonObject>().ToDictionary(f => (string)f["id"]!);
+        var toggle = findings[(string)items["S01.004"]["finding"]!];
+        Assert.Equal([1, 2], toggle["runs"]!.AsArray().Select(r => (int)r!));
+        Assert.Equal("1", (string?)findings[(string)items["S02"]["finding"]!]["section"]);
+        // D405: an item every run covered with a checked quote is a match for the PM to confirm, joined across runs; one a
+        // run left out (S01.003) is not.
+        var currency = findings[(string)items["S04.001"]["finding"]!];
+        Assert.Equal(("match", "2", "Currency", "S04.001"), ((string)currency["state"]!, (string?)currency["section"], (string?)currency["fsdQuote"], (string?)currency["item"]));
+        Assert.Equal([1, 2], currency["runs"]!.AsArray().Select(r => (int)r!));
+        Assert.Equal([(string)items["S04.001"]["at"]!], currency["evidence"]!.AsArray().Select(e => (string)e!));
+        Assert.Equal("undocumented", (string)findings[(string)items["S01.003"]["finding"]!]["state"]!);
+        Assert.All(findings.Values.Where(f => (string)f["state"]! == "match"), f => Assert.Contains((string)f["item"]!, new[] { "S01", "S04.001" }));
+
+        var md = File.ReadAllText(FsdReview.ReviewMarkdown(Root, "shop"));
+        Assert.Contains("- Checklist (D403): 9 screens and controls in scope listed by code; 2 covered by code (their name is in the FSD word for word), 2 covered by the AI (its FSD quote checked), 4 left out, 1 not checked; the inventory was built at `c0ffee`, not the reviewed commit", md);
+        Assert.Contains("## Left out, by screen (the checklist)", md);
+        Assert.Contains("### `/orders`", md);
+        Assert.Contains($"- **{(string)toggle["id"]!}** button with no label (`toggle`) `src/orders.ts:9` _(every run)_ — Shows or hides the filters.", md);
+        Assert.Contains("_(run 1; run 2: covered)_", md);
+        Assert.Contains("## Not checked (the checklist)", md);
+        Assert.Contains("- `/settings`: S04 the whole screen “Settings”", md);
+        // A checklist finding is listed once, under its screen, not again by section; its matches are listed by section.
+        Assert.DoesNotContain("Left out (the code has it, the FSD doesn't say)", md);
+        Assert.Contains("Matches (the code does what the FSD says)", md);
+    }
+
+    [Fact]
+    public void A_run_prepared_without_a_checklist_is_checked_without_one()
+    {
+        Assert.Equal("recorded", Run(1, Good).Status);
+        Assert.Null(Checked(1)["checklist"]);
+    }
+    [Fact]
+    public void Merge_refuses_runs_where_only_some_had_a_checklist()
+    {
+        Assert.Equal("recorded", Run(1, Good).Status);                  // no inventory yet: no checklist
+        Inventory();
+        Settle(2, A("S01", "covered", "1", "Orders ship within two days of payment."));
+        Assert.Equal("runs_differ", Code(() => FsdReview.Merge(Repo, "shop")));
+    }
+
+    [Fact]
+    public void Two_apps_with_one_route_keep_both_screens_controls_and_the_root_route_is_never_ticked_by_a_slash()
+    {
+        var inventory = new JsonObject
+        {
+            ["screens"] = new JsonArray(
+                new JsonObject { ["id"] = "page:web|/orders", ["title"] = "Orders", ["lines"] = new JsonArray(Line("button", "Cancel", "cancel", "src/orders.ts:3")) },
+                new JsonObject { ["id"] = "page:admin|/orders/", ["title"] = "Orders", ["lines"] = new JsonArray(Line("button", "Refund", "refund", "src/orders.ts:5")) },
+                new JsonObject { ["id"] = "page:web|/", ["title"] = "Home", ["lines"] = new JsonArray() }),
+        };
+        File.WriteAllText(Path.Combine(Root, "specs", "inventory.json"), inventory.ToJsonString());
+        var checklist = FsdReview.BuildChecklist(Root, ["/"], FsdOutline.Load(Root, "shop"))!;
+        var items = checklist["items"]!.AsArray().OfType<JsonObject>().ToList();
+        Assert.Equal(["S01", "S02", "S02.001", "S02.002"], items.Select(i => (string)i["id"]!));
+        Assert.Equal(["Cancel", "Refund"], items.Where(i => (string)i["screen"]! == "/orders").Skip(1).Select(i => (string)i["label"]!));
+        // Section 1.2 holds "/orders/:id/help." and a list; "/" stays the reviewer's.
+        Assert.Null(items[0]["coveredBy"]);
+    }
+
+    [Fact]
+    public void A_checklist_that_breaks_the_schema_goes_to_the_retry_and_never_costs_the_findings()
+    {
+        Inventory();
+        Reviewed(1);
+        var odd = new JsonObject { ["id"] = 7, ["answer"] = "covered" };
+        var many = A("S01.003", "left-out", null, null, null, [.. Enumerable.Range(1, 13).Select(i => $"src/orders.ts:{i}")]);
+        AnswerList(1, odd, many, A("S01", "covered", "1", "Orders ship within two days of payment."));
+        var step = FsdReview.Check(Repo, "shop", 1, null);
+        Assert.Equal("retry", step.Status);
+        Assert.Contains(step.Errors!, e => e.StartsWith("Schema:", StringComparison.Ordinal));
+        AnswerList(1, odd, many, A("S01", "covered", "1", "Orders ship within two days of payment."));
+        Assert.Equal("recorded", FsdReview.Check(Repo, "shop", 1, null).Status);
+        var result = Checked(1);
+        Assert.Contains(result["findings"]!.AsArray().OfType<JsonObject>(), f => (string)f["state"]! == "conflict");
+        var results = result["checklist"]!.AsArray().OfType<JsonObject>().ToDictionary(i => (string)i["id"]!, i => (string)i["result"]!);
+        Assert.Equal(("covered", "left-out", "not-checked"), (results["S01"], results["S01.003"], results["S01.001"]));
+    }
+    [Fact]
+    public void Preparing_again_after_the_review_was_recorded_carries_on_with_the_lister_and_keeps_the_review()
+    {
+        Assert.Equal(1, (int)FsdReview.Status(Repo, "shop")["callsPerRun"]!);
+        Inventory();
+        Assert.Equal(2, (int)FsdReview.Status(Repo, "shop")["callsPerRun"]!);
+        Reviewed(1);
+        var step = FsdReview.Prepare(Repo, "shop", 1, again: false);
+        Assert.Equal(("recorded", FsdReview.Lister), (step.Status, step.Agent));
+        Assert.True(File.Exists(Path.Combine(FsdReview.RunDir(Root, "shop", 1), "checked.json")));
+        AnswerList(1, A("S09", "covered"));
+        Assert.Equal("retry", FsdReview.Check(Repo, "shop", 1, null).Status);
+        step = FsdReview.Prepare(Repo, "shop", 1, again: false);
+        Assert.Equal(FsdReview.Lister, step.Agent);
+        Assert.Contains("Your previous attempt: .stangent/fsd/shop/review/run-1/list/previous-output.json", step.Prompt);
+        // --again starts both parts over.
+        Assert.Equal(FsdReview.Reviewer, FsdReview.Prepare(Repo, "shop", 1, again: true).Agent);
     }
 }

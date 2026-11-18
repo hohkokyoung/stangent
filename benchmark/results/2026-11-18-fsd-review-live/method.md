@@ -99,3 +99,65 @@ Before D401 the same command scored 2–17 per run with 3–32 unplanted. Gaps a
 (18 of 20, measured 20); **undocumented stays at 2 of 10** (measured 9), the one gap left. Fix for the hook: it allows
 the one folder `STANGENT_WRITE_DIR` names, which the driver sets to the throwaway answer folder for the reviewer's call
 only; checked for real with one tiny Haiku call each way (named: written; not named: refused), cents.
+
+## D403: the left-out checklist (owner: "Yes, run them"; $1.91)
+`H-checklist/`: the built command after D403 (uncommitted at the time), two runs, Sonnet 5.5 medium, `fsd.reviewBudget`
+set in the clone to $1.50 and 100 turns, `--max-cost 3.5`. Code's checklist: 465 items (22 screens), 39 ticked by code,
+426 for the reviewer. Inventory built at `2d22536`, reviewed commit `f4abc65` (only the FSD's files differ).
+
+| Run | Score | Gap | Conflict | Undoc | Findings | Unplanted | Checklist: covered / left out / not checked | Turns | Cost |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | **15** | 6 | 1 | 8 | 373 | 358 | 60 / 366 / 0 | 25, then 8 on the retry (one bad quote, one bad route line) | $1.11 |
+| 2 | **18** | 7 | 3 | 8 | 361 | 343 | 75 / 351 / 0 | 39 | $0.80 |
+| merged | **18** | 7 | 3 | 8 | 378 | 360 | AI 58, code 39, left out 368 | | |
+
+Before D403 (G, same harness): 17 and 18 per run, gap 6–8, conflict 8–9, undocumented 2.
+
+**Reading (one pair of runs; Kavita's key is worn):** the checklist did what it was for, undocumented 2 → 8 of 10 in
+each run, but conflicts fell from 8–9 to 1–3 and the total didn't move (15–18 against 17–18). The reviewer spent
+itself on the list: 25–39 turns and 20–31 searches against 74–77 turns before, and 37–55K output tokens, most of them
+checklist answers. It also called 351–366 of 426 items left out, so the PM would rule about 370 left-out findings, of
+which 8 are planted; most are probably true (an FSD doesn't name every button) but not worth a ruling each. Not yet
+tried: the checklist as its own call beside the unchanged D401 review, so neither crowds the other out.
+
+## D404: the checklist as its own call (owner: "Yes, run them"; $2.94)
+`I-split/`: the built command after D404 (uncommitted at the time): each run is the review (D401's prompt unchanged)
+then the lister (`fsd-lister.md`, code's checklist), Sonnet 5.5 medium, $1.50 cap per call, `--max-cost 5`. No retries.
+
+| Run | Score | Gap | Conflict | Undoc | Findings | Unplanted | Checklist: covered / left out | Turns (review, list) | Cost (review + list) |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | **27** | 10 | 9 | 8 | 383 | 356 | 66 / 360 | 103, 8 | $1.08 + $0.62 |
+| 2 | **25** | 9 | 8 | 8 | 361 | 336 | 86 / 340 | 86, 9 | $0.58 + $0.66 |
+| merged | **27** | 10 | 9 | 8 | 387 | 360 | | | $2.94 |
+
+Before: D401 alone 17–18 (undocumented 2), D403 in one call 15–18 (conflicts 1–3). Measured single runs (D323): 28.
+
+**Reading (one pair of runs; Kavita's key is worn by today's runs, so confirm on Sonarr):** apart, each call does what
+it was measured to do: the review is back to 86–103 turns with gaps and conflicts at 17–19 of 20, and the lister
+brings left out to 8 of 10 in 8–9 turns. The open cost is noise: about 360 left-out findings, of which 8 are planted
+(and 3–4 of the review's own undocumented findings). How those reach the PM is still to decide (D404 (5)).
+
+## D404 confirmed on Sonarr (owner: "Yes, set up and run"; $1.91)
+`J-sonarr/`: `~/stangent-bench/sonarr`, new branch `bench/fsd-migrated` from `0bffefe`: `99c83d4` (the planted FSD as
+imported, `specs/` forced past the clone's local exclude) and `565c192` (`stangent fsd migrate`, 21 permanent ids).
+`stangent.yaml` (untracked) given `ai.steps.stangent-fsd-reviewer` (Sonnet 5.5, medium) and `fsd.reviewBudget` $1.50 /
+100 turns; scope as before (includes `/`, so every screen). Checklist: 606 items, 32 ticked by code. Scored on
+`benchmark/fsd/sonarr/answer-key.json` (not read). No retries.
+
+| Run | Score | Gap | Conflict | Undoc | Findings | Unplanted | Turns (review, list) | Cost (review + list) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | **29** | 10 | 9 | 10 | 546 | 517 | 37, 6 | $0.24 + $0.71 |
+| 2 | **29** | 10 | 9 | 10 | 536 | 507 | 33, 6 | $0.23 + $0.73 |
+| merged | **29** | 10 | 9 | 10 | 553 | 524 | | $1.91 |
+
+**What the list adds** (each run's review findings alone, scored the same way):
+
+| | Review alone | With the list | Unplanted, review alone | Unplanted, with the list |
+|---|---|---|---|---|
+| Sonarr run 1 / 2 | 23 / 23 (undoc 4) | 29 / 29 (undoc 10) | 17 / 17 | 517 / 507 |
+| Kavita run 1 / 2 | 22 / 19 (undoc 3 / 2) | 27 / 25 (undoc 8) | 1 / 2 | 356 / 336 |
+
+**Reading:** confirmed on a second app whose key today's runs hadn't worn: the review finds gaps and conflicts at
+19–20 of 20, the list lifts left out from 2–4 to 8–10 of 10. The price is noise: the lister calls about 500 Sonarr
+controls left out (of 574 it answered) to find 6 planted ones. Many are true but not worth a ruling each; how they
+reach the PM (D404 (5)) is now the open question.

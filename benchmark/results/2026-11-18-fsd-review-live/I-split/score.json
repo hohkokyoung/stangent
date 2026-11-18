@@ -1,0 +1,557 @@
+{
+  "doc": "kavita-fsd",
+  "note": "Phase 2b (D56, D57): findings in specs/trace.yaml scored against the frozen answer key. 'found' lets a gap be reported as a conflict and back; 'foundAsKind' needs the planted kind.",
+  "found": {
+    "overall": {
+      "found": 27,
+      "of": 30,
+      "share": 0.9,
+      "range95": [
+        0.8,
+        1
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 9,
+      "of": 10,
+      "share": 0.9,
+      "range95": [
+        0.7,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 8,
+      "of": 10,
+      "share": 0.8,
+      "range95": [
+        0.5,
+        1
+      ]
+    }
+  },
+  "foundAsKind": {
+    "overall": {
+      "found": 26,
+      "of": 30,
+      "share": 0.867,
+      "range95": [
+        0.733,
+        0.967
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 8,
+      "of": 10,
+      "share": 0.8,
+      "range95": [
+        0.5,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 8,
+      "of": 10,
+      "share": 0.8,
+      "range95": [
+        0.5,
+        1
+      ]
+    }
+  },
+  "noise": {
+    "findings": 387,
+    "unplanted": 360,
+    "worstCaseShare": 0.93,
+    "sample": 20,
+    "handChecked": 0,
+    "realInSample": null
+  },
+  "bars": {
+    "finds": true,
+    "notTooNoisy": null
+  },
+  "finerVerdicts": null,
+  "candidates": {
+    "sections": 0,
+    "byCode": 0,
+    "byAi": 0,
+    "aiFoundNone": 0
+  },
+  "cost": {
+    "finder": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "judge": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "checker": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "disprover": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    }
+  },
+  "items": [
+    {
+      "id": "G1",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S001",
+      "state": "gap"
+    },
+    {
+      "id": "G2",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S003",
+      "state": "gap"
+    },
+    {
+      "id": "G3",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S004",
+      "state": "gap"
+    },
+    {
+      "id": "G4",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S027",
+      "state": "gap"
+    },
+    {
+      "id": "G5",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S029",
+      "state": "gap"
+    },
+    {
+      "id": "G6",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S049",
+      "state": "gap"
+    },
+    {
+      "id": "G7",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S052",
+      "state": "gap"
+    },
+    {
+      "id": "G8",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S061",
+      "state": "gap"
+    },
+    {
+      "id": "G9",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S067",
+      "state": "gap"
+    },
+    {
+      "id": "G10",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S065",
+      "state": "gap"
+    },
+    {
+      "id": "C1",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S002",
+      "state": "conflict"
+    },
+    {
+      "id": "C2",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S005",
+      "state": "conflict"
+    },
+    {
+      "id": "C3",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S028",
+      "state": "conflict"
+    },
+    {
+      "id": "C4",
+      "kind": "conflict",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "C5",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": false,
+      "by": "S047",
+      "state": "gap"
+    },
+    {
+      "id": "C6",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S053",
+      "state": "conflict"
+    },
+    {
+      "id": "C7",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S062",
+      "state": "conflict"
+    },
+    {
+      "id": "C8",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S064",
+      "state": "conflict"
+    },
+    {
+      "id": "C9",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S066",
+      "state": "conflict"
+    },
+    {
+      "id": "C10",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S069",
+      "state": "conflict"
+    },
+    {
+      "id": "U1",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S059",
+      "state": "undocumented"
+    },
+    {
+      "id": "U2",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S060",
+      "state": "undocumented"
+    },
+    {
+      "id": "U3",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S076",
+      "state": "undocumented"
+    },
+    {
+      "id": "U4",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S086",
+      "state": "undocumented"
+    },
+    {
+      "id": "U5",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S098",
+      "state": "undocumented"
+    },
+    {
+      "id": "U6",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S143",
+      "state": "undocumented"
+    },
+    {
+      "id": "U7",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S054",
+      "state": "undocumented"
+    },
+    {
+      "id": "U8",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U9",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U10",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S184",
+      "state": "undocumented"
+    }
+  ],
+  "handCheckSample": [
+    {
+      "id": "S323",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the button “Reset” on /settings. Resets width override.",
+      "note": "The FSD doesn't mention the button “Reset” on /settings. Resets width override."
+    },
+    {
+      "id": "S368",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the field “Collapse Series Relationships” on /settings. Collapses series relationships.",
+      "note": "The FSD doesn't mention the field “Collapse Series Relationships” on /settings. Collapses series relationships."
+    },
+    {
+      "id": "S204",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the field “Sync user settings with OIDC roles” on /settings. Sync user settings with OIDC roles.",
+      "note": "The FSD doesn't mention the field “Sync user settings with OIDC roles” on /settings. Sync user settings with OIDC roles."
+    },
+    {
+      "id": "S102",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the button “Retry” on /settings. Retries a Kavita+ event.",
+      "note": "The FSD doesn't mention the button “Retry” on /settings. Retries a Kavita+ event."
+    },
+    {
+      "id": "S046",
+      "state": "undocumented",
+      "section": "4.2",
+      "fsdQuote": "",
+      "page": "page:/library/:libraryId/series/:seriesId/book/:chapterId",
+      "pageQuote": "The FSD doesn't mention the button “Next” on /library/:libraryId/series/:seriesId/book/:chapterId. Goes to the next chapter.",
+      "note": "The FSD doesn't mention the button “Next” on /library/:libraryId/series/:seriesId/book/:chapterId. Goes to the next chapter."
+    },
+    {
+      "id": "S099",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the button “Skip for now” on /settings. Skips connecting providers.",
+      "note": "The FSD doesn't mention the button “Skip for now” on /settings. Skips connecting providers."
+    },
+    {
+      "id": "S164",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the field “Whitelist Tags” on /settings. Tag whitelist.",
+      "note": "The FSD doesn't mention the field “Whitelist Tags” on /settings. Tag whitelist."
+    },
+    {
+      "id": "S093",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the field with no label (`conflictField` in the code) on /settings. Conflict resolution field for a mapping.",
+      "note": "The FSD doesn't mention the field with no label (`conflictField` in the code) on /settings. Conflict resolution field for a mapping."
+    },
+    {
+      "id": "S101",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the button “Remove Scrobble Error” on /settings. Removes a scrobble error entry.",
+      "note": "The FSD doesn't mention the button “Remove Scrobble Error” on /settings. Removes a scrobble error entry."
+    },
+    {
+      "id": "S085",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the button “Load more” on /settings. Loads more Kavita+ timeline entries.",
+      "note": "The FSD doesn't mention the button “Load more” on /settings. Loads more Kavita+ timeline entries."
+    },
+    {
+      "id": "S291",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the button “Add alternative key” on /settings. Adds an alternative key.",
+      "note": "The FSD doesn't mention the button “Add alternative key” on /settings. Adds an alternative key."
+    },
+    {
+      "id": "S294",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the field “Custom only” on /settings. Shows only custom fonts.",
+      "note": "The FSD doesn't mention the field “Custom only” on /settings. Shows only custom fonts."
+    },
+    {
+      "id": "S122",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the field “Match State” on /settings. Match state filter.",
+      "note": "The FSD doesn't mention the field “Match State” on /settings. Match state filter."
+    },
+    {
+      "id": "S146",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the field with no label (`libraryTracker.isSelected(library)` in the code) on /settings. Selects a library row.",
+      "note": "The FSD doesn't mention the field with no label (`libraryTracker.isSelected(library)` in the code) on /settings. Selects a library row."
+    },
+    {
+      "id": "S057",
+      "state": "undocumented",
+      "section": "7.2",
+      "fsdQuote": "",
+      "page": "page:/lists/:readingListId",
+      "pageQuote": "The FSD doesn't mention the button “Read” on /lists/:readingListId. Reads a list item.",
+      "note": "The FSD doesn't mention the button “Read” on /lists/:readingListId. Reads a list item."
+    },
+    {
+      "id": "S149",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the field “Library” on /settings. Library filter for media issues.",
+      "note": "The FSD doesn't mention the field “Library” on /settings. Library filter for media issues."
+    },
+    {
+      "id": "S178",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the field with no label (`field` in the code) on /settings. Metadata field selector.",
+      "note": "The FSD doesn't mention the field with no label (`field` in the code) on /settings. Metadata field selector."
+    },
+    {
+      "id": "S303",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the button “Rotate” on /settings. Rotates an auth key.",
+      "note": "The FSD doesn't mention the button “Rotate” on /settings. Rotates an auth key."
+    },
+    {
+      "id": "S105",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings",
+      "pageQuote": "The FSD doesn't mention the button “Last 30 days” on /settings. API stats for the last 30 days.",
+      "note": "The FSD doesn't mention the button “Last 30 days” on /settings. API stats for the last 30 days."
+    },
+    {
+      "id": "S023",
+      "state": "undocumented",
+      "section": "3.3",
+      "fsdQuote": "",
+      "page": "page:/library/:libraryId/series/:seriesId/chapter/:chapterId",
+      "pageQuote": "The FSD doesn't mention the button with no label (`read` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Read in incognito button for the chapter.",
+      "note": "The FSD doesn't mention the button with no label (`read` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Read in incognito button for the chapter."
+    }
+  ]
+}

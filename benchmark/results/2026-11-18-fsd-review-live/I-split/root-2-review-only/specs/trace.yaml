@@ -1,0 +1,174 @@
+version: 4
+entries:
+  - id: "S001"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "1"
+      quote: "The On Deck row shows up to 50 series."
+    page: null
+    note: "The On Deck row requests only the first 20 series."
+  - id: "S002"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "1"
+      quote: "Each row on the Home screen can be collapsed, and Kavita remembers the choice on the next visit."
+    page: null
+    note: "No collapse or remembered-state logic exists for home rows."
+  - id: "S003"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "2.1"
+      quote: "A Random button on the library screen opens a randomly chosen series from that library."
+    page: null
+    note: "The library detail screen has no Random button or random-series action."
+  - id: "S004"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "5"
+      quote: "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it."
+    page: null
+    note: "No removal happens on finishing; a cleanup task removes fully-read series from Want to Read instead."
+  - id: "S005"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "6.2"
+      quote: "The series in a collection can be exported to a CSV file."
+    page: null
+    note: "There is no CSV export anywhere in the web app."
+  - id: "S006"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "The owner can share a reading list through a public link that opens without signing in."
+    page: null
+    note: "No public or share link feature exists for reading lists."
+  - id: "S007"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "A filter box for finding items appears once a list has more than 25 items."
+    page: null
+    note: "The filter box appears when the list has more than 10 items."
+  - id: "S008"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.1"
+      quote: "Brightness can be set anywhere from 0% to 100%."
+    page: null
+    note: "Brightness (darkness) is validated between 10 and 100."
+  - id: "S009"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.1"
+      quote: "A slideshow mode turns the page automatically after a set number of seconds."
+    page: null
+    note: "The image reader has no slideshow mode."
+  - id: "S010"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: "Selected text can be read aloud using the device's text-to-speech voice."
+    page: null
+    note: "No text-to-speech feature exists in the book reader."
+  - id: "S011"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "A new password must be at least 8 characters long."
+    page: null
+    note: "The server requires a minimum password length of 6."
+  - id: "S012"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "Changing the password requires the current password and is only open to administrators and users with the Change Password role."
+    page: null
+    note: "Only the new password and confirmation are required fields; the old password is not required (it is only compared with the confirmation by a validator). Read Only users are also excluded."
+  - id: "S013"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "Users can turn on two-factor sign-in with an authenticator app."
+    page: null
+    note: "No two-factor authentication feature exists in the web app."
+  - id: "S014"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB."
+    page: null
+    note: "The download size warning threshold is 100 MB (104857600 bytes)."
+  - id: "S015"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Changes on this page are stored only when the administrator presses Save."
+    page: null
+    note: "The page autosaves the form after a 300ms debounce whenever it is valid; there is no Save button."
+  - id: "S016"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "A maintenance mode switch blocks all non-admin users from signing in until it is turned off."
+    page: null
+    note: "There is no maintenance mode setting in the general settings."
+  - id: "S017"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.2"
+      quote: "An invite can be given an expiry date, after which its link stops working."
+    page: null
+    note: "The invite form has no expiry option."
+  - id: "S018"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.2"
+      quote: ""
+    page: null
+    note: "Non-pending users also get a change-password button in the actions column, and the users table shows an identity provider icon (OpenID Connect or Kavita)."
+  - id: "S019"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Manage Collections is turned on by default for a new library."
+    page: null
+    note: "A new library defaults to manageCollections false (and manageReadingLists false)."
+  - id: "S020"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "8"
+      quote: ""
+    page:
+      id: "page:/browse/genres"
+      quote: "A Browse Genres screen exists but the FSD does not describe it."
+    note: "A Browse Genres screen exists but the FSD does not describe it."
+  - id: "S021"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "8"
+      quote: ""
+    page:
+      id: "page:/browse/annotations"
+      quote: "A Browse Annotations screen (all annotations with a filter) exists but the FSD does not describe it."
+    note: "A Browse Annotations screen (all annotations with a filter) exists but the FSD does not describe it."

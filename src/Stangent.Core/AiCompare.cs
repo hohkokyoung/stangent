@@ -68,7 +68,7 @@ public static class AiCompare
     }
 
     static bool IsPlainString(JsonNode? p) =>
-        p is JsonObject o && (string?)o["type"] == "string" && o["enum"] is null && o["pattern"] is null && o["const"] is null && o["format"] is null;
+        p is JsonObject o && o["type"] is JsonValue type && type.TryGetValue<string>(out var t) && t == "string" && o["enum"] is null && o["pattern"] is null && o["const"] is null && o["format"] is null;
 
     /// <summary>One answer's items, as canonical strings. A missing answer has one item of its own; one that isn't an object is itself.</summary>
     public static HashSet<string> Items(JsonNode? answer, IReadOnlySet<string> dropped)

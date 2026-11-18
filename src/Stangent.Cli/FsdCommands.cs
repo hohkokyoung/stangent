@@ -135,13 +135,16 @@ static class FsdCommands
                 retry["next"]!["limits"] = FsdReview.DriverLimits(ctx.Repo, doc, run);
                 throw new CheckFailed("check_failed", $"{doc} review run {run}: the code check failed; the reviewer gets one retry with the errors.", retry);
             }
-            return SpecCommands.Finish(step, $"{doc} review run {run}");
+            var json = SpecCommands.Finish(step, $"{doc} review run {run}").AsObject();
+            // D404: a recorded review names the lister next, under the list part's own cap.
+            if (step.Agent is not null) json["next"]!["limits"] = FsdReview.DriverLimits(ctx.Repo, doc, run);
+            return json;
         }));
         fsd.Subcommands.Add(reviewCheck);
         var reviewStatus = new Command("review-status", "Where each review run stands (D341): its stage and commit, how many runs merge takes, whether review.json exists. Reads only.") { docArgument };
         reviewStatus.SetAction(pr => Cli.Run(pr, "fsd review-status", ctx => FsdReview.Status(ctx.Repo, pr.GetValue(docArgument)!)));
         fsd.Subcommands.Add(reviewStatus);
-        var reviewMerge = new Command("review-merge", "Union the checked review runs (D341): exact duplicates joined, each finding saying which runs found it. Writes specs/fsd/<doc>/review.json (contract fsd-review v2) and review.md. Code only.") { docArgument };
+        var reviewMerge = new Command("review-merge", "Union the checked review runs (D341): exact duplicates joined, each finding saying which runs found it. Writes specs/fsd/<doc>/review.json (contract fsd-review v3, the checklist D403) and review.md. Code only.") { docArgument };
         reviewMerge.SetAction(pr => Cli.Run(pr, "fsd review-merge", ctx =>
         {
             var result = FsdReview.Merge(ctx.Repo, pr.GetValue(docArgument)!);

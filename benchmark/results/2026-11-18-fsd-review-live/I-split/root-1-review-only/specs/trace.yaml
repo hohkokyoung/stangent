@@ -1,0 +1,184 @@
+version: 4
+entries:
+  - id: "S001"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "1"
+      quote: "The On Deck row shows up to 50 series."
+    page: null
+    note: "The On Deck row requests only the first 20 series."
+  - id: "S002"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "1"
+      quote: "Each row on the Home screen can be collapsed, and Kavita remembers the choice on the next visit."
+    page: null
+    note: "Neither the dashboard nor the carousel rows have any collapse behaviour or remembered state."
+  - id: "S003"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "2.1"
+      quote: "A Random button on the library screen opens a randomly chosen series from that library."
+    page: null
+    note: "The library screen has no Random button; only the name, actions menu, series count, filter and bulk operations."
+  - id: "S004"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: "Manga series open on the Volumes tab by default."
+    page: null
+    note: "For manga libraries the default tab is Storyline, not Volumes (Volumes is default only for book and light novel libraries)."
+  - id: "S005"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: "Users can keep a private note on a series that only they can see."
+    page: null
+    note: "The series screen has no private note feature (only an annotations tab)."
+  - id: "S006"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.1"
+      quote: "Brightness can be set anywhere from 0% to 100%."
+    page: null
+    note: "The brightness (darkness) setting has a minimum of 10, so the range is 10% to 100%."
+  - id: "S007"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.1"
+      quote: "A slideshow mode turns the page automatically after a set number of seconds."
+    page: null
+    note: "The image reader settings contain no slideshow or auto-advance option."
+  - id: "S008"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: "Selected text can be read aloud using the device's text-to-speech voice."
+    page: null
+    note: "No text-to-speech / speech synthesis feature exists in the UI."
+  - id: "S009"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "5"
+      quote: "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it."
+    page: null
+    note: "Removal is done by a recurring scheduled cleanup task (CleanupWantToRead), not immediately on finishing."
+  - id: "S010"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "6.2"
+      quote: "The series in a collection can be exported to a CSV file."
+    page: null
+    note: "The collection details screen has no export action; Export exists only for annotations."
+  - id: "S011"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "The owner can share a reading list through a public link that opens without signing in."
+    page: null
+    note: "No public share link exists for reading lists; the detail route requires authGuard."
+  - id: "S012"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "A filter box for finding items appears once a list has more than 25 items."
+    page: null
+    note: "The filter box appears when the list has more than 10 items."
+  - id: "S013"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: ""
+    page: null
+    note: "In reorder mode the owner of a non-promoted list also gets a 'Remove Read' button that removes all read items."
+  - id: "S014"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/genres"
+      quote: "A Genres browse screen lists genres; the FSD only describes People and Tags under Browse."
+    note: "A Genres browse screen lists genres; the FSD only describes People and Tags under Browse."
+  - id: "S015"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/annotations"
+      quote: "An All Annotations browse screen exists and is not described in the FSD."
+    note: "An All Annotations browse screen exists and is not described in the FSD."
+  - id: "S016"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "A new password must be at least 8 characters long."
+    page: null
+    note: "The server requires a minimum password length of 6 (validation text: between 6 and 256 characters)."
+  - id: "S017"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "Users can turn on two-factor sign-in with an authenticator app."
+    page: null
+    note: "The Account page has no two-factor authentication option; only username, email, password, OIDC unlink and age restriction."
+  - id: "S018"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB."
+    page: null
+    note: "The size threshold for the download prompt is 100 MB (104,857,600 bytes)."
+  - id: "S019"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Changes on this page are stored only when the administrator presses Save."
+    page: null
+    note: "The General page has no Save button; valid changes are auto-saved after a 300 ms debounce."
+  - id: "S020"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "A maintenance mode switch blocks all non-admin users from signing in until it is turned off."
+    page: null
+    note: "There is no maintenance mode setting in the general settings form or elsewhere in the code."
+  - id: "S021"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.2"
+      quote: "An invite can be given an expiry date, after which its link stops working."
+    page: null
+    note: "The invite form has only email, libraries, roles and age restriction; no expiry option."
+  - id: "S022"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.2"
+      quote: ""
+    page: null
+    note: "Non-pending users' rows have a change-password button (key icon) in addition to edit and delete."
+  - id: "S023"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Manage Collections is turned on by default for a new library."
+    page: null
+    note: "A new library's Manage Collections default is off (false)."

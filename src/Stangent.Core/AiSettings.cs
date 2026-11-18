@@ -13,7 +13,7 @@ public sealed record AiSettings(string Agent, string Model, string Effort, strin
     public static readonly IReadOnlyList<string> Efforts = ["low", "medium", "high", "xhigh", "max"];
 
     /// <summary>Every AI step's agent, as <c>plugin/agents/</c> names them (a test holds the two equal).</summary>
-    public static readonly IReadOnlyList<string> Agents = ["stangent-bug-reproducer", "stangent-file-finder", "stangent-fixer", "stangent-fsd-reviewer", "stangent-fsd-writer", "stangent-page-verifier", "stangent-page-writer", "stangent-question-writer", "stangent-summary-writer"];
+    public static readonly IReadOnlyList<string> Agents = ["stangent-bug-reproducer", "stangent-file-finder", "stangent-fixer", "stangent-fsd-lister", "stangent-fsd-reviewer", "stangent-fsd-writer", "stangent-page-verifier", "stangent-page-writer", "stangent-question-writer", "stangent-summary-writer"];
 
     /// <summary>Every step's settings at once, so a run with one step unpinned stops before its first call, not halfway (D161).</summary>
     public static IReadOnlyList<AiSettings> ResolveAll(StangentConfig config, string? modelFlag = null, string? effortFlag = null) =>
@@ -21,9 +21,11 @@ public sealed record AiSettings(string Agent, string Model, string Effort, strin
 
     public static AiSettings Resolve(StangentConfig config, string agent, string? modelFlag = null, string? effortFlag = null)
     {
-        var step = config.Ai.Steps.GetValueOrDefault(agent);
-        var (model, modelFrom) = Pick(modelFlag, step?.Model, config.Ai.Model, agent, "model");
-        var (effort, effortFrom) = Pick(effortFlag, step?.Effort, config.Ai.Effort, agent, "effort");
+        // D404: the lister is the review's second call and runs under the review's setting.
+        var key = agent == "stangent-fsd-lister" ? "stangent-fsd-reviewer" : agent;
+        var step = config.Ai.Steps.GetValueOrDefault(key);
+        var (model, modelFrom) = Pick(modelFlag, step?.Model, config.Ai.Model, key, "model");
+        var (effort, effortFrom) = Pick(effortFlag, step?.Effort, config.Ai.Effort, key, "effort");
         var missing = new[] { model is null ? "ai.model" : null, effort is null ? "ai.effort" : null }.OfType<string>().ToList();
         if (missing.Count > 0)
             throw new StangentException("ai_settings_missing",
