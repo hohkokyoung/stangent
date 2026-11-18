@@ -20,7 +20,7 @@ software-engineering pipeline: requirements → code → tests → PR → deploy
 | `docs/cli-conventions.md` | What every `stangent` command prints and returns. |
 | `docs/foundation.md` | The evidence contract, the permanent-id ledger, the client-data check, coverage, driver tests. |
 | `docs/code-graph.md` | The code graph: points, lines, labels, detectors, Python, impact answers. |
-| `docs/spec.md` | The spec: reference pages, the FSD import, links, findings and decisions (Phase 2). |
+| `docs/spec.md` | The spec: reference pages, the FSD import, links, findings and decisions (Phase 2); the FSD as chapter files, `fsd check`, `fsd write`, a new file compared and `fsd take` (phase fs). |
 | `docs/flows.md` | Flows (rebuild layer 3): starts, the walk, files under `specs/flows/`, `flows build`, `show`, `check`. |
 | `docs/pages.md` | Pages (rebuild layer 4): the summary code cuts from flows, `pages summary`, `prepare`, `check`, the writer and its checks. |
 | `docs/tickets.md` | Tickets: Jira through the MCP, pull, starting points, the bundle, bug proof, drafts (Phase 3). |
@@ -72,6 +72,14 @@ plugin/scripts/spec-run.sh --jobs 4 --max-cost 5 --all    # --estimate shows the
 plugin/scripts/ticket-run.sh --max-cost 5 --prove --questions <KEY>... # Phase 3: pull → points → bundle → proof → drafts, headless
 plugin/scripts/fsd-review-run.sh --max-cost 8 <doc>       # layer 5 (D341): two reviewer runs → review-check → review-merge, headless
 stangent flows build && stangent flows check              # rebuild layer 3: flows from the graph (D170–D184)
+stangent fsd import <file>                                # phase fs: the first import writes specs/fsd/<doc>/chapters/; committing them approves it
+stangent fsd check <doc>                                  # before every FSD commit: ids on new headings, refusals, what the commit approves (D380)
+stangent fsd migrate <doc>                                # once, for a document imported before phase fs
+stangent fsd write <doc>                                  # the PM's own words from rulings, uncommitted; then fsd check, read the diff, commit
+plugin/scripts/fsd-write-run.sh --max-cost 2 <doc>        # also drafts "the code is right" rulings by AI, checked by fsd write-check (paid)
+stangent fsd import <newfile> --id <doc>                  # a later client file: compared in .stangent/fsd/<doc>/compare/, never imported over (D385)
+stangent fsd take <doc> --all-updates                     # copy in what only the file changed (or name sections); then fsd check, commit
+stangent fsd export <doc> --whole                         # the whole FSD as one Markdown file, outside git, markers off
 stangent jira login                                       # browser sign-in to Atlassian's MCP v2; token in the OS keychain
 plugin/scripts/fix-run.sh --max-cost 3 --context bundle <KEY>...  # Phase 4: fix start → stangent-fixer → fix check → report; never pushes
 ```

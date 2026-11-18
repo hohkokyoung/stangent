@@ -134,8 +134,9 @@ a symbol point's file, a file a page point's statements cite; not the impact ans
 state, standing, ruling, the PM's words, confidence, who ruled, the review's notes and its lines, whether it **can back
 a ticket** (ruled, a confirmed match, or an unconfirmed match of high confidence; never blank, flagged, not found
 again, not a match, or an unconfirmed medium or low match, D366 (4)), and the full text of each section they sit in.
-`state`: `off`; `none` (the repo has no truth map: nothing about the FSD is judged, as before); `built` (no entries:
-nothing the PM agreed covers the ticket's files). `bundle.md` prints them under "The truth map (what the PM agreed)".
+`state`: `none` (the repo has no truth map: nothing about the FSD is judged, as before); `built` (no entries:
+nothing the PM agreed covers the ticket's files). `off` is no longer written (D381); a bundle built before it with `off` is read
+as no truth map. The sections' text is the committed FSD's (D380), as `fsd rulings-check` wrote it into `truth-map.json`. `bundle.md` prints them under "The truth map (what the PM agreed)".
 
 ## The bug proof (D75, D76, D81)
 

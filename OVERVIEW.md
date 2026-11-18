@@ -1,6 +1,6 @@
 # Stangent in plain words
 
-*What the project does, part by part, with an example of each. Written 2026-11-11 from `spec.md`, `roadmap.md` and `decisions.md` on branch `claude/phase2c-spec` (worktree `.claude/worktrees/phase2c-spec`); updated 2026-11-16 from `roadmap.md`, `decisions.md` (to D359), `phases/r4-pages.md` and the handoff note. If this page and those files disagree, they win; fix this page.*
+*What the project does, part by part, with an example of each. Written 2026-11-11 from `spec.md`, `roadmap.md` and `decisions.md` on branch `claude/phase2c-spec` (worktree `.claude/worktrees/phase2c-spec`); updated 2026-11-16 from `roadmap.md`, `decisions.md` (to D359), `phases/r4-pages.md` and the handoff note; updated 2026-11-18 from `roadmap.md`, `decisions.md` (to D397) and `phases/fs-fsd-source.md` on branch `claude/fsd-source` (worktree `.claude/worktrees/admiring-edison-d9620d`). If this page and those files disagree, they win; fix this page.*
 
 ## The one-paragraph version
 
@@ -13,7 +13,7 @@ It's a .NET command-line tool (`stangent`) plus a Claude Code plugin that calls 
 | # | Piece (from `spec.md`) | In plain words | Status |
 |---|---|---|---|
 | 2 | Code graph | A map of the code: what calls what, front to back | **Rebuilt and checked** (layer 2) |
-| 1 | Requirements / spec | What the app should do, written as checked facts | Flows done (layer 3); developer pages parked (layer 4); an FSD is checked by `stangent fsd review`: an agent reads the code, code checks its quotes (layer 5, built, live run owed); the old route and the requirement steps cut (layer 7) |
+| 1 | Requirements / spec | What the app should do, written as checked facts | Flows done (layer 3); developer pages parked (layer 4); an FSD is checked by `stangent fsd review`: an agent reads the code, code checks its quotes (layer 5, built, live run owed); the old route and the requirement steps cut (layer 7); **the FSD now lives in the repo as Markdown chapters the PM edits, and is the source of truth (phase fs, done 2026-11-18)** |
 | 7 | Tickets | Pull a Jira ticket, hand the developer everything relevant, draft the reply | **Closed (layer 6, D340):** Phase 3's version kept, plus impact told to the developer's session after a test showed it helps name whole fixes |
 | 9 | Agents | Split a ticket into small tasks and run AI helpers on them | **Minimal fix loop built and run 2026-11-16 (D343–D357):** one fix agent per bug (`fix-run.sh <KEY>`, `/stangent:fix`), from the bug proof's failing test, every check run by code, on its own branch, never pushed. First real run (D345): it fixed all 12 Sonarr unit-test bugs with just the ticket; the bundle didn't help and cost 27% more tokens, so the fixer now gets the ticket, the test and the finder's file list; splitting waits for a measured need |
 | 4 | Testing | Tests picked from the map and tagged with the requirement they prove | Not started |
@@ -46,7 +46,7 @@ On 2026-11-07 the spec-to-code links failed their targets: they found 24 of 30 k
 ### Layer 4 — Developer pages ⏸ parked (D323)
 **What it does:** writes one `page.md` per area for a **developer**, by code, no AI (D278, D285). For each click that changes something: a chart with the code's own labels and step numbers, a table of every way it can go (refused, outside service failing, skipped), what runs afterwards on its own, and what happens in shared code.
 **Example:** Sonarr's Series › Add New page, click "Add {title}": "calls SkyHookProxy, outside (step 37)", "saves Series (step 133)", and afterwards the three handlers of `SeriesAddedEvent`.
-**Where it stands:** it passed gates 1 and 2 (nothing lost; a fresh reader got 35 of 36 answers right from the page). Gate 3, "would a developer open it before the code", didn't pass after eight runs, and in a task test the page helped an agent no more than the code alone, so it's parked: code kept, switched off.
+**Where it stands:** it passed gates 1 and 2 (nothing lost; a fresh reader got 35 of 36 answers right from the page). Gate 3, "would a developer open it before the code", didn't pass after eight runs, and in a task test the page helped an agent no more than the code alone, so it's parked: code kept, no further work (it's written with everything else now that switches are gone, D381).
 
 ### Layer 5 — Checking an FSD ✅ built (D341), 🔶 live run owed
 **What it does:** `stangent fsd review <doc>` (or `plugin/scripts/fsd-review-run.sh --max-cost 8 <doc>`). An agent reads the FSD and the code, read-only, and lists gaps, conflicts and screens the FSD leaves out. Code checks every FSD quote word for word and every `file:line` at the reviewed commit, gives one retry, and drops what still fails. Two runs are merged into `specs/fsd/<doc>/review.md`.
@@ -54,12 +54,18 @@ On 2026-11-07 the spec-to-code links failed their targets: they found 24 of 30 k
 **Example:** Kavita's FSD never mentions the "Remove from On Deck" menu entry, so it's reported as a screen action the FSD leaves out, with the code line that proves it.
 **Caveat:** it hasn't run live yet. Headless Claude Code is at its weekly limit until 2026-11-18.
 
+### The FSD in the repo, and the PM's rulings ✅ built (phase fs, D376–D397; truth map, D361–D374)
+**What it does:** the client's Word, PDF or Excel file is converted once; after that, the FSD is Markdown files in the repo, one per chapter (`specs/fsd/<doc>/chapters/`), each heading carrying a hidden permanent id (`<!-- S-0012 -->`) so a rename never loses its rulings. Steps read only what's **committed**: a commit is the approval (D380). The PM rules on each finding of the review ("the code is right", "the FSD is right", or their own words) by number, through Claude (`/stangent:rule`), and `stangent fsd write` turns those rulings into the FSD's own sentences, a "code is right" one drafted by AI and checked by code against the real code line. `stangent fsd check` runs before every commit and refuses anything that could put a ruling on the wrong section. A newer client file is never imported over the PM's edits: it's compared three ways, section by section, and `stangent fsd take` copies in only what the PM picks (with its attached files).
+**Example:** Kavita's FSD says "Deleting a series deletes its folder"; the code asks first. The PM answers "12 code", `fsd write` drafts "Deleting a series asks whether to delete its folder", `fsd check` passes, the PM reads the diff and commits; a ticket "folder not deleted" is then judged against that sentence.
+**Also in this phase:** every on/off switch was removed (D381): a feature is on once built and checked, and one that looks useless is raised with you first. The Word export was cut (D397); `stangent fsd export --whole` gives one Markdown file.
+**Caveat:** tested only on test files and the benchmark apps' planted FSDs; no real client's two versions yet, and the AI drafting step hasn't had a paid live run. The truth map's own measurement (D375) is still owed.
+
 ### Layer 6 — Tickets ✅ closed (D340)
 **What it does today:** `stangent ticket <KEY>` pulls a Jira ticket and builds a bundle for the developer's Claude Code. The bundle holds where in the code to start, the related spec pages and FSD sections, what might break, and the attachments. For a bug, it tries to reproduce it with a failing test before anyone fixes it. It drafts the Jira comment, and a person posts it.
 **What changed (D338):** starting points stay with the agent search, which found the fix file for 36 of 40 bugs (code alone found 19). **Tested (D339):** on 20 Sonarr bugs whose fix touched several files, an agent with `graph impact` named the whole fix 8 times, without it 3 times (a small, fragile gain: better on 5 bugs, worse on 4). So `/stangent:ticket` now tells the developer's session to run it on each file it will change. Comment templates (P7) weren't built: drafts already have every claim checked by code.
 **Still owed:** a re-run of the bug proof, and a test of whether the bundle helps an agent actually fix a bug.
 
-### Layer 7 — Cuts ✅ built (D342), not committed
+### Layer 7 — Cuts ✅ built and committed (D342)
 **What it did:** removed what layer 5 replaced and what never proved it helps (P8): the old link route behind `/stangent:fsd-link` (candidate finder, link judge, agree checker, disprover), requirement steps and the ticket matcher, claims, workflow files, test journeys, `spec ask` and the security flag. About 15,500 lines; build clean, 1861 of 1861 tests, fresh check found no breaks.
 **Example:** `stangent fsd prepare` is gone; `stangent fsd status` now says the next step is `fsd-review-run.sh`.
 **Caveat:** half the cut. The old reference pages and `specs/trace.yaml` stay, frozen, because ticket starting points and bundles still read them. They go once a ticket run without them shows the starting points hold.
@@ -76,12 +82,12 @@ On 2026-11-07 the spec-to-code links failed their targets: they found 24 of 30 k
 - **Fresh checks:** after building, a separate agent with a clean context looks for mistakes. That way the agent that built something never grades its own work (D61, D158).
 - **General fixes only:** a fix that helps only one of the three test apps counts as a fault, because the rules have to work on any project.
 
-## Where things stand today (2026-11-16)
+## Where things stand today (2026-11-18)
 
-- Work is on the `claude/phase2c-spec` worktree, ahead of `main` (`main` stops around D88); 59 commits aren't pushed, and layer 7 isn't committed yet.
-- The rebuild's seven layers are all built or settled. What paid off: code checking the AI's answers, and `graph impact`. Side-by-side tests kept showing an agent reading the code does as well as Stangent's prepared material.
-- Phase 4's minimal fix loop is built, committed and run once (D345, D357). Paid, each asked first: the live FSD review, a ticket run without the old pages, the owed bug-proof re-run.
-- Recent calls left to me: D341 (how the review merges two runs), D342's details (`trace approve`/`attribute` kept; old findings read "unverified").
+- Work is on `claude/fsd-source` (worktree `admiring-edison-d9620d`), 358 commits ahead of `main` and not pushed.
+- Phase fs is done: layers 0–5 built, each fresh-checked and committed; the Word export cut. 1,970 tests passed at the last full run (D396).
+- Next, paid and each asked first: the live FSD review, the truth map's measurement (D375), the live `fsd write` run, a ticket run without the old pages, the bug-proof re-run.
+- Recent calls left to me, worth re-reading: D389 (how phase fs was cut into layers, `fsd migrate`, no git hook), D390 (`ai.enabled` kept; an old setting is ignored with a warning, not refused), D393–D396 (what `fsd check` refuses, what `fsd write` lists instead of guessing, `take` never over a PM's edit).
 
 ## Words you'll see
 
@@ -89,7 +95,9 @@ On 2026-11-07 the spec-to-code links failed their targets: they found 24 of 30 k
 |---|---|
 | **D123** | Decision number 123. One line each in `decisions.md`, full text in `decisions/` |
 | **Layer / Phase** | Layers are the rebuild's order (1–7). Phases (0, 1a–1d, 2a–2c, 3…) are the original build, still running |
-| **FSD** | Functional spec document: the client's Word file describing what the app should do |
+| **FSD** | Functional spec document: what the app should do. It arrives as the client's Word, PDF or Excel file; after import it's the chapter files in the repo |
+| **Chapter file** | One Markdown file per FSD chapter, under `specs/fsd/<doc>/chapters/`, the copy the PM edits |
+| **Ruling** | The PM's answer to one review finding, kept in `rulings.yaml` until it's written into the FSD's words |
 | **Point** | A function or method in the graph |
 | **Flow** | One user or system action, laid out step by step by code |
 | **Area** | A group of flows (one part of the app, as its users name it), confirmed by a person once |

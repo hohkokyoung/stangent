@@ -1,14 +1,14 @@
 ---
 phase: fs
 name: fsd source
-status: in progress
-consumes: { store: 1, cli-conventions: 4, telemetry-event: 3, source-document: 4, rulings: 1, truth-map: 1, ticket-bundle: 3 }
+status: done
+consumes: { store: 1, cli-conventions: 4, telemetry-event: 3, source-document: 4, rulings: 2, truth-map: 2, ticket-bundle: 3 }
 provides: {}
 ---
 
 # The FSD in the repo is the source of truth
 
-**Decided 2026-11-17 (D376–D388); planned the same day (D389). Layer 0 built and fresh-checked (D390); layer 1 built and fresh-checked (D391); layer 2 built and fresh-checked (D392); layer 3 built and fresh-checked (D393); layer 4 built and fresh-checked (D394); layer 5 built and fresh-checked (D395); its two gaps closed, built and fresh-checked (D396).** After import the client's file never comes back (D376).
+**Decided 2026-11-17 (D376–D388); planned the same day (D389). Layer 0 built and fresh-checked (D390); layer 1 built and fresh-checked (D391); layer 2 built and fresh-checked (D392); layer 3 built and fresh-checked (D393); layer 4 built and fresh-checked (D394); layer 5 built and fresh-checked (D395); its two gaps closed, built and fresh-checked (D396); layer 6 cut (D397). Phase done 2026-11-18: [end-of-phase report](#end-of-phase-report) (D398).** After import the client's file never comes back (D376).
 The FSD is one Markdown file per chapter, edited in git (D377), and a commit is the approval (D380). A PM's ruling
 becomes the FSD's own words (D379), and component switches go (D381). This phase builds that.
 
@@ -48,7 +48,7 @@ stangent fsd export <doc> --whole  one Markdown file outside git                
    the guarantee, and `/stangent:rule` runs `fsd check` before it says "commit".
 3. **Existing documents move once**: `stangent fsd migrate <doc>` writes the chapters from today's `document.json`
    sections (ids kept, markers added), drops `document.md` and the sections from `document.json`, and is refused on
-   uncommitted changes under `specs/fsd/<doc>/`. The Kavita and Sonarr benchmark clones are migrated free.
+   uncommitted changes under `specs/fsd/<doc>/`. The Kavita and Sonarr benchmark clones are migrated free. *(Not done: they're migrated when the next step on each needs its FSD, asked first, D398 (1).)*
 4. **`source-document` goes to v4 once**, at layer 2, and layer 5's comparison fields extend v4 before the phase ends.
    No consumer is updated in between, so a second bump would mark the same phases twice.
 5. **Word export** (D378's "or Word") was to be the last layer. **Cut by the owner (D397, 2026-11-18):** no client needs a Word copy now; the whole-document view is the Markdown `fsd export --whole`.
@@ -207,3 +207,78 @@ Not built: the owner cut it on 2026-11-18 (D397). What it would have been, kept 
 - Docs: `docs/spec.md` (import, versions, the truth map), `docs/cli-conventions.md`, `docs/tickets.md`; `CLAUDE.md`'s
   commands; `OVERVIEW.md` through `plain-overview`.
 - The end-of-phase report (`docs/phases.md`), with the ripple list and the migrated benchmark clones.
+
+## End-of-phase report
+
+Written 2026-11-18, on `claude/fsd-source` at `7e34fac` plus this report's docs (not pushed; `main` is 358 commits behind).
+
+### 1. What was built
+
+The FSD in the repo is now the source of truth. After the first import the client's file never comes back (D376): the FSD
+is Markdown chapter files the PM edits in git, every step reads them as committed, and a commit is the approval (D380).
+
+| Layer | What it built | Commit | Fresh check (Sonnet, narrow, D158) |
+|---|---|---|---|
+| 0 · No switches (D381, D388, D390) | `StangentComponents`, `stangent components` and every `IsOn` gone; old keys in `stangent.yaml` ignored with a warning; `ai.enabled` kept (D24); `findings` and section approval removed | `3951830` | ~146K tokens: 2 defects (switch words left in help texts and docs; an unreachable `component_off`), fixed; no wrong result |
+| 1 · Chapter files (D377, D378, D382, D384, D391) | `fsd import` writes `specs/fsd/<doc>/chapters/` with `<!-- S-0012 -->` markers, no `document.md`; `fsd migrate`; `fsd export --whole`; the writer's round-trip check | `4d1bf2f` | ~120K: 2 defects (the attached-files section's hidden number refused the import; a stray fence refused it), fixed |
+| 2 · Read as committed (D380, D383, D392; `source-document` v4) | `FsdDocument.Load`: chapters, facts, ledger and attachment files as of HEAD, cached by tree hash; `document.json` loses `sections` and `markdown`, gains `importCommit`; `uncommitted` warnings | `8541c5b` | ~148K: 4 defects (facts, ledger and attachments read from the working tree; `fsd tables` crash and sheet match), fixed |
+| 3 · `fsd check` (D380, D382, D384, D393) | ids for new headings, the refusals (damaged, repeated, unknown, old, moved markers; a marker on another section's words; rulings on a removed section), number warnings, the change list a commit approves | `dcbd450` | ~105K: 3 defects (a marker laid or swapped onto another section's heading passed), fixed |
+| 4 · `fsd write` (D379, D386, D387, D394; `rulings` v2, `truth-map` v2) | the PM's words placed by code; "code is right" drafted by `stangent-fsd-writer` and checked by `fsd write-check` (quote word for word, cites real and inside the link); a written ruling becomes a confirmed match with `writtenFrom`; `fsd-write-run.sh` | `8c80ab7` | ~131K: 2 defects and a schema gap (`writtenFrom.cites`), fixed; no unasked or uncited sentence through |
+| 5 · A new file compared (D385, D388, D395) | `fsd import` of a later file writes `.stangent/fsd/<doc>/compare/`, three-way per section against `fileSections`; `fsd diff`, `fsd resolve`, `fsd take`; approve, reject, promote, discard, `--partial`, `candidate/`, `sections/` removed | `d8766b6` | ~143K: 3 defects (a fallback base could offer reverting a PM edit; reread overwrote an uncommitted take's record; take could stop halfway), fixed |
+| D396 · Attachments and trace marks | `fsd take` brings a section's attachments (ids by bytes, then name, in the section); `fsd check` marks a removed section's `specs/trace.yaml` entries `(removed S-0004) 4` | `c6acd93` | ~107K: 2 defects (a restored entry's number, a taken record's `sectionNumber`), fixed |
+| 6 · Word export (D378) | **cut by the owner (D397)**: no client needs a Word copy now; `fsd export --whole` stays Markdown | `7e34fac` | — |
+
+No fresh check was re-run after its fixes. Tests: 1,911 at layer 0's check, 1,970 at the last full run (D396), all
+passing. Commands now: `fsd import`, `migrate`, `check`, `write`, `write-check`, `diff`, `resolve`, `take`, `export`,
+`status`, `outline`, `show`; the plugin's `/stangent:rule` runs write, then check, then reads the chapter diff back.
+
+### 2. Benchmark results
+
+None run: phase fs changes where the FSD lives and who approves it, not what any step finds. Kavita's and Sonarr's
+planted FSDs were migrated in tests, byte for byte (layer 1). **The benchmark clones themselves are not migrated**
+(D398 (1)): `~/stangent-bench/kavita` and `~/stangent-bench/sonarr` both still hold `document.md` and their sections
+in `document.json`; Kavita's `specs/fsd/` is untracked there, and Sonarr's `specs/` is in `.git/info/exclude` so
+`fix start` sees a clean base. Until each is migrated and committed on a branch there, any FSD step on it stops with
+`fsd_not_migrated` or `fsd_not_committed`. Left unchanged, as the owner asked; done when the next step needs it.
+
+### 3. Decisions made or changed
+
+D376–D388 (the design), D389 (the plan, its calls), D390–D396 (one per layer, with its calls), D397 (Word export cut),
+D398 (closing calls). Changed: D131 (`document.md` was a generated copy; now gone), D120 and D121 (switches; rule 8 is
+now D381's), D378 ("Markdown or Word" → Markdown), D389 (six layers built, not seven; clones migrated when needed).
+
+### 4. Known gaps
+
+- **No real client document with two versions** has been through the comparison (D56); only fixture `.docx` pairs.
+- **No live AI run of `fsd write`:** the drafter has run only with fakes; the first is with D375's paid run, asked first.
+- Listed and left (D393–D396): ids taken before chapters are written can skip ids if the write fails (never reused);
+  `--removed` doesn't mark the id removed in `ids.json` (`old-id` guards it); a commit that skips `fsd check` leaves a
+  deleted marker's rulings on no section until the next review; `write-check` judges "inside the link" by today's graph;
+  a restated statement found anywhere in a changed section becomes a match; a moved section is moved by hand; a
+  document from before layer 5 gets no update offers until taken by hand; take replaces an attachment record whole
+  (a hand-added field goes); a throw midway through take leaves folders and records out of step.
+- Features turned on by D381 that never ran on a real repo (D388): `truth-verdict`, `ticket-excel-text`,
+  `follow-moves`, `schema-once`, `attachment-home`, `statement-update`, `table-facts`; `root-screens` and
+  `route-render` only on the pilot.
+- Code text still from before: the completeness problem line says "aren't in document.md"; `TruthList`'s comment
+  still speaks of the `truth-verdict` component.
+
+### 5. Impact on other phases (D20)
+
+| Contract | Version | Provided by | Consumers now `needs review` |
+|---|---|---|---|
+| `cli-conventions` | 3 → 4 (no `components` field) | 0 | 1a, 1b, 1c, 1d, 2a, 2b, 2c, 3, 4, tm |
+| `telemetry-event` | 2 → 3 (no component attributes) | 0 | the same, except tm |
+| `source-document` | 3 → 4 (no `sections`/`markdown`, `importCommit`; later optional `fileSections`, `converter`, attachments, no bump) | 2b | 2c, 3, tm |
+| `rulings` | 1 → 2 (`inFsd` gone, `writtenFrom`) | tm | tm itself (its front matter caught up only now, D398 (2)) |
+| `truth-map` | 1 → 2 (`writtenFrom`, `written` counts) | tm | tm; Phase 3 reads `truth-map.json` for the bundle's `truth` (roadmap marks it; its front matter doesn't list the contract) |
+
+`phases check` ok after this report. Nothing downstream was changed by this phase's consumers' own follow-ups yet.
+
+### 6. Follow-ups
+
+- Migrate each benchmark clone's FSD when its next step needs it (Kavita first, for D375), asked first (D398 (1)).
+- Phase 3's review: the bundle's `truth` shows no `writtenFrom`; check a written ruling reads right in a bundle and a draft.
+- tm's review: `fsd rule` on a written entry, and D375's measurement with a live `fsd write` on Kavita's rulings (paid).
+- Two stale code texts above (one-line fixes).
+- A Word export comes back only by a new decision, when a client needs one (D397).

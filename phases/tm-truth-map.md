@@ -3,7 +3,7 @@ phase: tm
 name: truth map
 status: needs review
 consumes: { store: 1, cli-conventions: 3, code-graph: 7, flows: 6, source-document: 3, ticket-bundle: 3, bug-proof: 2 }
-provides: { rulings: 1, truth-map: 1 }
+provides: { rulings: 2, truth-map: 2 }
 ---
 
 # The truth map
