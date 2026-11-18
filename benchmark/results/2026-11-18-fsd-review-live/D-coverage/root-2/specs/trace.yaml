@@ -1,0 +1,63 @@
+version: 4
+entries:
+  - id: "S001"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "A new password must be at least 8 characters long."
+    page: null
+    note: "The server requires a password of at least 6 characters (RequiredLength = 6). The change-password form only marks the field required, with no 8-character rule."
+  - id: "S002"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Manage Collections is turned on by default for a new library."
+    page: null
+    note: "The library settings form defaults manageCollections to false."
+  - id: "S003"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Include in Dashboard and Include in Search are turned on by default."
+    page: null
+    note: "includeInDashboard and includeInSearch both default to true in the library form."
+  - id: "S004"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Cache Size must be at least 50 MB"
+    page: null
+    note: "The cacheSize validator has a minimum of 50."
+  - id: "S005"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Days of Backups and Days of Logs each accept a value from 1 to 30"
+    page: null
+    note: "totalBackups and totalLogs are validated with min 1 and max 30. I did not check the default of 30."
+  - id: "S006"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/genres"
+      quote: "A Browse Genres screen exists but the FSD describes only People and Tags under Browse."
+    note: "A Browse Genres screen exists but the FSD describes only People and Tags under Browse."
+  - id: "S007"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/annotations"
+      quote: "An All Annotations screen exists under Browse; the FSD does not describe it."
+    note: "An All Annotations screen exists under Browse; the FSD does not describe it."
+  - id: "S008"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "A PDF reader route exists; the FSD describes only the image and book readers."
+    note: "A PDF reader route exists; the FSD describes only the image and book readers."

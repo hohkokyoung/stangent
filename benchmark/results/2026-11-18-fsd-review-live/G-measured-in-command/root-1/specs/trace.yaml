@@ -1,0 +1,136 @@
+version: 4
+entries:
+  - id: "S001"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "1"
+      quote: "Each row on the Home screen can be collapsed, and Kavita remembers the choice on the next visit."
+    page: null
+    note: "The dashboard and carousel components have no collapse behaviour or remembered collapsed state."
+  - id: "S002"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "2.1"
+      quote: "A Random button on the library screen opens a randomly chosen series from that library."
+    page: null
+    note: "No Random button or random-series action exists on the library screen."
+  - id: "S003"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: "Manga series open on the Volumes tab by default."
+    page: null
+    note: "For manga (and non-comic, non-book) libraries the default tab is Storyline, not Volumes; only book/light novel libraries default to Volumes."
+  - id: "S004"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.1"
+      quote: "Brightness can be set anywhere from 0% to 100%."
+    page: null
+    note: "The brightness field is validated with a minimum of 10 and a maximum of 100."
+  - id: "S005"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: "Font size can be set from 50% to 200%."
+    page: null
+    note: "Reading profile validation allows book reader font size from 50 to 300."
+  - id: "S006"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "5"
+      quote: "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it."
+    page: null
+    note: "Removal is a scheduled cleanup task, and only for series that are Completed or Cancelled and 100% read; it is not immediate on finishing."
+  - id: "S007"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "6.2"
+      quote: "The series in a collection can be exported to a CSV file."
+    page: null
+    note: "No export or CSV feature exists in the collections UI."
+  - id: "S008"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "A filter box for finding items appears once a list has more than 25 items."
+    page: null
+    note: "The filter box appears when the list has more than 10 items."
+  - id: "S009"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "The owner can share a reading list through a public link that opens without signing in."
+    page: null
+    note: "No public share link or share token feature exists for reading lists."
+  - id: "S010"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/genres"
+      quote: "A Genres browse screen lists genres with series and issue counts; the FSD describes only People and Tags."
+    note: "A Genres browse screen lists genres with series and issue counts; the FSD describes only People and Tags."
+  - id: "S011"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/annotations"
+      quote: "An All Annotations browse screen exists but is not described in the FSD."
+    note: "An All Annotations browse screen exists but is not described in the FSD."
+  - id: "S012"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "A new password must be at least 8 characters long."
+    page: null
+    note: "The identity password option requires a length of 6."
+  - id: "S013"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB."
+    page: null
+    note: "The size warning threshold is 100 MB (104857600 bytes)."
+  - id: "S014"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Changes on this page are stored only when the administrator presses Save."
+    page: null
+    note: "Settings are auto-saved after a 300 ms debounce whenever the form is valid; there is no Save button."
+  - id: "S015"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "A maintenance mode switch blocks all non-admin users from signing in until it is turned off."
+    page: null
+    note: "No maintenance mode setting exists; the only 'maintenance' in the server code is the nightly maintenance task."
+  - id: "S016"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.2"
+      quote: "An invite can be given an expiry date, after which its link stops working."
+    page: null
+    note: "The invite form holds only email, libraries, roles and age restriction; there is no expiry field."
+  - id: "S017"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Manage Collections is turned on by default for a new library."
+    page: null
+    note: "The add-library form defaults manageCollections to false (the entity default is true but the form overrides it)."

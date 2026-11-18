@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Client code read-only (T.8, D126), a PreToolUse hook for analysis steps. It stops a step writing anywhere but stangent's
-# own .stangent/ folder, and running commands. Exit 2 refuses the tool call and shows the reason to the agent.
+# own .stangent/ folder (or the one folder STANGENT_WRITE_DIR names: the FSD reviewer's answer, D401), and running
+# commands. Exit 2 refuses the tool call and shows the reason to the agent.
 #
 # Enforced when STANGENT_READ_ONLY is set (a driver's analysis step), or when the agent is one of stangent's, from the
 # hook's `agent_type`. The bug reproducer and the fixer are the exceptions: they build, run and write code (D75, D343),
@@ -33,6 +34,16 @@ case "$tool" in
     while [ ! -d "$dir" ] && [ "$dir" != / ]; do rest="/$(basename "$dir")$rest"; dir="$(dirname "$dir")"; done
     real="$(cd "$dir" && pwd -P)$rest"
     base="$(cd "$cwd" 2>/dev/null && pwd -P)" || refuse "no working folder"
+    # D401: a driver may name one more folder, outside the app, for a step's answer file: an absolute path that is
+    # neither the working folder nor any folder holding it, so a stray value (a home folder left in a shell) opens nothing.
+    case "${STANGENT_WRITE_DIR:-}" in
+      /*) if wd="$(cd "$STANGENT_WRITE_DIR" 2>/dev/null && pwd -P)" && [ "$wd" != / ]; then
+            case "$base/" in
+              "$wd/"*) ;;
+              *) case "$real/" in "$wd/"*) exit 0 ;; esac ;;
+            esac
+          fi ;;
+    esac
     case "$real/" in
       "$base/.stangent/"*) exit 0 ;;
       *) refuse "$path is outside .stangent/" ;;

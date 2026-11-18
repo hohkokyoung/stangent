@@ -1,0 +1,388 @@
+{
+  "doc": "kavita-fsd",
+  "findings": [
+    {
+      "state": "gap",
+      "section": "1",
+      "fsdQuote": "Each row on the Home screen can be collapsed, and Kavita remembers the choice on the next visit.",
+      "screen": null,
+      "note": "The dashboard and carousel components have no collapse behaviour or remembered collapsed state.",
+      "evidence": [
+        "UI/Web/src/app/dashboard/_components/dashboard.component.html:78",
+        "UI/Web/src/app/dashboard/_components/dashboard.component.ts:297"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "2.1",
+      "fsdQuote": "A Random button on the library screen opens a randomly chosen series from that library.",
+      "screen": null,
+      "note": "No Random button or random-series action exists on the library screen.",
+      "evidence": [
+        "UI/Web/src/app/_routes/library-detail-routing.module.ts",
+        "UI/Web/src/app/library-detail"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "3.1",
+      "fsdQuote": "Manga series open on the Volumes tab by default.",
+      "screen": null,
+      "note": "For manga (and non-comic, non-book) libraries the default tab is Storyline, not Volumes; only book/light novel libraries default to Volumes.",
+      "evidence": [
+        "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:857",
+        "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:835"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "4.1",
+      "fsdQuote": "Brightness can be set anywhere from 0% to 100%.",
+      "screen": null,
+      "note": "The brightness field is validated with a minimum of 10 and a maximum of 100.",
+      "evidence": [
+        "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:328",
+        "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:329"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "4.2",
+      "fsdQuote": "Font size can be set from 50% to 200%.",
+      "screen": null,
+      "note": "Reading profile validation allows book reader font size from 50 to 300.",
+      "evidence": [
+        "UI/Web/src/app/user-settings/manage-reading-profiles/manage-reading-profiles.component.ts:185",
+        "UI/Web/src/app/user-settings/manage-reading-profiles/manage-reading-profiles.component.ts:186"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "5",
+      "fsdQuote": "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it.",
+      "screen": null,
+      "note": "Removal is a scheduled cleanup task, and only for series that are Completed or Cancelled and 100% read; it is not immediate on finishing.",
+      "evidence": [
+        "Kavita.Services/CleanupService.cs:332",
+        "Kavita.Services/CleanupService.cs:345",
+        "Kavita.Services/TaskScheduler.cs:230"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "6.2",
+      "fsdQuote": "The series in a collection can be exported to a CSV file.",
+      "screen": null,
+      "note": "No export or CSV feature exists in the collections UI.",
+      "evidence": [
+        "UI/Web/src/app/collections/_components/collection-detail/collection-detail.component.ts"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "7.2",
+      "fsdQuote": "A filter box for finding items appears once a list has more than 25 items.",
+      "screen": null,
+      "note": "The filter box appears when the list has more than 10 items.",
+      "evidence": [
+        "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:204"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "7.2",
+      "fsdQuote": "The owner can share a reading list through a public link that opens without signing in.",
+      "screen": null,
+      "note": "No public share link or share token feature exists for reading lists.",
+      "evidence": [
+        "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html"
+      ]
+    },
+    {
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "screen": "/browse/genres",
+      "note": "A Genres browse screen lists genres with series and issue counts; the FSD describes only People and Tags.",
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:23"
+      ]
+    },
+    {
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "screen": "/browse/annotations",
+      "note": "An All Annotations browse screen exists but is not described in the FSD.",
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:25"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "9.1",
+      "fsdQuote": "A new password must be at least 8 characters long.",
+      "screen": null,
+      "note": "The identity password option requires a length of 6.",
+      "evidence": [
+        "Kavita.Server/Extensions/IdentityServiceExtensions.cs:59"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "9.2",
+      "fsdQuote": "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB.",
+      "screen": null,
+      "note": "The size warning threshold is 100 MB (104857600 bytes).",
+      "evidence": [
+        "UI/Web/src/app/shared/_services/download.service.ts:76"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "10.1",
+      "fsdQuote": "Changes on this page are stored only when the administrator presses Save.",
+      "screen": null,
+      "note": "Settings are auto-saved after a 300 ms debounce whenever the form is valid; there is no Save button.",
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:114",
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:117"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "10.1",
+      "fsdQuote": "A maintenance mode switch blocks all non-admin users from signing in until it is turned off.",
+      "screen": null,
+      "note": "No maintenance mode setting exists; the only 'maintenance' in the server code is the nightly maintenance task.",
+      "evidence": [
+        "Kavita.Server/Controllers/ServerController.cs:79",
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:60"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "10.2",
+      "fsdQuote": "An invite can be given an expiry date, after which its link stops working.",
+      "screen": null,
+      "note": "The invite form holds only email, libraries, roles and age restriction; there is no expiry field.",
+      "evidence": [
+        "UI/Web/src/app/admin/invite-user/invite-user.component.ts:25",
+        "UI/Web/src/app/admin/invite-user/invite-user.component.ts:52"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "10.3",
+      "fsdQuote": "Manage Collections is turned on by default for a new library.",
+      "screen": null,
+      "note": "The add-library form defaults manageCollections to false (the entity default is true but the form overrides it).",
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:157",
+        "Kavita.Models/Entities/Library.cs:36"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "1",
+      "fsdQuote": "The On Deck row shows up to 50 series.",
+      "screen": null,
+      "note": "The dashboard loads On Deck with a page size of 20, not 50.",
+      "evidence": [
+        "UI/Web/src/app/dashboard/_components/dashboard.component.ts:194"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "1",
+      "fsdQuote": "Each row on the Home screen can be collapsed, and Kavita remembers the choice on the next visit.",
+      "screen": null,
+      "note": "No collapse feature exists for dashboard rows (no collapse logic in dashboard or card carousel components).",
+      "evidence": [
+        "UI/Web/src/app/dashboard/_components/dashboard.component.ts"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "2.1",
+      "fsdQuote": "A Random button on the library screen opens a randomly chosen series from that library.",
+      "screen": null,
+      "note": "The library screen has no Random button or action; random is only used to pick the dashboard genre.",
+      "evidence": [
+        "UI/Web/src/app/_services/action-factory.service.ts",
+        "UI/Web/src/app/dashboard/_components/dashboard.component.ts:244"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "5",
+      "fsdQuote": "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it.",
+      "screen": null,
+      "note": "No code removes a series from Want to Read when it is finished; removal is only manual or via scrobble sync.",
+      "evidence": [
+        "Kavita.Services/Plus/ScrobbleService/SeriesScrobbleService.cs:360"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "6.2",
+      "fsdQuote": "The series in a collection can be exported to a CSV file.",
+      "screen": null,
+      "note": "The collection detail screen has no export/CSV feature.",
+      "evidence": [
+        "UI/Web/src/app/collections/_components/collection-detail/collection-detail.component.ts"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "7.2",
+      "fsdQuote": "A filter box for finding items appears once a list has more than 25 items.",
+      "screen": null,
+      "note": "The filter box appears when the list has more than 10 items.",
+      "evidence": [
+        "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:204"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "7.2",
+      "fsdQuote": "The owner can share a reading list through a public link that opens without signing in.",
+      "screen": null,
+      "note": "No public share link feature exists on the reading list detail screen.",
+      "evidence": [
+        "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.ts"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "9.1",
+      "fsdQuote": "A new password must be at least 8 characters long.",
+      "screen": null,
+      "note": "The server requires a minimum password length of 6.",
+      "evidence": [
+        "Kavita.Server/Extensions/IdentityServiceExtensions.cs:59"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "9.1",
+      "fsdQuote": "Users can turn on two-factor sign-in with an authenticator app.",
+      "screen": null,
+      "note": "No two-factor/authenticator option exists in the user settings pages.",
+      "evidence": [
+        "UI/Web/src/app/user-settings/account-settings/account-settings.component.html"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "9.2",
+      "fsdQuote": "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB.",
+      "screen": null,
+      "note": "The size warning threshold is 100 MB (104857600 bytes).",
+      "evidence": [
+        "UI/Web/src/app/shared/_services/download.service.ts:76"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "10.1",
+      "fsdQuote": "Changes on this page are stored only when the administrator presses Save.",
+      "screen": null,
+      "note": "The page autosaves: valid form changes are sent to the server after a 300ms debounce, with no Save button.",
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:114"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "10.1",
+      "fsdQuote": "A maintenance mode switch blocks all non-admin users from signing in until it is turned off.",
+      "screen": null,
+      "note": "No maintenance mode setting exists in the code.",
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:60"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "10.2",
+      "fsdQuote": "An invite can be given an expiry date, after which its link stops working.",
+      "screen": null,
+      "note": "The invite form has no expiry option.",
+      "evidence": [
+        "UI/Web/src/app/admin/invite-user/invite-user.component.ts:52"
+      ]
+    },
+    {
+      "state": "undocumented",
+      "section": "10.2",
+      "fsdQuote": null,
+      "screen": null,
+      "note": "Non-pending users' rows have a change-password button for admins, not mentioned in the FSD.",
+      "evidence": [
+        "UI/Web/src/app/admin/manage-users/manage-users.component.html:199"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "10.3",
+      "fsdQuote": "Manage Collections is turned on by default for a new library.",
+      "screen": null,
+      "note": "The new-library default for manageCollections is false.",
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:157"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "4.1",
+      "fsdQuote": "Brightness can be set anywhere from 0% to 100%.",
+      "screen": null,
+      "note": "Brightness (darkness) is validated between 10 and 100.",
+      "evidence": [
+        "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:328",
+        "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:329"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "4.1",
+      "fsdQuote": "A slideshow mode turns the page automatically after a set number of seconds.",
+      "screen": null,
+      "note": "The image reader has no slideshow/auto-page feature.",
+      "evidence": [
+        "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:282"
+      ]
+    },
+    {
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "screen": "/browse/genres",
+      "note": "A Browse Genres screen exists but the FSD does not describe it.",
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:23"
+      ]
+    },
+    {
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "screen": "/browse/annotations",
+      "note": "An All Annotations browse screen exists but the FSD does not describe it.",
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:25"
+      ]
+    },
+    {
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "screen": "/all-filters",
+      "note": "A smart filters listing screen exists outside the FSD's described screens.",
+      "evidence": [
+        "UI/Web/src/app/app-routing.module.ts:44"
+      ]
+    }
+  ]
+}

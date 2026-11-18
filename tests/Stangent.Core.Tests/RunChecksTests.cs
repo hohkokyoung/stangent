@@ -183,12 +183,33 @@ public sealed class ReadOnlyHookTests : IDisposable
 
     public void Dispose() => rig.Dispose();
 
-    DriverResult Hook(string tool, string? path = null, string? agent = null, bool driver = false)
+    DriverResult Hook(string tool, string? path = null, string? agent = null, bool driver = false, string? writeDir = null)
     {
         var input = new JsonObject { ["tool_name"] = tool, ["cwd"] = Cwd, ["tool_input"] = new JsonObject { ["file_path"] = path, ["command"] = "dotnet build" }, ["agent_type"] = agent };
         var file = rig.Put("hook-input.json", input.ToJsonString());
-        var script = rig.WriteScript("hook.sh", $"{(driver ? "export STANGENT_READ_ONLY=1;" : "")} '{Path.Combine(DriverRig.RepoRoot, "plugin/scripts/read-only-hook.sh")}' < '{file}'");
+        var script = rig.WriteScript("hook.sh", $"{(driver ? "export STANGENT_READ_ONLY=1;" : "")}{(writeDir is null ? "" : $" export STANGENT_WRITE_DIR='{writeDir}';")} '{Path.Combine(DriverRig.RepoRoot, "plugin/scripts/read-only-hook.sh")}' < '{file}'");
         return rig.Run(script);
+    }
+
+    [Fact]
+    public void A_driver_may_name_one_more_folder_for_the_answer_and_nothing_beside_it()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        var answers = Path.GetFullPath(Path.Combine(rig.Work, "..", "answers-" + Guid.NewGuid().ToString("N")[..8]));
+        Directory.CreateDirectory(answers);
+        try
+        {
+            Assert.Equal(0, Hook("Write", Path.Combine(answers, "output.json"), driver: true, writeDir: answers).Exit);
+            Assert.Equal(2, Hook("Write", Path.Combine(answers, "output.json"), driver: true).Exit);   // not named: refused
+            Assert.Equal(2, Hook("Write", answers + "-x/output.json", driver: true, writeDir: answers).Exit);   // a folder beside it
+            Assert.Equal(2, Hook("Write", "src/App.cs", driver: true, writeDir: answers).Exit);   // the app stays read-only
+            Assert.Equal(2, Hook("Bash", null, driver: true, writeDir: answers).Exit);
+            Assert.Equal(2, Hook("Write", "/etc/hosts", driver: true, writeDir: "/").Exit);   // "/" names nothing
+            Assert.Equal(2, Hook("Write", "src/App.cs", driver: true, writeDir: Cwd).Exit);   // nor the working folder
+            Assert.Equal(2, Hook("Write", "src/App.cs", driver: true, writeDir: Path.GetDirectoryName(Cwd)).Exit);   // nor a folder holding it
+            Assert.Equal(2, Hook("Write", Path.Combine(Cwd, "src/App.cs"), driver: true, writeDir: "src").Exit);   // nor a relative one
+        }
+        finally { Directory.Delete(answers, recursive: true); }
     }
 
     [Theory]

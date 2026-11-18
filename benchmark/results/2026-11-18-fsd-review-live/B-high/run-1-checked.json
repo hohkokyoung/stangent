@@ -1,0 +1,538 @@
+{
+  "commit": "f4abc65c5e04bf2ccdbd681550c92a3ed1b50893",
+  "doc": "kavita-fsd",
+  "dropped": [],
+  "findings": [
+    {
+      "evidence": [
+        "UI/Web/src/app/dashboard/_components/dashboard.component.ts:194"
+      ],
+      "fsdQuote": "The On Deck row shows up to 50 series.",
+      "note": "The On Deck row loads page 1 with a page size of 20, so it shows 20 series at first (more via the carousel's next-page loader), not 50.",
+      "screen": null,
+      "section": "1",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/carousel/_components/carousel-reel/carousel-reel.component.html:9-28"
+      ],
+      "fsdQuote": "Each row on the Home screen can be collapsed, and Kavita remembers the choice on the next visit.",
+      "note": "The carousel row has only a title and prev/next buttons; there is no collapse control and nothing stores a collapsed state.",
+      "screen": null,
+      "section": "1",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/app-routing.module.ts:131",
+        "UI/Web/src/app/dashboard/_components/dashboard.component.ts:57-62",
+        "UI/Web/src/app/dashboard/_components/dashboard.component.ts:241-247"
+      ],
+      "fsdQuote": "The Home screen is the default screen and shows rows of series such as On Deck, Recently Updated Series, Newly Added Series and More In a randomly picked genre.",
+      "note": "The root path redirects to home, and the dashboard renders On Deck, Recently Updated, Newly Added and More In Genre streams; the genre is picked at random.",
+      "screen": null,
+      "section": "1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/dashboard/_components/dashboard.component.ts:315-357"
+      ],
+      "fsdQuote": "Clicking the title of one of these rows opens All Series with a matching filter and sort order.",
+      "note": "Each row's title click builds a filter and sort (last chapter added, read progress, created, or genre) and navigates to all-series.",
+      "screen": null,
+      "section": "1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/preference-nav/preference-nav.component.ts:253"
+      ],
+      "fsdQuote": "Users without the Read Only role can choose which rows appear, and in what order, from the Customize page in their settings.",
+      "note": "The Customize settings tab is hidden from users with the Read Only role.",
+      "screen": null,
+      "section": "1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/library-detail/library-detail.component.html:4-10"
+      ],
+      "fsdQuote": "The library screen shows the library's name, its actions menu and the number of series it holds.",
+      "note": "The header shows the library name, an actions menu and the series count.",
+      "screen": null,
+      "section": "2.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/library-detail/library-detail.component.html:22-34"
+      ],
+      "fsdQuote": "Series appear as cards with a jump bar for skipping to a starting letter, and several series can be selected at once for a bulk action.",
+      "note": "Series are shown as cards in a layout with jump bar keys and bulk operations, with selection allowed.",
+      "screen": null,
+      "section": "2.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/library-detail/library-detail.component.html:1-42"
+      ],
+      "fsdQuote": "A Random button on the library screen opens a randomly chosen series from that library.",
+      "note": "The library screen template has no Random button and the library-detail code has no random-series logic.",
+      "screen": null,
+      "section": "2.1",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/metadata-filter/_components/metadata-builder/metadata-builder.component.ts:59"
+      ],
+      "fsdQuote": "The filter panel builds rules on fields such as genre, tag, people, read progress, rating and publication status, and the rules can match all or any of them.",
+      "note": "The metadata builder offers an And/Or combination selector over the filter statements.",
+      "screen": null,
+      "section": "2.2",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/metadata-filter/metadata-filter.component.html:37-57",
+        "UI/Web/src/app/metadata-filter/filter-settings.ts:30-33"
+      ],
+      "fsdQuote": "Results can be sorted by a chosen field in either direction and limited to a set number, and a filter can be named and saved as a smart filter.",
+      "note": "The panel has a limit input, sort field select with an ascending/descending button, and a name input for saving a smart filter on series.",
+      "screen": null,
+      "section": "2.2",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/all-series/_components/all-series/all-series.component.html:3-29"
+      ],
+      "fsdQuote": "All Series lists the series from every library the user can access, with the same filter panel and bulk selection as a library screen.",
+      "note": "All Series uses the same card layout with a filter panel and bulk operations.",
+      "screen": null,
+      "section": "2.3",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:84-93"
+      ],
+      "fsdQuote": "The arrow beside the Read button offers the same action in incognito mode, which does not save progress.",
+      "note": "The split dropdown beside Read has one item that reads in incognito mode (glasses icon).",
+      "screen": null,
+      "section": "3.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:99-103"
+      ],
+      "fsdQuote": "A star button adds the series to Want to Read or removes it.",
+      "note": "A star button toggles Want to Read with an add/remove tooltip.",
+      "screen": null,
+      "section": "3.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:106-112",
+        "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:149",
+        "UI/Web/src/app/series-detail/_components/download-button/download-button.component.html:2"
+      ],
+      "fsdQuote": "The Edit button is shown only to administrators, and the Download button only to administrators and users with the Download role.",
+      "note": "The Edit button is wrapped in an admin check, and the download button is only rendered when canDownload() is true.",
+      "screen": null,
+      "section": "3.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:263-266"
+      ],
+      "fsdQuote": "in book and light novel libraries the Volumes tab is called Books.",
+      "note": "The Volumes tab title switches to Books when the book logic applies.",
+      "screen": null,
+      "section": "3.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:856-858",
+        "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:826-836"
+      ],
+      "fsdQuote": "Manga series open on the Volumes tab by default.",
+      "note": "For manga libraries the default tab is Storyline; Volumes is only the default for book/light novel libraries.",
+      "screen": null,
+      "section": "3.1",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/volume-detail/volume-detail.component.html:217-218"
+      ],
+      "fsdQuote": "The Reviews tab appears on a volume only when the volume holds a single chapter.",
+      "note": "The volume's Reviews tab is wrapped in a check that the volume has exactly one chapter.",
+      "screen": null,
+      "section": "3.2",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/chapter-detail/chapter-detail.component.html:221-222"
+      ],
+      "fsdQuote": "has a Related tab listing the reading lists that contain the chapter when there are any.",
+      "note": "The chapter's Related tab is shown only when the chapter's readingLists list is non-empty.",
+      "screen": null,
+      "section": "3.3",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:328-329"
+      ],
+      "fsdQuote": "Brightness can be set anywhere from 0% to 100%.",
+      "note": "The darkness (brightness) setting is validated with a minimum of 10 and maximum of 100, so 0% is not allowed.",
+      "screen": null,
+      "section": "4.1",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/manga-reader"
+      ],
+      "fsdQuote": "A slideshow mode turns the page automatically after a set number of seconds.",
+      "note": "No slideshow or auto-play feature exists in the manga reader code.",
+      "screen": null,
+      "section": "4.1",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "Kavita.Services/TaskScheduler.cs:229-231",
+        "Kavita.Services/CleanupService.cs:332-379"
+      ],
+      "fsdQuote": "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it.",
+      "note": "Removal is done by a daily scheduled cleanup job that drops fully-read series from Want to Read, not immediately on finishing.",
+      "screen": null,
+      "section": "5",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/want-to-read/_components/want-to-read/want-to-read.component.html:4-28"
+      ],
+      "fsdQuote": "The Want to Read screen lists the series the user has starred, with a count and the same filter panel and bulk selection as a library screen.",
+      "note": "The screen shows a series count, filter panel, and bulk operations over series cards.",
+      "screen": null,
+      "section": "5",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/collections/_components/all-collections/all-collections.component.html:3",
+        "UI/Web/src/app/collections/_components/all-collections/all-collections.component.html:12-13"
+      ],
+      "fsdQuote": "It has a jump bar but no filter panel.",
+      "note": "The collections screen passes jump bar keys and disables filtering.",
+      "screen": null,
+      "section": "6.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/collections/_components/all-collections/all-collections.component.html:24-29"
+      ],
+      "fsdQuote": "The Collections screen shows every collection the user can see, with the name of the user who created it and a mark on promoted collections.",
+      "note": "Each collection card shows an owner component as subtitle and a promoted icon beside the title.",
+      "screen": null,
+      "section": "6.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/collections/_components/collection-detail/collection-detail.component.html:7-15",
+        "UI/Web/src/app/collections/_components/collection-detail/collection-detail.component.html:29-36"
+      ],
+      "fsdQuote": "A collection's screen shows its title, number of series and actions menu, and a collection synced from an outside service also shows how many of the source's series are on this server and when it last synced.",
+      "note": "The header shows title, actions menu and series count; for externally sourced collections a sync progress (collected / total) and last-sync tooltip appear.",
+      "screen": null,
+      "section": "6.2",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/collections/_components/collection-detail/collection-detail.component.html:57-75"
+      ],
+      "fsdQuote": "Its series can be filtered and selected in bulk.",
+      "note": "The collection detail uses the filter panel and bulk operations over series cards.",
+      "screen": null,
+      "section": "6.2",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/collections/_components/collection-detail/collection-detail.component.ts"
+      ],
+      "fsdQuote": "The series in a collection can be exported to a CSV file.",
+      "note": "No CSV export exists in the collection detail component or elsewhere in the repo.",
+      "screen": null,
+      "section": "6.2",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/reading-list/_components/reading-lists/reading-lists.component.ts:147-153"
+      ],
+      "fsdQuote": "Administrators and users with the Promote role can promote or unpromote a list from its actions menu.",
+      "note": "Promote/Unpromote actions on reading lists render only for admins or users with the Promote role.",
+      "screen": null,
+      "section": "7.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:34-65"
+      ],
+      "fsdQuote": "with a Read button whose menu also offers incognito reading.",
+      "note": "The Read/Continue button has a dropdown with incognito (glasses) read and continue items.",
+      "screen": null,
+      "section": "7.2",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:71-77",
+        "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:88-94"
+      ],
+      "fsdQuote": "The list's owner sees an Edit button and, on larger screens, a Reorder button.",
+      "note": "Edit and Reorder (hidden below md) buttons are shown only when the list is owned by the user.",
+      "screen": null,
+      "section": "7.2",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:183-188",
+        "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:223-228"
+      ],
+      "fsdQuote": "In reorder mode each item gets a remove button, and an Order Numbers switch adds a box to each item for typing its new position.",
+      "note": "In edit mode the list shows remove buttons and an Order Numbers switch that enables accessibility mode.",
+      "screen": null,
+      "section": "7.2",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:204"
+      ],
+      "fsdQuote": "A filter box for finding items appears once a list has more than 25 items.",
+      "note": "The filter box appears when the list has more than 10 items, not 25.",
+      "screen": null,
+      "section": "7.2",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/reading-list/_modals/edit-reading-list-modal/edit-reading-list-modal.component.html:24-38"
+      ],
+      "fsdQuote": "and only administrators see its Promote switch.",
+      "note": "The edit modal's Promote switch is wrapped in an admin-role check.",
+      "screen": null,
+      "section": "7.2",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/reading-list/_modals/edit-reading-list-modal/edit-reading-list-modal.component.html:16-22",
+        "UI/Web/src/app/reading-list/_modals/edit-reading-list-modal/edit-reading-list-modal.component.html:43-101",
+        "UI/Web/src/app/reading-list/_modals/edit-reading-list-modal/edit-reading-list-modal.component.html:107-139"
+      ],
+      "fsdQuote": "The edit dialog holds the title, which is required and must be unique, the summary, the starting and ending month and year, tags and the cover image",
+      "note": "The edit modal has title (with duplicate-name validation), summary, start/end month and year, Tags and Cover Image tabs.",
+      "screen": null,
+      "section": "7.2",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/app-routing.module.ts:79-86",
+        "UI/Web/src/app/reading-list"
+      ],
+      "fsdQuote": "The owner can share a reading list through a public link that opens without signing in.",
+      "note": "No public share link feature exists in the reading list UI; all reading list routes sit behind the auth guard.",
+      "screen": null,
+      "section": "7.2",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:23"
+      ],
+      "fsdQuote": null,
+      "note": "A Genres browse screen lists genres; the FSD describes only People and Tags under Browse.",
+      "screen": "/browse/genres",
+      "section": null,
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:25-30"
+      ],
+      "fsdQuote": null,
+      "note": "An All Annotations browse screen with a filter exists but is not in the FSD.",
+      "screen": "/browse/annotations",
+      "section": null,
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "Kavita.Server/Extensions/IdentityServiceExtensions.cs:59"
+      ],
+      "fsdQuote": "A new password must be at least 8 characters long.",
+      "note": "The server's identity options require a minimum password length of 6.",
+      "screen": null,
+      "section": "9.1",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/shared/_services/download.service.ts:74-76"
+      ],
+      "fsdQuote": "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB.",
+      "note": "The size warning threshold is 100 MB (104,857,600 bytes), not 500 MB.",
+      "screen": null,
+      "section": "9.2",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:91-98",
+        "Kavita.Database/Seed.cs:174-175"
+      ],
+      "fsdQuote": "Days of Backups and Days of Logs each accept a value from 1 to 30 and both default to 30.",
+      "note": "Both fields are validated min 1 / max 30 and seeded with 30.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:94-95"
+      ],
+      "fsdQuote": "Cache Size must be at least 50 MB",
+      "note": "Cache size is validated with a minimum of 50.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:90"
+      ],
+      "fsdQuote": "the base URL must start and end with a slash.",
+      "note": "The base URL is validated with a pattern that requires a leading and trailing slash.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:159-168",
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.html:4"
+      ],
+      "fsdQuote": "A Reset to Default button restores these settings after a confirmation.",
+      "note": "Reset to Default asks for confirmation, then calls the reset API and reloads the form.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.html:9"
+      ],
+      "fsdQuote": "A notice warns that changing the port, base URL, cache size or IP addresses needs a restart of Kavita.",
+      "note": "The page shows a notice that a restart is required.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:113-133"
+      ],
+      "fsdQuote": "Changes on this page are stored only when the administrator presses Save.",
+      "note": "There is no Save button; valid form changes are auto-saved after a 300 ms debounce.",
+      "screen": null,
+      "section": "10.1",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.html",
+        "Kavita.Database/Seed.cs:170-185"
+      ],
+      "fsdQuote": "A maintenance mode switch blocks all non-admin users from signing in until it is turned off.",
+      "note": "No maintenance mode setting or switch exists on the General page or in the server settings.",
+      "screen": null,
+      "section": "10.1",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/invite-user/invite-user.component.ts:52",
+        "UI/Web/src/app/admin/invite-user/invite-user.component.ts:69"
+      ],
+      "fsdQuote": "The Login role is selected by default, and choosing Admin locks the other roles.",
+      "note": "The invite form defaults roles to Login, and other roles are disabled when Admin is selected.",
+      "screen": null,
+      "section": "10.2",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/invite-user/invite-user.component.ts:59",
+        "UI/Web/src/app/admin/invite-user/invite-user.component.ts:81",
+        "UI/Web/src/app/admin/invite-user/invite-user.component.ts:107"
+      ],
+      "fsdQuote": "If the invite email cannot be sent, the form shows the invite link so the administrator can pass it on.",
+      "note": "The invite response's emailLink is stored in a signal that is shown and disables further sending.",
+      "screen": null,
+      "section": "10.2",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/invite-user/invite-user.component.ts"
+      ],
+      "fsdQuote": "An invite can be given an expiry date, after which its link stops working.",
+      "note": "The invite form has no expiry field.",
+      "screen": null,
+      "section": "10.2",
+      "state": "gap"
+    }
+  ],
+  "fsdVersion": "781973da1378f7804d05e38d0ccaf8693e6c1c86b3de76d65d0638a9e9c3df66",
+  "inputs": "sha256:ed96868bd8e8aaa781f6a634aa2bd80c5a5172edb3225c1a488bf8e7ad6997ee",
+  "retried": true,
+  "run": 1,
+  "usage": {
+    "cacheReadTokens": 1616379,
+    "cacheWriteTokens": 90114,
+    "calls": 2,
+    "costUsd": 0.995763,
+    "inputTokens": 66,
+    "model": "claude-sonnet-5-5",
+    "ms": 254024,
+    "outputTokens": 31190,
+    "settings": {
+      "agent": "stangent-fsd-reviewer",
+      "claudeVersion": "2.1.292 (Claude Code)",
+      "effort": "high",
+      "mode": "agentic",
+      "model": "claude-sonnet-5-5"
+    }
+  }
+}

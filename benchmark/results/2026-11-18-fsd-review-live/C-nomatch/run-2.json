@@ -1,0 +1,66 @@
+{
+  "doc": "kavita-fsd",
+  "findings": [
+    {
+      "evidence": [
+        "Kavita.Server/Extensions/IdentityServiceExtensions.cs:59"
+      ],
+      "fsdQuote": "A new password must be at least 8 characters long.",
+      "note": "The server's identity configuration requires a password of at least 6 characters, not 8.",
+      "screen": null,
+      "section": "9.1",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:92-98",
+        "Kavita.Database/Seed.cs:174-175"
+      ],
+      "fsdQuote": "Days of Backups and Days of Logs each accept a value from 1 to 30 and both default to 30.",
+      "note": "The form limits both fields to 1–30, and the seeded server defaults for both are 30.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:95"
+      ],
+      "fsdQuote": "Cache Size must be at least 50 MB",
+      "note": "The settings form enforces a minimum cache size of 50.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:23"
+      ],
+      "fsdQuote": null,
+      "note": "A Browse Genres screen exists. The FSD describes only People and Tags under Browse.",
+      "screen": "/browse/genres",
+      "section": null,
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:25"
+      ],
+      "fsdQuote": null,
+      "note": "A Browse Annotations screen (all annotations) exists. The FSD doesn't mention it.",
+      "screen": "/browse/annotations",
+      "section": null,
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/library-detail/library-detail.component.html"
+      ],
+      "fsdQuote": "A Random button on the library screen opens a randomly chosen series from that library.",
+      "note": "The library detail template has no Random button or random-series action.",
+      "screen": null,
+      "section": "2.1",
+      "state": "gap"
+    }
+  ]
+}

@@ -97,15 +97,23 @@ public sealed class FsdReviewTests : IDisposable
     {
         var step = FsdReview.Prepare(Repo, "shop", 1, again: false);
         Assert.Equal(("prepared", FsdReview.Reviewer, FsdReview.OutputSchema), (step.Status, step.Agent, step.Schema));
+        // D401: the prompt names the FSD file and the answer file for the driver to fill in; the FSD is a file beside it.
         var input = File.ReadAllText(Path.Combine(FsdReview.RunDir(Root, "shop", 1), "input.md"));
-        Assert.Contains("## 1 Orders  [section id: 1]", input);
-        Assert.Contains("### 1.1 Order list  [section id: 1.1]", input);
-        Assert.Contains("Orders ship within two days of payment.", input);
-        Assert.Contains("`/orders`, `/settings`", input);
-        Assert.Contains("urn:stangent:schema:fsd-review-output:v2", input);
+        Assert.Contains("- The FSD: `{{FSD_FILE}}`.", input);
+        Assert.Contains("Write a JSON file to `{{OUTPUT_FILE}}`", input);
+        Assert.Contains("- Scope: the FSD covers the screens whose routes start with these prefixes: `/orders`, `/settings`.", input);
+        Assert.Contains("## What to report, three kinds", input);
+        Assert.DoesNotContain("{{SCOPE}}", input);
+        Assert.DoesNotContain("match", input);
         Assert.DoesNotContain("Kavita", input);
+        var fsd = File.ReadAllText(Path.Combine(FsdReview.RunDir(Root, "shop", 1), FsdReview.FsdFile));
+        Assert.Contains("## 1 Orders  [section id: 1]", fsd);
+        Assert.Contains("### 1.1 Order list  [section id: 1.1]", fsd);
+        Assert.Contains("Orders ship within two days of payment.", fsd);
+        Assert.Contains($"FSD: .stangent/fsd/shop/review/run-1/{FsdReview.FsdFile}", step.Prompt);
 
         var limits = FsdReview.DriverLimits(Repo, "shop", 1);
+        Assert.Equal("Read,Grep,Glob,Write", (string)limits["tools"]!);
         Assert.Equal(40, (int)limits["maxTurns"]!);
         Assert.Equal(3.0, (double)limits["maxBudgetUsd"]!);    // turns set alone keeps the default dollars
         var denied = limits["disallowedTools"]!.AsArray().Select(d => (string)d!).ToList();
@@ -349,5 +357,14 @@ public sealed class FsdReviewTests : IDisposable
         Assert.Equal(2, (int)status["runs"]!);
         Assert.Equal(["failed", "not prepared"], status["run"]!.AsArray().Select(r => (string)r!["stage"]!));
         Assert.False((bool)status["merged"]!);
+    }
+
+    [Fact]
+    public void A_run_prepared_before_the_fsd_became_a_file_is_refused_until_prepared_again()
+    {
+        FsdReview.Prepare(Repo, "shop", 1, again: true);
+        File.Delete(Path.Combine(FsdReview.RunDir(Root, "shop", 1), FsdReview.FsdFile));
+        Answer(1);
+        Assert.Equal("prepared_before", Code(() => FsdReview.Check(Repo, "shop", 1, null)));
     }
 }

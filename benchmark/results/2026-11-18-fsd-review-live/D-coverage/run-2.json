@@ -1,0 +1,86 @@
+{
+  "doc": "kavita-fsd",
+  "findings": [
+    {
+      "evidence": [
+        "Kavita.Server/Extensions/IdentityServiceExtensions.cs:59",
+        "UI/Web/src/app/user-settings/change-password/change-password.component.ts:36"
+      ],
+      "fsdQuote": "A new password must be at least 8 characters long.",
+      "note": "The server requires a password of at least 6 characters (RequiredLength = 6). The change-password form only marks the field required, with no 8-character rule.",
+      "screen": null,
+      "section": "9.1",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:157"
+      ],
+      "fsdQuote": "Manage Collections is turned on by default for a new library.",
+      "note": "The library settings form defaults manageCollections to false.",
+      "screen": null,
+      "section": "10.3",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:152-154"
+      ],
+      "fsdQuote": "Include in Dashboard and Include in Search are turned on by default.",
+      "note": "includeInDashboard and includeInSearch both default to true in the library form.",
+      "screen": null,
+      "section": "10.3",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:95"
+      ],
+      "fsdQuote": "Cache Size must be at least 50 MB",
+      "note": "The cacheSize validator has a minimum of 50.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:92-98"
+      ],
+      "fsdQuote": "Days of Backups and Days of Logs each accept a value from 1 to 30",
+      "note": "totalBackups and totalLogs are validated with min 1 and max 30. I did not check the default of 30.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/app-routing.module.ts:63"
+      ],
+      "fsdQuote": null,
+      "note": "A Browse Genres screen exists but the FSD describes only People and Tags under Browse.",
+      "screen": "/browse/genres",
+      "section": null,
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/app-routing.module.ts:63"
+      ],
+      "fsdQuote": null,
+      "note": "An All Annotations screen exists under Browse; the FSD does not describe it.",
+      "screen": "/browse/annotations",
+      "section": null,
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/app-routing.module.ts:52"
+      ],
+      "fsdQuote": null,
+      "note": "A PDF reader route exists; the FSD describes only the image and book readers.",
+      "screen": "/library/:libraryId/series/:seriesId/pdf/:chapterId",
+      "section": null,
+      "state": "undocumented"
+    }
+  ]
+}

@@ -1,0 +1,751 @@
+diff --git a/docs/spec.md b/docs/spec.md
+index 4b269a1..54d317c 100644
+--- a/docs/spec.md
++++ b/docs/spec.md
+@@ -338,10 +338,12 @@ stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and r
+ ```
+ 
+ - **Input** (`fsd review`): the reviewer's instructions (D321's prompt, with no app named), `fsd.scope`'s route
+-  prefixes, the current version's sections as Markdown with each id in its heading (`### 2.1 Library  [section id:
+-  2.1]`), and the output schema `fsd-review-output.v2.json`: findings with `state` (gap, conflict, undocumented, and
++  prefixes, the screens in scope that code found (D400: `specs/inventory.json`'s routes equal to a prefix or under it,
++  every screen when the scope is empty; with no inventory the input says so), the current version's sections as Markdown with each id in its heading (`### 2.1 Library  [section id:
++  2.1]`), and the output schema `fsd-review-output.v3.json`: findings with `state` (gap, conflict, undocumented, and
+   since D366 match: a statement the code does as written, with the line that does it),
+-  `section`, `fsdQuote`, `screen`, `note`, `evidence` (`path:line`). A checked run with the same input on the same commit
++  `section`, `fsdQuote`, `screen`, `note`, `evidence` (`path:line`); and `coverage` (D400): every section with text of its
++  own with a `path:line` read for it, and every listed screen with the section that describes it or null. A checked run with the same input on the same commit
+   is `current`, no AI; `--again` runs it anyway. AI off (`ai.enabled: false`) refuses.
+ - **Limits**, as the file finder's (D101): Read, Grep and Glob in a throwaway worktree of the commit the run was prepared on; never `.stangent/`,
+   `.git/`, `specs/` (earlier reviews, the FSD's record) or `stangent.yaml`; structured output; `fsd.reviewBudget`
+@@ -357,6 +359,15 @@ stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and r
+   nothing is recorded, and the next `fsd review` starts it again. A second check while the retry waits, with no new answer
+   and no `--usage`, is refused (`no_output`). The run's stage (prepared, retry, checked, failed) moves through the state
+   module (`fsd-review-run`); `stangent fsd review-status <doc>` shows each run's stage and commit and reads only.
++- **Coverage** (D400, checked with the findings, in the same retry): each section with text of its own is in
++  `coverage.sections` with at least one `path:line` that exists at the reviewed commit (a path alone doesn't count);
++  each listed screen is in `coverage.screens` with a section that exists, or null and an undocumented finding with that
++  screen that passes its own checks (routes compared without a trailing slash, case folded; listed twice, either entry
++  that holds is enough; an unknown section id blocks nothing). An answer with no `coverage`, or one whose coverage alone
++  breaks the schema, is checked as covering nothing: a coverage problem never fails the run. A scope of `/` is the
++  whole app. A run prepared before D400 is checked without coverage. Still missing after the retry: the run is recorded with its findings, `checked.json` lists them under
++  `uncovered` (`screens` null when code listed none), and `review.md` gives a coverage line per run. Why: the first live
++  runs stopped on their own after a few findings (D399).
+ - **Merge** (`fsd review-merge`): every run checked, on one commit and FSD version, or it refuses. Joined, one finding
+   per run at most: a gap or conflict with the same section and quote; an undocumented screen with no section and the same
+   route; an undocumented finding in a section only when the pair is unambiguous (same section, routes equal or one blank,
+diff --git a/plugin/agents/stangent-fsd-reviewer.md b/plugin/agents/stangent-fsd-reviewer.md
+index a3227d7..c73a700 100644
+--- a/plugin/agents/stangent-fsd-reviewer.md
++++ b/plugin/agents/stangent-fsd-reviewer.md
+@@ -1,6 +1,6 @@
+ ---
+ name: stangent-fsd-reviewer
+-description: Reads the FSD and the repo's source (read-only) and lists every gap, conflict and undocumented screen or option, and every FSD statement the code does as written (a match), each with the FSD's words and the code lines behind it (layer 5, D341, D366).
++description: Reads the FSD and the repo's source (read-only) and lists every gap, conflict and undocumented screen or option, and every FSD statement the code does as written (a match), each with the FSD's words and the code lines behind it, and says what it checked: every section and every screen in scope (layer 5, D341, D366, D400).
+ tools: Read, Glob, Grep
+ ---
+ 
+@@ -9,6 +9,7 @@ your output schema; on a retry also your previous attempt and what to fix.
+ 
+ 1. Follow the instructions. Read and search the repo with Read, Grep and Glob; permission rules keep you to the repo and
+    out of stangent's own files.
+-2. Return one JSON object matching the output schema as your structured output.
++2. Go through every section and every listed screen; don't stop after the first few differences.
++3. Return one JSON object matching the output schema as your structured output: findings and coverage.
+ 
+ Code checks every section id, every FSD quote word for word inside its section and every `file:line`.
+diff --git a/roadmap.md b/roadmap.md
+index 1adbf7c..bca4414 100644
+--- a/roadmap.md
++++ b/roadmap.md
+@@ -72,7 +72,7 @@ So nothing settled lives only in `decisions.md`. Each is built in the phase name
+ | Table facts from constants and SQL seed data, beside API fields and enums; an AI proposing `table-map.yaml` for a person to approve. Both after the owner answers D68's question | D124, D68 | 2b |
+ | Journeys across sections: `stangent req` builds them within one section, since it sees one section at a time | D99, D129 | 2c |
+ | **Layer 5, the PM inventory — parked at step 3 (D337, owner 2026-11-15: "Stop, move to tickets"); steps 4–7 not built; layer 5 is the source agent run twice, merged, with code checks.** (D325; designed 2026-11-15, D326–D331.) Build plan, in order, each step's fresh check narrow (D158) before the next:** (1) **Layer 2 facts** (code-graph v5 → v6, D329): `ui-event` keys with transloco `prefix`/`read` and Razor `@T`; a new `form-field` fact (binding, label key, help key, choices; wrapper components by a general rule); C# properties with `Label =` or a display-name attribute as server-defined fields; `menu-item` taking data entries with a handler and no address. **Built 2026-11-15 (D332; `benchmark/results/2026-11-15-inventory-step1/`):** D330 match Sonarr 1,218/1,228 (99.2%; server fields 469/469), Kavita 867/879 (98.6%; fields 333/333, data actions 88/95), nopCommerce 3,566/3,634 (98.1%; fields 2,881/2,899; buttons 93.2%, the gap `<a onclick>` and script-written buttons); fresh check (D158) done (Sonnet, ~93K tokens): new facts right on sampled lines, labels, server fields and keys; 2 general faults fixed (false wrappers: pagers, list rows, one-way cards; a compared literal read as help text), wrappers now Sonarr 10 and Kavita 2 single-control inputs, match unchanged; open: nopCommerce display-name properties count as server fields even where no view edits them (step 3 filters), labels missing on 98 of 388 Sonarr and 64 of 384 Kavita client fields, Sonarr `login.html. (2) **Label lookup** (D327) through each app's translation files (transloco JSON with prefixes, `en.json`, `.nopres.xml`); layer 3's click names use it (flows v5 → v6; layer 4, parked, `needs review`). **Built 2026-11-15 (D333; `benchmark/results/2026-11-15-inventory-step2/`):** `Labels` in layer 3, `screen-title` facts and Razor fields' `property` added to code-graph v6, `stangent flows labels`; share named by visible text, before → after: buttons Sonarr 81.0 → 80.8%, Kavita 74.1 → 73.8%, nopCommerce 4.9 → 84.3%; fields 80.2%, 85.1 → 84.3%, 0.6 → 65.0%; server fields 99.4 → 100%, —, 0 → 84.7%; screens 0 → 91.9%, 76.5%, 81.7%; click flows by words Sonarr 60 → 66 of 116, Kavita 6 → 142 of 223, nopCommerce 1 → 318 of 336; left ❓: words made at runtime, fields with no label element, nopCommerce plugins' strings written in install code and its `Enums.<Type>.<Member>` keys (not read, one app's pattern); fresh check (D158) done (Sonnet, ~93K tokens): of ~27 named lines 4 wrong from 4 causes, of ~21 ❓ 9 missed; the general faults fixed (D333 items 13–17: key references, placeholder options, template-drawn options, branch headings, handler lists), the rest listed in D333. (3) **`stangent inventory`** in `src/Stangent.Flows` (contract `inventory` v1): every control a user can touch minus D326's fixed skip list, grouped per screen with dialogs and menus under it, shared parts once with "appears on", "Not placed" kept (D328); `specs/inventory.json` and `.md`; `inventory check`. **Calls settled 2026-11-15 (D334):** dialogs placed by a 4-hop walk from a screen's code to the components it opens, data menus by who reaches the method building them, display-name model labels only through a binding field (else set aside), `Label =` fields per class in Not placed, the skip list's words fixed. **Built 2026-11-15 (D334, D335; `benchmark/results/2026-11-15-inventory-step3/`, `docs/inventory.md`):** contract `inventory` v1 (consumers: layer 5's link step, not built; layer 4, parked, reads none of it; v2 2026-11-16, D362 (3): the App frame group, for the truth map); `stangent inventory` and `inventory check` pass on all three clones, identical bytes run to run; lines Sonarr 1,292, Kavita 971, nopCommerce 4,143 over 37, 34, 399 screens; named by visible text 87.0%, 72.7%, 70.9%; skipped 99, 120, 41 after D335 narrowed the skip list (handler names skipped buttons with other words; bare "Next" skipped checkout steps); dialogs 19, 48, 0 (Razor gets no walk); Not placed groups 112 (89 Sonarr server-drawn settings classes), 6, 48; app shells (main navigation) land in Not placed; fresh check (D158) done (D336, Sonnet, ~124K tokens): 21 of 34 sampled items right, 8 wrong; fixed: hidden server fields set aside (Sonarr 19, lines 1,292 → 1,273), dash-joined capitalised words read as words; left and listed: a shared dispatcher service places its dialogs on every screen using it, nopCommerce script popups and partials rendered by name in controllers, app shells, titles from a not-found branch. Next: step 4. (4) **Completeness, free** (D330): every hit of `benchmark/inventory/scan.py` accounted for, 95% or more per clone (pre-build scan: Sonarr 1,228, Kavita 879, nopCommerce 3,634 candidate lines; buttons 96–99% already facts, fields, server fields and data menus not); share named by visible text and "Not placed" count printed. (5) **Sample, on the owner's word:** a fresh Sonnet agent lists controls on three seeded screens per clone (about 150–250K tokens). (6) **Link step:** an AI links each line to the FSD sentence covering it, quote checked word for word by code, or "⚠ not in the FSD"; the FSD's scope first, missing screens and groups folded (D325). (7) **Gate (D325, D331), paid, asked step by step:** a fresh Opus agent writes and freezes a planted nopCommerce catalog-admin FSD and key; two merged source-only Sonnet runs against the inventory with its link step plus the source agent's gaps and conflicts; pass = more "left out" found than the merged runs, false ⚠ counted, ⚠ count reported, cost within two agent runs; about 1.0–1.3M tokens. Watch: line by line the ⚠ count is in the hundreds; only grouping and scope bring it down, untested until (7) | D325–D331, D334, D324, D320 | r5 |
+-| **Layer 5 as a command (D341), next, before layer 7:** `stangent fsd review` (prepare) → `stangent-fsd-reviewer` (read-only search, capped) → `fsd review-check` (quotes word for word, `file:line` real, one retry, failing findings dropped and listed) → `fsd review-merge` (two runs, `specs/fsd/<doc>/review.{json,md}`, contract `fsd-review` v1; v2 2026-11-16, D366: a fourth state, match, for the truth map); plugin agent, `fsd-review-run.sh`, `/stangent:fsd-review`. **Built 2026-11-15, committed `534b8e4`** (D341 (a)–(d): merge joins only unambiguous pairs, `maybeSameAs` for the rest; quote rule; stage on the state module; `fsd review-status`): free check on the saved Kavita runs 29 of 30 (gap 10, conflict 10, undocumented 9), 0 dropped; fresh check (D158) done, its 8 defects fixed. Next: one live run (paid, asked first; headless `claude -p` limited until 2026-11-18) | D341, D321–D324, D337 | r5 |
++| **Layer 5 as a command (D341), next, before layer 7:** `stangent fsd review` (prepare) → `stangent-fsd-reviewer` (read-only search, capped) → `fsd review-check` (quotes word for word, `file:line` real, one retry, failing findings dropped and listed) → `fsd review-merge` (two runs, `specs/fsd/<doc>/review.{json,md}`, contract `fsd-review` v1; v2 2026-11-16, D366: a fourth state, match, for the truth map; reviewer output `fsd-review-output` v3 2026-11-18, D400: code-checked coverage of every section and every in-scope screen, after the first live runs scored 11–17 of 30, D399); plugin agent, `fsd-review-run.sh`, `/stangent:fsd-review`. **Built 2026-11-15, committed `534b8e4`** (D341 (a)–(d): merge joins only unambiguous pairs, `maybeSameAs` for the rest; quote rule; stage on the state module; `fsd review-status`): free check on the saved Kavita runs 29 of 30 (gap 10, conflict 10, undocumented 9), 0 dropped; fresh check (D158) done, its 8 defects fixed. Next: one live run (paid, asked first; headless `claude -p` limited until 2026-11-18) | D341, D321–D324, D337 | r5 |
+ | **Layer 7, the cuts (D342, owner "Yes, that cut", 2026-11-15):** the old link route behind `/stangent:fsd-link` (candidate finder, link judge, agree checker, disprover and its switches, requirement steps and the ticket matcher, claims and claim links, workflow files, test journeys) and P8's `spec-ask`, `judge-finer-verdicts`, `group-sections`, `security-flag` removed with their commands, agents, schemas, script modes, tests and docs; `trace.yaml` and the reference pages stay frozen for tickets. **Built 2026-11-15, not committed:** build 0 warnings, 1861 of 1861 tests; fresh check (D158) found no runtime break, its stale messages, configs and coverage gaps fixed. Next: commit on the owner's word; later, a ticket run without the old pages and links, then cut those too | D342, D156 P8, D258 | r5 |
+ | **Layer 6, tickets (D337–D340) — closed 2026-11-15 (D340):** D339 passed, fragile (multi-file fixes: whole fix named 8 of 20 with impact, 3 without; share +8.2 points; wrong files +0.40; tokens +16%; Sonnet subagents, fresh-checked); `/stangent:ticket` now tells the developer's session to run `graph impact` on each file it will change; P5 already opt-in, P7 not built (drafts already claim-checked); owed: the proof re-run (D109), the fix test ("does the bundle help a fix?"), bitwarden's 24. Plan as it was: starting points stay with the agent file finder, not rebuilt from code (D338, Phase 3: finder 36/40 and 21/24, code-only index 19/40). **First step, before anything is built (D339):** D320's side-by-side on "name every file the fix changes", key from the developers' own fix commits: `agent_baseline.py` alone vs the same plus `stangent graph impact` on a graph built at each fix's parent; Sonarr 40 (and bitwarden 24 if its graph builds); pass = +5 points of the fix named on multi-file fixes, at most +1 wrong file per ticket, or same share for 10% fewer tokens. About $5–10 (owner's OK 2026-11-15). **Set up 2026-11-15:** graphs, runner and scorer ready; headless Claude Code hit its weekly limit, so both sides ran as Sonnet subagents (D339's amendment). Then P7 (comment templates) and the proof re-run (D109) are judged on what it shows | D337, D338, D339, D320 | r5 |
+ | **Small, flows (layer 3), for layer 6's tickets and any page (noted 2026-11-15, owner "okay"):** a request step says what it sends (`POST /api/wishlist` sends `seriesId`, `userId`; nopCommerce's custom wishlist's `list`), from the endpoint's request type and the `maps-field` facts layer 2 already has; code only, about a day; gate 3 run 2 missed it (9A/9C). Not before layer 5's step 3 | D319, D323 | r3 |
+diff --git a/src/Stangent.Spec/Fsd/FsdReview.cs b/src/Stangent.Spec/Fsd/FsdReview.cs
+index ded347b..ca0bc16 100644
+--- a/src/Stangent.Spec/Fsd/FsdReview.cs
++++ b/src/Stangent.Spec/Fsd/FsdReview.cs
+@@ -17,7 +17,7 @@ namespace Stangent.Spec.Fsd;
+ public static partial class FsdReview
+ {
+     public const string Reviewer = "stangent-fsd-reviewer";
+-    public const string OutputSchema = "fsd-review-output.v2.json";
++    public const string OutputSchema = "fsd-review-output.v3.json";
+     public const string Contract = "fsd-review";
+     public const int Version = 2;
+     public static readonly string[] States = ["gap", "conflict", "undocumented", "match"];
+@@ -44,12 +44,22 @@ public static partial class FsdReview
+ 
+     /// <summary>The agent's whole input: its instructions, the scope, the current version's sections as Markdown with their
+     /// ids in brackets, and the output schema. The repo is not in it: the agent searches it itself.</summary>
+-    public static string Input(JsonObject document, IReadOnlyList<string> scope)
++    public static string Input(JsonObject document, IReadOnlyList<string> scope, IReadOnlyList<Screen>? screens = null)
+     {
+         var sb = new StringBuilder("# Instructions\n\n").Append(Bundles.Instructions("fsd-reviewer.md"));
+         sb.Append("\n# Scope\n\n");
+         if (scope.Count == 0) sb.Append("The FSD covers every screen of the app.\n\n");
+         else sb.Append("The FSD covers the screens whose routes start with these prefixes: ").Append(string.Join(", ", scope.Select(s => $"`{s}`"))).Append(".\n\n");
++        // D400 (3): the screens code found in scope, each to be accounted for in coverage.screens.
++        sb.Append("# Screens in scope\n\n");
++        if (screens is null) sb.Append("Code has no list of the app's screens here (no inventory built), so leave `coverage.screens` empty.\n\n");
++        else if (screens.Count == 0) sb.Append("Code found no screen in the scope, so leave `coverage.screens` empty.\n\n");
++        else
++        {
++            sb.Append("Code found these screens in the scope. Give each one in `coverage.screens`, with the section that describes it, or null and an undocumented finding for it.\n\n");
++            foreach (var screen in screens) sb.Append($"- `{screen.Route}`{(screen.Title is { Length: > 0 } t ? $" ({t})" : "")}\n");
++            sb.Append('\n');
++        }
+         sb.Append("# The FSD\n\n").Append(Markdown(document)).Append('\n');
+         sb.Append("# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText(OutputSchema).TrimEnd('\n')).Append("\n```\n");
+         return sb.ToString();
+@@ -71,6 +81,33 @@ public static partial class FsdReview
+ 
+     static List<JsonObject> Sections(JsonObject document) => [.. document["sections"]!.AsArray().OfType<JsonObject>()];
+ 
++    /// <summary>A screen code found in the inventory (D400 (3)): its route and title.</summary>
++    public sealed record Screen(string Route, string? Title);
++
++    /// <summary>The inventory's screens in scope (D400 (3)): a route kept when it equals a scope prefix or starts with it
++    /// and a <c>/</c>; every screen when the scope is empty. Null when no inventory is built.</summary>
++    public static List<Screen>? ScreensInScope(string root, IReadOnlyList<string> scope)
++    {
++        if (PageRun.LoadJson(Path.Combine(root, Stangent.Flows.InventoryFiles.JsonFile)) is not JsonObject inventory) return null;
++        // A prefix of "/" is the whole app, as an empty scope is.
++        var prefixes = scope.Select(RouteKey).ToList();
++        var all = prefixes.Count == 0 || prefixes.Contains("/");
++        return [.. (inventory["screens"] as JsonArray ?? []).OfType<JsonObject>()
++            // A screen id is "page:<app>|<route>": the route is everything after the first bar.
++            .Select(s => (string?)s["id"] is { } id && id.IndexOf('|') is var bar and >= 0 ? new Screen(id[(bar + 1)..].Trim(), (string?)s["title"]) : null)
++            .OfType<Screen>()
++            .Where(s => s.Route.StartsWith('/') && (all || prefixes.Any(p => RouteKey(s.Route) == p || RouteKey(s.Route).StartsWith(p + "/", StringComparison.Ordinal))))
++            .GroupBy(s => RouteKey(s.Route)).Select(g => g.First())
++            .OrderBy(s => s.Route, StringComparer.Ordinal)];
++    }
++
++    /// <summary>A route as compared: no trailing slash, case folded (the merge's rule for screens).</summary>
++    static string RouteKey(string route) => route.Trim().TrimEnd('/').ToLowerInvariant() is { Length: > 0 } r ? r : "/";
++
++    /// <summary>The sections coverage must name (D400 (2)): each with text of its own.</summary>
++    static List<string> SectionsToCover(JsonObject document) =>
++        [.. Sections(document).Where(s => ((string?)s["text"] ?? "").Trim().Length > 0).Select(s => (string)s["id"]!)];
++
+     /// <summary><c>fsd review &lt;doc&gt; --run N</c>: writes the run's input and names the agent, or says the run is current
+     /// (same input, same commit, already checked) unless <paramref name="again"/>.</summary>
+     public static RunStep Prepare(StangentRepo repo, string doc, int run, bool again)
+@@ -78,7 +115,8 @@ public static partial class FsdReview
+         CheckRun(repo, run);
+         var document = FsdOutline.Load(repo.Root, doc);
+         AiPolicy.EnsureAllowed(repo.Config, "fsd review");
+-        var input = Input(document, repo.Config.Fsd.Scope);
++        var screens = ScreensInScope(repo.Root, repo.Config.Fsd.Scope);
++        var input = Input(document, repo.Config.Fsd.Scope, screens);
+         var hash = "sha256:" + CanonicalJson.Hash(input);
+         var commit = Stangent.Graph.Git.Head(repo.Root);
+         var dir = RunDir(repo.Root, doc, run);
+@@ -92,6 +130,10 @@ public static partial class FsdReview
+         {
+             ["doc"] = doc, ["run"] = run, ["inputs"] = hash, ["commit"] = commit,
+             ["fsdVersion"] = (string)document["original"]!["hash"]!, ["retryUsed"] = false, ["usage"] = Usage.None.ToJson(),
++            // D400 (3): the screens the input listed, which coverage must account for; null with no inventory.
++            ["screens"] = screens is null ? null : new JsonArray([.. screens.Select(x => (JsonNode)x.Route)]),
++            // A run prepared before D400 was never asked for coverage, so its check skips it.
++            ["askedCoverage"] = true,
+         };
+         Move(repo.Root, state, "prepared", "prepared");
+         SaveState(dir, state);
+@@ -190,7 +232,28 @@ public static partial class FsdReview
+         var errors = new List<string>();
+         var output = PageChecks.Parse(File.Exists(file) ? File.ReadAllText(file) : "", errors) as JsonObject;
+         if (errors.Count == 0 && output is null) errors.Add("The output isn't a JSON object.");
+-        if (errors.Count == 0) errors.AddRange(SchemaRegistry.Embedded.ValidateDeep(OutputSchema, output!.ToJsonString()).Select(e => $"Schema: {e}"));
++        // D400 (4): an answer with no coverage at all is checked as one that covers nothing, so after the retry its findings
++        // are still recorded, with every section and screen listed as not checked.
++        if (errors.Count == 0 && output!["coverage"] is null) output["coverage"] = new JsonObject { ["sections"] = new JsonArray(), ["screens"] = new JsonArray() };
++        // A malformed coverage alone never fails the run (D400 (4)): its schema errors go to the retry as coverage problems
++        // and it is checked as covering nothing, so the findings are still recorded.
++        var coverageSchema = new List<string>();
++        if (errors.Count == 0)
++        {
++            var schema = SchemaRegistry.Embedded.ValidateDeep(OutputSchema, output!.ToJsonString()).Select(e => $"Schema: {e}").ToList();
++            if (schema.Count > 0 && output["coverage"] is not null)
++            {
++                var bare = (JsonObject)output.DeepClone();
++                bare["coverage"] = new JsonObject { ["sections"] = new JsonArray(), ["screens"] = new JsonArray() };
++                if (SchemaRegistry.Embedded.ValidateDeep(OutputSchema, bare.ToJsonString()).Count == 0)
++                {
++                    coverageSchema = schema;
++                    output["coverage"] = bare["coverage"]!.DeepClone();
++                    schema = [];
++                }
++            }
++            errors.AddRange(schema);
++        }
+         if (output is null && (!File.Exists(file) || new FileInfo(file).Length == 0))
+             errors.Insert(0, "You returned no answer (most likely you ran out of turns or budget). This time, answer with the findings you have backed with code so far.");
+         var findings = errors.Count == 0 ? output!["findings"]!.AsArray().OfType<JsonObject>().ToList() : [];
+@@ -203,7 +266,14 @@ public static partial class FsdReview
+             for (var j = 0; j < findings.Count; j++)
+                 if (i != j && (string)findings[i]["state"]! == "match" && TwoKinds(findings[i], findings[j]))
+                     perFinding[i].Add($"the same statement is also reported as a {(string)findings[j]["state"]!} (findings[{j}]); a sentence with a difference is reported as that difference only, with no match");
+-        var all = errors.Concat(perFinding.SelectMany((p, i) => p.Select(e => $"findings[{i}]: {e}"))).ToList();
++        var askedCoverage = (bool?)state["askedCoverage"] == true;
++        var listed = (state["screens"] as JsonArray)?.Select(r => (string)r!).ToList();
++        // Only findings that pass their own checks can account for a screen: a dropped one leaves it uncovered.
++        var coverage = errors.Count == 0 && askedCoverage
++            ? Coverage(output!, [.. findings.Where((f, i) => perFinding[i].Count == 0)], document, checker, listed)
++            : new CoverageResult([], [], []);
++        var all = errors.Concat(perFinding.SelectMany((p, i) => p.Select(e => $"findings[{i}]: {e}")))
++            .Concat(coverageSchema.Select(e => $"coverage: {e}")).Concat(coverage.Problems.Select(e => $"coverage: {e}")).ToList();
+ 
+         if (all.Count > 0 && (bool?)state["retryUsed"] != true)
+         {
+@@ -248,11 +318,61 @@ public static partial class FsdReview
+             ["doc"] = doc, ["run"] = run, ["commit"] = (string)state["commit"]!, ["fsdVersion"] = (string)state["fsdVersion"]!,
+             ["inputs"] = (string)state["inputs"]!, ["retried"] = (bool?)state["retryUsed"] == true, ["usage"] = state["usage"]!.DeepClone(),
+             ["findings"] = kept, ["dropped"] = dropped,
++            // D400 (4): what the run didn't account for after the retry; the screens null when code listed none.
++            ["uncovered"] = !askedCoverage ? null : new JsonObject
++            {
++                ["sections"] = new JsonArray([.. coverage.Sections.Select(x => (JsonNode)x)]),
++                ["screens"] = listed is null ? null : new JsonArray([.. coverage.Screens.Select(x => (JsonNode)x)]),
++            },
++            ["screensListed"] = askedCoverage ? listed?.Count : null,
+         };
+         Quotes.WriteAtomic(Path.Combine(dir, "checked.json"), CanonicalJson.Serialize(result));
+         Move(repo.Root, state, "checked", dropped.Count > 0 ? $"recorded, {dropped.Count} dropped" : "recorded");
+         SaveState(dir, state);
+-        return new RunStep("recorded", "none", Errors: dropped.Count > 0 ? [.. dropped.Select(d => $"dropped: {string.Join("; ", d!["reasons"]!.AsArray().Select(r => (string)r!))}")] : null);
++        var notes = dropped.Select(d => $"dropped: {string.Join("; ", d!["reasons"]!.AsArray().Select(r => (string)r!))}")
++            .Concat(coverage.Sections.Count > 0 ? [$"not checked: section(s) {string.Join(", ", coverage.Sections)}"] : [])
++            .Concat(coverage.Screens.Count > 0 ? [$"not accounted for: screen(s) {string.Join(", ", coverage.Screens)}"] : []).ToList();
++        return new RunStep("recorded", "none", Errors: notes.Count > 0 ? notes : null);
++    }
++
++    /// <summary>D400's coverage problems, and the sections and screens they leave unaccounted for.</summary>
++    sealed record CoverageResult(List<string> Problems, List<string> Sections, List<string> Screens);
++
++    /// <summary>D400 (2), (3): every section with text of its own named with a code line that checks out, and every screen
++    /// the input listed named with an existing section, or with null and an undocumented finding for that screen.</summary>
++    static CoverageResult Coverage(JsonObject output, List<JsonObject> findings, JsonObject document, FindingChecker checker, List<string>? listed)
++    {
++        var problems = new List<string>();
++        var coverage = (JsonObject)output["coverage"]!;
++        var known = SectionTexts(document);
++        // A section counts once any of its entries has a line that checks out; an unknown id alone blocks nothing (a
++        // required section it was meant to be is reported missing below).
++        var entries = coverage["sections"]!.AsArray().OfType<JsonObject>()
++            .Select(e => (Id: ((string)e["section"]!).Trim(), Lines: e["evidence"]!.AsArray().Select(x => ((string)x!).Trim()).ToList())).ToList();
++        var good = entries.Where(e => known.ContainsKey(e.Id) && e.Lines.Any(l => checker.LineProblem(l) is null)).Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
++        var missingSections = SectionsToCover(document).Where(id => !good.Contains(id)).ToList();
++        foreach (var id in missingSections)
++        {
++            var bad = entries.Where(e => e.Id == id).SelectMany(e => e.Lines.Count == 0 ? ["no lines given"] : e.Lines.Select(checker.LineProblem).OfType<string>()).ToList();
++            problems.Add(bad.Count == 0 && !entries.Any(e => e.Id == id)
++                ? $"section {Short(id)} isn't in coverage.sections: give the code line(s) you read to check it"
++                : $"section {Short(id)}: no code line checks out ({string.Join("; ", bad.Take(3))})");
++        }
++        var missingScreens = new List<string>();
++        foreach (var route in listed ?? [])
++        {
++            string? Problem(JsonObject e) => Blank((string?)e["section"]) is { } section
++                ? known.ContainsKey(section) ? null : $"screen {route}: there's no section \"{Short(section)}\" in the FSD"
++                : findings.Any(f => (string)f["state"]! == "undocumented" && Blank((string?)f["screen"]) is { } s && RouteKey(s) == RouteKey(route))
++                    ? null
++                    : $"screen {route} has no section and no undocumented finding that passes its checks names it: give the section that describes it, or an undocumented finding with this screen";
++            // Listed twice: any entry that holds is enough.
++            var mine = coverage["screens"]!.AsArray().OfType<JsonObject>().Where(e => RouteKey((string)e["screen"]!) == RouteKey(route)).Select(Problem).ToList();
++            if (mine.Any(p => p is null)) continue;
++            problems.Add(mine.Count == 0 ? $"screen {route} isn't in coverage.screens: give the section that describes it, or null and an undocumented finding for it" : mine[0]!);
++            missingScreens.Add(route);
++        }
++        return new CoverageResult(problems, missingSections, missingScreens);
+     }
+ 
+     /// <summary>The finding as recorded: the schema's fields only, empty strings as null, evidence trimmed.</summary>
+@@ -308,6 +428,9 @@ public static partial class FsdReview
+             files = commit.Length > 0 ? Stangent.Graph.Git.FilesAt(root, commit) : null;
+         }
+ 
++        /// <summary>D400 (2): a coverage line must be <c>path:line</c> that exists at the reviewed commit; a path alone doesn't count.</summary>
++        public string? LineProblem(string e) => PathLine().IsMatch(e) ? EvidenceProblem(e) : $"\"{Short(e)}\" is a path with no line";
++
+         public List<string> Problems(JsonObject f)
+         {
+             var problems = new List<string>();
+@@ -511,7 +634,7 @@ public static partial class FsdReview
+         var errors = SchemaRegistry.Embedded.Validate($"fsd-review.v{Version}.json", review.ToJsonString());
+         if (errors.Count > 0) throw new StangentException("bad_review", $"review.json doesn't match its contract: {errors[0]}");
+         Quotes.WriteAtomic(ReviewJson(repo.Root, doc), CanonicalJson.Serialize(review));
+-        Quotes.WriteAtomic(ReviewMarkdown(repo.Root, doc), MarkdownReport(document, review));
++        Quotes.WriteAtomic(ReviewMarkdown(repo.Root, doc), MarkdownReport(document, review, runs));
+         return new JsonObject
+         {
+             ["doc"] = doc, ["file"] = Rel(repo.Root, ReviewJson(repo.Root, doc)), ["markdown"] = Rel(repo.Root, ReviewMarkdown(repo.Root, doc)),
+@@ -569,7 +692,7 @@ public static partial class FsdReview
+ 
+     /// <summary>review.md: the header (commit, FSD version, model, effort, runs, tokens), then each section's gaps, conflicts and
+     /// what it leaves out, and last the screens no section covers and what was dropped.</summary>
+-    static string MarkdownReport(JsonObject document, JsonObject review)
++    static string MarkdownReport(JsonObject document, JsonObject review, IReadOnlyList<JsonObject> checkedRuns)
+     {
+         var sb = new StringBuilder(Marker).Append("\n\n");
+         sb.Append($"# FSD review: {(string)document["title"]!} (`{(string)review["doc"]!}`)\n\n");
+@@ -579,6 +702,18 @@ public static partial class FsdReview
+         var counts = review["counts"]!;
+         sb.Append($"- {review["findings"]!.AsArray().Count} findings: {(int)counts["gap"]!} gaps, {(int)counts["conflict"]!} conflicts, {(int)counts["undocumented"]!} left out, {(int)counts["match"]!} matches; ");
+         sb.Append($"{review["dropped"]!.AsArray().Count} dropped by the code checks\n\n");
++        // D400 (4): what each run didn't account for, so a thin review shows as thin. A run checked before D400 has no entry.
++        foreach (var r in checkedRuns.Where(r => r["uncovered"] is JsonObject))
++        {
++            var u = (JsonObject)r["uncovered"]!;
++            var sections = u["sections"]!.AsArray().Select(x => (string)x!).ToList();
++            var line = sections.Count == 0 ? "every section checked against code" : $"section(s) not checked: {string.Join(", ", sections)}";
++            line += u["screens"] is JsonArray screens
++                ? screens.Count == 0 ? $"; all {(int?)r["screensListed"] ?? 0} screens in scope accounted for" : $"; screen(s) not accounted for: {string.Join(", ", screens.Select(x => $"`{(string)x!}`"))}"
++                : "; screens not checked by code (no inventory built)";
++            sb.Append($"- Coverage, run {(int)r["run"]!}: {line}\n");
++        }
++        if (checkedRuns.Any(r => r["uncovered"] is JsonObject)) sb.Append('\n');
+         sb.Append("Each finding rests on an AI's reading of the code. Code checked that every FSD quote is word for word in its section and every `file:line` exists; it did not check that the difference is real, or that a matched line does what its sentence says.\n\n");
+         var findings = review["findings"]!.AsArray().OfType<JsonObject>().ToList();
+         var heads = new (string State, string Title)[] { ("gap", "Gaps (the FSD says it, the code doesn't do it)"), ("conflict", "Conflicts (the code does it differently)"), ("undocumented", "Left out (the code has it, the FSD doesn't say)"), ("match", "Matches (the code does what the FSD says)") };
+diff --git a/src/Stangent.Spec/Instructions/fsd-reviewer.md b/src/Stangent.Spec/Instructions/fsd-reviewer.md
+index 60fd669..4b79898 100644
+--- a/src/Stangent.Spec/Instructions/fsd-reviewer.md
++++ b/src/Stangent.Spec/Instructions/fsd-reviewer.md
+@@ -4,7 +4,7 @@ place where the FSD and the code disagree, and every statement of the FSD the co
+ ## What you have
+ - The FSD, below under "The FSD". Each heading shows its section id in brackets, e.g. `[section id: 3.1]`.
+ - The source: the repo is your current folder. Treat the code as the truth of what the app does today.
+-- The scope, below under "Scope": the screens the FSD covers.
++- The scope, below under "Scope": the screens the FSD covers; and under "Screens in scope", the screens code found there.
+ 
+ ## Rules
+ - Read only files inside your current folder. Permission rules keep you out of stangent's own files (`specs/`,
+@@ -27,8 +27,16 @@ follows one but not the other (the list shows 20 orders per page, newest first;
+ first), report the difference only, quoting the whole sentence; no match for it. Report each difference and each match you can
+ back with code. A false alarm costs a reviewer's time; a missed difference is a missed bug.
+ 
++## Cover the whole FSD
++Go through the FSD section by section and check each against the code; don't stop after the first few differences.
++Your answer says what you checked, and code checks it:
++- `coverage.sections`: every section that has text of its own, each with the code line(s) you read to check it
++  (`path:line` or `path:from-to`; a path alone doesn't count).
++- `coverage.screens`: every screen listed under "Screens in scope", with the section that describes it, or null and an
++  undocumented finding for that screen.
++
+ ## Output
+-Return one JSON object matching the output schema below as your structured output:
++Return one JSON object matching the output schema below as your structured output: `findings` and `coverage`. Each finding:
+ 
+ - `state`: gap, conflict, undocumented or match.
+ - `section`: the FSD section id the finding belongs to, exactly as in the brackets; for an undocumented screen with no
+@@ -43,5 +51,6 @@ Return one JSON object matching the output schema below as your structured outpu
+   do it, never a path alone.
+ 
+ One finding per difference or matched statement (don't merge two into one; don't split one into several). Code checks
+-that each section exists, each `fsdQuote` is word for word inside its section and each `path:line` exists; a finding that
+-fails gets one chance to be fixed, then it is dropped.
++that each section exists, each `fsdQuote` is word for word inside its section, each `path:line` exists and the coverage
++is whole; a finding that fails gets one chance to be fixed, then it is dropped, and a section or screen still missing is
++reported as not checked.
+diff --git a/tests/Stangent.Core.Tests/FsdReviewTests.cs b/tests/Stangent.Core.Tests/FsdReviewTests.cs
+index 5f23a8e..92e6e71 100644
+--- a/tests/Stangent.Core.Tests/FsdReviewTests.cs
++++ b/tests/Stangent.Core.Tests/FsdReviewTests.cs
+@@ -76,8 +76,34 @@ public sealed class FsdReviewTests : IDisposable
+         ["evidence"] = new JsonArray([.. evidence.Select(e => (JsonNode)e)]),
+     };
+ 
+-    void Answer(int run, params JsonObject[] findings) =>
+-        File.WriteAllText(Path.Combine(FsdReview.RunDir(Root, "shop", run), "output.json"), new JsonObject { ["findings"] = new JsonArray([.. findings]) }.ToJsonString());
++    void Answer(int run, params JsonObject[] findings) => AnswerWith(run, Coverage(), findings);
++
++    /// <summary>The reviewer's answer with this coverage (D400); null leaves coverage out altogether.</summary>
++    void AnswerWith(int run, JsonObject? coverage, params JsonObject[] findings)
++    {
++        var o = new JsonObject { ["findings"] = new JsonArray([.. findings.Select(f => f.DeepClone())]) };
++        if (coverage is not null) o["coverage"] = coverage;
++        File.WriteAllText(Path.Combine(FsdReview.RunDir(Root, "shop", run), "output.json"), o.ToJsonString());
++    }
++
++    /// <summary>Coverage naming these sections (default: every one, 1, 1.1, 1.2 and 2) with a real line, and these screens.</summary>
++    static JsonObject Coverage(string[]? sections = null, params (string Screen, string? Section)[] screens) => new()
++    {
++        ["sections"] = new JsonArray([.. (sections ?? ["1", "1.1", "1.2", "2"]).Select(id => (JsonNode)new JsonObject { ["section"] = id, ["evidence"] = new JsonArray("src/orders.ts:1") })]),
++        ["screens"] = new JsonArray([.. screens.Select(x => (JsonNode)new JsonObject { ["screen"] = x.Screen, ["section"] = x.Section })]),
++    };
++
++    /// <summary>A built inventory with these routes (D400 (3)), as layer 3 writes its screen ids.</summary>
++    void Inventory(params string[] routes)
++    {
++        var path = Path.Combine(Root, "specs", "inventory.json");
++        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
++        File.WriteAllText(path, new JsonObject
++        {
++            ["contract"] = "inventory", ["version"] = 2,
++            ["screens"] = new JsonArray([.. routes.Select(r => (JsonNode)new JsonObject { ["id"] = $"page:web/tsconfig.json|{r}", ["title"] = $"Screen {r}" })]),
++        }.ToJsonString());
++    }
+ 
+     JsonObject Checked(int run) => JsonNode.Parse(File.ReadAllText(Path.Combine(FsdReview.RunDir(Root, "shop", run), "checked.json")))!.AsObject();
+ 
+@@ -102,7 +128,7 @@ public sealed class FsdReviewTests : IDisposable
+         Assert.Contains("### 1.1 Order list  [section id: 1.1]", input);
+         Assert.Contains("Orders ship within two days of payment.", input);
+         Assert.Contains("`/orders`, `/settings`", input);
+-        Assert.Contains("urn:stangent:schema:fsd-review-output:v2", input);
++        Assert.Contains("urn:stangent:schema:fsd-review-output:v3", input);
+         Assert.DoesNotContain("Kavita", input);
+ 
+         var limits = FsdReview.DriverLimits(Repo, "shop", 1);
+@@ -350,4 +376,185 @@ public sealed class FsdReviewTests : IDisposable
+         Assert.Equal(["failed", "not prepared"], status["run"]!.AsArray().Select(r => (string)r!["stage"]!));
+         Assert.False((bool)status["merged"]!);
+     }
++
++    // ---- coverage (D400) -----------------------------------------------------------------------------------------------
++
++    [Fact]
++    public void Prepare_lists_the_inventorys_screens_in_scope_by_whole_path_segment()
++    {
++        Inventory("/orders", "/orders/:orderId", "/ordersx", "/settings/", "/help");
++        FsdReview.Prepare(Repo, "shop", 1, again: true);
++        var input = File.ReadAllText(Path.Combine(FsdReview.RunDir(Root, "shop", 1), "input.md"));
++        Assert.Contains("# Screens in scope", input);
++        Assert.Contains("- `/orders` (Screen /orders)", input);
++        Assert.Contains("- `/orders/:orderId`", input);
++        Assert.Contains("- `/settings/`", input);
++        Assert.DoesNotContain("`/ordersx`", input);
++        Assert.DoesNotContain("`/help`", input);
++    }
++
++    [Fact]
++    public void With_no_inventory_the_input_says_so_and_the_run_records_screens_as_unchecked()
++    {
++        var step = Run(1, F("gap", "1", "Orders ship within two days of payment.", null, "No shipping deadline.", "src/orders.ts:3"));
++        Assert.Equal("recorded", step.Status);
++        Assert.Contains("no inventory built", File.ReadAllText(Path.Combine(FsdReview.RunDir(Root, "shop", 1), "input.md")));
++        var uncovered = Checked(1)["uncovered"]!;
++        Assert.Empty(uncovered["sections"]!.AsArray());
++        Assert.Null(uncovered["screens"]);
++        Run(2, F("gap", "1", "Orders ship within two days of payment.", null, "No shipping deadline.", "src/orders.ts:3"));
++        FsdReview.Merge(Repo, "shop");
++        var md = File.ReadAllText(FsdReview.ReviewMarkdown(Root, "shop"));
++        Assert.Contains("Coverage, run 1: every section checked against code; screens not checked by code (no inventory built)", md);
++    }
++
++    [Fact]
++    public void A_section_left_out_of_coverage_gets_the_retry_then_is_recorded_as_not_checked_with_the_findings_kept()
++    {
++        FsdReview.Prepare(Repo, "shop", 1, again: true);
++        var gap = F("gap", "1", "Orders ship within two days of payment.", null, "No shipping deadline.", "src/orders.ts:3");
++        AnswerWith(1, Coverage(["1", "1.2", "2"]), gap);
++        var step = FsdReview.Check(Repo, "shop", 1, null);
++        Assert.Equal("retry", step.Status);
++        Assert.Contains(step.Errors!, e => e == "coverage: section 1.1 isn't in coverage.sections: give the code line(s) you read to check it");
++        AnswerWith(1, Coverage(["1", "1.2", "2"]), gap);
++        step = FsdReview.Check(Repo, "shop", 1, null);
++        Assert.Equal("recorded", step.Status);
++        Assert.Contains(step.Errors!, e => e == "not checked: section(s) 1.1");
++        var run = Checked(1);
++        Assert.Single(run["findings"]!.AsArray());
++        Assert.Equal(["1.1"], run["uncovered"]!["sections"]!.AsArray().Select(x => (string)x!));
++        Run(2, gap);
++        FsdReview.Merge(Repo, "shop");
++        Assert.Contains("Coverage, run 1: section(s) not checked: 1.1", File.ReadAllText(FsdReview.ReviewMarkdown(Root, "shop")));
++    }
++
++    [Fact]
++    public void A_coverage_line_must_be_a_real_line_a_path_alone_or_a_line_past_the_end_doesnt_count()
++    {
++        FsdReview.Prepare(Repo, "shop", 1, again: true);
++        var coverage = Coverage(["1", "2"]);
++        var sections = coverage["sections"]!.AsArray();
++        sections.Add(new JsonObject { ["section"] = "1.1", ["evidence"] = new JsonArray("src/orders.ts") });
++        sections.Add(new JsonObject { ["section"] = "1.2", ["evidence"] = new JsonArray("src/orders.ts:99") });
++        sections.Add(new JsonObject { ["section"] = "9", ["evidence"] = new JsonArray("src/orders.ts:1") });
++        // One good line among bad ones is enough.
++        sections[0]!["evidence"]!.AsArray().Add("nowhere.ts:1");
++        AnswerWith(1, coverage);
++        var step = FsdReview.Check(Repo, "shop", 1, null);
++        Assert.Equal("retry", step.Status);
++        Assert.Contains(step.Errors!, e => e.StartsWith("coverage: section 1.1: no code line checks out (\"src/orders.ts\" is a path with no line)"));
++        Assert.Contains(step.Errors!, e => e.StartsWith("coverage: section 1.2: no code line checks out (evidence \"src/orders.ts:99\": line 99 is past the end"));
++        // An unknown id beside the rest blocks nothing; a section with one good line among bad ones is covered.
++        Assert.DoesNotContain(step.Errors!, e => e.Contains("\"9\"") || e.Contains("section 1:"));
++        Assert.Equal(2, step.Errors!.Count);
++    }
++
++    [Fact]
++    public void Every_listed_screen_needs_its_section_or_an_undocumented_finding()
++    {
++        Inventory("/orders", "/orders/:orderId", "/settings", "/settings/audit");
++        FsdReview.Prepare(Repo, "shop", 1, again: true);
++        var audit = F("undocumented", null, null, "/settings/audit/", "An audit log screen the FSD doesn't describe.", "src/settings/currency.ts:1");
++        // /orders/:orderId missing; /settings null with no finding; /orders names no real section.
++        AnswerWith(1, Coverage(null, ("/orders", "7"), ("/settings", null), ("/SETTINGS/audit", null)), audit);
++        var step = FsdReview.Check(Repo, "shop", 1, null);
++        Assert.Equal("retry", step.Status);
++        Assert.Contains(step.Errors!, e => e == "coverage: screen /orders: there's no section \"7\" in the FSD");
++        Assert.Contains(step.Errors!, e => e.StartsWith("coverage: screen /orders/:orderId isn't in coverage.screens"));
++        Assert.Contains(step.Errors!, e => e.StartsWith("coverage: screen /settings has no section and no undocumented finding that passes its checks names it"));
++        Assert.DoesNotContain(step.Errors!, e => e.Contains("/settings/audit"));
++        AnswerWith(1, Coverage(null, ("/orders", "1"), ("/orders/:orderId", "1.1"), ("/settings", "2"), ("/settings/audit", null)), audit);
++        step = FsdReview.Check(Repo, "shop", 1, null);
++        Assert.Equal("recorded", step.Status);
++        Assert.Null(step.Errors);
++        Assert.Empty(Checked(1)["uncovered"]!["screens"]!.AsArray());
++        Assert.Equal(4, (int)Checked(1)["screensListed"]!);
++    }
++
++    [Fact]
++    public void An_answer_with_no_coverage_is_retried_then_recorded_with_everything_unchecked()
++    {
++        Inventory("/orders");
++        FsdReview.Prepare(Repo, "shop", 1, again: true);
++        var gap = F("gap", "1", "Orders ship within two days of payment.", null, "No shipping deadline.", "src/orders.ts:3");
++        AnswerWith(1, null, gap);
++        Assert.Equal("retry", FsdReview.Check(Repo, "shop", 1, null).Status);
++        AnswerWith(1, null, gap);
++        var step = FsdReview.Check(Repo, "shop", 1, null);
++        Assert.Equal("recorded", step.Status);
++        var run = Checked(1);
++        Assert.Single(run["findings"]!.AsArray());
++        Assert.Equal(["1", "1.1", "1.2", "2"], run["uncovered"]!["sections"]!.AsArray().Select(x => (string)x!));
++        Assert.Equal(["/orders"], run["uncovered"]!["screens"]!.AsArray().Select(x => (string)x!));
++    }
++
++    [Fact]
++    public void A_dropped_undocumented_finding_accounts_for_no_screen()
++    {
++        Inventory("/settings/audit");
++        FsdReview.Prepare(Repo, "shop", 1, again: true);
++        var bad = F("undocumented", null, null, "/settings/audit", "An audit log screen.", "nowhere.ts:1");
++        AnswerWith(1, Coverage(null, ("/settings/audit", null)), bad);
++        var step = FsdReview.Check(Repo, "shop", 1, null);
++        Assert.Contains(step.Errors!, e => e.StartsWith("coverage: screen /settings/audit has no section and no undocumented finding"));
++        AnswerWith(1, Coverage(null, ("/settings/audit", null)), bad);
++        step = FsdReview.Check(Repo, "shop", 1, null);
++        Assert.Equal("recorded", step.Status);
++        Assert.Empty(Checked(1)["findings"]!.AsArray());
++        Assert.Equal(["/settings/audit"], Checked(1)["uncovered"]!["screens"]!.AsArray().Select(x => (string)x!));
++    }
++
++    [Fact]
++    public void Malformed_coverage_never_fails_the_run_its_findings_are_recorded_with_everything_unchecked()
++    {
++        FsdReview.Prepare(Repo, "shop", 1, again: true);
++        var gap = F("gap", "1", "Orders ship within two days of payment.", null, "No shipping deadline.", "src/orders.ts:3");
++        var broken = new JsonObject { ["sections"] = new JsonArray(new JsonObject { ["section"] = "", ["evidence"] = new JsonArray() }), ["screens"] = new JsonArray() };
++        AnswerWith(1, broken, gap);
++        var step = FsdReview.Check(Repo, "shop", 1, null);
++        Assert.Equal("retry", step.Status);
++        Assert.Contains(step.Errors!, e => e.StartsWith("coverage: Schema: "));
++        AnswerWith(1, (JsonObject)broken.DeepClone(), gap);
++        step = FsdReview.Check(Repo, "shop", 1, null);
++        Assert.Equal("recorded", step.Status);
++        Assert.Single(Checked(1)["findings"]!.AsArray());
++        Assert.Equal(4, Checked(1)["uncovered"]!["sections"]!.AsArray().Count);
++        // Empty evidence is no schema error, just a section not covered.
++        FsdReview.Prepare(Repo, "shop", 2, again: true);
++        var empty = Coverage(["1", "1.1", "1.2"]);
++        empty["sections"]!.AsArray().Add(new JsonObject { ["section"] = "2", ["evidence"] = new JsonArray() });
++        AnswerWith(2, empty, gap);
++        step = FsdReview.Check(Repo, "shop", 2, null);
++        Assert.Equal(["coverage: section 2: no code line checks out (no lines given)"], step.Errors!);
++    }
++
++    [Fact]
++    public void A_screen_listed_twice_holds_when_either_entry_does_and_a_slash_scope_is_the_whole_app()
++    {
++        File.WriteAllText(Path.Combine(Root, "stangent.yaml"), File.ReadAllText(Path.Combine(Root, "stangent.yaml")).Replace("scope: [/orders, /settings]", "scope: [/]"));
++        Inventory("/orders", "/help");
++        FsdReview.Prepare(Repo, "shop", 1, again: true);
++        var input = File.ReadAllText(Path.Combine(FsdReview.RunDir(Root, "shop", 1), "input.md"));
++        Assert.Contains("- `/help`", input);
++        AnswerWith(1, Coverage(null, ("/orders", null), ("/orders/", "1"), ("/help", "2")));
++        var step = FsdReview.Check(Repo, "shop", 1, null);
++        Assert.Equal("recorded", step.Status);
++        Assert.Null(step.Errors);
++    }
++
++    [Fact]
++    public void A_run_prepared_before_coverage_is_checked_without_it()
++    {
++        FsdReview.Prepare(Repo, "shop", 1, again: true);
++        var statePath = Path.Combine(FsdReview.RunDir(Root, "shop", 1), "state.json");
++        var state = JsonNode.Parse(File.ReadAllText(statePath))!.AsObject();
++        state.Remove("askedCoverage");
++        state.Remove("screens");
++        File.WriteAllText(statePath, state.ToJsonString());
++        AnswerWith(1, null, F("gap", "1", "Orders ship within two days of payment.", null, "No shipping deadline.", "src/orders.ts:3"));
++        var step = FsdReview.Check(Repo, "shop", 1, null);
++        Assert.Equal("recorded", step.Status);
++        Assert.Null(Checked(1)["uncovered"]);
++    }
+ }
+diff --git a/schemas/fsd-review-output.v3.json b/schemas/fsd-review-output.v3.json
+new file mode 100644
+index 0000000..d90111a
+--- /dev/null
++++ b/schemas/fsd-review-output.v3.json
+@@ -0,0 +1,151 @@
++{
++  "$schema": "http://json-schema.org/draft-07/schema#",
++  "$id": "urn:stangent:schema:fsd-review-output:v3",
++  "title": "What stangent-fsd-reviewer returns (layer 5, D341; matches D366; coverage D400)",
++  "description": "Every place the FSD and the code disagree, one finding per difference: a gap (the FSD describes what the code doesn't have), a conflict (the code does it differently) or undocumented (the code has it, the FSD leaves it out); and every FSD statement the code does as written, a match (D366). Code checks the section exists, every fsdQuote is word for word inside its section, and every evidence path (and line) exists at the reviewed commit. Coverage (D400): every FSD section with text of its own, with a code line read for it, and every screen in scope the input lists, with the section that describes it or null and an undocumented finding for it; code checks both.",
++  "type": "object",
++  "required": [
++    "findings",
++    "coverage"
++  ],
++  "additionalProperties": false,
++  "properties": {
++    "findings": {
++      "type": "array",
++      "maxItems": 600,
++      "items": {
++        "type": "object",
++        "required": [
++          "state",
++          "section",
++          "fsdQuote",
++          "screen",
++          "note",
++          "evidence"
++        ],
++        "additionalProperties": false,
++        "properties": {
++          "state": {
++            "enum": [
++              "gap",
++              "conflict",
++              "undocumented",
++              "match"
++            ]
++          },
++          "section": {
++            "description": "The FSD section id the finding belongs to, exactly as in its heading's brackets; null only for an undocumented screen no section fits.",
++            "type": [
++              "string",
++              "null"
++            ],
++            "maxLength": 300
++          },
++          "fsdQuote": {
++            "description": "For a gap, conflict or match: the FSD sentence(s) concerned, copied word for word from that section. For undocumented: null.",
++            "type": [
++              "string",
++              "null"
++            ],
++            "maxLength": 2000
++          },
++          "screen": {
++            "description": "For undocumented: the screen's full frontend route as the router resolves it, e.g. /orders/:orderId. Otherwise null.",
++            "type": [
++              "string",
++              "null"
++            ],
++            "maxLength": 300
++          },
++          "note": {
++            "description": "One or two sentences: what differs, or for a match what the code does, naming the option, action or rule in plain words.",
++            "type": "string",
++            "minLength": 3,
++            "maxLength": 1000
++          },
++          "evidence": {
++            "description": "Code you read that backs the finding (for a match, the line(s) that do it): paths relative to the repo root with forward slashes, each with its line (path:line or path:from-to); a path alone for where a missing thing would be.",
++            "type": "array",
++            "minItems": 1,
++            "maxItems": 12,
++            "items": {
++              "type": "string",
++              "minLength": 1,
++              "maxLength": 400
++            }
++          }
++        }
++      }
++    },
++    "coverage": {
++      "description": "What you checked (D400): every section with text of its own, and every screen the input lists under \"Screens in scope\".",
++      "type": "object",
++      "required": [
++        "sections",
++        "screens"
++      ],
++      "additionalProperties": false,
++      "properties": {
++        "sections": {
++          "type": "array",
++          "maxItems": 1000,
++          "items": {
++            "type": "object",
++            "required": [
++              "section",
++              "evidence"
++            ],
++            "additionalProperties": false,
++            "properties": {
++              "section": {
++                "description": "The section id, exactly as in its heading's brackets.",
++                "type": "string",
++                "minLength": 1,
++                "maxLength": 300
++              },
++              "evidence": {
++                "description": "Code you read to check this section: path:line or path:from-to, relative to the repo root. A path alone doesn't count.",
++                "type": "array",
++                "minItems": 0,
++                "maxItems": 50,
++                "items": {
++                  "type": "string",
++                  "minLength": 1,
++                  "maxLength": 400
++                }
++              }
++            }
++          }
++        },
++        "screens": {
++          "type": "array",
++          "maxItems": 2000,
++          "items": {
++            "type": "object",
++            "required": [
++              "screen",
++              "section"
++            ],
++            "additionalProperties": false,
++            "properties": {
++              "screen": {
++                "description": "The route exactly as the input lists it.",
++                "type": "string",
++                "minLength": 1,
++                "maxLength": 300
++              },
++              "section": {
++                "description": "The section id that describes this screen; null when no section does, and then an undocumented finding names this screen.",
++                "type": [
++                  "string",
++                  "null"
++                ],
++                "maxLength": 300
++              }
++            }
++          }
++        }
++      }
++    }
++  }
++}

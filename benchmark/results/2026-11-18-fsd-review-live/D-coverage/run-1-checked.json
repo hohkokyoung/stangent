@@ -1,0 +1,127 @@
+{
+  "commit": "f4abc65c5e04bf2ccdbd681550c92a3ed1b50893",
+  "doc": "kavita-fsd",
+  "dropped": [],
+  "findings": [
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:113-133"
+      ],
+      "fsdQuote": "Changes on this page are stored only when the administrator presses Save.",
+      "note": "The General page has no Save button; edits that pass validation are auto-saved after a 300 ms debounce.",
+      "screen": null,
+      "section": "10.1",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:157"
+      ],
+      "fsdQuote": "Manage Collections is turned on by default for a new library.",
+      "note": "The library form's default for manageCollections is false, not true.",
+      "screen": null,
+      "section": "10.3",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:94-95"
+      ],
+      "fsdQuote": "Cache Size must be at least 50 MB",
+      "note": "Cache size has a minimum validator of 50.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:90"
+      ],
+      "fsdQuote": "the base URL must start and end with a slash",
+      "note": "Base URL is validated with a pattern that requires a leading and trailing slash.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.html:4",
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:159-160"
+      ],
+      "fsdQuote": "A Reset to Default button restores these settings after a confirmation.",
+      "note": "A Reset to Default button calls resetToDefaults, which asks for confirmation first.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:152-154"
+      ],
+      "fsdQuote": "Include in Dashboard and Include in Search are turned on by default.",
+      "note": "Both default to true in the library form.",
+      "screen": null,
+      "section": "10.3",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:266-279"
+      ],
+      "fsdQuote": "| Book | Pdf, Epub |",
+      "note": "Default file types per library type match the table: Manga Archive+Image, Comic Archive, Book Pdf+Epub, Light Novel Epub, Image Image.",
+      "screen": null,
+      "section": "10.3",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:25"
+      ],
+      "fsdQuote": null,
+      "note": "The All Annotations screen exists at /browse/annotations but the FSD does not describe it.",
+      "screen": "/browse/annotations",
+      "section": null,
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:23"
+      ],
+      "fsdQuote": null,
+      "note": "The Browse Genres screen exists at /browse/genres but the FSD does not describe it.",
+      "screen": "/browse/genres",
+      "section": null,
+      "state": "undocumented"
+    }
+  ],
+  "fsdVersion": "781973da1378f7804d05e38d0ccaf8693e6c1c86b3de76d65d0638a9e9c3df66",
+  "inputs": "sha256:4011df9ea3282a20ad390766ed2e2e9c1f7a8253ccda26279ae991bda0c73b9c",
+  "retried": true,
+  "run": 1,
+  "screensListed": 22,
+  "uncovered": {
+    "screens": [],
+    "sections": [
+      "9.2",
+      "10"
+    ]
+  },
+  "usage": {
+    "cacheReadTokens": 135978,
+    "cacheWriteTokens": 23128,
+    "calls": 2,
+    "costUsd": 0.201683,
+    "inputTokens": 18,
+    "model": "claude-sonnet-5-5",
+    "ms": 55524,
+    "outputTokens": 8194,
+    "settings": {
+      "agent": "stangent-fsd-reviewer",
+      "claudeVersion": "2.1.292 (Claude Code)",
+      "effort": "medium",
+      "mode": "agentic",
+      "model": "claude-sonnet-5-5"
+    }
+  }
+}

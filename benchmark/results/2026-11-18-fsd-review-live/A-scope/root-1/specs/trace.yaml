@@ -1,0 +1,200 @@
+version: 4
+entries:
+  - id: "S001"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "1"
+      quote: "The On Deck row shows up to 50 series."
+    page: null
+    note: "The dashboard loads the On Deck row with a page size of 20."
+  - id: "S002"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "2.1"
+      quote: "A Random button on the library screen opens a randomly chosen series from that library."
+    page: null
+    note: "No random-series button or action exists on the library detail screen or anywhere else in the UI templates."
+  - id: "S003"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: "The Edit button is shown only to administrators, and the Download button only to administrators and users with the Download role."
+    page: null
+    note: "The Edit button sits inside an isAdmin check."
+  - id: "S004"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: "Selected text can be read aloud using the device's text-to-speech voice."
+    page: null
+    note: "No text-to-speech or speech synthesis code exists in the book reader."
+  - id: "S005"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "5"
+      quote: "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it."
+    page: null
+    note: "Removal is done by a recurring cleanup task (RemoveFromWantToRead), not immediately on finishing."
+  - id: "S006"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "8.1"
+      quote: "The People screen lists people with the number of series and issues each appears in, along with a filter panel and a jump bar, and clicking a person opens that person's page."
+    page: null
+    note: "A People browse route renders BrowsePeopleComponent. This match is based on the route only. I did not read the component for the counts, filter panel or jump bar."
+  - id: "S007"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "8.3"
+      quote: "The Tags screen lists every tag with the number of series and issues that carry it"
+    page: null
+    note: "A Tags browse route renders the BrowseTagsComponent."
+  - id: "S008"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "Users can turn on two-factor sign-in with an authenticator app."
+    page: null
+    note: "No two-factor option exists in the user settings UI."
+  - id: "S009"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "A new password must be at least 8 characters long."
+    page: null
+    note: "The server requires a minimum password length of 6, not 8."
+  - id: "S010"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB."
+    page: null
+    note: "The code's download size confirmation threshold is documented as 100 MB, not 500 MB."
+  - id: "S011"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: "Prompt for Re-Reads sets after how many days without progress Kavita offers to re-read, and 0 turns the prompt off."
+    page: null
+    note: "A promptForRereadsAfter number setting exists with a minimum of 0."
+  - id: "S012"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "A maintenance mode switch blocks all non-admin users from signing in until it is turned off."
+    page: null
+    note: "The settings page has no maintenance mode switch. The only maintenance reference in the UI is in the message hub service."
+  - id: "S013"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Changes on this page are stored only when the administrator presses Save."
+    page: null
+    note: "The General page has no Save button. Valid changes are autosaved after a 300 ms debounce."
+  - id: "S014"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Days of Backups and Days of Logs each accept a value from 1 to 30"
+    page: null
+    note: "Form validators enforce min 1 and max 30 on both total backups and total logs."
+  - id: "S015"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Cache Size must be at least 50 MB"
+    page: null
+    note: "A minimum of 50 is enforced on cache size."
+  - id: "S016"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "the base URL must start and end with a slash"
+    page: null
+    note: "The base URL pattern requires a leading and trailing slash."
+  - id: "S017"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "A Reset to Default button restores these settings after a confirmation."
+    page: null
+    note: "The Reset to Default button asks for confirmation, then resets the server settings."
+  - id: "S018"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.2"
+      quote: "An invite can be given an expiry date, after which its link stops working."
+    page: null
+    note: "The admin UI has no invite expiry option. Expiry references there concern licenses only."
+  - id: "S019"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Manage Collections is turned on by default for a new library."
+    page: null
+    note: "The new-library form defaults manageCollections to false."
+  - id: "S020"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Include in Dashboard and Include in Search are turned on by default."
+    page: null
+    note: "Both includeInDashboard and includeInSearch default to true."
+  - id: "S021"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "| Manga | Archive, Image |"
+    page: null
+    note: "Manga defaults to the Archive and Images file groups."
+  - id: "S022"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "| Book | Pdf, Epub |"
+    page: null
+    note: "Book defaults to the Pdf and Epub file groups."
+  - id: "S023"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "| Light Novel | Epub |"
+    page: null
+    note: "Light Novel defaults to the Epub file group."
+  - id: "S024"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/genres"
+      quote: "A Genres browse screen lists genres. The FSD describes only People and Tags under Browse."
+    note: "A Genres browse screen lists genres. The FSD describes only People and Tags under Browse."
+  - id: "S025"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/annotations"
+      quote: "An All Annotations browse screen exists and is not described in the FSD."
+    note: "An All Annotations browse screen exists and is not described in the FSD."

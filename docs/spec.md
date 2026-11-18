@@ -337,14 +337,17 @@ stangent fsd review <doc> --run 2 …      # fsd.reviewRuns, default 2
 stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and review.md
 ```
 
-- **Input** (`fsd review`): the reviewer's instructions (D321's prompt, with no app named), `fsd.scope`'s route
-  prefixes, the current version's sections as Markdown with each id in its heading (`### 2.1 Library  [section id:
-  2.1]`), and the output schema `fsd-review-output.v2.json`: findings with `state` (gap, conflict, undocumented, and
-  since D366 match: a statement the code does as written, with the line that does it),
-  `section`, `fsdQuote`, `screen`, `note`, `evidence` (`path:line`). A checked run with the same input on the same commit
+- **Input** (`fsd review`, D401): D323's measured prompt word for word but for the app's name and three filled-in
+  parts: `fsd.scope`'s route prefixes, where the FSD is and where to write the answer. The FSD is a file beside the input
+  (`fsd.md`: the current version's sections as Markdown with each id in its heading, `### 2.1 Library  [section id:
+  2.1]`); the reviewer reads it and writes its answer as a file, findings with `state` (gap, conflict, undocumented),
+  `section`, `fsdQuote`, `screen`, `note`, `evidence` (`path:line`), checked against `fsd-review-output.v2.json` (which
+  still accepts D366's match; the prompt doesn't ask for matches, D401). Why: the built prompt (FSD inline, structured
+  output, matches) scored 2–17 of 30 live where D323's scored 18 on the same harness (D399). A checked run with the same input on the same commit
   is `current`, no AI; `--again` runs it anyway. AI off (`ai.enabled: false`) refuses.
 - **Limits**, as the file finder's (D101): Read, Grep and Glob in a throwaway worktree of the commit the run was prepared on; never `.stangent/`,
-  `.git/`, `specs/` (earlier reviews, the FSD's record) or `stangent.yaml`; structured output; `fsd.reviewBudget`
+  `.git/`, `specs/` (earlier reviews, the FSD's record) or `stangent.yaml`; Write only into a throwaway folder outside the
+  repo that holds `fsd.md` and its answer (an `Edit(...)` rule; the driver copies the answer to the run's `output.json`); `fsd.reviewBudget`
   (60 turns, $3 per run by default, the retry inside it). Kavita's runs used 205–242K tokens.
 - **Checks** (`fsd review-check`), every finding: a known state; a match gives at least one `path:line`, and one run
   can't report the same section and quote as a match and as a gap or conflict (the match goes back for the retry, the difference stands, D366, D367); the section exists in the reviewed version (null only for

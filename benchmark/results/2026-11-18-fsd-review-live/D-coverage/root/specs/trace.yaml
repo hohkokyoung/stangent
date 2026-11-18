@@ -1,0 +1,95 @@
+version: 4
+entries:
+  - id: "S001"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "A new password must be at least 8 characters long."
+    page: null
+    note: "The server requires a password of at least 6 characters (RequiredLength = 6). The change-password form only marks the field required, with no 8-character rule."
+  - id: "S002"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Changes on this page are stored only when the administrator presses Save."
+    page: null
+    note: "The General page has no Save button; edits that pass validation are auto-saved after a 300 ms debounce."
+  - id: "S003"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Cache Size must be at least 50 MB"
+    page: null
+    note: "Cache size has a minimum validator of 50."
+  - id: "S004"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "the base URL must start and end with a slash"
+    page: null
+    note: "Base URL is validated with a pattern that requires a leading and trailing slash."
+  - id: "S005"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "A Reset to Default button restores these settings after a confirmation."
+    page: null
+    note: "A Reset to Default button calls resetToDefaults, which asks for confirmation first."
+  - id: "S006"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Days of Backups and Days of Logs each accept a value from 1 to 30"
+    page: null
+    note: "totalBackups and totalLogs are validated with min 1 and max 30. I did not check the default of 30."
+  - id: "S007"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Manage Collections is turned on by default for a new library."
+    page: null
+    note: "The library form's default for manageCollections is false, not true."
+  - id: "S008"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Include in Dashboard and Include in Search are turned on by default."
+    page: null
+    note: "Both default to true in the library form."
+  - id: "S009"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "| Book | Pdf, Epub |"
+    page: null
+    note: "Default file types per library type match the table: Manga Archive+Image, Comic Archive, Book Pdf+Epub, Light Novel Epub, Image Image."
+  - id: "S010"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/annotations"
+      quote: "The All Annotations screen exists at /browse/annotations but the FSD does not describe it."
+    note: "The All Annotations screen exists at /browse/annotations but the FSD does not describe it."
+  - id: "S011"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/genres"
+      quote: "The Browse Genres screen exists at /browse/genres but the FSD does not describe it."
+    note: "The Browse Genres screen exists at /browse/genres but the FSD does not describe it."
+  - id: "S012"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "A PDF reader route exists; the FSD describes only the image and book readers."
+    note: "A PDF reader route exists; the FSD describes only the image and book readers."

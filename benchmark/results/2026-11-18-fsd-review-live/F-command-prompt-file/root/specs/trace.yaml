@@ -1,0 +1,120 @@
+version: 4
+entries:
+  - id: "S001"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "1"
+      quote: "The On Deck row shows up to 50 series."
+    page: null
+    note: "The dashboard On Deck row requests page 1 with a page size of 20, not 50."
+  - id: "S002"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "A new password must be at least 8 characters long."
+    page: null
+    note: "The code requires only 6 characters, both in the client forms and in the server identity options."
+  - id: "S003"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB."
+    page: null
+    note: "The download size warning threshold is 100 MB (104,857,600 bytes), not 500 MB."
+  - id: "S004"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Changes on this page are stored only when the administrator presses Save."
+    page: null
+    note: "The General page saves automatically: a debounced subscription on the form model pushes valid changes to the server, with no Save button step."
+  - id: "S005"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "A maintenance mode switch blocks all non-admin users from signing in until it is turned off."
+    page: null
+    note: "No maintenance mode setting or switch exists; 'maintenance' only appears as the nightly maintenance task in the server controller."
+  - id: "S006"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Manage Collections is turned on by default for a new library."
+    page: null
+    note: "The new library form defaults manageCollections to false."
+  - id: "S007"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Include in Dashboard and Include in Search are turned on by default."
+    page: null
+    note: "The new library form defaults includeInDashboard and includeInSearch to true."
+  - id: "S008"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Each type starts with its own file types:"
+    page: null
+    note: "Default file types per library type match the table (Manga archive+image, Comic/ComicVine archive, Book pdf+epub, Light Novel epub, Image image)."
+  - id: "S009"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Days of Backups and Days of Logs each accept a value from 1 to 30 and both default to 30."
+    page: null
+    note: "Form validation and the server both limit both values to 1-30, and both are seeded with 30."
+  - id: "S010"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Cache Size must be at least 50 MB"
+    page: null
+    note: "The form requires cacheSize to be at least 50."
+  - id: "S011"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "the base URL must start and end with a slash."
+    page: null
+    note: "The base URL field must match a pattern that begins and ends with a slash."
+  - id: "S012"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "A Reset to Default button restores these settings after a confirmation."
+    page: null
+    note: "Reset to defaults asks for confirmation, then calls the server reset and reloads the form."
+  - id: "S013"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: "Selected text can be read aloud using the device's text-to-speech voice."
+    page: null
+    note: "No speech synthesis or text-to-speech code was found in the book reader."
+  - id: "S014"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/genres"
+      quote: "A Genres browse screen exists that the FSD does not describe."
+    note: "A Genres browse screen exists that the FSD does not describe."
+  - id: "S015"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/annotations"
+      quote: "An All Annotations browse screen exists that the FSD does not describe."
+    note: "An All Annotations browse screen exists that the FSD does not describe."

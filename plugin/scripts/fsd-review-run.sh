@@ -8,7 +8,7 @@
 # usage: fsd-review-run.sh [--max-cost USD|none] [--stop-at-usage PCT] [--estimate] [--model M] [--effort E] [--again] <doc>
 # --again runs every review again although the FSD and the commit are unchanged (a run otherwise stays as checked).
 # The reviewer runs as the file finder does (D101): Read, Grep and Glob in a throwaway git worktree of the commit checked
-# out (no .stangent/, no untracked or ignored files), never specs/ or stangent.yaml, its answer as structured output,
+# out (no .stangent/, no untracked or ignored files), never specs/ or stangent.yaml, its answer a file it writes in a throwaway folder (D401),
 # under the turn and dollar cap `stangent fsd review` returns (fsd.reviewBudget). Outside git it searches the repo
 # folder under the same rules. The conversation is kept under .stangent/fsd/<doc>/review/transcripts/.
 # --max-cost (T.2): the hard stop, see cost-guard.sh. A run starts only if all of its own cap is left.
@@ -55,12 +55,11 @@ stop_if_no_envelope() {
 }
 
 # One reviewer call: the input file goes in on stdin (it may not read stangent's folder), it searches a throwaway git
-# worktree of HEAD under stangent's limits with the repo folder swapped for the same folder in the worktree, and its
-# structured answer is written where the step wants it.
+# worktree of HEAD under stangent's limits with the repo folder swapped for the same folder in the worktree; it reads the
+# FSD and writes its answer in a throwaway folder (D401), and the answer is copied where the step wants it.
 review_search() {
-  local step="$1" usage="$2" run="$3" out schema input limits transcript root prefix dir tmp="" allowed=() denied=() f
+  local step="$1" usage="$2" run="$3" out input limits transcript root prefix dir tmp="" io allowed=() denied=() f label rundir
   out="$(jq -r '.result.next.output' <<<"$step")"
-  schema="$($STANGENT spec schema "$(jq -r '.result.next.schema' <<<"$step")")"
   limits="$(jq -c '.result.next.limits' <<<"$step")"
   root="$(jq -r '.root' <<<"$limits")"
   dir="$PWD"
@@ -84,29 +83,47 @@ review_search() {
   fi
   while IFS= read -r f; do allowed+=("$f"); done < <(jq -r '.allowedTools[]' <<<"$limits")
   while IFS= read -r f; do denied+=("$f"); done < <(jq -r '.disallowedTools[]?' <<<"$limits")
+  # D401: the FSD is a file the reviewer reads and its answer a file it writes, both in a throwaway folder outside the
+  # repo it searches; it may read that folder and write only there.
+  local fsdsrc
+  fsdsrc="$(jq -r '.result.next.prompt' <<<"$step" | sed -n 's/^FSD: //p')"
+  if [ -z "$fsdsrc" ] || [ ! -f "$fsdsrc" ]; then
+    printf 'error\t%s\trun-%s\tno FSD file for the reviewer (%s); prepare the run again with --again\n' "$DOC" "$run" "${fsdsrc:-none named}" >&2
+    [ -z "$tmp" ] || { git worktree remove --force "$tmp/repo" >/dev/null 2>&1; rm -rf "$tmp"; trap - INT TERM; }
+    : >"$usage"; return 0
+  fi
+  io="$(cd "$(mktemp -d)" && pwd -P)"
+  cp "$fsdsrc" "$io/fsd.md"
+  # It may read the folder and write only its answer.
+  allowed+=("Read(/$io/**)" "Edit(/$io/output.json)")
   input=""
   while IFS=$'\t' read -r label f; do
-    input+="# $label"$'\n\n'"$(cat "$f")"$'\n\n'
-  done < <(jq -r '.result.next.prompt' <<<"$step" | grep -E ': \.stangent/' | grep -v '^Write' | sed -E 's/^(.*): (\.stangent\/.*)$/\1\t\2/')
+    # The input is the prompt itself; a retry's previous attempt and what to fix follow under their own headings.
+    if [ "$label" = "Input" ]; then input+="$(cat "$f")"$'\n\n'; else input+="# $label"$'\n\n'"$(cat "$f")"$'\n\n'; fi
+  done < <(jq -r '.result.next.prompt' <<<"$step" | grep -E ': \.stangent/' | grep -v '^Write' | grep -v '^FSD:' | sed -E 's/^(.*): (\.stangent\/.*)$/\1\t\2/')
+  input="${input//\{\{FSD_FILE\}\}/$io/fsd.md}"
+  input="${input//\{\{OUTPUT_FILE\}\}/$io/output.json}"
   mkdir -p ".stangent/fsd/$DOC/review/transcripts"
   transcript="$PWD/.stangent/fsd/$DOC/review/transcripts/run-$run-$(date +%Y%m%d-%H%M%S).jsonl"
   rm -f "$out"
   (
-    if [ -n "$tmp" ]; then trap 'git worktree remove --force "'"$tmp"'/repo" >/dev/null 2>&1; rm -rf "'"$tmp"'"' EXIT INT TERM; fi
-    printf '%s' "$input" | (cd "$dir" && $CLAUDE -p --model "$AI_MODEL" --effort "$AI_EFFORT" --tools "$(jq -r '.tools' <<<"$limits")" --allowedTools "${allowed[@]}" \
+    # The worktree goes when this call ends; the answer folder stays for the copy below, and goes too on an interrupt.
+    if [ -n "$tmp" ]; then trap 'git worktree remove --force "'"$tmp"'/repo" >/dev/null 2>&1; rm -rf "'"$tmp"'"' EXIT; fi
+    trap '[ -z "'"$tmp"'" ] || { git worktree remove --force "'"$tmp"'/repo" >/dev/null 2>&1; rm -rf "'"$tmp"'"; }; rm -rf "'"$io"'"' INT TERM
+    printf '%s' "$input" | (cd "$dir" && STANGENT_WRITE_DIR="$io" $CLAUDE -p --model "$AI_MODEL" --effort "$AI_EFFORT" --tools "$(jq -r '.tools' <<<"$limits")" --allowedTools "${allowed[@]}" \
       ${denied[@]+--disallowedTools "${denied[@]}"} --permission-mode "$(jq -r '.permissionMode' <<<"$limits")" \
       --setting-sources "" --settings "$REVIEW_SETTINGS" --strict-mcp-config --disable-slash-commands --no-session-persistence \
       --max-turns "$(jq -r '.maxTurns' <<<"$limits")" --max-budget-usd "$(jq -r '.maxBudgetUsd' <<<"$limits")" \
-      --json-schema "$schema" --output-format stream-json --verbose \
-      --append-system-prompt "You are one of stangent's AI steps: the stangent-fsd-reviewer. Your prompt holds your instructions, the FSD and your output schema, and on a retry your previous attempt and what to fix. The repo is your current folder. Return the JSON as your structured output.") \
+      --output-format stream-json --verbose \
+      --append-system-prompt "You are one of stangent's AI steps: the stangent-fsd-reviewer. Your prompt holds your instructions, where the FSD is and where to write your answer, and on a retry your previous attempt and what to fix. The repo is your current folder. Write the JSON to the file your instructions name.") \
       >"$transcript" 2>"$usage.err" || true
   )
   cp "$transcript" "$usage.raw" 2>/dev/null || true
   [ -n "$tmp" ] && trap - INT TERM
   jq -c 'select(.type == "result")' "$transcript" 2>/dev/null | tail -n 1 >"$usage" || true
-  if jq -e '.type == "result" and (.is_error | not)' "$usage" >/dev/null 2>&1; then
-    jq -c '.structured_output // empty' "$usage" >"$out" || true
-  fi
+  # The answer is the file it wrote, also when it hit its own cap after writing it.
+  [ -s "$io/output.json" ] && cp "$io/output.json" "$out"
+  rm -rf "$io"
 }
 
 # One run to the end: the reviewer, then `review-check`, again on a retry. A reviewer that hit its own cap still goes to

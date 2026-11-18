@@ -1,0 +1,114 @@
+{
+  "commit": "f4abc65c5e04bf2ccdbd681550c92a3ed1b50893",
+  "doc": "kavita-fsd",
+  "dropped": [],
+  "findings": [
+    {
+      "evidence": [
+        "Kavita.Server/Extensions/IdentityServiceExtensions.cs:59",
+        "UI/Web/src/app/user-settings/change-password/change-password.component.ts:36"
+      ],
+      "fsdQuote": "A new password must be at least 8 characters long.",
+      "note": "The server requires a password of at least 6 characters (RequiredLength = 6). The change-password form only marks the field required, with no 8-character rule.",
+      "screen": null,
+      "section": "9.1",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:157"
+      ],
+      "fsdQuote": "Manage Collections is turned on by default for a new library.",
+      "note": "The library settings form defaults manageCollections to false.",
+      "screen": null,
+      "section": "10.3",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:152-154"
+      ],
+      "fsdQuote": "Include in Dashboard and Include in Search are turned on by default.",
+      "note": "includeInDashboard and includeInSearch both default to true in the library form.",
+      "screen": null,
+      "section": "10.3",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:95"
+      ],
+      "fsdQuote": "Cache Size must be at least 50 MB",
+      "note": "The cacheSize validator has a minimum of 50.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:92-98"
+      ],
+      "fsdQuote": "Days of Backups and Days of Logs each accept a value from 1 to 30",
+      "note": "totalBackups and totalLogs are validated with min 1 and max 30. I did not check the default of 30.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/app-routing.module.ts:63"
+      ],
+      "fsdQuote": null,
+      "note": "A Browse Genres screen exists but the FSD describes only People and Tags under Browse.",
+      "screen": "/browse/genres",
+      "section": null,
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/app-routing.module.ts:63"
+      ],
+      "fsdQuote": null,
+      "note": "An All Annotations screen exists under Browse; the FSD does not describe it.",
+      "screen": "/browse/annotations",
+      "section": null,
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/app-routing.module.ts:52"
+      ],
+      "fsdQuote": null,
+      "note": "A PDF reader route exists; the FSD describes only the image and book readers.",
+      "screen": "/library/:libraryId/series/:seriesId/pdf/:chapterId",
+      "section": null,
+      "state": "undocumented"
+    }
+  ],
+  "fsdVersion": "781973da1378f7804d05e38d0ccaf8693e6c1c86b3de76d65d0638a9e9c3df66",
+  "inputs": "sha256:4011df9ea3282a20ad390766ed2e2e9c1f7a8253ccda26279ae991bda0c73b9c",
+  "retried": true,
+  "run": 2,
+  "screensListed": 22,
+  "uncovered": {
+    "screens": [],
+    "sections": []
+  },
+  "usage": {
+    "cacheReadTokens": 113705,
+    "cacheWriteTokens": 17236,
+    "calls": 2,
+    "costUsd": 0.157947,
+    "inputTokens": 16,
+    "model": "claude-sonnet-5-5",
+    "ms": 45605,
+    "outputTokens": 6623,
+    "settings": {
+      "agent": "stangent-fsd-reviewer",
+      "claudeVersion": "2.1.292 (Claude Code)",
+      "effort": "medium",
+      "mode": "agentic",
+      "model": "claude-sonnet-5-5"
+    }
+  }
+}

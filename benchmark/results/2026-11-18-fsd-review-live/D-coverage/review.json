@@ -1,0 +1,258 @@
+{
+  "commit": "f4abc65c5e04bf2ccdbd681550c92a3ed1b50893",
+  "contract": "fsd-review",
+  "costUsd": 0.35963,
+  "counts": {
+    "conflict": 3,
+    "gap": 0,
+    "match": 6,
+    "undocumented": 3
+  },
+  "doc": "kavita-fsd",
+  "dropped": [],
+  "effort": "medium",
+  "findings": [
+    {
+      "evidence": [
+        "Kavita.Server/Extensions/IdentityServiceExtensions.cs:59",
+        "UI/Web/src/app/user-settings/change-password/change-password.component.ts:36"
+      ],
+      "fsdQuote": "A new password must be at least 8 characters long.",
+      "id": "F-001",
+      "note": "The server requires a password of at least 6 characters (RequiredLength = 6). The change-password form only marks the field required, with no 8-character rule.",
+      "runs": [
+        2
+      ],
+      "screen": null,
+      "section": "9.1",
+      "sectionId": "S-0025",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:113-133"
+      ],
+      "fsdQuote": "Changes on this page are stored only when the administrator presses Save.",
+      "id": "F-002",
+      "note": "The General page has no Save button; edits that pass validation are auto-saved after a 300 ms debounce.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:94-95",
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:95"
+      ],
+      "fsdQuote": "Cache Size must be at least 50 MB",
+      "id": "F-003",
+      "note": "Cache size has a minimum validator of 50.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:90"
+      ],
+      "fsdQuote": "the base URL must start and end with a slash",
+      "id": "F-004",
+      "note": "Base URL is validated with a pattern that requires a leading and trailing slash.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.html:4",
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:159-160"
+      ],
+      "fsdQuote": "A Reset to Default button restores these settings after a confirmation.",
+      "id": "F-005",
+      "note": "A Reset to Default button calls resetToDefaults, which asks for confirmation first.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:92-98"
+      ],
+      "fsdQuote": "Days of Backups and Days of Logs each accept a value from 1 to 30",
+      "id": "F-006",
+      "note": "totalBackups and totalLogs are validated with min 1 and max 30. I did not check the default of 30.",
+      "runs": [
+        2
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:157"
+      ],
+      "fsdQuote": "Manage Collections is turned on by default for a new library.",
+      "id": "F-007",
+      "note": "The library form's default for manageCollections is false, not true.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "10.3",
+      "sectionId": "S-0030",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:152-154"
+      ],
+      "fsdQuote": "Include in Dashboard and Include in Search are turned on by default.",
+      "id": "F-008",
+      "note": "Both default to true in the library form.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "10.3",
+      "sectionId": "S-0030",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:266-279"
+      ],
+      "fsdQuote": "| Book | Pdf, Epub |",
+      "id": "F-009",
+      "note": "Default file types per library type match the table: Manga Archive+Image, Comic Archive, Book Pdf+Epub, Light Novel Epub, Image Image.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "10.3",
+      "sectionId": "S-0030",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:25",
+        "UI/Web/src/app/app-routing.module.ts:63"
+      ],
+      "fsdQuote": null,
+      "id": "F-010",
+      "note": "The All Annotations screen exists at /browse/annotations but the FSD does not describe it.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": "/browse/annotations",
+      "section": null,
+      "sectionId": null,
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:23",
+        "UI/Web/src/app/app-routing.module.ts:63"
+      ],
+      "fsdQuote": null,
+      "id": "F-011",
+      "note": "The Browse Genres screen exists at /browse/genres but the FSD does not describe it.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": "/browse/genres",
+      "section": null,
+      "sectionId": null,
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/app-routing.module.ts:52"
+      ],
+      "fsdQuote": null,
+      "id": "F-012",
+      "note": "A PDF reader route exists; the FSD describes only the image and book readers.",
+      "runs": [
+        2
+      ],
+      "screen": "/library/:libraryId/series/:seriesId/pdf/:chapterId",
+      "section": null,
+      "sectionId": null,
+      "state": "undocumented"
+    }
+  ],
+  "fsdVersion": "781973da1378f7804d05e38d0ccaf8693e6c1c86b3de76d65d0638a9e9c3df66",
+  "model": "claude-sonnet-5-5",
+  "runs": [
+    {
+      "dropped": 0,
+      "findings": 9,
+      "retried": true,
+      "run": 1,
+      "usage": {
+        "cacheReadTokens": 135978,
+        "cacheWriteTokens": 23128,
+        "calls": 2,
+        "costUsd": 0.201683,
+        "inputTokens": 18,
+        "model": "claude-sonnet-5-5",
+        "ms": 55524,
+        "outputTokens": 8194,
+        "settings": {
+          "agent": "stangent-fsd-reviewer",
+          "claudeVersion": "2.1.292 (Claude Code)",
+          "effort": "medium",
+          "mode": "agentic",
+          "model": "claude-sonnet-5-5"
+        }
+      }
+    },
+    {
+      "dropped": 0,
+      "findings": 8,
+      "retried": true,
+      "run": 2,
+      "usage": {
+        "cacheReadTokens": 113705,
+        "cacheWriteTokens": 17236,
+        "calls": 2,
+        "costUsd": 0.157947,
+        "inputTokens": 16,
+        "model": "claude-sonnet-5-5",
+        "ms": 45605,
+        "outputTokens": 6623,
+        "settings": {
+          "agent": "stangent-fsd-reviewer",
+          "claudeVersion": "2.1.292 (Claude Code)",
+          "effort": "medium",
+          "mode": "agentic",
+          "model": "claude-sonnet-5-5"
+        }
+      }
+    }
+  ],
+  "tokens": 304898,
+  "version": 2
+}
