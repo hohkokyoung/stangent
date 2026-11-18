@@ -181,6 +181,31 @@ public sealed class TruthVerdictTests : IDisposable
     }
 
     [Fact]
+    public void With_no_test_target_the_verdict_still_comes_and_no_test_is_written()
+    {
+        // D408: no test project covers the code (and no app for Playwright), but an entry can back the ticket.
+        File.Delete(Path.Combine(Root, "Tests", "Shop.Tests.csproj"));
+        Map(Entry(1, "gap", "ruled", "fsd-right", Rule, "Core/OrderService.cs:5"));
+        Assert.NotEqual("recorded", Prepare().Status);
+        var input = File.ReadAllText(Path.Combine(Root, ".stangent", "tickets", Key, "prove", "input.md"));
+        Assert.Contains("# No test target", input);
+        Assert.DoesNotContain("# Test targets", input);
+        // A test written anyway gets the retry; stopped with backed is recorded with its verdict and no test.
+        Assert.Equal("retry", Check(Written(Verdict("backed"))).Status);
+        Assert.Equal("recorded", Check(Stopped(Verdict("backed"))).Status);
+        Assert.Equal(("not-provable", "backed"), ((string)Attempt["outcome"]!, (string)Attempt["verdict"]!["verdict"]!));
+        Assert.Null(Attempt["noProof"]);
+        Assert.Contains("the truth map backs the ticket (T1, shop item 1), but no test project covers its code", (string)Attempt["reason"]!);
+        Assert.Empty(runner.Commands);
+
+        // Contradicted stops as always.
+        Map(Entry(1, "gap", "ruled", "code-right", Rule, "Core/OrderService.cs:5"));
+        Prepare();
+        Assert.Equal("recorded", Check(Stopped(Verdict("contradicted"))).Status);
+        Assert.Equal(("not-provable", "contradicted"), ((string)Attempt["outcome"]!, (string)Attempt["noProof"]!));
+    }
+
+    [Fact]
     public void A_verdict_that_cites_nothing_real_gets_the_retry()
     {
         Map(Entry(1, "gap", "ruled", "fsd-right", Rule, "Core/OrderService.cs:5"));

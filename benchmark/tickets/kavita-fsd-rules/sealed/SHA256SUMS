@@ -1,0 +1,7 @@
+3626a5a46fdc18317ecdd47ce218adb1ffe7e96be4ac865c80ffbb2e3a583443  ./key.json
+cc27cae5c4a648f68a8e6e19024139f514fbab3c6177ca095d8b2ea543ecb9a5  ./tests/KAVR-2.PlanterWantToReadTests.cs
+4a77fa2c28bb57b384deb14b5753feb2f202fa6f8e6ec9f58aca9cff5a93a721  ./tests/KAVR-2.output.txt
+d161d4263977833f66f7ef6ec917d8e8b85082082501aaa7fabff2fcdeb5dbfb  ./tests/KAVR-6.PlanterPasswordPolicyTests.cs
+3ba939d856fa146e281506fd3dc02334d40b49fe82a278871d758b184308d7d5  ./tests/KAVR-6.output.txt
+d9c5bba9839af8506082124d96b0f6186d3791b04db615dadfb8bac7b120c532  ./tests/KAVR-8.PlanterGenreBrowseTests.cs
+1915c3f42d6038a6db6ecfafc75b4f6a53b74be1a59639aaff1498f60813d53f  ./tests/KAVR-8.output.txt

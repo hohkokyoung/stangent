@@ -165,7 +165,9 @@ as no truth map. The sections' text is the committed FSD's (D380), as `fsd rulin
   is in the ticket word for word; it compiles; and it **fails on that assertion** (TRX, Jest/Vitest and Playwright
   reports read by code; an exception in setup, a timeout or another assertion isn't proof; a mock's own check, such
   as Moq's `Verify`, is an assertion, D90). Playwright runs 3 times.
-- **The verdict** (truth map layer 4, D361, D364, D372; a truth map built): with no entry that
+- **The verdict** (truth map layer 4, D361, D364, D372; a truth map built): it comes before the test check (D408): with
+  no test target but an entry that can back the ticket, the reproducer gives the verdict only and returns `stopped`;
+  backed is then recorded `not-provable` with its verdict and no test. With no entry that
   can back the ticket, nothing is asked of an AI: the attempt is recorded `not-provable` with `noProof: unclear` and the
   entry it stopped on (or none: not covered). Otherwise the reproducer reads `bug-reproducer-output` v2 and gives
   `verdict` (`backed`, `contradicted`, `unclear`) with the entry (`T1` …) and words from it (its FSD sentence, the PM's

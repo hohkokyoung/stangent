@@ -83,7 +83,14 @@ public static partial class BugProof
 
         var targets = Targets(repo, ctx, bundle);
 
-        if (targets.Count == 0)
+        // D408: the verdict comes before the test check. With no test target but a truth map entry that can back the
+        // ticket, the reproducer still gives the verdict, with no test to write: contradicted and unclear stop as always,
+        // and backed is recorded without a test. Only with no truth map does "no test target" end it before any AI call.
+        var verdictOnly = targets.Count == 0 && truth is not null;
+        // As with a rule that later needs the PM: a failure already reproduced isn't wiped because its targets are gone.
+        if (verdictOnly && (string?)proof?["outcome"] == "reproduced")
+            return new RunStep("current", "none", Warning: "no test target covers the code now, so no verdict-only attempt was made; the reproduced proof is kept (D408).");
+        if (targets.Count == 0 && !verdictOnly)
         {
             const string reason = "no unit-test project covers the code at the starting points, and tickets.app isn't set for Playwright (D76)";
             var codeInputs = CanonicalJson.Hash(reason + (hint ?? ""));
@@ -110,7 +117,7 @@ public static partial class BugProof
             ["attempt"] = n, ["hint"] = hint, ["targets"] = new JsonArray([.. targets.Select(t => (JsonNode)t.ToJson())]),
             ["related"] = new JsonArray([.. related.Select(r => (JsonNode)r)]),
             ["outside"] = new JsonArray([.. OutsidePart.Of(bundle).Select(o => o.Area).Distinct().Select(a => (JsonNode)a)]),
-            ["truth"] = truth?.DeepClone(),
+            ["truth"] = truth?.DeepClone(), ["verdictOnly"] = verdictOnly,
         });
     }
 
@@ -225,7 +232,8 @@ public static partial class BugProof
                 .Append("The bundle's truth map section lists what the PM agreed about this ticket's files (T1, T2, …). Before you write a test, ")
                 .Append("decide whether the PM's agreed rules back what the ticket expects, and give `verdict`:\n\n")
                 .Append("- **backed**: an entry that can back a ticket says the ticket's expected result is right (the FSD is right and the code has a bug, ")
-                .Append("or a match the code no longer keeps). Write the test as below, and give the entry and words from it.\n")
+                .Append(targets.Count > 0 ? "or a match the code no longer keeps). Write the test as below, and give the entry and words from it.\n"
+                    : "or a match the code no longer keeps). Give the entry and words from it; there's no test to write (below).\n")
                 .Append("- **contradicted**: an entry says the code is right as it is (ruled \"the code is right\", or the PM's words say what the code does). ")
                 .Append("Write no test: return outcome `stopped` with the entry and words from it.\n")
                 .Append("- **unclear**: no entry settles what the ticket expects, or the ones that would can't back a ticket. Write no test: return outcome `stopped`.\n\n")
@@ -233,6 +241,16 @@ public static partial class BugProof
                 .Append("Code checks both, and makes the verdict unclear when the entry can't back a ticket.\n\n");
         var mtp = UsesMtp(repo.Root);
         var report = paths.Relative(Path.Combine(AiStep.Work(paths, StepSpec.Prove), "your-run"));
+        var budget = repo.Config.Tickets.ProveBudget;
+        if (targets.Count == 0)
+        {
+            // D408: a verdict only.
+            sb.Append("# No test target\n\nCode found no test project for this ticket's code, and no app is set up for Playwright, so no test can be written here. ")
+                .Append("**Give the verdict only and return outcome `stopped`**, whatever the verdict: a backed verdict is recorded without a test, for the developer.\n");
+            sb.Append($"\n# Your limits\n\n- Read the repo; write no file but your answer.\n- At most {budget.Turns} turns and ${budget.Usd:0.##}.\n");
+            if (hint is not null) sb.Append($"\n# A hint from the developer\n\n{hint}\n");
+            return sb.ToString();
+        }
         sb.Append("# Test targets\n\nWrite the test in one of these, in the folder given, as a file matching its patterns.\n\n");
         sb.Append("| target | kind | write in | files | build | run your test |\n|---|---|---|---|---|---|\n");
         foreach (var t in targets)
@@ -254,7 +272,6 @@ public static partial class BugProof
                 sb.Append("No Playwright test opens these screens yet. You have a headless browser on the app (the `mcp__playwright__browser_*` tools): **look at the screen first** (navigate, snapshot, click your way to it), so your test clicks and reads what is really there.\n");
             sb.Append("\n**Test first:** run your spec with the command in the table and hand it in only once it **fails on your assertion**. stangent then runs it itself, three times.\n");
         }
-        var budget = repo.Config.Tickets.ProveBudget;
         sb.Append($"\n# Your limits\n\n- Write and edit files only in the test targets' folders.\n- Run only the build and test commands above.\n");
         sb.Append($"- At most {budget.Turns} turns and ${budget.Usd:0.##}; stopping at the cap counts as not reproduced.\n");
         if (hint is not null) sb.Append($"\n# A hint from the developer\n\n{hint}\n");
@@ -310,7 +327,8 @@ public static partial class BugProof
         // Truth map layer 4 (D361, D364): the verdict, checked by code; contradicted and unclear stop with no test run.
         if (output is not null)
         {
-            var (verdict, verdictErrors) = Verdict(state["truth"] as JsonObject, output);
+            var verdictOnly = (bool?)state["verdictOnly"] == true;
+            var (verdict, verdictErrors) = Verdict(state["truth"] as JsonObject, output, verdictOnly);
             if (verdictErrors.Count > 0)
             {
                 if (AiStep.Retry(paths, step, state, verdictErrors) is { } again) return again;
@@ -327,6 +345,12 @@ public static partial class BugProof
                     return Finish(repo, paths, state, attempt, "not-provable", (string)verdict["verdict"]! == "contradicted"
                         ? $"the truth map contradicts the ticket: {at}{(string?)verdict["why"]}"
                         : (bool)verdict["forced"]! ? $"{at}can't back a ticket ({(string?)cited?["why"]}), so no test was written" : $"the truth map doesn't settle it: {(string?)verdict["why"]}", null);
+                }
+                if (verdictOnly)
+                {
+                    var cited = verdict["entry"] as JsonObject;
+                    return Finish(repo, paths, state, attempt, "not-provable",
+                        $"the truth map backs the ticket ({cited?["id"]}, {cited?["doc"]} item {cited?["n"]}), but no test project covers its code and tickets.app isn't set for Playwright (D76, D408), so no test was written", null);
                 }
             }
         }
@@ -458,7 +482,7 @@ public static partial class BugProof
     /// cited, backed with no test, stopped with no truth map. Made unclear (forced) when the cited entry can't back a
     /// ticket.
     /// </summary>
-    public static (JsonObject? Verdict, List<string> Errors) Verdict(JsonObject? truth, JsonObject output)
+    public static (JsonObject? Verdict, List<string> Errors) Verdict(JsonObject? truth, JsonObject output, bool verdictOnly = false)
     {
         var errors = new List<string>();
         var outcome = (string?)output["outcome"];
@@ -487,7 +511,8 @@ public static partial class BugProof
             errors.Add($"{id} is ruled \"{Stangent.Spec.Fsd.TruthMap.RulingWords(ruling!)}\": that says the code is right as it is, so it can't back this bug. Say contradicted, or cite the entry that backs it.");
         if (said == "contradicted" && ruling is "fsd-right" or "remove" or "not-a-match")
             errors.Add($"{id} is ruled \"{Stangent.Spec.Fsd.TruthMap.RulingWords(ruling!)}\": that says the code is wrong, so it can't contradict this bug. Say backed, or cite the entry that contradicts it.");
-        if (said == "backed" && outcome == "stopped") errors.Add("A backed verdict comes with the test: write it, or say contradicted or unclear.");
+        if (verdictOnly && outcome != "stopped") errors.Add("There's no test target, so no test can be written: give the verdict and return outcome `stopped` (D408).");
+        else if (said == "backed" && outcome == "stopped" && !verdictOnly) errors.Add("A backed verdict comes with the test: write it, or say contradicted or unclear.");
         if (said != "backed" && outcome == "test-written") errors.Add($"A {said} verdict writes no test: return outcome `stopped`, or say backed if the entry backs the ticket.");
         if (errors.Count > 0) return (null, errors);
         var usable = entry is not null && (bool)entry["usable"]!;

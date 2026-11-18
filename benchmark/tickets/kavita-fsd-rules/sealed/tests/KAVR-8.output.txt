@@ -1,0 +1,5 @@
+  Failed Kavita.Database.Tests.Repositories.PlanterGenreBrowseTests.BrowseGenres_DoesNotListAGenreNoSeriesUses [1 s]
+  Error Message:
+   Assert.DoesNotContain() Failure: Filter matched in collection
+Collection: [BrowseGenreDto { Id = 2, Title = Unused Genre, SeriesCount = 0, ChapterCount = 0 }, BrowseGenreDto { Id = 1, Title = Used Genre, SeriesCount = 1, ChapterCount = 0 }]
+Failed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 1 s - Kavita.Database.Tests.dll (net10.0)

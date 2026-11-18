@@ -1,0 +1,4 @@
+  Failed Kavita.Server.Tests.PlanterPasswordPolicyTests.SevenCharacterPassword_IsRejected [76 ms]
+  Error Message:
+   a 7-character password was accepted
+Failed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 81 ms - Kavita.Server.Tests.dll (net10.0)

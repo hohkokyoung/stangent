@@ -1,0 +1,1 @@
+Ruling: The OPDS Recently Updated feed keeps offering a Next page for as long as there are more recently updated series to show; it is not limited to two pages.

@@ -10,7 +10,7 @@
   "additionalProperties": false,
   "properties": {
     "outcome": {
-      "description": "stopped (v2): no test, because the truth map contradicts the ticket or leaves it unclear (verdict).",
+      "description": "stopped (v2): no test, because the truth map contradicts the ticket or leaves it unclear (verdict), or, with no test target, whatever the verdict (D408).",
       "enum": [
         "test-written",
         "not-provable",

@@ -270,7 +270,7 @@ run_step() {
       rm -f "$usage"
       exit 255
     fi
-    stamp_usage "$usage" "$agent" "$(case "$name" in prove|points) echo agentic ;; *) echo batch ;; esac)"
+    stamp_usage "$usage" "$agent" "$(case "$name" in (prove|points) echo agentic ;; (*) echo batch ;; esac)"
     step="$($STANGENT ticket check "$key" --step "$name" --usage "$usage" || true)"
     stop_if_no_envelope "$step" "$key" "$name" "$usage"
     # A reproducer's retry runs under what's left of the attempt's cap: the check returns the new limits and prompt.

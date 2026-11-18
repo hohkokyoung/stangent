@@ -1,0 +1,567 @@
+{
+  "tickets": [
+    {
+      "key": "KAVR-1",
+      "kind": "contradicted",
+      "entry": {
+        "doc": "kavita-fsd",
+        "n": 1
+      },
+      "evidenceFile": "UI/Web/src/app/dashboard/_components/dashboard.component.ts",
+      "expected": "contradicted"
+    },
+    {
+      "key": "KAVR-2",
+      "kind": "backed",
+      "entry": {
+        "doc": "kavita-fsd",
+        "n": 32
+      },
+      "evidenceFile": "Kavita.Services/CleanupService.cs",
+      "expected": "backed"
+    },
+    {
+      "key": "KAVR-3",
+      "kind": "unclear",
+      "entry": null,
+      "evidenceFile": null,
+      "expected": "unclear"
+    },
+    {
+      "key": "KAVR-4",
+      "kind": "contradicted",
+      "entry": {
+        "doc": "kavita-fsd",
+        "n": 64
+      },
+      "evidenceFile": "UI/Web/src/app/admin/manage-settings/manage-settings.component.html",
+      "expected": "contradicted"
+    },
+    {
+      "key": "KAVR-5",
+      "kind": "unclear",
+      "entry": {
+        "doc": "kavita-fsd",
+        "n": 73
+      },
+      "evidenceFile": "UI/Web/src/app/admin/manage-library/manage-library.component.html",
+      "expected": "unclear"
+    },
+    {
+      "key": "KAVR-6",
+      "kind": "backed",
+      "entry": {
+        "doc": "kavita-fsd",
+        "n": 52
+      },
+      "evidenceFile": "Kavita.Server/Extensions/IdentityServiceExtensions.cs",
+      "expected": "backed"
+    },
+    {
+      "key": "KAVR-7",
+      "kind": "unclear",
+      "entry": {
+        "doc": "kavita-fsd",
+        "n": 20
+      },
+      "evidenceFile": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts",
+      "expected": "unclear"
+    },
+    {
+      "key": "KAVR-8",
+      "kind": "backed",
+      "entry": {
+        "doc": "kavita-fsd",
+        "n": 128
+      },
+      "evidenceFile": "UI/Web/src/app/browse/browse-genres/browse-genres.component.html",
+      "expected": "backed"
+    },
+    {
+      "key": "KAVR-9",
+      "kind": "contradicted",
+      "entry": {
+        "doc": "kavita-fsd",
+        "n": 58
+      },
+      "evidenceFile": "UI/Web/src/app/shared/_services/download.service.ts",
+      "expected": "contradicted"
+    }
+  ],
+  "replies": [
+    {
+      "key": "KAVR-7",
+      "text": "Ruling: the code is right",
+      "expectedAfter": "contradicted"
+    },
+    {
+      "key": "KAVR-3",
+      "text": "Ruling: The OPDS Recently Updated feed keeps offering a Next page for as long as there are more recently updated series to show; it is not limited to two pages.",
+      "expectedAfter": "backed"
+    }
+  ],
+  "rulings": [
+    {
+      "n": 1,
+      "answer": "code",
+      "againstFsdKey": false
+    },
+    {
+      "n": 2,
+      "answer": "code",
+      "againstFsdKey": false
+    },
+    {
+      "n": 3,
+      "answer": "code",
+      "againstFsdKey": false
+    },
+    {
+      "n": 5,
+      "answer": "code",
+      "againstFsdKey": false
+    },
+    {
+      "n": 6,
+      "answer": "code",
+      "againstFsdKey": false
+    },
+    {
+      "n": 7,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 8,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 14,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 15,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 17,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 18,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 21,
+      "answer": "code",
+      "againstFsdKey": false
+    },
+    {
+      "n": 25,
+      "answer": "code",
+      "againstFsdKey": false
+    },
+    {
+      "n": 26,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 27,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 28,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 32,
+      "answer": "restated: Once a user has read every chapter of a series, Kavita takes it off their Want to Read list, whatever the series' publication status (ongoing, hiatus, completed or cancelled). Doing it in the daily cleanup rather than the moment the last page is read is fine.",
+      "againstFsdKey": true
+    },
+    {
+      "n": 34,
+      "answer": "code",
+      "againstFsdKey": false
+    },
+    {
+      "n": 36,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 39,
+      "answer": "code",
+      "againstFsdKey": false
+    },
+    {
+      "n": 40,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 41,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 44,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 45,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 51,
+      "answer": "code, in words: Users changing their own password must give their current password, and only administrators and users with the Change Password role can do it; an administrator resetting another user's password does not need that user's current password.",
+      "againstFsdKey": false
+    },
+    {
+      "n": 52,
+      "answer": "fsd",
+      "againstFsdKey": true
+    },
+    {
+      "n": 53,
+      "answer": "code",
+      "againstFsdKey": false
+    },
+    {
+      "n": 58,
+      "answer": "code",
+      "againstFsdKey": false
+    },
+    {
+      "n": 62,
+      "answer": "code",
+      "againstFsdKey": false
+    },
+    {
+      "n": 63,
+      "answer": "code",
+      "againstFsdKey": false
+    },
+    {
+      "n": 67,
+      "answer": "code",
+      "againstFsdKey": false
+    },
+    {
+      "n": 68,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 72,
+      "answer": "code",
+      "againstFsdKey": false
+    },
+    {
+      "n": 75,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 76,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 77,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 78,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 79,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 80,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 81,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 82,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 83,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 84,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 85,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 86,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 87,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 88,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 89,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 90,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 91,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 92,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 93,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 94,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 95,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 96,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 97,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 98,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 99,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 100,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 101,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 102,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 103,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 104,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 105,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 106,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 107,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 108,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 109,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 110,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 111,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 112,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 113,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 114,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 115,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 116,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 117,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 118,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 119,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 120,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 121,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 122,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 123,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 124,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 125,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 126,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 127,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 128,
+      "answer": "keep, in words: Keep Browse Genres: it lists each genre with how many series and issues carry it, and clicking a genre opens All Series filtered to it. It lists only genres that at least one series the user can see carries; a genre no series uses is not listed at all.",
+      "againstFsdKey": true
+    },
+    {
+      "n": 129,
+      "answer": "keep",
+      "againstFsdKey": false
+    },
+    {
+      "n": 130,
+      "answer": "keep",
+      "againstFsdKey": false
+    }
+  ],
+  "tests": [
+    {
+      "key": "KAVR-2",
+      "file": "benchmark/tickets/kavita-fsd-rules/sealed/tests/KAVR-2.PlanterWantToReadTests.cs",
+      "output": "Failed Kavita.Services.Tests.PlanterWantToReadTests.FullyReadOngoingSeries_LeavesWantToRead [85 ms]\n  Error Message:\n   Assert.Equal() Failure: Values differ\nExpected: 0\nActual:   1\nFailed!  - Failed:     1, Passed:     1, Skipped:     0, Total:     2, Duration: 1 s - Kavita.Services.Tests.dll (net10.0)"
+    },
+    {
+      "key": "KAVR-6",
+      "file": "benchmark/tickets/kavita-fsd-rules/sealed/tests/KAVR-6.PlanterPasswordPolicyTests.cs",
+      "output": "Failed Kavita.Server.Tests.PlanterPasswordPolicyTests.SevenCharacterPassword_IsRejected [76 ms]\n  Error Message:\n   a 7-character password was accepted\nFailed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 81 ms - Kavita.Server.Tests.dll (net10.0)"
+    },
+    {
+      "key": "KAVR-8",
+      "file": "benchmark/tickets/kavita-fsd-rules/sealed/tests/KAVR-8.PlanterGenreBrowseTests.cs",
+      "output": "Failed Kavita.Database.Tests.Repositories.PlanterGenreBrowseTests.BrowseGenres_DoesNotListAGenreNoSeriesUses [1 s]\n  Error Message:\n   Assert.DoesNotContain() Failure: Filter matched in collection\nCollection: [BrowseGenreDto { Id = 2, Title = Unused Genre, SeriesCount = 0, ChapterCount = 0 }, BrowseGenreDto { Id = 1, Title = Used Genre, SeriesCount = 1, ChapterCount = 0 }]\nFailed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 1 s - Kavita.Database.Tests.dll (net10.0)"
+    }
+  ]
+}

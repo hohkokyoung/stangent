@@ -102,3 +102,27 @@ The 2026-11-16 plan, superseded before any bug was planted (D361–D364): it ask
 reaches the reproducer's test and then the fixer, with planted code bugs, an arm with the FSD sections and one without.
 Two things ended it: `TicketBundle.Markdown` printed sections' titles, not their text (fixed in layer 4, D372), and the
 owner moved the judge to the truth map. `flow-anchor/` holds the free checks behind D361 and D362.
+
+## Adapted 2026-11-18 (D406), before the planter runs
+
+The frozen plan was written for the saved review's 42 blank entries with no matches. It now runs on the truth map
+built from D404's live review (`specs/fsd/kavita-fsd/` on the clone's `bench/fsd-migrated`, commit `1d58caa`): **117
+entries** (gap 11, conflict 9, match 26, undocumented 71). The 26 matches already carry Claude's blind test rulings
+(D405: 23 confirmed by section, entries 9, 54 and 73 answered no); the planter must not change them. Everything else
+stands, with these changes:
+
+- **The rulings:** the planter rules every blank entry (the 20 differences and the 71 undocumented) except the 2–3 its
+  key leaves blank for unclear tickets. Many undocumented entries can share one answer (`keep`), but each is answered.
+- **The tickets (still 9, 3 of each kind), two of them on matches:** one **contradicted** ticket expects the opposite
+  of what a **confirmed match**'s FSD sentence says (the code does what the FSD says; the reporter wants something else);
+  one **unclear** ticket rests on a **not-a-match** entry (9, 54 or 73: the PM said the code doesn't do what the FSD says,
+  and no rule says what it should do).
+- **The clone:** no longer at the bare pin: `bench/fsd-migrated` adds only `specs/` and FSD commits on top of
+  `2d225367f0`, so the code is the pin's. `tickets.replay` points at this folder's `public/tickets` (absolute path).
+- **The key** (`sealed/key.json`, fixed shape so `score.py` can read it):
+  `{"tickets":[{"key","kind","entry":{"doc","n"}|null,"evidenceFile","expected"}],
+  "replies":[{"key","text","expectedAfter"}],"rulings":[{"n","answer","againstFsdKey"}],"tests":[{"key","output"}]}`.
+- **The replies:** `reply.py` and `score.py` (this folder) are written before the planter runs. Before the second proof
+  of a reply ticket, the run copies its `bundle.json` to `bundle.before-reply.json`, so "unusable before, usable after"
+  can be scored.
+- **Cost:** the planter answers 91 entries, not 42: about 300–500K Opus tokens. The tickets keep `--max-cost 20`.
