@@ -2,7 +2,7 @@
 phase: 3
 name: tickets
 status: needs review
-consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 3, trace-links: 4 }
+consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 4, trace-links: 4 }
 provides: { ticket-bundle: 3, ticket-update: 1, bug-proof: 2 }
 ---
 

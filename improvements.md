@@ -76,6 +76,9 @@ Sections keep their numbers in both files, so "§6" means the same section in ei
 - Trial result: every finding built on a correct reference page was right (12 of 12).  
   *A result, not a feature. Stangent's own: 44% false alarms (D99). The two aren't comparable.*
 
+- A truth-map entry reaches a ticket through the flow or screen it is linked to, not only through its files (found by KAVR-8, D409).  
+  *Today the bundle's `truth` takes an entry only when one of its evidence files is a ticket file (D372 left screens out). On Kavita 115 of 118 entries cite only frontend files (most come from the left-out list, by screen), so a ticket whose finder lands on backend code gets nearly none. KAVR-8: the finder named `GenreRepository.cs`, right for the bug; the backing entry cites the Browse Genres template; the screen's own flow `screen-opens-browse-genres` walks into `GenreRepository.GetBrowseableGenre`. Recommend (code only, about half a day with tests): for each ticket file, the flows whose steps sit in it (`specs/flows/index.json`); an entry linked to one of those flows, or to the screen one of them starts on, applies too, marked `via: flow` or `via: screen` so the reproducer and the PM see it wasn't matched by file. Guard against a shared file (a repository many screens read) pulling in every screen's entries: above a few screens, list them as possible without making them apply. Check: KAVR-8 gets entry 128, the other eight tickets' bundles gain no entry that changes their verdict (free, re-run `ticket bundle` and score); then one paid `ticket prove` on KAVR-8, asked first.*
+
 ## 7. Engineering discipline
 
 - Every requirement is traced to a test. The build fails if a scenario has no test, or a test names no scenario.  

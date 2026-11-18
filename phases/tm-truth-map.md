@@ -1,14 +1,14 @@
 ---
 phase: tm
 name: truth map
-status: needs review
-consumes: { store: 1, cli-conventions: 3, code-graph: 7, flows: 6, source-document: 3, ticket-bundle: 3, bug-proof: 2 }
+status: done
+consumes: { store: 1, cli-conventions: 4, code-graph: 7, flows: 6, source-document: 4, ticket-bundle: 3, bug-proof: 2 }
 provides: { rulings: 2, truth-map: 2 }
 ---
 
 # The truth map
 
-**Designed 2026-11-16 (D361–D364); plan and my calls D365; every sentence the code follows covered too (D366).** **Layers 0 and 1 built and fresh-checked 2026-11-16 (D367, D368); layer 2 2026-11-17 (D369); layer 3 (D370), 2b (D371), 4 (D372) and 5 (D374) built 2026-11-17.** Also reads `fsd-review` v1 and
+**Designed 2026-11-16 (D361–D364); plan and my calls D365; every sentence the code follows covered too (D366).** **Layers 0 and 1 built and fresh-checked 2026-11-16 (D367, D368); layer 2 2026-11-17 (D369); layer 3 (D370), 2b (D371), 4 (D372) and 5 (D374) built 2026-11-17.** **Measured 2026-11-18 (D406–D408) and closed 2026-11-19 (D409): [end-of-phase report](#end-of-phase-report).** Also reads `fsd-review` v1 and
 `inventory` v1, which layer 5 provides with no phase file of its own, so they aren't in `consumes` above.
 
 The judge of a ticket is the truth map, not the FSD alone (D361). The FSD review (D341) finds where the FSD and
@@ -209,3 +209,92 @@ Paid; the cost is said and asked first (the planter is about $3–6, plus a `tic
 Building is free (no AI). Six narrow fresh checks on Sonnet, about 100–150K tokens each (0.6–0.9M in all); one also counts false matches on a sample, said
 before each one. The measurement is paid and asked first.
 
+## End-of-phase report
+
+Written 2026-11-19, on `claude/fsd-source` at `8c8ccb9` plus this report's docs (not pushed; 362 commits ahead of `main`).
+
+### 1. What was built
+
+A PM rules once on what the FSD review found, and `ticket prove` judges each ticket against those rulings before it
+writes any test. Example from the run: KAVR-1 asked for something the PM had ruled the code right on; `ticket prove`
+called it contradicted, quoted the ruling, wrote no test, and `fix start` refused it.
+
+| Layer | What it built | Commit | Fresh check (D158) |
+|---|---|---|---|
+| 0 · Matches in the review (D366, D367; `fsd-review` v2) | a fourth finding state, match, with its quote and line | `a54f5c9` | done, findings fixed (D367) |
+| 1 · Links (D362, D368; `inventory` v2) | `fsd links`: each finding → flow, else screen, else node, else file; the App frame group | `167413f` | done (D368) |
+| 2 · Rulings and the map (D363, D369; `rulings` v1, `truth-map` v1) | `fsd rulings`, `fsd rulings-check`, `rulings.yaml`, `truth-map.json` and `.md` | `f087a05` | done (D369) |
+| 3 · Email templates (D370; `code-graph` v7) | `template-file` points and `sends-template` lines | `b19783f` | done (D370) |
+| 2b · The PM rules through Claude (D371) | numbered plain questions, `fsd rule`, `/stangent:rule` | `a0a6990` | done (D371) |
+| 4 · Bundle, verdict, question (D372; `ticket-bundle` v3, `bug-proof` v2) | the bundle's `truth`, the reproducer's verdict checked by code, the PM's question | `896dd8f` | done (D372) |
+| 5 · `Ruling:` replies (D374) | `ticket pull` drafts replies into `rulings.yaml`, uncommitted; `rulings-check` shows the Jira author beside the committer | `59782c4` | done: 5 defects and 7 risks, fixed or listed (D374) |
+| The verdict before the test check (D408) | with no test target, `ticket prove` still asks for a verdict; only backed then needs a test | `8c8ccb9` | ~95K tokens, no bugs |
+
+Phase fs then changed this phase's own contracts (`rulings` v2, `truth-map` v2, D394), and layer 5 fed it (the review
+on D323's prompt, the left-out list as its own call, matches from that list: D401, D404, D405, `fsd-review` v3).
+Tests: 1,982, all passing (`dotnet test`, run 2026-11-19 on `8c8ccb9`).
+
+### 2. Benchmark results
+
+D358's question, measured as D375 planned and D406 adapted: on Kavita's live truth map (D404's review, 117 entries:
+gap 11, conflict 9, match 26, undocumented 71, and 118 after KAVR-3's reply added a `ticket:KAVR-3` entry; matches ruled by Claude blind, D405; the rest by a blind Opus planter),
+does `ticket prove` judge nine planted tickets right, and does a wrong ticket stop before any fix? Scored by code
+against the sealed key (`benchmark/results/2026-11-18-truth-map-tickets/`).
+
+| | first run, as built (D407) | after D408 | bar |
+|---|---|---|---|
+| verdict right | 5 of 9 | **8 of 9** | 8 of 9, or every one with its entry in the bundle |
+| wrong tickets that got a test | 0 of 4 | **0 of 4** (`fix start` refused all 4) | 0 |
+| backed tickets reproduced | 2 of 3 | **2 of 3** | 2 of 3 |
+| replies leading to the right verdict | 1 of 2 | **2 of 2** | 2 of 2 |
+| file-finder misses (reported apart) | 1 (KAVR-8) | 1 (KAVR-8) | — |
+| bar | doesn't | **works** | |
+| cost | $1.36 | $0.29 more ($1.65 in all) | $20 cap |
+
+**Caution:** D408 was built after seeing the first result and aimed at the failure it showed (three tickets got no
+verdict because `ticket prove` looked for a test project first), so the second run is not blind to it. It is also
+nine tickets on one repo. Both results stand side by side. No earlier report measured this: Phase 3's numbers (D109)
+are about the proof, not the truth map.
+
+### 3. Decisions made or changed
+
+D361–D364 (the design), D365 (the plan), D366 (matches), D367–D374 (one per layer), D375 (the measurement plan), D406
+(adapted to the live review), D407 (first result), D408 (verdict first), D409 (closing). Changed by others: D394 (phase
+fs: `inFsd` gone, `writtenFrom` added), D401–D405 (layer 5: the review's prompt, the left-out list, matches back).
+
+### 4. Known gaps
+
+- **KAVR-8, the file finder's miss, is general (D409 (3)).** The finder named `Kavita.Database/Repositories/GenreRepository.cs`, which is right for the bug; the ruling
+  that backs the ticket cites only the Browse Genres screen's template (`UI/Web/src/app/browse/browse-genres/browse-genres.component.html`).
+  The bundle takes an entry only when one of its evidence files is a ticket file (D372 left screens out). On Kavita 115
+  of 118 entries cite only frontend files, so any ticket whose finder lands on backend code misses nearly all of them.
+  The screen's own flow (`screen-opens-browse-genres`) walks into `GetBrowseableGenre`, so the link is already there.
+  Proposal in `improvements.md` §6, not built.
+- **`tickets.app` isn't set for Kavita,** so a backed frontend bug can't get a Playwright test (D408's fix 2); set it
+  when a ticket needs it.
+- **A written ruling (`writtenFrom`, phase fs's `fsd write`) has never reached `fsd rule`, a bundle or a draft:** no
+  live `fsd write` has run, and Kavita's map has none (every entry's `writtenFrom` is null).
+- One planted ruling set, one repo, nine tickets; the matches were ruled by Claude standing in for the PM (D405).
+- Both replies were replayed from files (`reply.py`, `tickets.replay`), not posted to a real Jira.
+
+### 5. Impact on other phases (D20)
+
+| Contract | Version | Consumers |
+|---|---|---|
+| `rulings` | 2 (tm's own, bumped by fs) | tm itself, now current |
+| `truth-map` | 2 (tm's own, bumped by fs) | tm; Phase 3's bundle reads `truth-map.json` |
+| `ticket-bundle` | 3 (D372) | Phase 4 (`needs review`) |
+| `bug-proof` | 2 (D372) | 2c (cut), Phase 4 (`needs review`) |
+
+This phase now consumes `cli-conventions` v4 and `source-document` v4: the run used the verdict with no switch (D381)
+and read every FSD section from the migrated clone's committed chapters (its `document.json` has no `sections`).
+Phase 3's two items the run exercised are cleared on the roadmap (D409 (2)); its written-ruling item stays. The run
+also exercised Phase 4's item ("the fix loop takes a stopped proof as no proof": `fix start` refused all four wrong
+tickets); that is left for Phase 4's own review. `phases check` shows tm current after this report.
+
+### 6. Follow-ups
+
+- KAVR-8: an entry applies to a ticket through its flow or screen, not only its files (`improvements.md` §6); owner's call.
+- `tickets.app` for Kavita when a backed frontend bug needs a Playwright test.
+- The first live `fsd write`, then `fsd rule` on a written entry and a bundle and draft that carry it (tm, Phase 3).
+- A second measurement on another repo, blind to D408, before trusting 8 of 9 widely.
