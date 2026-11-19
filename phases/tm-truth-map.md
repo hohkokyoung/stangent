@@ -276,7 +276,9 @@ fs: `inFsd` gone, `writtenFrom` added), D401–D405 (layer 5: the review's promp
   the verdict, still unclear: the planter ruled it `keep` with PM words that say what the ticket expects, and `keep` is
   read as "the code is right as it is". **D411** reads "keep" with PM words as keeping the feature working as the words say; re-proved, KAVR-8
   is backed and reproduced: **9 of 9 verdicts right, 3 of 3 backed reproduced** (result.md's fourth section; both fixes
-  built after seeing KAVR-8 fail, and only KAVR-8 re-proved under them).
+  built after seeing KAVR-8 fail). **The other eight re-proved under D410 and D411 (2026-11-19, $0.62): every verdict
+  unchanged, 9 of 9**; the three backed ones reproduced on byte-identical tests the earlier runs left in the clone, so the
+  verdicts are fresh and the reproductions only show those tests still fail (result.md's fifth section).
 - **`tickets.app` isn't set for Kavita,** so a backed frontend bug can't get a Playwright test (D408's fix 2); set it
   when a ticket needs it.
 - **A written ruling (`writtenFrom`, phase fs's `fsd write`) has never reached `fsd rule`, a bundle or a draft:** no

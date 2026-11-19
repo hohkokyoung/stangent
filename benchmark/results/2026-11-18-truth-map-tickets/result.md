@@ -90,3 +90,23 @@ entry 128 but its test failed on another assertion; the retry's test failed on t
 
 Caution: D410 and D411 were built after seeing KAVR-8 fail and aimed at it; only KAVR-8 was proved again under them,
 so the other eight verdicts date from D408's run. Nine tickets, one repo, one planter. Whole measurement $2.28.
+
+## Fifth result, the other eight re-proved under D410 and D411, 2026-11-19
+
+Owner: "lets do the reprove now", to check that D410 and D411, both built after seeing KAVR-8 fail, didn't change the
+other verdicts. KAVR-1..7 and KAVR-9 proved again (`ticket-run.sh --no-pull --prove`, Sonnet 5.5 medium), same truth
+map, tickets and key; stangent at `35ad3b0`. Scored `score-reprove-all.json`.
+
+| | after D411 (KAVR-8 only) | all nine under D410 and D411 | bar |
+|---|---|---|---|
+| verdict right | 9 of 9 | **9 of 9** (every verdict the same as before) | 8 of 9 |
+| backed reproduced | 3 of 3 | **3 of 3** (see below) | 2 of 3 |
+| wrong tickets with a test | 0 | **0** | 0 |
+| replies right | 2 of 2 | **2 of 2** | 2 of 2 |
+| finder misses | 0 | **0** | apart |
+
+**Reproductions aren't fresh:** the clone still held the tests earlier runs wrote (left uncommitted, as before), and
+KAVR-2, KAVR-3 and KAVR-6 each named one of them; the files are byte-identical to a backup taken before the run. So the
+verdicts are fresh, and those reproductions only show the earlier tests still fail. A clean re-run would remove them first.
+Cost $0.62 (eight proofs); whole measurement $2.90.
+
