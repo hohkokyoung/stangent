@@ -3,7 +3,7 @@ phase: tm
 name: truth map
 status: done
 consumes: { store: 1, cli-conventions: 4, code-graph: 7, flows: 6, source-document: 4, ticket-bundle: 3, bug-proof: 2 }
-provides: { rulings: 2, truth-map: 2 }
+provides: { rulings: 2, truth-map: 3 }
 ---
 
 # The truth map

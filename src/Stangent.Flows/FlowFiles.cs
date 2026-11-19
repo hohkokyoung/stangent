@@ -96,6 +96,7 @@ public static class FlowFiles
     {
         "else" => " is false",
         "unless" => " is false (an earlier guard)",
+        "null" => " is null",   // `x ?? throw`: the throw runs when x is null (D420)
         "cache-miss" => " finds nothing stored for the key",
         "set" => " is set",
         _ => "",
@@ -114,6 +115,13 @@ public static class FlowFiles
 
     /// <summary>One condition as the flow's Markdown reads it (D173, D240): "only when …" for code that certainly runs, else "only if `…`".</summary>
     public static string ConditionText(Condition c) => WhenText(c) ?? $"only if `{c.Code}`{Reading(c.Kind)}";
+
+    /// <summary>A flow file's condition (<c>{code, kind, case}</c>) as the flow's Markdown reads it, or null when it has no code.
+    /// What the PM view's picker and <c>truth-map.json</c> show, never the bare code: an <c>unless</c> read bare is its opposite (D419, D420).</summary>
+    public static string? ConditionText(JsonObject c) =>
+        (string?)c["code"] is { Length: > 0 } code
+            ? ConditionText(new Condition((string?)c["kind"] ?? "if", code.Replace('`', '\''), "", 0, (string?)c["case"]))
+            : null;
 
     static string StepConditions(List<Condition> cs)
     {

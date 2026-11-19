@@ -217,7 +217,9 @@ reaches no HTTP call, save, message or queued work is display only: named in `di
 Steps are numbered in walk order, depth first; `from` is the step they come from (null: the start).
 
 **Conditions:** each step carries the conditions of its own call's `condition` fact, innermost first, quoted exactly (D174):
-`if`, `else`, `case`, `catch`, `loop`, `null`, `unless` (a guard earlier in the block, D182). **Scenarios:** the main path, then
+`if`, `else`, `case`, `catch`, `loop`, `null`, `unless` (a guard earlier in the block, D182). The Markdown reads each one
+(`FlowFiles.ConditionText`): "only if `x`", `else` "is false", `unless` "is false (an earlier guard)", `null` "is null" (the
+`x ?? throw` side, D420), and the PM view's picker and `truth-map.json` show the same reading, never the bare code. **Scenarios:** the main path, then
 one per exit with the conditions on the way to it, innermost first (D179). **Checks:** the `rule` facts on the properties of each
 endpoint's request body (D179). **Actor:** D179's rule on the first endpoint the flow calls: an access filter whose code or name
 claims access, `[AllowAnonymous]`, `[Authorize]`, else the app's fallback policy (the action's project's, else the repo's only

@@ -459,7 +459,7 @@ The PM's rulings on the review's findings judge tickets. Built so far:
 - **The check and the truth map** (`stangent fsd rulings-check <doc>`, D363, D366 (3); code only): every value is one of
   its state's, `restated` has a statement, `matches` is `confirmed` or blank, every entry has a key and sits under its own
   section. Problems are listed and nothing is written. Otherwise it writes `specs/fsd/<doc>/truth-map.json` (contract
-  `truth-map` v2 since phase fs layer 4, for agents) and the PM's view (D415, below), the same bytes from the same inputs. **Who ruled
+  `truth-map` v2 since phase fs layer 4, v3 since D420, for agents) and the PM's view (D415, below), the same bytes from the same inputs. **Who ruled
   and when** come from `git blame` of the working file on the entry's `ruling` line, or for a match its section confirmed,
   on the `matches` line: the commit's author and date; a line not yet committed shows `committed: false` and a warning
   (commit, then run it again). Each entry gets a **standing**: `not-found` and `flagged` first, then `blank` or `ruled`
@@ -468,7 +468,9 @@ The PM's rulings on the review's findings judge tickets. Built so far:
   27, node 4, file 0 (fallback 9.5%)"), `verifyFirst` (unconfirmed low, then medium matches, for the PM at setup), and
   `done` when every entry but a listed control (D414) is ruled, confirmed or not a match. `truth-map.json` holds every FSD section in order with its
   text and its entries (ruling, statement, who, standing, link, evidence, runs, confidence), the code no section covers,
-  and each linked flow's actor, steps with their conditions, scenarios, endings and its 🟡/❓ counts. A ruling made
+  and each linked flow's actor, steps with their conditions, scenarios, endings and its 🟡/❓ counts. Since v3 (D420) a
+  condition is the flow's reading of it ("only if `resource == null` is false (an earlier guard)"), never the bare code,
+  which read an earlier guard as its opposite. A ruling made
   before the commit reads `not committed`.
 - **Listed, not asked** (D414; `rulings` v2 and `truth-map` v2 gain an optional `onDemand`, additive, no bump): an
   undocumented entry whose every finding is a control the checklist left out (`item` `S03.012`, not a whole screen `S03`,

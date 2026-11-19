@@ -2,7 +2,7 @@
 phase: fs
 name: fsd source
 status: done
-consumes: { store: 1, cli-conventions: 4, telemetry-event: 3, source-document: 4, rulings: 2, truth-map: 2, ticket-bundle: 3 }
+consumes: { store: 1, cli-conventions: 4, telemetry-event: 3, source-document: 4, rulings: 2, truth-map: 3, ticket-bundle: 3 }
 provides: {}
 ---
 

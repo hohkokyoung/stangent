@@ -19,8 +19,8 @@ namespace Stangent.Spec.Fsd;
 public static partial class TruthMap
 {
     public const string Contract = "truth-map";
-    public const int Version = 2;
-    public const string Schema = "truth-map.v2.json";
+    public const int Version = 3;
+    public const string Schema = "truth-map.v3.json";
     public static readonly string[] Standings = ["blank", "ruled", "flagged", "not-found", "confirmed", "unconfirmed", "not-a-match"];
     public static string JsonPath(string root, string doc) => Path.Combine(FsdImport.DocDir(root, doc), "truth-map.json");
     /// <summary>The single PM file before D415; removed when the view is written, so nobody reads a stale one.</summary>
@@ -374,7 +374,8 @@ public static partial class TruthMap
     {
         var file = (string)entry["file"]!;
         var flow = PageRun.LoadJson(Path.Combine(root, file)) as JsonObject ?? [];
-        static JsonArray Conditions(JsonNode? n) => new([.. (n as JsonArray ?? []).OfType<JsonObject>().Select(c => (JsonNode)((string?)c["code"] ?? ""))]);
+        // Each condition as the flow's Markdown reads it (v3, D420): the bare code read an earlier guard as its opposite.
+        static JsonArray Conditions(JsonNode? n) => new([.. (n as JsonArray ?? []).OfType<JsonObject>().Select(FlowFiles.ConditionText).OfType<string>().Select(c => (JsonNode)c)]);
         return new JsonObject
         {
             ["name"] = (string?)flow["name"] ?? (string?)entry["name"] ?? (string)entry["id"]!,

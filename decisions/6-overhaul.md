@@ -386,3 +386,15 @@ The fresh check (r3 step 4) found 3 wrong ✅ on Kavita and 8 more general fault
 6. **Left, raised, not fixed here.** (a) `FlowFiles.ConditionText` has no reading for `null`: `x ?? throw` reads "only if `x`", its opposite (layer 4's chart says "is null"); 4 Kavita lines, all one step (`ClaimsPrincipalExtensions.cs:28`), all worded right from the code. The fix changes the flow Markdown and layer 4's condition text (D20). (b) `truth-map.json` keeps a step's conditions without their kind (`TruthMap.cs:377`, contract `truth-map` v2), so an agent reading it sees the same reversed `unless`.
 
 **Why:** the frozen bar, run as frozen; the first failure is recorded as a failure, and the second run is a new measurement on a new sample after a code fix, not a re-judging of the same lines. **Cost:** $0.31 for four wording calls (Kavita $0.066 + $0.059, Sonarr $0.087 + $0.096; the estimate was $4–6, because only linked flows are worded); four judge subagents, about 350K tokens. Results: `benchmark/results/2026-11-19-flow-words/`.
+
+## D420 · Conditions keep their polarity: `null` gets its reading, and `truth-map.json` shows each condition's reading (`truth-map` v3)
+
+**Date:** 2026-11-19. **Who:** the owner ("lets fix the remaining things right"; "Readings, bump v3", over keeping the bare code with a parallel field, or objects `{code, kind}`). Closes D419 (6).
+
+1. **`null`.** `FlowFiles.ConditionText` had no reading for kind `null`, so `x ?? throw` read "only if `x`", its opposite; now "only if `x` is null", as layer 4's chart already read it. A new overload reads a flow file's condition JSON (`{code, kind, case}`), so the flow Markdown, the PM view's picker (D416) and the truth map share one reading.
+2. **`truth-map` v3.** The linked flows in `truth-map.json` (steps, scenarios, exits) hold each condition's reading ("only if `resource == null` is false (an earlier guard)") instead of its bare code. The shape is unchanged (strings), the meaning isn't, so the contract is bumped (`schemas/truth-map.v3.json`; v2 kept), phase tm provides v3, and phase fs, which consumes v2, is `needs review` (D20). No code reads these fields: `TruthList`, `TruthView`, `fsd write` and `PmAnswers` read the entries; agents that open the file read them.
+3. **The clones.** Both maps rewritten by `fsd rulings-check` (free). Kavita's 4 linked flows that hold the `?? throw` step (`ClaimsPrincipalExtensions.cs:28`) were worded again ($0.09, one retry); their 4 lines, judged true in D419 on the old input, now read "If the user's identity can't be found in their sign-in, the request fails as not authenticated" (same meaning). Sonarr's words are unchanged.
+
+4. **Phase fs reviewed (D20): nothing to change.** Its readers of the map, `fsd write --item` and `PmAnswers.Apply`, find an entry by its number and compare `MapId`, which is cut from `rulingsHash`, not the flows; neither reads a flow's conditions. fs now consumes `truth-map` 3 and is `done` again.
+
+**Why:** a condition read bare tells its reader the opposite of what the code does; D419 showed it on 22 of 163 lines. **Cost:** $0.09.

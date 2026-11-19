@@ -41,7 +41,7 @@ The view's folded developer section shows the same reading. Tests: 2,003 pass, w
 all 19 of Sonarr's. Run 2 used a new seed, so Sonarr's sample isn't the set of lines that exposed the fault. Run 1
 stands as recorded: the bar was missed on the first measurement, and passed on the second.
 
-## Left, not fixed here
+## Left, not fixed here (both fixed the same day by D420: `null` reads "is null", `truth-map` v3)
 
 - **`null` conditions have no reading in `FlowFiles.ConditionText`:** a `x ?? throw` reads "only if `x`", which is
   the opposite (layer 4's chart says "is null"). This touches 4 Kavita lines, all one step

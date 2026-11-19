@@ -64,9 +64,7 @@ public static partial class FlowWords
         if (PageRun.LoadJson(Path.Combine(root, file)) is not JsonObject flow) return null;
         // Each condition as the flow's own Markdown reads it (D173, D240): an `unless` is an earlier guard that must be false,
         // never the bare code, which reads as its opposite (the 2026-11-19 measurement: 22 of 22 false lines).
-        static List<string> Conds(JsonNode? n) => [.. (n as JsonArray ?? []).OfType<JsonObject>()
-            .Where(c => ((string?)c["code"] ?? "").Length > 0)
-            .Select(c => FlowFiles.ConditionText(new Condition((string?)c["kind"] ?? "if", ((string)c["code"]!).Replace('`', '\''), "", 0, (string?)c["case"])))];
+        static List<string> Conds(JsonNode? n) => [.. (n as JsonArray ?? []).OfType<JsonObject>().Select(FlowFiles.ConditionText).OfType<string>()];
         var id = (string)indexEntry["id"]!;
         var name = (string?)flow["name"] ?? (string?)indexEntry["name"] ?? id;
         var start = flow["start"] as JsonObject;
