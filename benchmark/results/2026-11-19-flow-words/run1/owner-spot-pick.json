@@ -1,0 +1,46 @@
+{
+  "seed": 417,
+  "population": 163,
+  "picked": [
+    {
+      "app": "kavita",
+      "n": 1
+    },
+    {
+      "app": "kavita",
+      "n": 2
+    },
+    {
+      "app": "kavita",
+      "n": 11
+    },
+    {
+      "app": "kavita",
+      "n": 12
+    },
+    {
+      "app": "kavita",
+      "n": 21
+    },
+    {
+      "app": "sonarr",
+      "n": 11
+    },
+    {
+      "app": "sonarr",
+      "n": 27
+    },
+    {
+      "app": "sonarr",
+      "n": 37
+    },
+    {
+      "app": "sonarr",
+      "n": 56
+    },
+    {
+      "app": "sonarr",
+      "n": 90
+    }
+  ]
+}

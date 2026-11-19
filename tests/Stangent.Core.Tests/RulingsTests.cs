@@ -592,7 +592,7 @@ public sealed class RulingsTests : IDisposable
                      { "n": 2, "kind": "database", "at": "src/orders.ts:6", "what": "saves Refund", "code": "db.Refunds.Add(refund)", "label": "guessed", "conditions": [ { "code": "order.Paid", "kind": "if" } ] },
                      { "n": 3, "kind": "database", "at": "src/orders.ts:8", "what": "reads Order", "code": "db.Orders.Find(id)", "label": "certain", "conditions": [] } ],
           "scenarios": [ { "name": "main path: no early exit taken", "conditions": [] } ],
-          "exits": [ { "kind": "BadRequest", "at": "src/orders.ts:7", "code": "return BadRequest();", "conditions": [ { "code": "!order.Paid", "kind": "if" } ] } ],
+          "exits": [ { "kind": "BadRequest", "at": "src/orders.ts:7", "code": "return BadRequest();", "conditions": [ { "code": "!order.Paid", "kind": "if" }, { "code": "id == null", "kind": "unless" } ] } ],
           "guesses": [ { "step": 2 } ], "unknowns": [] }
         """;
 
@@ -635,7 +635,9 @@ public sealed class RulingsTests : IDisposable
         var index = FlowWords.FlowIndex(Root);
         var picked = FlowWords.Pick(Root, index["click-refund"])!;
         Assert.Equal(["S", "A", "C1", "X1"], picked.Items.Select(i => i.Id));
-        Assert.Equal(["order.Paid"], picked.Items.Single(i => i.Id == "C1").Conditions);
+        Assert.Equal(["only if `order.Paid`"], picked.Items.Single(i => i.Id == "C1").Conditions);
+        // An earlier guard reads as false, never as its bare code (the 2026-11-19 measurement's 22 false lines).
+        Assert.Equal(["only if `!order.Paid`", "only if `id == null` is false (an earlier guard)"], picked.Items.Single(i => i.Id == "X1").Conditions);
         Assert.Contains("_not in plain words yet", TruthView.ReadAll(Root, "shop"));
 
         // No cost choice: counted and the command named, nothing prepared (rule 9).
@@ -647,8 +649,8 @@ public sealed class RulingsTests : IDisposable
         var (_, step) = FlowWords.Run(Repo, "shop", "1");
         Assert.Equal(("prepared", "view", FlowWords.Writer), (step!.Status, step.Action, step.Agent));
         var input = File.ReadAllText(Path.Combine(FlowWords.RunDir(Root, "shop"), "input.md"));
-        Assert.Contains("- **C1** (change): `saves Refund — db.Refunds.Add(refund)` — when `order.Paid`", input);
-        Assert.Contains("- **X1** (stop): `BadRequest: return BadRequest();` — when `!order.Paid`", input);
+        Assert.Contains("- **C1** (change): `saves Refund — db.Refunds.Add(refund)` — only if `order.Paid`", input);
+        Assert.Contains("- **X1** (stop): `BadRequest: return BadRequest();` — only if `!order.Paid`; only if `id == null` is false (an earlier guard)", input);
 
         // A code name the step doesn't have, and a step with no line: one retry, nothing kept for that flow yet.
         Answer(("S", "The user clicks Refund on an order."), ("A", "Any signed-in user."), ("C1", "The refund is saved through RefundService.Save."));

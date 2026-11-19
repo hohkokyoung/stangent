@@ -1,0 +1,46 @@
+{
+  "seed": 4162,
+  "population": 163,
+  "picked": [
+    {
+      "doc": "kavita-fsd",
+      "n": 2
+    },
+    {
+      "doc": "kavita-fsd",
+      "n": 12
+    },
+    {
+      "doc": "kavita-fsd",
+      "n": 29
+    },
+    {
+      "doc": "kavita-fsd",
+      "n": 43
+    },
+    {
+      "doc": "sonarr-fsd",
+      "n": 26
+    },
+    {
+      "doc": "sonarr-fsd",
+      "n": 42
+    },
+    {
+      "doc": "sonarr-fsd",
+      "n": 64
+    },
+    {
+      "doc": "sonarr-fsd",
+      "n": 72
+    },
+    {
+      "doc": "sonarr-fsd",
+      "n": 78
+    },
+    {
+      "doc": "sonarr-fsd",
+      "n": 93
+    }
+  ]
+}

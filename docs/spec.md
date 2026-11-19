@@ -514,7 +514,11 @@ The PM's rulings on the review's findings judge tickets. Built so far:
   (`flow-words` v1, AI output kept, D18) with the hash of the picks they were checked against (their code and conditions,
   not their lines, so an edit above a flow costs nothing), and the view is rewritten, also before a retry;
   a flow whose picks changed shows "not in plain words yet" until worded again. The chart is drawn by code: the journey
-  in order, each edge case a dashed branch from the start. Trusted by one frozen measurement (D416 (4)), not yet run.
+  in order, each edge case a dashed branch from the start. Each condition reaches the writer as the flow's Markdown reads
+  it (`FlowFiles.ConditionText`: an earlier guard "is false (an earlier guard)"), all of a step's conditions holding together.
+  Trusted by one frozen measurement (D416 (4)), run 2026-11-19 (D419): run 1 below the bar on a picker fault (a guard's kind
+  dropped), fixed, run 2 100% on Kavita and Sonarr, and the owner's
+  10-line spot-check agrees: done. No per-run checker; a doubted line is traced by its `file:line` in the developer section.
 - **The PM answers in plain words** (layer 2b, D371; code only; since D415 the view replaces `truth-map.md`, so read
   "the view" where this says `truth-map.md`): nobody edits `rulings.yaml`. `truth-map.md` opened with
   how to answer and the numbered questions still open (medium and low matches first, then items to look at again, then

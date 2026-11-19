@@ -1,0 +1,506 @@
+{
+ "doc": "sonarr-fsd",
+ "judge": "fresh Sonnet subagent, read-only on the clone",
+ "verdicts": [
+  {
+   "n": 1,
+   "verdict": "true",
+   "why": "Fallback authorization policy requires a signed-in user."
+  },
+  {
+   "n": 2,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:88."
+  },
+  {
+   "n": 3,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:131."
+  },
+  {
+   "n": 4,
+   "verdict": "false",
+   "why": "src/Sonarr.Http/REST/RestController.cs:157 throws only when validators produce errors; a null/empty body is refused earlier at :131 with a different message, so the line misdescribes the trigger."
+  },
+  {
+   "n": 5,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:37."
+  },
+  {
+   "n": 6,
+   "verdict": "true",
+   "why": "Fallback authorization policy requires a signed-in user."
+  },
+  {
+   "n": 7,
+   "verdict": "true",
+   "why": "Matches the code at src/NzbDrone.Core/Organizer/NamingConfigService.cs:30."
+  },
+  {
+   "n": 8,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx:58."
+  },
+  {
+   "n": 9,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:56."
+  },
+  {
+   "n": 10,
+   "verdict": "false",
+   "why": "src/Sonarr.Http/REST/RestController.cs:157 throws only when validators produce errors; a null/empty body is refused earlier at :131 with a different message, so the line misdescribes the trigger."
+  },
+  {
+   "n": 11,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:37."
+  },
+  {
+   "n": 12,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:58."
+  },
+  {
+   "n": 13,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:131."
+  },
+  {
+   "n": 14,
+   "verdict": "false",
+   "why": "src/Sonarr.Http/REST/RestController.cs:157 throws only when validators produce errors; a null/empty body is refused earlier at :131 with a different message, so the line misdescribes the trigger."
+  },
+  {
+   "n": 15,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:37."
+  },
+  {
+   "n": 16,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:63."
+  },
+  {
+   "n": 17,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:70."
+  },
+  {
+   "n": 18,
+   "verdict": "false",
+   "why": "SchemaBuilder.cs:262 is reached only when the options type is neither an enum (handled earlier) nor a converter, so 'such as an enum-based one' is wrong."
+  },
+  {
+   "n": 19,
+   "verdict": "true",
+   "why": "Matches the code at src/NzbDrone.Core/Localization/LocalizationService.cs:123."
+  },
+  {
+   "n": 20,
+   "verdict": "true",
+   "why": "Matches the code at src/NzbDrone.Core/Localization/LocalizationService.cs:143."
+  },
+  {
+   "n": 21,
+   "verdict": "true",
+   "why": "Fallback authorization policy requires a signed-in user."
+  },
+  {
+   "n": 22,
+   "verdict": "true",
+   "why": "Matches the code at src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:54."
+  },
+  {
+   "n": 23,
+   "verdict": "true",
+   "why": "Matches the code at src/NzbDrone.Core/Organizer/NamingConfigService.cs:30."
+  },
+  {
+   "n": 24,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:54."
+  },
+  {
+   "n": 25,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:131."
+  },
+  {
+   "n": 26,
+   "verdict": "false",
+   "why": "src/Sonarr.Http/REST/RestController.cs:157 throws only when validators produce errors; a null/empty body is refused earlier at :131 with a different message, so the line misdescribes the trigger."
+  },
+  {
+   "n": 27,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:37."
+  },
+  {
+   "n": 28,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Api.V5/Series/SeriesLookupController.cs:44."
+  },
+  {
+   "n": 29,
+   "verdict": "true",
+   "why": "Matches the code at src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:160."
+  },
+  {
+   "n": 30,
+   "verdict": "true",
+   "why": "Matches the code at src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:165."
+  },
+  {
+   "n": 31,
+   "verdict": "true",
+   "why": "Matches the code at src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:170."
+  },
+  {
+   "n": 32,
+   "verdict": "true",
+   "why": "Fallback authorization policy requires a signed-in user."
+  },
+  {
+   "n": 33,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:124."
+  },
+  {
+   "n": 34,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:37."
+  },
+  {
+   "n": 35,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/Settings/Notifications/useConnections.ts:92."
+  },
+  {
+   "n": 36,
+   "verdict": "false",
+   "why": "useProviderSchema.ts:51 throws when the selected implementation is not found among the schemas, not when nothing is selected."
+  },
+  {
+   "n": 37,
+   "verdict": "true",
+   "why": "Fallback authorization policy requires a signed-in user."
+  },
+  {
+   "n": 38,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:135."
+  },
+  {
+   "n": 39,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:131."
+  },
+  {
+   "n": 40,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:37."
+  },
+  {
+   "n": 41,
+   "verdict": "true",
+   "why": "Fallback authorization policy requires a signed-in user."
+  },
+  {
+   "n": 42,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:122."
+  },
+  {
+   "n": 43,
+   "verdict": "false",
+   "why": "src/Sonarr.Http/REST/RestController.cs:157 throws only when validators produce errors; a null/empty body is refused earlier at :131 with a different message, so the line misdescribes the trigger."
+  },
+  {
+   "n": 44,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/Settings/ImportLists/ImportLists/useImportLists.ts:127."
+  },
+  {
+   "n": 45,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/Settings/ImportLists/ImportLists/useImportLists.ts:131."
+  },
+  {
+   "n": 46,
+   "verdict": "false",
+   "why": "useProviderSchema.ts:51 throws when the selected implementation is not found among the schemas, not when nothing is selected."
+  },
+  {
+   "n": 47,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/Settings/useProviderSchema.ts:68."
+  },
+  {
+   "n": 48,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:115."
+  },
+  {
+   "n": 49,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:131."
+  },
+  {
+   "n": 50,
+   "verdict": "false",
+   "why": "src/Sonarr.Http/REST/RestController.cs:157 throws only when validators produce errors; a null/empty body is refused earlier at :131 with a different message, so the line misdescribes the trigger."
+  },
+  {
+   "n": 51,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:37."
+  },
+  {
+   "n": 52,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/Settings/Indexers/useIndexers.ts:119."
+  },
+  {
+   "n": 53,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/Settings/Indexers/useIndexers.ts:123."
+  },
+  {
+   "n": 54,
+   "verdict": "false",
+   "why": "useProviderSchema.ts:51 throws when the selected implementation is not found among the schemas, not when nothing is selected."
+  },
+  {
+   "n": 55,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:104."
+  },
+  {
+   "n": 56,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:131."
+  },
+  {
+   "n": 57,
+   "verdict": "false",
+   "why": "src/Sonarr.Http/REST/RestController.cs:157 throws only when validators produce errors; a null/empty body is refused earlier at :131 with a different message, so the line misdescribes the trigger."
+  },
+  {
+   "n": 58,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:37."
+  },
+  {
+   "n": 59,
+   "verdict": "true",
+   "why": "Fallback authorization policy requires a signed-in user."
+  },
+  {
+   "n": 60,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:126."
+  },
+  {
+   "n": 61,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/Settings/Metadata/useMetadata.ts:71."
+  },
+  {
+   "n": 62,
+   "verdict": "false",
+   "why": "useProviderSchema.ts:51 throws when the selected implementation is not found among the schemas, not when nothing is selected."
+  },
+  {
+   "n": 63,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/Settings/useProviderSchema.ts:68."
+  },
+  {
+   "n": 64,
+   "verdict": "true",
+   "why": "Fallback authorization policy requires a signed-in user."
+  },
+  {
+   "n": 65,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:137."
+  },
+  {
+   "n": 66,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:131."
+  },
+  {
+   "n": 67,
+   "verdict": "false",
+   "why": "src/Sonarr.Http/REST/RestController.cs:157 throws only when validators produce errors; a null/empty body is refused earlier at :131 with a different message, so the line misdescribes the trigger."
+  },
+  {
+   "n": 68,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:37."
+  },
+  {
+   "n": 69,
+   "verdict": "true",
+   "why": "Fallback authorization policy requires a signed-in user."
+  },
+  {
+   "n": 70,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:72."
+  },
+  {
+   "n": 71,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:37."
+  },
+  {
+   "n": 72,
+   "verdict": "true",
+   "why": "Matches the code at src/NzbDrone.Core/Qualities/Quality.cs:198."
+  },
+  {
+   "n": 73,
+   "verdict": "true",
+   "why": "Fallback authorization policy requires a signed-in user."
+  },
+  {
+   "n": 74,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:151."
+  },
+  {
+   "n": 75,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:131."
+  },
+  {
+   "n": 76,
+   "verdict": "false",
+   "why": "src/Sonarr.Http/REST/RestController.cs:157 throws only when validators produce errors; a null/empty body is refused earlier at :131 with a different message, so the line misdescribes the trigger."
+  },
+  {
+   "n": 77,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:37."
+  },
+  {
+   "n": 78,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:153."
+  },
+  {
+   "n": 79,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:131."
+  },
+  {
+   "n": 80,
+   "verdict": "false",
+   "why": "src/Sonarr.Http/REST/RestController.cs:157 throws only when validators produce errors; a null/empty body is refused earlier at :131 with a different message, so the line misdescribes the trigger."
+  },
+  {
+   "n": 81,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:37."
+  },
+  {
+   "n": 82,
+   "verdict": "true",
+   "why": "Fallback authorization policy requires a signed-in user."
+  },
+  {
+   "n": 83,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:131."
+  },
+  {
+   "n": 84,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:37."
+  },
+  {
+   "n": 85,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:131."
+  },
+  {
+   "n": 86,
+   "verdict": "false",
+   "why": "src/Sonarr.Http/REST/RestController.cs:157 throws only when validators produce errors; a null/empty body is refused earlier at :131 with a different message, so the line misdescribes the trigger."
+  },
+  {
+   "n": 87,
+   "verdict": "true",
+   "why": "Fallback authorization policy requires a signed-in user."
+  },
+  {
+   "n": 88,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:145."
+  },
+  {
+   "n": 89,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:131."
+  },
+  {
+   "n": 90,
+   "verdict": "false",
+   "why": "src/Sonarr.Http/REST/RestController.cs:157 throws only when validators produce errors; a null/empty body is refused earlier at :131 with a different message, so the line misdescribes the trigger."
+  },
+  {
+   "n": 91,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:37."
+  },
+  {
+   "n": 92,
+   "verdict": "true",
+   "why": "Fallback authorization policy requires a signed-in user."
+  },
+  {
+   "n": 93,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/AppRoutes.tsx:96."
+  },
+  {
+   "n": 94,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:131."
+  },
+  {
+   "n": 95,
+   "verdict": "false",
+   "why": "src/Sonarr.Http/REST/RestController.cs:157 throws only when validators produce errors; a null/empty body is refused earlier at :131 with a different message, so the line misdescribes the trigger."
+  },
+  {
+   "n": 96,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Http/REST/RestController.cs:37."
+  },
+  {
+   "n": 97,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/App/Select/SelectContext.tsx:31."
+  },
+  {
+   "n": 98,
+   "verdict": "true",
+   "why": "Matches the code at frontend/src/Utilities/Fetch/fetchJson.ts:78."
+  },
+  {
+   "n": 99,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Api.V5/EpisodeFiles/EpisodeFileController.cs:66."
+  },
+  {
+   "n": 100,
+   "verdict": "true",
+   "why": "Matches the code at src/Sonarr.Api.V5/Release/ReleaseController.cs:206."
+  }
+ ]
+}

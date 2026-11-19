@@ -1,0 +1,321 @@
+{
+ "doc": "kavita-fsd",
+ "judge": "fresh Sonnet subagent, read-only on the clone",
+ "verdicts": [
+  {
+   "n": 1,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 2,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 3,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 4,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 5,
+   "verdict": "false",
+   "why": "AccountController.cs:125 returns Ok() when the account is not found, not a permission-denied; the line wrongly says not-found gives permission-denied."
+  },
+  {
+   "n": 6,
+   "verdict": "false",
+   "why": "AccountController.cs:125 returns Ok() when the account is not found, so 'or the account is not found' is wrong for the permission-denied stop at :134."
+  },
+  {
+   "n": 7,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 8,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 9,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 10,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 11,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 12,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 13,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 14,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 15,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 16,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 17,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 18,
+   "verdict": "false",
+   "why": "AccountService.cs:240-243 returns early when highlight slots exist and saves only when they are absent; the line states the opposite condition."
+  },
+  {
+   "n": 19,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 20,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 21,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 22,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 23,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 24,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 25,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 26,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 27,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 28,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 29,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 30,
+   "verdict": "false",
+   "why": "AccountController.cs:893 is reached only when generating the link or sending the email throws (888-891); email validation problems stop earlier with other messages (775-780)."
+  },
+  {
+   "n": 31,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 32,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 33,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 34,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 35,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 36,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 37,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 38,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 39,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 40,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 41,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 42,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 43,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 44,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 45,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 46,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 47,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 48,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 49,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 50,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 51,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 52,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 53,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 54,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 55,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 56,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 57,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 58,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 59,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 60,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 61,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 62,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  },
+  {
+   "n": 63,
+   "verdict": "true",
+   "why": "Matches the code at the cited location and its conditions."
+  }
+ ]
+}

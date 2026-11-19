@@ -1,0 +1,1048 @@
+{
+  "doc": "kavita-fsd",
+  "clone": "kavita",
+  "seed": 4161,
+  "asked": 100,
+  "population": 63,
+  "failedLines": 0,
+  "sampled": 63,
+  "flows": 8,
+  "pickMismatches": [],
+  "lines": [
+    {
+      "flow": "click-changepasswordcomponent-savepasswordform",
+      "flowName": "Save",
+      "flowTitle": "Change a user's password",
+      "flowFile": "specs/areas/customize/click-changepasswordcomponent-savepasswordform.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "user who passes DisallowRole(roles = [\"Read Only\"]) (access filter on the action (method))",
+      "at": "UI/Web/src/app/user-settings/change-password/change-password.component.html:49",
+      "conditions": [],
+      "text": "Any signed-in user except Read Only users, who are refused.",
+      "n": 1,
+      "source": "    43          </div>\n    44  \n    45          <div class=\"col-auto d-flex d-md-block justify-content-sm-center text-md-end mb-3\">\n    46            <button type=\"button\" class=\"flex-fill btn btn-secondary me-2\" aria-describedby=\"password-panel\"\n    47                    (click)=\"resetPasswordForm()\">{{t('reset')}}</button>\n    48            <button type=\"submit\" class=\"flex-fill btn btn-primary\" aria-describedby=\"password-panel\"\n>   49                    (click)=\"savePasswordForm()\" [disabled]=\"!formGroup().valid() || !(formGroup().dirty() || formGroup().touched())\">{{t('save')}}</button>\n    50          </div>\n    51        </form>\n    52  \n    53      </ng-template>\n    54    </app-setting-item>\n    55  </ng-container>"
+    },
+    {
+      "flow": "click-changepasswordcomponent-savepasswordform",
+      "flowName": "Save",
+      "flowTitle": "Change a user's password",
+      "flowFile": "specs/areas/customize/click-changepasswordcomponent-savepasswordform.json",
+      "item": "C1",
+      "kind": "change",
+      "code": "saves the Identity user store through UserManager.RemovePasswordAsync — var result = await userManager.RemovePasswordAsync(user);",
+      "at": "Kavita.Services/AccountService.cs:44",
+      "conditions": [
+        "only if `passwordValidationIssues.Count != 0` is false (an earlier guard)"
+      ],
+      "text": "The account's existing password is removed, once all the checks have passed.",
+      "n": 2,
+      "source": "    38  \n    39      public async Task<IEnumerable<ApiException>> ChangeUserPassword(AppUser user, string newPassword, CancellationToken ct = default)\n    40      {\n    41          var passwordValidationIssues = (await ValidatePassword(user, newPassword, ct)).ToList();\n    42          if (passwordValidationIssues.Count != 0) return passwordValidationIssues;\n    43  \n>   44          var result = await userManager.RemovePasswordAsync(user);\n    45          if (!result.Succeeded)\n    46          {\n    47              logger.LogError(\"Could not update password\");\n    48              return result.Errors.Select(e => new ApiException(400, e.Code, e.Description));\n    49          }\n    50  "
+    },
+    {
+      "flow": "click-changepasswordcomponent-savepasswordform",
+      "flowName": "Save",
+      "flowTitle": "Change a user's password",
+      "flowFile": "specs/areas/customize/click-changepasswordcomponent-savepasswordform.json",
+      "item": "C2",
+      "kind": "change",
+      "code": "saves the Identity user store through UserManager.AddPasswordAsync — result = await userManager.AddPasswordAsync(user, newPassword);",
+      "at": "Kavita.Services/AccountService.cs:51",
+      "conditions": [
+        "only if `!result.Succeeded` is false (an earlier guard)",
+        "only if `passwordValidationIssues.Count != 0` is false (an earlier guard)"
+      ],
+      "text": "The new password is set on the account after the old one is removed successfully.",
+      "n": 3,
+      "source": "    45          if (!result.Succeeded)\n    46          {\n    47              logger.LogError(\"Could not update password\");\n    48              return result.Errors.Select(e => new ApiException(400, e.Code, e.Description));\n    49          }\n    50  \n>   51          result = await userManager.AddPasswordAsync(user, newPassword);\n    52          if (result.Succeeded) return [];\n    53  \n    54          logger.LogError(\"Could not update password\");\n    55          return result.Errors.Select(e => new ApiException(400, e.Code, e.Description));\n    56      }\n    57  "
+    },
+    {
+      "flow": "click-changepasswordcomponent-savepasswordform",
+      "flowName": "Save",
+      "flowTitle": "Change a user's password",
+      "flowFile": "specs/areas/customize/click-changepasswordcomponent-savepasswordform.json",
+      "item": "S",
+      "kind": "start",
+      "code": "Save: (click)=\"savePasswordForm()\" [disabled]=\"!formGroup().valid() || !(formGroup().dirty() || formGroup().touched())\">{{t('save')}}</button>",
+      "at": "UI/Web/src/app/user-settings/change-password/change-password.component.html:49",
+      "conditions": [],
+      "text": "The user clicks Save on the password form, which is enabled only once the form is valid and has been edited.",
+      "n": 4,
+      "source": "    43          </div>\n    44  \n    45          <div class=\"col-auto d-flex d-md-block justify-content-sm-center text-md-end mb-3\">\n    46            <button type=\"button\" class=\"flex-fill btn btn-secondary me-2\" aria-describedby=\"password-panel\"\n    47                    (click)=\"resetPasswordForm()\">{{t('reset')}}</button>\n    48            <button type=\"submit\" class=\"flex-fill btn btn-primary\" aria-describedby=\"password-panel\"\n>   49                    (click)=\"savePasswordForm()\" [disabled]=\"!formGroup().valid() || !(formGroup().dirty() || formGroup().touched())\">{{t('save')}}</button>\n    50          </div>\n    51        </form>\n    52  \n    53      </ng-template>\n    54    </app-setting-item>\n    55  </ng-container>"
+    },
+    {
+      "flow": "click-changepasswordcomponent-savepasswordform",
+      "flowName": "Save",
+      "flowTitle": "Change a user's password",
+      "flowFile": "specs/areas/customize/click-changepasswordcomponent-savepasswordform.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "Unauthorized: return Unauthorized(await localizationService.TranslateAsync(UserId, \"permission-denied\"));",
+      "at": "Kavita.Server/Controllers/AccountController.cs:131",
+      "conditions": [
+        "only if `resetPasswordDto.UserName == Username! && !(User.IsInRole(PolicyConstants.ChangePasswordRole) || isAdmin)`",
+        "only if `user == null` is false (an earlier guard)"
+      ],
+      "text": "Changing their own password without the change-password permission or admin rights is refused as unauthorized.",
+      "n": 5,
+      "source": "   125          if (user == null) return Ok(); // Don't report BadRequest as that would allow brute forcing to find accounts on system\n   126  \n   127          logger.LogInformation(\"{UserName} is changing {ResetUser}'s password\", Username!, resetPasswordDto.UserName.Sanitize());\n   128          var isAdmin = User.IsInRole(PolicyConstants.AdminRole);\n   129  \n   130          if (resetPasswordDto.UserName == Username! && !(User.IsInRole(PolicyConstants.ChangePasswordRole) || isAdmin))\n>  131              return Unauthorized(await localizationService.TranslateAsync(UserId, \"permission-denied\"));\n   132  \n   133          if (resetPasswordDto.UserName != Username! && !isAdmin)\n   134              return Unauthorized(await localizationService.TranslateAsync(UserId, \"permission-denied\"));\n   135  \n   136          if (string.IsNullOrEmpty(resetPasswordDto.OldPassword) && !isAdmin)\n   137              return BadRequest("
+    },
+    {
+      "flow": "click-changepasswordcomponent-savepasswordform",
+      "flowName": "Save",
+      "flowTitle": "Change a user's password",
+      "flowFile": "specs/areas/customize/click-changepasswordcomponent-savepasswordform.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "Unauthorized: return Unauthorized(await localizationService.TranslateAsync(UserId, \"permission-denied\"));",
+      "at": "Kavita.Server/Controllers/AccountController.cs:134",
+      "conditions": [
+        "only if `resetPasswordDto.UserName != Username! && !isAdmin`",
+        "only if `resetPasswordDto.UserName == Username! && !(User.IsInRole(PolicyConstants.ChangePasswordRole) || isAdmin)` is false (an earlier guard)",
+        "only if `user == null` is false (an earlier guard)"
+      ],
+      "text": "Changing another user's password without admin rights is refused as unauthorized.",
+      "n": 6,
+      "source": "   128          var isAdmin = User.IsInRole(PolicyConstants.AdminRole);\n   129  \n   130          if (resetPasswordDto.UserName == Username! && !(User.IsInRole(PolicyConstants.ChangePasswordRole) || isAdmin))\n   131              return Unauthorized(await localizationService.TranslateAsync(UserId, \"permission-denied\"));\n   132  \n   133          if (resetPasswordDto.UserName != Username! && !isAdmin)\n>  134              return Unauthorized(await localizationService.TranslateAsync(UserId, \"permission-denied\"));\n   135  \n   136          if (string.IsNullOrEmpty(resetPasswordDto.OldPassword) && !isAdmin)\n   137              return BadRequest(\n   138                  new ApiException(400,\n   139                      await localizationService.TranslateAsync(UserId, \"password-required\")));\n   140  "
+    },
+    {
+      "flow": "click-changepasswordcomponent-savepasswordform",
+      "flowName": "Save",
+      "flowTitle": "Change a user's password",
+      "flowFile": "specs/areas/customize/click-changepasswordcomponent-savepasswordform.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "BadRequest: return BadRequest(",
+      "at": "Kavita.Server/Controllers/AccountController.cs:137",
+      "conditions": [
+        "only if `string.IsNullOrEmpty(resetPasswordDto.OldPassword) && !isAdmin`",
+        "only if `resetPasswordDto.UserName != Username! && !isAdmin` is false (an earlier guard)",
+        "only if `resetPasswordDto.UserName == Username! && !(User.IsInRole(PolicyConstants.ChangePasswordRole) || isAdmin)` is false (an earlier guard)",
+        "only if `user == null` is false (an earlier guard)"
+      ],
+      "text": "A non-admin who leaves the old password empty gets a bad request error.",
+      "n": 7,
+      "source": "   131              return Unauthorized(await localizationService.TranslateAsync(UserId, \"permission-denied\"));\n   132  \n   133          if (resetPasswordDto.UserName != Username! && !isAdmin)\n   134              return Unauthorized(await localizationService.TranslateAsync(UserId, \"permission-denied\"));\n   135  \n   136          if (string.IsNullOrEmpty(resetPasswordDto.OldPassword) && !isAdmin)\n>  137              return BadRequest(\n   138                  new ApiException(400,\n   139                      await localizationService.TranslateAsync(UserId, \"password-required\")));\n   140  \n   141          var oidcConfig = (await unitOfWork.SettingsRepository.GetSettingsDtoAsync(ct)).OidcConfig;\n   142          if (user.IdentityProvider == IdentityProvider.OpenIdConnect  && oidcConfig is {Enabled: true, SyncUserSettings: true})\n   143          {"
+    },
+    {
+      "flow": "click-changepasswordcomponent-savepasswordform",
+      "flowName": "Save",
+      "flowTitle": "Change a user's password",
+      "flowFile": "specs/areas/customize/click-changepasswordcomponent-savepasswordform.json",
+      "item": "X4",
+      "kind": "stop",
+      "code": "BadRequest: return BadRequest(await localizationService.TranslateAsync(user.Id, \"oidc-managed\"));",
+      "at": "Kavita.Server/Controllers/AccountController.cs:144",
+      "conditions": [
+        "only if `user.IdentityProvider == IdentityProvider.OpenIdConnect  && oidcConfig is {Enabled: true, SyncUserSettings: true}`",
+        "only if `string.IsNullOrEmpty(resetPasswordDto.OldPassword) && !isAdmin` is false (an earlier guard)",
+        "only if `resetPasswordDto.UserName != Username! && !isAdmin` is false (an earlier guard)",
+        "only if `resetPasswordDto.UserName == Username! && !(User.IsInRole(PolicyConstants.ChangePasswordRole) || isAdmin)` is false (an earlier guard)",
+        "only if `user == null` is false (an earlier guard)"
+      ],
+      "text": "If the account is managed by the external sign-in provider with user settings synced, the change is refused with a message saying it is managed there.",
+      "n": 8,
+      "source": "   138                  new ApiException(400,\n   139                      await localizationService.TranslateAsync(UserId, \"password-required\")));\n   140  \n   141          var oidcConfig = (await unitOfWork.SettingsRepository.GetSettingsDtoAsync(ct)).OidcConfig;\n   142          if (user.IdentityProvider == IdentityProvider.OpenIdConnect  && oidcConfig is {Enabled: true, SyncUserSettings: true})\n   143          {\n>  144              return BadRequest(await localizationService.TranslateAsync(user.Id, \"oidc-managed\"));\n   145          }\n   146  \n   147          // If you're an admin and the username isn't yours, you don't need to validate the password\n   148          var isResettingOtherUser = (resetPasswordDto.UserName != Username! && isAdmin);\n   149          if (!isResettingOtherUser && !await userManager.CheckPasswordAsync(user, resetPasswordDto.OldPassword))\n   150          {"
+    },
+    {
+      "flow": "click-changepasswordcomponent-savepasswordform",
+      "flowName": "Save",
+      "flowTitle": "Change a user's password",
+      "flowFile": "specs/areas/customize/click-changepasswordcomponent-savepasswordform.json",
+      "item": "X5",
+      "kind": "stop",
+      "code": "BadRequest: return BadRequest(await localizationService.TranslateAsync(UserId, \"invalid-password\"));",
+      "at": "Kavita.Server/Controllers/AccountController.cs:151",
+      "conditions": [
+        "only if `!isResettingOtherUser && !await userManager.CheckPasswordAsync(user, resetPasswordDto.OldPassword)`",
+        "only if `user.IdentityProvider == IdentityProvider.OpenIdConnect  && oidcConfig is {Enabled: true, SyncUserSettings: true}` is false (an earlier guard)",
+        "only if `string.IsNullOrEmpty(resetPasswordDto.OldPassword) && !isAdmin` is false (an earlier guard)",
+        "only if `resetPasswordDto.UserName != Username! && !isAdmin` is false (an earlier guard)",
+        "only if `resetPasswordDto.UserName == Username! && !(User.IsInRole(PolicyConstants.ChangePasswordRole) || isAdmin)` is false (an earlier guard)",
+        "only if `user == null` is false (an earlier guard)"
+      ],
+      "text": "When changing their own password, a wrong old password is refused with an invalid password message.",
+      "n": 9,
+      "source": "   145          }\n   146  \n   147          // If you're an admin and the username isn't yours, you don't need to validate the password\n   148          var isResettingOtherUser = (resetPasswordDto.UserName != Username! && isAdmin);\n   149          if (!isResettingOtherUser && !await userManager.CheckPasswordAsync(user, resetPasswordDto.OldPassword))\n   150          {\n>  151              return BadRequest(await localizationService.TranslateAsync(UserId, \"invalid-password\"));\n   152          }\n   153  \n   154          var errors = await accountService.ChangeUserPassword(user, resetPasswordDto.Password, ct);\n   155          if (errors.Any())\n   156          {\n   157              return BadRequest(errors);"
+    },
+    {
+      "flow": "click-changepasswordcomponent-savepasswordform",
+      "flowName": "Save",
+      "flowTitle": "Change a user's password",
+      "flowFile": "specs/areas/customize/click-changepasswordcomponent-savepasswordform.json",
+      "item": "X6",
+      "kind": "stop",
+      "code": "BadRequest: return BadRequest(errors);",
+      "at": "Kavita.Server/Controllers/AccountController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `!isResettingOtherUser && !await userManager.CheckPasswordAsync(user, resetPasswordDto.OldPassword)` is false (an earlier guard)",
+        "only if `user.IdentityProvider == IdentityProvider.OpenIdConnect  && oidcConfig is {Enabled: true, SyncUserSettings: true}` is false (an earlier guard)",
+        "only if `string.IsNullOrEmpty(resetPasswordDto.OldPassword) && !isAdmin` is false (an earlier guard)",
+        "only if `resetPasswordDto.UserName != Username! && !isAdmin` is false (an earlier guard)",
+        "only if `resetPasswordDto.UserName == Username! && !(User.IsInRole(PolicyConstants.ChangePasswordRole) || isAdmin)` is false (an earlier guard)",
+        "only if `user == null` is false (an earlier guard)"
+      ],
+      "text": "If the new password fails validation, the user sees the list of errors and nothing changes.",
+      "n": 10,
+      "source": "   151              return BadRequest(await localizationService.TranslateAsync(UserId, \"invalid-password\"));\n   152          }\n   153  \n   154          var errors = await accountService.ChangeUserPassword(user, resetPasswordDto.Password, ct);\n   155          if (errors.Any())\n   156          {\n>  157              return BadRequest(errors);\n   158          }\n   159  \n   160          logger.LogInformation(\"{User}'s Password has been reset\", user.UserName!.Sanitize());\n   161          return Ok();\n   162      }\n   163  "
+    },
+    {
+      "flow": "click-changepasswordcomponent-savepasswordform",
+      "flowName": "Save",
+      "flowTitle": "Change a user's password",
+      "flowFile": "specs/areas/customize/click-changepasswordcomponent-savepasswordform.json",
+      "item": "X7",
+      "kind": "stop",
+      "code": "StatusCode: context.Result = new ContentResult",
+      "at": "Kavita.Server/Attributes/DisallowRoleAttribute.cs:36",
+      "conditions": [
+        "only if `roles.Any(role => !string.IsNullOrEmpty(role) && user.IsInRole(role))`"
+      ],
+      "text": "A user holding a role that the action disallows is blocked with an error response.",
+      "n": 11,
+      "source": "    30              var localizationService = context.HttpContext.RequestServices.GetRequiredService<ILocalizationService>();\n    31              var userId = user.GetUserId();\n    32  \n    33              var message = await localizationService.TranslateAsync(userId, \"permission-denied\");\n    34  \n    35              // Pipeline is stopped in IAsyncAuthorizationFilter if result is non nil\n>   36              context.Result = new ContentResult\n    37              {\n    38                  StatusCode = StatusCodes.Status400BadRequest,\n    39                  Content = message,\n    40                  ContentType = \"text/plain\"\n    41              };\n    42          }"
+    },
+    {
+      "flow": "click-changepasswordcomponent-savepasswordform",
+      "flowName": "Save",
+      "flowTitle": "Change a user's password",
+      "flowFile": "specs/areas/customize/click-changepasswordcomponent-savepasswordform.json",
+      "item": "X8",
+      "kind": "stop",
+      "code": "throw: var userClaim = user.FindFirst(ClaimTypes.NameIdentifier) ?? throw new KavitaException(NotAuthenticatedMessage);",
+      "at": "Kavita.Common/Extensions/ClaimsPrincipalExtensions.cs:28",
+      "conditions": [
+        "only if `user.FindFirst(ClaimTypes.NameIdentifier)`"
+      ],
+      "text": "If the request has no signed-in user identity, it stops with a not-authenticated error.",
+      "n": 12,
+      "source": "    22          var userClaim = user.FindFirst(JwtRegisteredClaimNames.Name) ?? throw new KavitaException(NotAuthenticatedMessage);\n    23          return userClaim.Value;\n    24      }\n    25  \n    26      public static int GetUserId(this ClaimsPrincipal user)\n    27      {\n>   28          var userClaim = user.FindFirst(ClaimTypes.NameIdentifier) ?? throw new KavitaException(NotAuthenticatedMessage);\n    29          return int.Parse(userClaim.Value);\n    30      }\n    31  \n    32      public static bool HasVerifiedEmail(this ClaimsPrincipal user)\n    33      {\n    34          var emailVerified = user.FindFirst(EmailVerifiedClaimType);"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "signed-in user meeting policy RequireAdminRole ([Authorize] (method))",
+      "at": "UI/Web/src/app/admin/invite-user/invite-user.component.html:70",
+      "conditions": [],
+      "text": "Signed-in users with the admin role only.",
+      "n": 13,
+      "source": "    64      <div class=\"modal-footer\">\n    65        <button type=\"button\" class=\"btn btn-{{invited() ? 'primary' : 'secondary'}}\" (click)=\"close()\">\n    66          {{invited() ? t('cancel') : t('close')}}\n    67        </button>\n    68  \n    69        @if (!invited()) {\n>   70          <button type=\"button\" class=\"btn btn-primary\" (click)=\"invite()\" [disabled]=\"canSave()\">\n    71            @if (isSending()) {\n    72              <span class=\"spinner-border spinner-border-sm\" role=\"status\" aria-hidden=\"true\"></span>\n    73            }\n    74            <span>{{isSending() ? t('inviting') : t('invite')}}</span>\n    75          </button>\n    76        }"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "C1",
+      "kind": "change",
+      "code": "saves AspNetUsers — context.AppUser.Add(user);",
+      "at": "Kavita.Database/Repositories/UserRepository.cs:44",
+      "conditions": [],
+      "text": "The new user record is added to the user list.",
+      "n": 14,
+      "source": "    38      {\n    39          context.AppUserBookmark.Add(bookmark);\n    40      }\n    41  \n    42      public void Add(AppUser user)\n    43      {\n>   44          context.AppUser.Add(user);\n    45      }\n    46  \n    47      public void Update(AppUser user)\n    48      {\n    49          context.Entry(user).State = EntityState.Modified;\n    50      }"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "C2",
+      "kind": "change",
+      "code": "saves the Identity user store through UserManager.CreateAsync — var result = await userManager.CreateAsync(user);",
+      "at": "Kavita.Server/Controllers/AccountController.cs:790",
+      "conditions": [
+        "only if `emailValidationErrors.Any()` is false (an earlier guard)",
+        "only if `string.IsNullOrEmpty(dto.Email)` is false (an earlier guard)",
+        "only if `adminUser == null` is false (an earlier guard)"
+      ],
+      "text": "The new account is created in the sign-in system once the email checks pass.",
+      "n": 15,
+      "source": "   784          var user = new AppUserBuilder(dto.Email, dto.Email,\n   785              await unitOfWork.SiteThemeRepository.GetDefaultTheme()).Build();\n   786          unitOfWork.UserRepository.Add(user);\n   787  \n   788          try\n   789          {\n>  790              var result = await userManager.CreateAsync(user);\n   791              if (!result.Succeeded) return BadRequest(result.Errors);\n   792  \n   793              await accountService.SeedUser(user, ct);\n   794  \n   795              // Assign Roles\n   796              var roles = dto.Roles;"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "C3",
+      "kind": "change",
+      "code": "saves AppUserDashboardStream — user.DashboardStreams.Add(newStream);",
+      "at": "Kavita.Services/AccountService.cs:229",
+      "conditions": [],
+      "text": "Dashboard sections are saved for the new user.",
+      "n": 16,
+      "source": "   223      /// <param name=\"user\"></param>\n   224      /// <param name=\"ct\"></param>\n   225      public void AddDefaultStreamsToUser(AppUser user, CancellationToken ct = default)\n   226      {\n   227          foreach (var newStream in Defaults.DefaultStreams.Select(mapper.Map<AppUserDashboardStream, AppUserDashboardStream>))\n   228          {\n>  229              user.DashboardStreams.Add(newStream);\n   230          }\n   231  \n   232          foreach (var stream in Defaults.DefaultSideNavStreams.Select(mapper.Map<AppUserSideNavStream, AppUserSideNavStream>))\n   233          {\n   234              user.SideNavStreams.Add(stream);\n   235          }"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "C4",
+      "kind": "change",
+      "code": "saves AppUserSideNavStream — user.SideNavStreams.Add(stream);",
+      "at": "Kavita.Services/AccountService.cs:234",
+      "conditions": [],
+      "text": "Side navigation entries are saved for the new user.",
+      "n": 17,
+      "source": "   228          {\n   229              user.DashboardStreams.Add(newStream);\n   230          }\n   231  \n   232          foreach (var stream in Defaults.DefaultSideNavStreams.Select(mapper.Map<AppUserSideNavStream, AppUserSideNavStream>))\n   233          {\n>  234              user.SideNavStreams.Add(stream);\n   235          }\n   236      }\n   237  \n   238      private void AddDefaultHighlightSlotsToUser(AppUser user)\n   239      {\n   240          if (user.UserPreferences.BookReaderHighlightSlots.Any()) return;"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "C5",
+      "kind": "change",
+      "code": "saves AspNetUsers through IUserRepository.Update — unitOfWork.UserRepository.Update(user);",
+      "at": "Kavita.Services/AccountService.cs:243",
+      "conditions": [
+        "only if `user.UserPreferences.BookReaderHighlightSlots.Any()` is false (an earlier guard)"
+      ],
+      "text": "The new user's saved preferences are updated, unless highlight slots are already set.",
+      "n": 18,
+      "source": "   237  \n   238      private void AddDefaultHighlightSlotsToUser(AppUser user)\n   239      {\n   240          if (user.UserPreferences.BookReaderHighlightSlots.Any()) return;\n   241  \n   242          user.UserPreferences.BookReaderHighlightSlots = Defaults.DefaultHighlightSlots.ToList();\n>  243          unitOfWork.UserRepository.Update(user);\n   244      }\n   245  \n   246      private void AddAuthKeys(AppUser user)\n   247      {\n   248          if (user.AuthKeys.Any()) return;\n   249  "
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "C6",
+      "kind": "change",
+      "code": "saves AppUserReadingProfiles — context.AppUserReadingProfiles.Add(readingProfile);",
+      "at": "Kavita.Database/Repositories/AppUserReadingProfileRepository.cs:97",
+      "conditions": [],
+      "text": "A reading profile is saved for the new user.",
+      "n": 19,
+      "source": "    91              .Where(rp => rp.NormalizedName == normalizedName && rp.AppUserId == userId)\n    92              .AnyAsync(ct);\n    93      }\n    94  \n    95      public void Add(AppUserReadingProfile readingProfile)\n    96      {\n>   97          context.AppUserReadingProfiles.Add(readingProfile);\n    98      }\n    99  \n   100      public void Update(AppUserReadingProfile readingProfile)\n   101      {\n   102          context.AppUserReadingProfiles.Update(readingProfile).State = EntityState.Modified;\n   103      }"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "C7",
+      "kind": "change",
+      "code": "saves the Identity user store through UserManager.AddToRoleAsync — var roleResult = await userManager.AddToRoleAsync(user, role);",
+      "at": "Kavita.Server/Controllers/AccountController.cs:810",
+      "conditions": [
+        "only if `!PolicyConstants.ValidRoles.Contains(role)` is false (an earlier guard)",
+        "only if `foreach (var role in roles)`",
+        "only if `!result.Succeeded` is false (an earlier guard)",
+        "only if `emailValidationErrors.Any()` is false (an earlier guard)",
+        "only if `string.IsNullOrEmpty(dto.Email)` is false (an earlier guard)",
+        "only if `adminUser == null` is false (an earlier guard)"
+      ],
+      "text": "Each valid chosen role is given to the new user.",
+      "n": 20,
+      "source": "   804                  roles.Remove(PolicyConstants.ReadOnlyRole);\n   805              }\n   806  \n   807              foreach (var role in roles)\n   808              {\n   809                  if (!PolicyConstants.ValidRoles.Contains(role)) continue;\n>  810                  var roleResult = await userManager.AddToRoleAsync(user, role);\n   811                  if (!roleResult.Succeeded)\n   812                      return BadRequest(roleResult.Errors);\n   813              }\n   814  \n   815              // Grant access to libraries\n   816              List<Library> libraries;"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "C8",
+      "kind": "change",
+      "code": "queues IEmailService.SendInviteEmail through BackgroundJob.Enqueue, which runs later, in the background (now, in the background) — BackgroundJob.Enqueue(() => emailService.SendInviteEmail(new ConfirmationEmailDto()",
+      "at": "Kavita.Server/Controllers/AccountController.cs:874",
+      "conditions": [
+        "only if `!emailService.IsValidEmail(dto.Email) || !settings.IsEmailSetup()` is false (an earlier guard)",
+        "only if `emailValidationErrors.Any()` is false (an earlier guard)",
+        "only if `string.IsNullOrEmpty(dto.Email)` is false (an earlier guard)",
+        "only if `adminUser == null` is false (an earlier guard)"
+      ],
+      "text": "An invite email is queued to send in the background, if the email address is valid and email is set up.",
+      "n": 21,
+      "source": "   868                      EmailLink = emailLink,\n   869                      EmailSent = false,\n   870                      InvalidEmail = true\n   871                  });\n   872              }\n   873  \n>  874              BackgroundJob.Enqueue(() => emailService.SendInviteEmail(new ConfirmationEmailDto()\n   875              {\n   876                  EmailAddress = dto.Email,\n   877                  LocaleUserId = adminUser.Id, // Use the admin's locale for the invite to server\n   878                  InvitingUser = adminUser.UserName,\n   879                  ServerConfirmationLink = emailLink\n   880              }));"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "S",
+      "kind": "start",
+      "code": "Inviting…: <button type=\"button\" class=\"btn btn-primary\" (click)=\"invite()\" [disabled]=\"canSave()\">",
+      "at": "UI/Web/src/app/admin/invite-user/invite-user.component.html:70",
+      "conditions": [],
+      "text": "An admin clicks the Invite button on the invite form.",
+      "n": 22,
+      "source": "    64      <div class=\"modal-footer\">\n    65        <button type=\"button\" class=\"btn btn-{{invited() ? 'primary' : 'secondary'}}\" (click)=\"close()\">\n    66          {{invited() ? t('cancel') : t('close')}}\n    67        </button>\n    68  \n    69        @if (!invited()) {\n>   70          <button type=\"button\" class=\"btn btn-primary\" (click)=\"invite()\" [disabled]=\"canSave()\">\n    71            @if (isSending()) {\n    72              <span class=\"spinner-border spinner-border-sm\" role=\"status\" aria-hidden=\"true\"></span>\n    73            }\n    74            <span>{{isSending() ? t('inviting') : t('invite')}}</span>\n    75          </button>\n    76        }"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "Unauthorized: if (adminUser == null) return Unauthorized(await localizationService.TranslateAsync(userId, \"permission-denied\"));",
+      "at": "Kavita.Server/Controllers/AccountController.cs:766",
+      "conditions": [
+        "only if `adminUser == null`"
+      ],
+      "text": "If the requesting admin can't be found, the request is refused as unauthorized.",
+      "n": 23,
+      "source": "   760      [HttpPost(\"invite\")]\n   761      public async Task<ActionResult<InviteUserResponse>> InviteUser(InviteUserDto dto)\n   762      {\n   763          var ct = HttpContext.RequestAborted;\n   764          var userId = UserId;\n   765          var adminUser = await unitOfWork.UserRepository.GetUserByIdAsync(userId, ct: ct);\n>  766          if (adminUser == null) return Unauthorized(await localizationService.TranslateAsync(userId, \"permission-denied\"));\n   767  \n   768          dto.Email = dto.Email.Trim();\n   769          if (string.IsNullOrEmpty(dto.Email)) return BadRequest(await localizationService.TranslateAsync(userId, \"invalid-payload\"));\n   770  \n   771          logger.LogInformation(\"{User} is inviting {Email} to the server\", adminUser.UserName, dto.Email);\n   772  "
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "BadRequest: if (string.IsNullOrEmpty(dto.Email)) return BadRequest(await localizationService.TranslateAsync(userId, \"invalid-payload\"));",
+      "at": "Kavita.Server/Controllers/AccountController.cs:769",
+      "conditions": [
+        "only if `string.IsNullOrEmpty(dto.Email)`",
+        "only if `adminUser == null` is false (an earlier guard)"
+      ],
+      "text": "If no email address is given, the user sees an invalid request message.",
+      "n": 24,
+      "source": "   763          var ct = HttpContext.RequestAborted;\n   764          var userId = UserId;\n   765          var adminUser = await unitOfWork.UserRepository.GetUserByIdAsync(userId, ct: ct);\n   766          if (adminUser == null) return Unauthorized(await localizationService.TranslateAsync(userId, \"permission-denied\"));\n   767  \n   768          dto.Email = dto.Email.Trim();\n>  769          if (string.IsNullOrEmpty(dto.Email)) return BadRequest(await localizationService.TranslateAsync(userId, \"invalid-payload\"));\n   770  \n   771          logger.LogInformation(\"{User} is inviting {Email} to the server\", adminUser.UserName, dto.Email);\n   772  \n   773          // Check if there is an existing invite\n   774          var emailValidationErrors = await accountService.ValidateEmail(dto.Email, ct);\n   775          if (emailValidationErrors.Any())"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "BadRequest: return BadRequest(await localizationService.TranslateAsync(UserId, \"user-already-registered\", invitedUser!.UserName));",
+      "at": "Kavita.Server/Controllers/AccountController.cs:779",
+      "conditions": [
+        "only if `await userManager.IsEmailConfirmedAsync(invitedUser!)`",
+        "only if `emailValidationErrors.Any()`",
+        "only if `string.IsNullOrEmpty(dto.Email)` is false (an earlier guard)",
+        "only if `adminUser == null` is false (an earlier guard)"
+      ],
+      "text": "If the email already belongs to a user who confirmed it, the user sees that they are already registered.",
+      "n": 25,
+      "source": "   773          // Check if there is an existing invite\n   774          var emailValidationErrors = await accountService.ValidateEmail(dto.Email, ct);\n   775          if (emailValidationErrors.Any())\n   776          {\n   777              var invitedUser = await unitOfWork.UserRepository.GetUserByEmailAsync(dto.Email, ct: ct);\n   778              if (await userManager.IsEmailConfirmedAsync(invitedUser!))\n>  779                  return BadRequest(await localizationService.TranslateAsync(UserId, \"user-already-registered\", invitedUser!.UserName));\n   780              return BadRequest(await localizationService.TranslateAsync(UserId, \"user-already-invited\"));\n   781          }\n   782  \n   783          // Create a new user\n   784          var user = new AppUserBuilder(dto.Email, dto.Email,\n   785              await unitOfWork.SiteThemeRepository.GetDefaultTheme()).Build();"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "X4",
+      "kind": "stop",
+      "code": "BadRequest: return BadRequest(await localizationService.TranslateAsync(UserId, \"user-already-invited\"));",
+      "at": "Kavita.Server/Controllers/AccountController.cs:780",
+      "conditions": [
+        "only if `await userManager.IsEmailConfirmedAsync(invitedUser!)` is false (an earlier guard)",
+        "only if `emailValidationErrors.Any()`",
+        "only if `string.IsNullOrEmpty(dto.Email)` is false (an earlier guard)",
+        "only if `adminUser == null` is false (an earlier guard)"
+      ],
+      "text": "If the email belongs to a user who was invited but hasn't confirmed, the user sees that they are already invited.",
+      "n": 26,
+      "source": "   774          var emailValidationErrors = await accountService.ValidateEmail(dto.Email, ct);\n   775          if (emailValidationErrors.Any())\n   776          {\n   777              var invitedUser = await unitOfWork.UserRepository.GetUserByEmailAsync(dto.Email, ct: ct);\n   778              if (await userManager.IsEmailConfirmedAsync(invitedUser!))\n   779                  return BadRequest(await localizationService.TranslateAsync(UserId, \"user-already-registered\", invitedUser!.UserName));\n>  780              return BadRequest(await localizationService.TranslateAsync(UserId, \"user-already-invited\"));\n   781          }\n   782  \n   783          // Create a new user\n   784          var user = new AppUserBuilder(dto.Email, dto.Email,\n   785              await unitOfWork.SiteThemeRepository.GetDefaultTheme()).Build();\n   786          unitOfWork.UserRepository.Add(user);"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "X5",
+      "kind": "stop",
+      "code": "BadRequest: if (!result.Succeeded) return BadRequest(result.Errors);",
+      "at": "Kavita.Server/Controllers/AccountController.cs:791",
+      "conditions": [
+        "only if `!result.Succeeded`",
+        "only if `emailValidationErrors.Any()` is false (an earlier guard)",
+        "only if `string.IsNullOrEmpty(dto.Email)` is false (an earlier guard)",
+        "only if `adminUser == null` is false (an earlier guard)"
+      ],
+      "text": "If creating the account fails, the user sees the list of errors.",
+      "n": 27,
+      "source": "   785              await unitOfWork.SiteThemeRepository.GetDefaultTheme()).Build();\n   786          unitOfWork.UserRepository.Add(user);\n   787  \n   788          try\n   789          {\n   790              var result = await userManager.CreateAsync(user);\n>  791              if (!result.Succeeded) return BadRequest(result.Errors);\n   792  \n   793              await accountService.SeedUser(user, ct);\n   794  \n   795              // Assign Roles\n   796              var roles = dto.Roles;\n   797              var hasAdminRole = dto.Roles.Contains(PolicyConstants.AdminRole);"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "X6",
+      "kind": "stop",
+      "code": "BadRequest: return BadRequest(roleResult.Errors);",
+      "at": "Kavita.Server/Controllers/AccountController.cs:812",
+      "conditions": [
+        "only if `!roleResult.Succeeded`",
+        "only if `!PolicyConstants.ValidRoles.Contains(role)` is false (an earlier guard)",
+        "only if `foreach (var role in roles)`",
+        "only if `!result.Succeeded` is false (an earlier guard)",
+        "only if `emailValidationErrors.Any()` is false (an earlier guard)",
+        "only if `string.IsNullOrEmpty(dto.Email)` is false (an earlier guard)",
+        "only if `adminUser == null` is false (an earlier guard)"
+      ],
+      "text": "If giving a role fails, the user sees the role errors.",
+      "n": 28,
+      "source": "   806  \n   807              foreach (var role in roles)\n   808              {\n   809                  if (!PolicyConstants.ValidRoles.Contains(role)) continue;\n   810                  var roleResult = await userManager.AddToRoleAsync(user, role);\n   811                  if (!roleResult.Succeeded)\n>  812                      return BadRequest(roleResult.Errors);\n   813              }\n   814  \n   815              // Grant access to libraries\n   816              List<Library> libraries;\n   817              if (hasAdminRole)\n   818              {"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "X7",
+      "kind": "stop",
+      "code": "BadRequest: return BadRequest(await localizationService.TranslateAsync(UserId, \"generic-invite-user\"));",
+      "at": "Kavita.Server/Controllers/AccountController.cs:842",
+      "conditions": [
+        "only if `string.IsNullOrEmpty(token)`",
+        "only if `!result.Succeeded` is false (an earlier guard)",
+        "only if `emailValidationErrors.Any()` is false (an earlier guard)",
+        "only if `string.IsNullOrEmpty(dto.Email)` is false (an earlier guard)",
+        "only if `adminUser == null` is false (an earlier guard)"
+      ],
+      "text": "If no invite token can be produced, the user sees a generic invite error.",
+      "n": 29,
+      "source": "   836              user.AgeRestrictionIncludeUnknowns = hasAdminRole || dto.AgeRestriction.IncludeUnknowns;\n   837  \n   838              var token = await userManager.GenerateEmailConfirmationTokenAsync(user);\n   839              if (string.IsNullOrEmpty(token))\n   840              {\n   841                  logger.LogError(\"There was an issue generating a token for the email\");\n>  842                  return BadRequest(await localizationService.TranslateAsync(UserId, \"generic-invite-user\"));\n   843              }\n   844  \n   845              user.ConfirmationToken = token;\n   846              unitOfWork.UserRepository.Update(user);\n   847              await unitOfWork.CommitAsync(ct);\n   848          }"
+    },
+    {
+      "flow": "click-inviteusercomponent-invite",
+      "flowName": "Inviting…",
+      "flowTitle": "Invite a new user by email",
+      "flowFile": "specs/areas/customize/click-inviteusercomponent-invite.json",
+      "item": "X8",
+      "kind": "stop",
+      "code": "BadRequest: return BadRequest(await localizationService.TranslateAsync(UserId, \"generic-invite-user\"));",
+      "at": "Kavita.Server/Controllers/AccountController.cs:854",
+      "conditions": [
+        "only if `(Exception ex)`",
+        "only if `emailValidationErrors.Any()` is false (an earlier guard)",
+        "only if `string.IsNullOrEmpty(dto.Email)` is false (an earlier guard)",
+        "only if `adminUser == null` is false (an earlier guard)"
+      ],
+      "text": "If anything unexpected goes wrong, the user sees a generic invite error.",
+      "n": 30,
+      "source": "   848          }\n   849          catch (Exception ex)\n   850          {\n   851              logger.LogError(ex, \"There was an error during invite user flow, unable to create user. Deleting user for retry\");\n   852              unitOfWork.UserRepository.Delete(user);\n   853              await unitOfWork.CommitAsync(ct);\n>  854              return BadRequest(await localizationService.TranslateAsync(UserId, \"generic-invite-user\"));\n   855          }\n   856  \n   857          try\n   858          {\n   859              var emailLink = await emailService.GenerateEmailLink(Request, user.ConfirmationToken, \"confirm-email\", dto.Email);\n   860              logger.LogCritical(\"[Invite User]: Email Link for {UserName}: {Link}\", user.UserName?.Sanitize(), emailLink.Sanitize());"
+    },
+    {
+      "flow": "click-mangareadercomponent-updateparentpref",
+      "flowName": "Save to {{name}}",
+      "flowTitle": "Save reading settings to the series' parent profile",
+      "flowFile": "specs/areas/manga-reader/click-mangareadercomponent-updateparentpref.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "user who passes SeriesAccess(failOnMissing = true, seriesIdKey = \"seriesId\") and DisallowRole(roles = [\"Read Only\"]) (access filter on the action (method))",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:304",
+      "conditions": [],
+      "text": "Users with access to the series, other than Read Only users, who are refused.",
+      "n": 31,
+      "source": "   298                  </div>\n   299  \n   300  \n   301                  <div class=\"d-flex flex-column flex-sm-row gap-2\">\n   302                    <button class=\"btn btn-primary\"\n   303                            [disabled]=\"readingProfile()?.kind !== ReadingProfileKind.Implicit || !parentReadingProfile()\"\n>  304                            (click)=\"updateParentPref()\">\n   305                      {{ t('update-parent', {name: parentReadingProfile()?.name || t('loading')}) }}\n   306                    </button>\n   307                    <button class=\"btn btn-primary ms-sm-2\"\n   308                            [ngbTooltip]=\"t('create-new-tooltip')\"\n   309                            [disabled]=\"readingProfile()?.kind !== ReadingProfileKind.Implicit\"\n   310                            (click)=\"createNewProfileFromImplicit()\">"
+    },
+    {
+      "flow": "click-mangareadercomponent-updateparentpref",
+      "flowName": "Save to {{name}}",
+      "flowTitle": "Save reading settings to the series' parent profile",
+      "flowFile": "specs/areas/manga-reader/click-mangareadercomponent-updateparentpref.json",
+      "item": "C1",
+      "kind": "change",
+      "code": "saves AppUserReadingProfiles through IAppUserReadingProfileRepository.Update — unitOfWork.AppUserReadingProfileRepository.Update(parentProfile);",
+      "at": "Kavita.Services/Reading/ReadingProfileService.cs:47",
+      "conditions": [
+        "only if `profile == null` is false (an earlier guard)"
+      ],
+      "text": "The parent reading profile is updated with the new settings.",
+      "n": 32,
+      "source": "    41          var profile = await unitOfWork.AppUserReadingProfileRepository.GetUserProfile(userId, dto.Id, ct);\n    42          if (profile == null) throw new KavitaException(\"profile-does-not-exist\");\n    43  \n    44          var parentProfile = await GetReadingProfileForSeries(userId, libraryId, seriesId, activeDeviceId, true, ct);\n    45  \n    46          UpdateReaderProfileFields(parentProfile, dto, false);\n>   47          unitOfWork.AppUserReadingProfileRepository.Update(parentProfile);\n    48  \n    49          // Delete profile as we'll be using the parent now\n    50          unitOfWork.AppUserReadingProfileRepository.Remove(profile);\n    51  \n    52          await unitOfWork.CommitAsync(ct);\n    53          return mapper.Map<UserReadingProfileDto>(parentProfile);"
+    },
+    {
+      "flow": "click-mangareadercomponent-updateparentpref",
+      "flowName": "Save to {{name}}",
+      "flowTitle": "Save reading settings to the series' parent profile",
+      "flowFile": "specs/areas/manga-reader/click-mangareadercomponent-updateparentpref.json",
+      "item": "C2",
+      "kind": "change",
+      "code": "saves AppUserReadingProfiles — context.AppUserReadingProfiles.Remove(readingProfile);",
+      "at": "Kavita.Database/Repositories/AppUserReadingProfileRepository.cs:107",
+      "conditions": [],
+      "text": "A reading profile is deleted.",
+      "n": 33,
+      "source": "   101      {\n   102          context.AppUserReadingProfiles.Update(readingProfile).State = EntityState.Modified;\n   103      }\n   104  \n   105      public void Remove(AppUserReadingProfile readingProfile)\n   106      {\n>  107          context.AppUserReadingProfiles.Remove(readingProfile);\n   108      }\n   109  \n   110      public void RemoveRange(IEnumerable<AppUserReadingProfile> readingProfiles)\n   111      {\n   112          context.AppUserReadingProfiles.RemoveRange(readingProfiles);\n   113      }"
+    },
+    {
+      "flow": "click-mangareadercomponent-updateparentpref",
+      "flowName": "Save to {{name}}",
+      "flowTitle": "Save reading settings to the series' parent profile",
+      "flowFile": "specs/areas/manga-reader/click-mangareadercomponent-updateparentpref.json",
+      "item": "S",
+      "kind": "start",
+      "code": "Save to {{name}}: (click)=\"updateParentPref()\">",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:304",
+      "conditions": [],
+      "text": "The user clicks the Save to button to update the parent reading profile.",
+      "n": 34,
+      "source": "   298                  </div>\n   299  \n   300  \n   301                  <div class=\"d-flex flex-column flex-sm-row gap-2\">\n   302                    <button class=\"btn btn-primary\"\n   303                            [disabled]=\"readingProfile()?.kind !== ReadingProfileKind.Implicit || !parentReadingProfile()\"\n>  304                            (click)=\"updateParentPref()\">\n   305                      {{ t('update-parent', {name: parentReadingProfile()?.name || t('loading')}) }}\n   306                    </button>\n   307                    <button class=\"btn btn-primary ms-sm-2\"\n   308                            [ngbTooltip]=\"t('create-new-tooltip')\"\n   309                            [disabled]=\"readingProfile()?.kind !== ReadingProfileKind.Implicit\"\n   310                            (click)=\"createNewProfileFromImplicit()\">"
+    },
+    {
+      "flow": "click-mangareadercomponent-updateparentpref",
+      "flowName": "Save to {{name}}",
+      "flowTitle": "Save reading settings to the series' parent profile",
+      "flowFile": "specs/areas/manga-reader/click-mangareadercomponent-updateparentpref.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "NotFound: context.Result = new NotFoundResult();",
+      "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:125",
+      "conditions": [
+        "only if `failOnMissing`",
+        "only if `entityId == null`",
+        "only if `alwaysAllowAdmin && user.IsInRole(PolicyConstants.AdminRole)` is false (an earlier guard)"
+      ],
+      "text": "If no series is identified in the request, the user gets a not found response, unless they're an admin.",
+      "n": 35,
+      "source": "   119          var entityId = ExtractId(context.HttpContext, idKey);\n   120  \n   121          if (entityId == null)\n   122          {\n   123              if (failOnMissing)\n   124              {\n>  125                  context.Result = new NotFoundResult();\n   126              }\n   127              return;\n   128          }\n   129  \n   130          var unitOfWork = context.HttpContext.RequestServices.GetRequiredService<IUnitOfWork>();\n   131  "
+    },
+    {
+      "flow": "click-mangareadercomponent-updateparentpref",
+      "flowName": "Save to {{name}}",
+      "flowTitle": "Save reading settings to the series' parent profile",
+      "flowFile": "specs/areas/manga-reader/click-mangareadercomponent-updateparentpref.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "NotFound: context.Result = new NotFoundResult();",
+      "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:135",
+      "conditions": [
+        "only if `!hasAccess`",
+        "only if `entityId == null` is false (an earlier guard)",
+        "only if `alwaysAllowAdmin && user.IsInRole(PolicyConstants.AdminRole)` is false (an earlier guard)"
+      ],
+      "text": "If the user has no access to the series, they get a not found response.",
+      "n": 36,
+      "source": "   129  \n   130          var unitOfWork = context.HttpContext.RequestServices.GetRequiredService<IUnitOfWork>();\n   131  \n   132          var hasAccess = await CheckAccess(unitOfWork, userId, entityId.Value, context.HttpContext.RequestAborted);\n   133          if (!hasAccess)\n   134          {\n>  135              context.Result = new NotFoundResult();\n   136          }\n   137      }\n   138  \n   139      protected abstract Task<bool> CheckAccess(IUnitOfWork unitOfWork, int userId, int entityId, CancellationToken ct);\n   140  \n   141      private static int? ExtractId(HttpContext httpContext, string key)"
+    },
+    {
+      "flow": "click-mangareadercomponent-updateparentpref",
+      "flowName": "Save to {{name}}",
+      "flowTitle": "Save reading settings to the series' parent profile",
+      "flowFile": "specs/areas/manga-reader/click-mangareadercomponent-updateparentpref.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: var userClaim = user.FindFirst(ClaimTypes.NameIdentifier) ?? throw new KavitaException(NotAuthenticatedMessage);",
+      "at": "Kavita.Common/Extensions/ClaimsPrincipalExtensions.cs:28",
+      "conditions": [
+        "only if `user.FindFirst(ClaimTypes.NameIdentifier)`"
+      ],
+      "text": "If the request has no signed-in user identity, it stops with a not-authenticated error.",
+      "n": 37,
+      "source": "    22          var userClaim = user.FindFirst(JwtRegisteredClaimNames.Name) ?? throw new KavitaException(NotAuthenticatedMessage);\n    23          return userClaim.Value;\n    24      }\n    25  \n    26      public static int GetUserId(this ClaimsPrincipal user)\n    27      {\n>   28          var userClaim = user.FindFirst(ClaimTypes.NameIdentifier) ?? throw new KavitaException(NotAuthenticatedMessage);\n    29          return int.Parse(userClaim.Value);\n    30      }\n    31  \n    32      public static bool HasVerifiedEmail(this ClaimsPrincipal user)\n    33      {\n    34          var emailVerified = user.FindFirst(EmailVerifiedClaimType);"
+    },
+    {
+      "flow": "click-mangareadercomponent-updateparentpref",
+      "flowName": "Save to {{name}}",
+      "flowTitle": "Save reading settings to the series' parent profile",
+      "flowFile": "specs/areas/manga-reader/click-mangareadercomponent-updateparentpref.json",
+      "item": "X4",
+      "kind": "stop",
+      "code": "StatusCode: context.Result = new ContentResult",
+      "at": "Kavita.Server/Attributes/DisallowRoleAttribute.cs:36",
+      "conditions": [
+        "only if `roles.Any(role => !string.IsNullOrEmpty(role) && user.IsInRole(role))`"
+      ],
+      "text": "A user holding a role that the action disallows is blocked with an error response.",
+      "n": 38,
+      "source": "    30              var localizationService = context.HttpContext.RequestServices.GetRequiredService<ILocalizationService>();\n    31              var userId = user.GetUserId();\n    32  \n    33              var message = await localizationService.TranslateAsync(userId, \"permission-denied\");\n    34  \n    35              // Pipeline is stopped in IAsyncAuthorizationFilter if result is non nil\n>   36              context.Result = new ContentResult\n    37              {\n    38                  StatusCode = StatusCodes.Status400BadRequest,\n    39                  Content = message,\n    40                  ContentType = \"text/plain\"\n    41              };\n    42          }"
+    },
+    {
+      "flow": "click-mangareadercomponent-updateparentpref",
+      "flowName": "Save to {{name}}",
+      "flowTitle": "Save reading settings to the series' parent profile",
+      "flowFile": "specs/areas/manga-reader/click-mangareadercomponent-updateparentpref.json",
+      "item": "X5",
+      "kind": "stop",
+      "code": "throw: if (profile == null) throw new KavitaException(\"profile-does-not-exist\");",
+      "at": "Kavita.Services/Reading/ReadingProfileService.cs:42",
+      "conditions": [
+        "only if `profile == null`"
+      ],
+      "text": "If the profile doesn't exist, it stops with a profile-does-not-exist error.",
+      "n": 39,
+      "source": "    36      }\n    37  \n    38      public async Task<UserReadingProfileDto> UpdateParent(int userId, int libraryId, int seriesId,\n    39          UserReadingProfileDto dto, int? activeDeviceId, CancellationToken ct = default)\n    40      {\n    41          var profile = await unitOfWork.AppUserReadingProfileRepository.GetUserProfile(userId, dto.Id, ct);\n>   42          if (profile == null) throw new KavitaException(\"profile-does-not-exist\");\n    43  \n    44          var parentProfile = await GetReadingProfileForSeries(userId, libraryId, seriesId, activeDeviceId, true, ct);\n    45  \n    46          UpdateReaderProfileFields(parentProfile, dto, false);\n    47          unitOfWork.AppUserReadingProfileRepository.Update(parentProfile);\n    48  "
+    },
+    {
+      "flow": "click-seriesdetailcomponent-handlerelatedreload",
+      "flowName": "handleRelatedReload",
+      "flowTitle": "Reload related series",
+      "flowFile": "specs/areas/series-detail/click-seriesdetailcomponent-handlerelatedreload.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "user who passes SeriesAccess(failOnMissing = true, seriesIdKey = \"seriesId\") (access filter on the action (method))",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:350",
+      "conditions": [],
+      "text": "Users with access to the series.",
+      "n": 40,
+      "source": "   344                <ng-template ngbNavContent>\n   345                  @defer (when activeTabId === Tabs.Related; prefetch on idle) {\n   346                    <app-related-tab [readingLists]=\"readingLists()\"\n   347                                     [collections]=\"collections()\"\n   348                                     [relations]=\"relations()\"\n   349                                     [bookmarks]=\"bookmarks()\"\n>  350                                     (reload)=\"handleRelatedReload($event)\"\n   351                                     (dataChanged)=\"handleRelatedReload($event)\"/>\n   352                  }\n   353                </ng-template>\n   354              </li>\n   355            }\n   356  "
+    },
+    {
+      "flow": "click-seriesdetailcomponent-handlerelatedreload",
+      "flowName": "handleRelatedReload",
+      "flowTitle": "Reload related series",
+      "flowFile": "specs/areas/series-detail/click-seriesdetailcomponent-handlerelatedreload.json",
+      "item": "S",
+      "kind": "start",
+      "code": "handleRelatedReload: (reload)=\"handleRelatedReload($event)\"",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:350",
+      "conditions": [],
+      "text": "The related-series section signals a reload, which the page handles.",
+      "n": 41,
+      "source": "   344                <ng-template ngbNavContent>\n   345                  @defer (when activeTabId === Tabs.Related; prefetch on idle) {\n   346                    <app-related-tab [readingLists]=\"readingLists()\"\n   347                                     [collections]=\"collections()\"\n   348                                     [relations]=\"relations()\"\n   349                                     [bookmarks]=\"bookmarks()\"\n>  350                                     (reload)=\"handleRelatedReload($event)\"\n   351                                     (dataChanged)=\"handleRelatedReload($event)\"/>\n   352                  }\n   353                </ng-template>\n   354              </li>\n   355            }\n   356  "
+    },
+    {
+      "flow": "click-seriesdetailcomponent-handlerelatedreload",
+      "flowName": "handleRelatedReload",
+      "flowTitle": "Reload related series",
+      "flowFile": "specs/areas/series-detail/click-seriesdetailcomponent-handlerelatedreload.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "NotFound: context.Result = new NotFoundResult();",
+      "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:125",
+      "conditions": [
+        "only if `failOnMissing`",
+        "only if `entityId == null`",
+        "only if `alwaysAllowAdmin && user.IsInRole(PolicyConstants.AdminRole)` is false (an earlier guard)"
+      ],
+      "text": "If no series is identified in the request, the user gets a not found response, unless they're an admin.",
+      "n": 42,
+      "source": "   119          var entityId = ExtractId(context.HttpContext, idKey);\n   120  \n   121          if (entityId == null)\n   122          {\n   123              if (failOnMissing)\n   124              {\n>  125                  context.Result = new NotFoundResult();\n   126              }\n   127              return;\n   128          }\n   129  \n   130          var unitOfWork = context.HttpContext.RequestServices.GetRequiredService<IUnitOfWork>();\n   131  "
+    },
+    {
+      "flow": "click-seriesdetailcomponent-handlerelatedreload",
+      "flowName": "handleRelatedReload",
+      "flowTitle": "Reload related series",
+      "flowFile": "specs/areas/series-detail/click-seriesdetailcomponent-handlerelatedreload.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "NotFound: context.Result = new NotFoundResult();",
+      "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:135",
+      "conditions": [
+        "only if `!hasAccess`",
+        "only if `entityId == null` is false (an earlier guard)",
+        "only if `alwaysAllowAdmin && user.IsInRole(PolicyConstants.AdminRole)` is false (an earlier guard)"
+      ],
+      "text": "If the user has no access to the series, they get a not found response.",
+      "n": 43,
+      "source": "   129  \n   130          var unitOfWork = context.HttpContext.RequestServices.GetRequiredService<IUnitOfWork>();\n   131  \n   132          var hasAccess = await CheckAccess(unitOfWork, userId, entityId.Value, context.HttpContext.RequestAborted);\n   133          if (!hasAccess)\n   134          {\n>  135              context.Result = new NotFoundResult();\n   136          }\n   137      }\n   138  \n   139      protected abstract Task<bool> CheckAccess(IUnitOfWork unitOfWork, int userId, int entityId, CancellationToken ct);\n   140  \n   141      private static int? ExtractId(HttpContext httpContext, string key)"
+    },
+    {
+      "flow": "click-seriesdetailcomponent-handlerelatedreload",
+      "flowName": "handleRelatedReload",
+      "flowTitle": "Reload related series",
+      "flowFile": "specs/areas/series-detail/click-seriesdetailcomponent-handlerelatedreload.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: var userClaim = user.FindFirst(ClaimTypes.NameIdentifier) ?? throw new KavitaException(NotAuthenticatedMessage);",
+      "at": "Kavita.Common/Extensions/ClaimsPrincipalExtensions.cs:28",
+      "conditions": [
+        "only if `user.FindFirst(ClaimTypes.NameIdentifier)`"
+      ],
+      "text": "If the request has no signed-in user identity, it stops with a not-authenticated error.",
+      "n": 44,
+      "source": "    22          var userClaim = user.FindFirst(JwtRegisteredClaimNames.Name) ?? throw new KavitaException(NotAuthenticatedMessage);\n    23          return userClaim.Value;\n    24      }\n    25  \n    26      public static int GetUserId(this ClaimsPrincipal user)\n    27      {\n>   28          var userClaim = user.FindFirst(ClaimTypes.NameIdentifier) ?? throw new KavitaException(NotAuthenticatedMessage);\n    29          return int.Parse(userClaim.Value);\n    30      }\n    31  \n    32      public static bool HasVerifiedEmail(this ClaimsPrincipal user)\n    33      {\n    34          var emailVerified = user.FindFirst(EmailVerifiedClaimType);"
+    },
+    {
+      "flow": "job-icleanupservice-cleanupwanttoread",
+      "flowName": "remove-from-want-to-read",
+      "flowTitle": "Daily cleanup of want-to-read lists",
+      "flowFile": "specs/areas/kavita-services/job-icleanupservice-cleanupwanttoread.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "system (a system job, run on its schedule: Cron.Daily)",
+      "at": "Kavita.Services/TaskScheduler.cs:229",
+      "conditions": [],
+      "text": "The system itself runs it on its daily schedule; no user starts it.",
+      "n": 45,
+      "source": "   223              _logger.LogDebug(\"Scheduling CBL Sync Task for {Setting}\", setting);\n   224              RecurringJob.AddOrUpdate<ICblImportService>(TaskCblSyncId, service => service.SyncAllReadingLists(CancellationToken.None),\n   225                  CronConverter.ConvertToCronNotation(setting), RecurringJobOptions);\n   226          }\n   227  \n   228  \n>  229          RecurringJob.AddOrUpdate<ICleanupService>(RemoveFromWantToReadTaskId,\n   230              (service) => service.CleanupWantToRead(CancellationToken.None),\n   231              Cron.Daily, RecurringJobOptions);\n   232          RecurringJob.AddOrUpdate<IStatisticService>(UpdateYearlyStatsTaskId,\n   233              (service) => service.UpdateServerStatistics(CancellationToken.None),\n   234              Cron.Monthly, RecurringJobOptions);\n   235  "
+    },
+    {
+      "flow": "job-icleanupservice-cleanupwanttoread",
+      "flowName": "remove-from-want-to-read",
+      "flowTitle": "Daily cleanup of want-to-read lists",
+      "flowFile": "specs/areas/kavita-services/job-icleanupservice-cleanupwanttoread.json",
+      "item": "S",
+      "kind": "start",
+      "code": "remove-from-want-to-read: RecurringJob.AddOrUpdate<ICleanupService>(RemoveFromWantToReadTaskId,",
+      "at": "Kavita.Services/TaskScheduler.cs:229",
+      "conditions": [],
+      "text": "A scheduled job runs the want-to-read cleanup once a day.",
+      "n": 46,
+      "source": "   223              _logger.LogDebug(\"Scheduling CBL Sync Task for {Setting}\", setting);\n   224              RecurringJob.AddOrUpdate<ICblImportService>(TaskCblSyncId, service => service.SyncAllReadingLists(CancellationToken.None),\n   225                  CronConverter.ConvertToCronNotation(setting), RecurringJobOptions);\n   226          }\n   227  \n   228  \n>  229          RecurringJob.AddOrUpdate<ICleanupService>(RemoveFromWantToReadTaskId,\n   230              (service) => service.CleanupWantToRead(CancellationToken.None),\n   231              Cron.Daily, RecurringJobOptions);\n   232          RecurringJob.AddOrUpdate<IStatisticService>(UpdateYearlyStatsTaskId,\n   233              (service) => service.UpdateServerStatistics(CancellationToken.None),\n   234              Cron.Monthly, RecurringJobOptions);\n   235  "
+    },
+    {
+      "flow": "screen-opens-browse-annotations",
+      "flowName": "All Annotations (/browse/annotations)",
+      "flowTitle": "Browse all annotations",
+      "flowFile": "specs/areas/all-annotations/screen-opens-browse-annotations.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "signed-in user ([Authorize] (class BaseApiController))",
+      "at": "UI/Web/src/app/_routes/browse-routing.module.ts:25",
+      "conditions": [],
+      "text": "Any signed-in user.",
+      "n": 47,
+      "source": "    19        filter: UrlFilterResolver\n    20      },\n    21      runGuardsAndResolvers: 'always',\n    22    },\n    23    {path: 'genres', component: BrowseGenresComponent, pathMatch: 'full', title: 'title.browse-genres'},\n    24    {path: 'tags', component: BrowseTagsComponent, pathMatch: 'full', title: 'title.browse-tags'},\n>   25    {path: 'annotations', component: AllAnnotationsComponent, pathMatch: 'full',\n    26      resolve: {\n    27        filter: UrlFilterResolver,\n    28      },\n    29      runGuardsAndResolvers: 'always'\n    30    }\n    31  ];"
+    },
+    {
+      "flow": "screen-opens-browse-annotations",
+      "flowName": "All Annotations (/browse/annotations)",
+      "flowTitle": "Browse all annotations",
+      "flowFile": "specs/areas/all-annotations/screen-opens-browse-annotations.json",
+      "item": "S",
+      "kind": "start",
+      "code": "All Annotations (/browse/annotations): {path: 'annotations', component: AllAnnotationsComponent, pathMatch: 'full',",
+      "at": "UI/Web/src/app/_routes/browse-routing.module.ts:25",
+      "conditions": [],
+      "text": "The user opens the All Annotations page at the browse annotations address.",
+      "n": 48,
+      "source": "    19        filter: UrlFilterResolver\n    20      },\n    21      runGuardsAndResolvers: 'always',\n    22    },\n    23    {path: 'genres', component: BrowseGenresComponent, pathMatch: 'full', title: 'title.browse-genres'},\n    24    {path: 'tags', component: BrowseTagsComponent, pathMatch: 'full', title: 'title.browse-tags'},\n>   25    {path: 'annotations', component: AllAnnotationsComponent, pathMatch: 'full',\n    26      resolve: {\n    27        filter: UrlFilterResolver,\n    28      },\n    29      runGuardsAndResolvers: 'always'\n    30    }\n    31  ];"
+    },
+    {
+      "flow": "screen-opens-browse-annotations",
+      "flowName": "All Annotations (/browse/annotations)",
+      "flowTitle": "Browse all annotations",
+      "flowFile": "specs/areas/all-annotations/screen-opens-browse-annotations.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "Redirect: return router.createUrlTree(['/login']);",
+      "at": "UI/Web/src/app/_guards/auth.guard.ts:24",
+      "conditions": [
+        "only if `accountService.isLoggedIn()` is false (an earlier guard)"
+      ],
+      "text": "A user who isn't logged in is sent to the login page.",
+      "n": 49,
+      "source": "    18  \n    19    const path = window.location.pathname;\n    20    if (path !== '/login' && !path.startsWith(baseURL + 'registration') && path !== '') {\n    21      localStorage.setItem(AUTH_URL_KEY, path);\n    22    }\n    23    toastr.error(translocoService.translate('toasts.unauthorized-1'));\n>   24    return router.createUrlTree(['/login']);\n    25  };\n    26  "
+    },
+    {
+      "flow": "screen-opens-browse-annotations",
+      "flowName": "All Annotations (/browse/annotations)",
+      "flowTitle": "Browse all annotations",
+      "flowFile": "specs/areas/all-annotations/screen-opens-browse-annotations.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: _ => throw new ArgumentOutOfRangeException(nameof(entityType), entityType, null)",
+      "at": "Kavita.Services/Helpers/SmartFilter/SmartFilterHelper.cs:43",
+      "conditions": [
+        "only if `entityType`"
+      ],
+      "text": "An unsupported kind of item stops with an out-of-range error.",
+      "n": 50,
+      "source": "    37                  DecodeFilter<SeriesFilterV2Dto, SeriesFilterStatementDto, SeriesFilterField, SeriesSortOptionDto, SeriesSortField>(encodedFilter),\n    38              FilterEntityType.ReadingList =>\n    39                  DecodeFilter<ReadingListFilterDto, ReadingListFilterStatementDto, ReadingListFilterField, ReadingListSortOptionDto, ReadingListSortField>(encodedFilter),\n    40              FilterEntityType.Person =>\n    41                  DecodeFilter<PersonFilterDto, PersonFilterStatementDto, PersonFilterField, PersonSortOptionDto, PersonSortField>(encodedFilter),\n    42              FilterEntityType.Annotation => DecodeFilter<AnnotationFilterDto, AnnotationFilterStatementDto, AnnotationFilterField, AnnotationSortOptionDto, AnnotationSortField>(encodedFilter),\n>   43              _ => throw new ArgumentOutOfRangeException(nameof(entityType), entityType, null)\n    44          };\n    45      }\n    46  \n    47      private static TFilter DecodeFilter<TFilter, TStatement, TField, TSortOption, TSortField>(string? encodedFilter)\n    48          where TFilter : IFilterDto<TStatement, TSortOption>, new()\n    49          where TStatement : IFilterStatement<TField>, new()"
+    },
+    {
+      "flow": "screen-opens-browse-genres",
+      "flowName": "Browse Genres (/browse/genres)",
+      "flowTitle": "Browse genres",
+      "flowFile": "specs/areas/browse-genres/screen-opens-browse-genres.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "signed-in user ([Authorize] (class BaseApiController))",
+      "at": "UI/Web/src/app/_routes/browse-routing.module.ts:23",
+      "conditions": [],
+      "text": "Any signed-in user.",
+      "n": 51,
+      "source": "    17    {path: 'people', component: BrowsePeopleComponent, pathMatch: 'full',\n    18      resolve: {\n    19        filter: UrlFilterResolver\n    20      },\n    21      runGuardsAndResolvers: 'always',\n    22    },\n>   23    {path: 'genres', component: BrowseGenresComponent, pathMatch: 'full', title: 'title.browse-genres'},\n    24    {path: 'tags', component: BrowseTagsComponent, pathMatch: 'full', title: 'title.browse-tags'},\n    25    {path: 'annotations', component: AllAnnotationsComponent, pathMatch: 'full',\n    26      resolve: {\n    27        filter: UrlFilterResolver,\n    28      },\n    29      runGuardsAndResolvers: 'always'"
+    },
+    {
+      "flow": "screen-opens-browse-genres",
+      "flowName": "Browse Genres (/browse/genres)",
+      "flowTitle": "Browse genres",
+      "flowFile": "specs/areas/browse-genres/screen-opens-browse-genres.json",
+      "item": "S",
+      "kind": "start",
+      "code": "Browse Genres (/browse/genres): {path: 'genres', component: BrowseGenresComponent, pathMatch: 'full', title: 'title.browse-genres'},",
+      "at": "UI/Web/src/app/_routes/browse-routing.module.ts:23",
+      "conditions": [],
+      "text": "The user opens the Browse Genres page at the browse genres address.",
+      "n": 52,
+      "source": "    17    {path: 'people', component: BrowsePeopleComponent, pathMatch: 'full',\n    18      resolve: {\n    19        filter: UrlFilterResolver\n    20      },\n    21      runGuardsAndResolvers: 'always',\n    22    },\n>   23    {path: 'genres', component: BrowseGenresComponent, pathMatch: 'full', title: 'title.browse-genres'},\n    24    {path: 'tags', component: BrowseTagsComponent, pathMatch: 'full', title: 'title.browse-tags'},\n    25    {path: 'annotations', component: AllAnnotationsComponent, pathMatch: 'full',\n    26      resolve: {\n    27        filter: UrlFilterResolver,\n    28      },\n    29      runGuardsAndResolvers: 'always'"
+    },
+    {
+      "flow": "screen-opens-browse-genres",
+      "flowName": "Browse Genres (/browse/genres)",
+      "flowTitle": "Browse genres",
+      "flowFile": "specs/areas/browse-genres/screen-opens-browse-genres.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "Redirect: return router.createUrlTree(['/login']);",
+      "at": "UI/Web/src/app/_guards/auth.guard.ts:24",
+      "conditions": [
+        "only if `accountService.isLoggedIn()` is false (an earlier guard)"
+      ],
+      "text": "A user who isn't logged in is sent to the login page.",
+      "n": 53,
+      "source": "    18  \n    19    const path = window.location.pathname;\n    20    if (path !== '/login' && !path.startsWith(baseURL + 'registration') && path !== '') {\n    21      localStorage.setItem(AUTH_URL_KEY, path);\n    22    }\n    23    toastr.error(translocoService.translate('toasts.unauthorized-1'));\n>   24    return router.createUrlTree(['/login']);\n    25  };\n    26  "
+    },
+    {
+      "flow": "screen-opens-lists-readinglistid",
+      "flowName": "Loading... (/lists/:readingListId)",
+      "flowTitle": "Open a reading list",
+      "flowFile": "specs/areas/reading-lists/screen-opens-lists-readinglistid.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "user who passes ReadingListAccess(failOnMissing = true, readingListIdKey = \"readingListId\", allowPromoted = true) (access filter on the action (method))",
+      "at": "UI/Web/src/app/app-routing.module.ts:79",
+      "conditions": [],
+      "text": "Users allowed to see the reading list, including promoted lists.",
+      "n": 54,
+      "source": "    73          title: 'title.reading-lists',\n    74          loadComponent: () => import('./reading-list/_components/reading-lists/reading-lists.component').then(c => c.ReadingListsComponent),\n    75          resolve: {\n    76            filter: UrlFilterResolver\n    77          }\n    78        },\n>   79        {\n    80          path: 'lists/:readingListId',\n    81          runGuardsAndResolvers: 'always',\n    82          canActivate: [authGuard],\n    83          data: {titleField: 'readingList', titleProp: 'title'},\n    84          resolve: { readingList: readingListResolver },\n    85          loadComponent: () => import('./reading-list/_components/reading-list-detail/reading-list-detail.component').then(c => c.ReadingListDetailComponent)"
+    },
+    {
+      "flow": "screen-opens-lists-readinglistid",
+      "flowName": "Loading... (/lists/:readingListId)",
+      "flowTitle": "Open a reading list",
+      "flowFile": "specs/areas/reading-lists/screen-opens-lists-readinglistid.json",
+      "item": "S",
+      "kind": "start",
+      "code": "Loading... (/lists/:readingListId): {",
+      "at": "UI/Web/src/app/app-routing.module.ts:79",
+      "conditions": [],
+      "text": "The user opens a reading list page by its address.",
+      "n": 55,
+      "source": "    73          title: 'title.reading-lists',\n    74          loadComponent: () => import('./reading-list/_components/reading-lists/reading-lists.component').then(c => c.ReadingListsComponent),\n    75          resolve: {\n    76            filter: UrlFilterResolver\n    77          }\n    78        },\n>   79        {\n    80          path: 'lists/:readingListId',\n    81          runGuardsAndResolvers: 'always',\n    82          canActivate: [authGuard],\n    83          data: {titleField: 'readingList', titleProp: 'title'},\n    84          resolve: { readingList: readingListResolver },\n    85          loadComponent: () => import('./reading-list/_components/reading-list-detail/reading-list-detail.component').then(c => c.ReadingListDetailComponent)"
+    },
+    {
+      "flow": "screen-opens-lists-readinglistid",
+      "flowName": "Loading... (/lists/:readingListId)",
+      "flowTitle": "Open a reading list",
+      "flowFile": "specs/areas/reading-lists/screen-opens-lists-readinglistid.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "Redirect: return router.createUrlTree(['/login']);",
+      "at": "UI/Web/src/app/_guards/auth.guard.ts:24",
+      "conditions": [
+        "only if `accountService.isLoggedIn()` is false (an earlier guard)"
+      ],
+      "text": "A user who isn't logged in is sent to the login page.",
+      "n": 56,
+      "source": "    18  \n    19    const path = window.location.pathname;\n    20    if (path !== '/login' && !path.startsWith(baseURL + 'registration') && path !== '') {\n    21      localStorage.setItem(AUTH_URL_KEY, path);\n    22    }\n    23    toastr.error(translocoService.translate('toasts.unauthorized-1'));\n>   24    return router.createUrlTree(['/login']);\n    25  };\n    26  "
+    },
+    {
+      "flow": "screen-opens-lists-readinglistid",
+      "flowName": "Loading... (/lists/:readingListId)",
+      "flowTitle": "Open a reading list",
+      "flowFile": "specs/areas/reading-lists/screen-opens-lists-readinglistid.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "Redirect: return of(router.parseUrl('/home'));",
+      "at": "UI/Web/src/app/_resolvers/reading-list.resolver.ts:15",
+      "conditions": [
+        "only if `!readingListId || readingListId === '0'`"
+      ],
+      "text": "If the address has no list id or the id is zero, the user is sent to the home page.",
+      "n": 57,
+      "source": "     9    const router = inject(Router);\n    10  \n    11    const readingListId = route.paramMap.get('readingListId') || route.parent?.paramMap.get('readingListId');\n    12  \n    13    if (!readingListId || readingListId === '0') {\n    14      console.error('Reading List ID not found in route params or 0');\n>   15      return of(router.parseUrl('/home'));\n    16    }\n    17  \n    18    return readingListService.getReadingList(parseInt(readingListId, 10)).pipe(\n    19      switchMap(readingList => {\n    20        if (readingList === null) {\n    21          return of(router.parseUrl('/home'));"
+    },
+    {
+      "flow": "screen-opens-lists-readinglistid",
+      "flowName": "Loading... (/lists/:readingListId)",
+      "flowTitle": "Open a reading list",
+      "flowFile": "specs/areas/reading-lists/screen-opens-lists-readinglistid.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "Redirect: return of(router.parseUrl('/home'));",
+      "at": "UI/Web/src/app/_resolvers/reading-list.resolver.ts:21",
+      "conditions": [
+        "only if `readingList === null`",
+        "only if `!readingListId || readingListId === '0'` is false (an earlier guard)"
+      ],
+      "text": "If the list can't be found, the user is sent to the home page.",
+      "n": 58,
+      "source": "    15      return of(router.parseUrl('/home'));\n    16    }\n    17  \n    18    return readingListService.getReadingList(parseInt(readingListId, 10)).pipe(\n    19      switchMap(readingList => {\n    20        if (readingList === null) {\n>   21          return of(router.parseUrl('/home'));\n    22        }\n    23        return of(readingList);\n    24      }),\n    25      catchError(() => {\n    26        return of(router.parseUrl('/home'));\n    27      })"
+    },
+    {
+      "flow": "screen-opens-lists-readinglistid",
+      "flowName": "Loading... (/lists/:readingListId)",
+      "flowTitle": "Open a reading list",
+      "flowFile": "specs/areas/reading-lists/screen-opens-lists-readinglistid.json",
+      "item": "X4",
+      "kind": "stop",
+      "code": "Redirect: return of(router.parseUrl('/home'));",
+      "at": "UI/Web/src/app/_resolvers/reading-list.resolver.ts:26",
+      "conditions": [
+        "only if `catchError(() => {`",
+        "only if `!readingListId || readingListId === '0'` is false (an earlier guard)"
+      ],
+      "text": "If loading the list fails, the user is sent to the home page.",
+      "n": 59,
+      "source": "    20        if (readingList === null) {\n    21          return of(router.parseUrl('/home'));\n    22        }\n    23        return of(readingList);\n    24      }),\n    25      catchError(() => {\n>   26        return of(router.parseUrl('/home'));\n    27      })\n    28    );\n    29  };\n    30  "
+    },
+    {
+      "flow": "screen-opens-lists-readinglistid",
+      "flowName": "Loading... (/lists/:readingListId)",
+      "flowTitle": "Open a reading list",
+      "flowFile": "specs/areas/reading-lists/screen-opens-lists-readinglistid.json",
+      "item": "X5",
+      "kind": "stop",
+      "code": "BadRequest: return BadRequest(await localizationService.TranslateAsync(UserId, \"reading-list-restricted\"));",
+      "at": "Kavita.Server/Controllers/ReadingListController.cs:52",
+      "conditions": [
+        "only if `readingList == null`"
+      ],
+      "text": "If the list is missing, the user sees a message that the reading list is restricted.",
+      "n": 60,
+      "source": "    46      public async Task<ActionResult<ReadingListDto>> GetList(int readingListId)\n    47      {\n    48          var ct = HttpContext.RequestAborted;\n    49          var readingList = await unitOfWork.ReadingListRepository.GetReadingListDtoByIdAsync(readingListId, UserId, ct);\n    50          if (readingList == null)\n    51          {\n>   52              return BadRequest(await localizationService.TranslateAsync(UserId, \"reading-list-restricted\"));\n    53          }\n    54  \n    55          return Ok(readingList);\n    56      }\n    57  \n    58      /// <summary>"
+    },
+    {
+      "flow": "screen-opens-lists-readinglistid",
+      "flowName": "Loading... (/lists/:readingListId)",
+      "flowTitle": "Open a reading list",
+      "flowFile": "specs/areas/reading-lists/screen-opens-lists-readinglistid.json",
+      "item": "X6",
+      "kind": "stop",
+      "code": "NotFound: context.Result = new NotFoundResult();",
+      "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:125",
+      "conditions": [
+        "only if `failOnMissing`",
+        "only if `entityId == null`",
+        "only if `alwaysAllowAdmin && user.IsInRole(PolicyConstants.AdminRole)` is false (an earlier guard)"
+      ],
+      "text": "If no list is identified in the request, the user gets a not found response, unless they're an admin.",
+      "n": 61,
+      "source": "   119          var entityId = ExtractId(context.HttpContext, idKey);\n   120  \n   121          if (entityId == null)\n   122          {\n   123              if (failOnMissing)\n   124              {\n>  125                  context.Result = new NotFoundResult();\n   126              }\n   127              return;\n   128          }\n   129  \n   130          var unitOfWork = context.HttpContext.RequestServices.GetRequiredService<IUnitOfWork>();\n   131  "
+    },
+    {
+      "flow": "screen-opens-lists-readinglistid",
+      "flowName": "Loading... (/lists/:readingListId)",
+      "flowTitle": "Open a reading list",
+      "flowFile": "specs/areas/reading-lists/screen-opens-lists-readinglistid.json",
+      "item": "X7",
+      "kind": "stop",
+      "code": "NotFound: context.Result = new NotFoundResult();",
+      "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:135",
+      "conditions": [
+        "only if `!hasAccess`",
+        "only if `entityId == null` is false (an earlier guard)",
+        "only if `alwaysAllowAdmin && user.IsInRole(PolicyConstants.AdminRole)` is false (an earlier guard)"
+      ],
+      "text": "If the user has no access to the list, they get a not found response.",
+      "n": 62,
+      "source": "   129  \n   130          var unitOfWork = context.HttpContext.RequestServices.GetRequiredService<IUnitOfWork>();\n   131  \n   132          var hasAccess = await CheckAccess(unitOfWork, userId, entityId.Value, context.HttpContext.RequestAborted);\n   133          if (!hasAccess)\n   134          {\n>  135              context.Result = new NotFoundResult();\n   136          }\n   137      }\n   138  \n   139      protected abstract Task<bool> CheckAccess(IUnitOfWork unitOfWork, int userId, int entityId, CancellationToken ct);\n   140  \n   141      private static int? ExtractId(HttpContext httpContext, string key)"
+    },
+    {
+      "flow": "screen-opens-lists-readinglistid",
+      "flowName": "Loading... (/lists/:readingListId)",
+      "flowTitle": "Open a reading list",
+      "flowFile": "specs/areas/reading-lists/screen-opens-lists-readinglistid.json",
+      "item": "X8",
+      "kind": "stop",
+      "code": "throw: var userClaim = user.FindFirst(ClaimTypes.NameIdentifier) ?? throw new KavitaException(NotAuthenticatedMessage);",
+      "at": "Kavita.Common/Extensions/ClaimsPrincipalExtensions.cs:28",
+      "conditions": [
+        "only if `user.FindFirst(ClaimTypes.NameIdentifier)`"
+      ],
+      "text": "If the request has no signed-in user identity, it stops with a not-authenticated error.",
+      "n": 63,
+      "source": "    22          var userClaim = user.FindFirst(JwtRegisteredClaimNames.Name) ?? throw new KavitaException(NotAuthenticatedMessage);\n    23          return userClaim.Value;\n    24      }\n    25  \n    26      public static int GetUserId(this ClaimsPrincipal user)\n    27      {\n>   28          var userClaim = user.FindFirst(ClaimTypes.NameIdentifier) ?? throw new KavitaException(NotAuthenticatedMessage);\n    29          return int.Parse(userClaim.Value);\n    30      }\n    31  \n    32      public static bool HasVerifiedEmail(this ClaimsPrincipal user)\n    33      {\n    34          var emailVerified = user.FindFirst(EmailVerifiedClaimType);"
+    }
+  ]
+}

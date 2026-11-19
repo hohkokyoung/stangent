@@ -1,0 +1,271 @@
+{
+  "contract": "flow-words",
+  "doc": "sonarr-fsd",
+  "flows": {
+    "screen-opens-activity-blocklist": {
+      "failed": [],
+      "itemsHash": "ab01108aff3f197649cfbd68b3daec6a9681f86f52a508c2c6092b3e36f64266",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "S": "The user opens the Blocklist page under Activity.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid.",
+        "X4": "If the selection tools are used outside the part of the page that provides them, the screen fails with an error."
+      },
+      "title": "View the blocklist"
+    },
+    "screen-opens-add-import": {
+      "failed": [],
+      "itemsHash": "cbefa29c052b375099d86c9893e249bd464807d172d7ad82cfb086e5cd9c9617",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "C1": "When no file naming settings exist yet, the default naming settings are saved.",
+        "C2": "After a new root folder is added successfully, the user is taken to the import page for that folder.",
+        "S": "The user opens the import page to choose a folder of existing series.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid."
+      },
+      "title": "Pick a folder to import existing series from"
+    },
+    "screen-opens-add-import-rootfolderid": {
+      "failed": [],
+      "itemsHash": "ab3bb46a0a46ceedfe2c23ebb2f27ce72eff845f113f2692565709f4b8182fec",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "C1": "When no file naming settings exist yet, the default naming settings are saved.",
+        "S": "The user opens the import page for a specific root folder.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid.",
+        "X4": "When the requested item can't be found, the app answers that it was not found.",
+        "X5": "An operation that isn't built yet stops with a not-implemented error.",
+        "X6": "When a choice list is an unsupported kind, such as an enum-based one, it stops with a not-supported error.",
+        "X7": "A missing language value stops the request with an error.",
+        "X8": "A missing culture value stops the request with an error."
+      },
+      "title": "Import series from a chosen root folder"
+    },
+    "screen-opens-add-new": {
+      "failed": [],
+      "itemsHash": "519a341caf52c213347fd603dfa7752a0949dae60450c68a8994006f04fa2543",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "C1": "The app looks up series information from an outside online service.",
+        "C2": "When no file naming settings exist yet, the default naming settings are saved.",
+        "S": "The user opens the Add New Series page.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid.",
+        "X4": "A search in an unknown language is refused with an invalid language message.",
+        "X5": "A search term that is a valid file path is rejected as an invalid search term.",
+        "X6": "If the series lookup service can't be reached over HTTP, the search fails saying it couldn't communicate with it.",
+        "X7": "If a network error occurs reaching the lookup service, the search fails saying it couldn't communicate with it.",
+        "X8": "If the lookup service returns an unreadable answer, the search fails saying the response was invalid."
+      },
+      "title": "Search for and add a new series"
+    },
+    "screen-opens-settings-connect": {
+      "failed": [],
+      "itemsHash": "56b557d67c3fcea1eec4e0ca9bfcf5c0b45f598bcc5b379c4a95d9e8ba1c299c",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "S": "The user opens the Connect settings page.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid.",
+        "X4": "If a notification type is selected but its schema is missing, the screen fails saying a schema is required.",
+        "X5": "If no notification type is selected, the screen fails with an error.",
+        "X6": "If the chosen preset can't be found, the screen fails with an error."
+      },
+      "title": "Manage notification connections"
+    },
+    "screen-opens-settings-general": {
+      "failed": [],
+      "itemsHash": "eeba99312a4f901c988b61199e03a178b9bd56a46e74cefb2e601be25d4e30d3",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "S": "The user opens the General settings page.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid."
+      },
+      "title": "Change general settings"
+    },
+    "screen-opens-settings-importlists": {
+      "failed": [],
+      "itemsHash": "8f50bfca669093df3f952b320087a665c944cbb81e32b3a30e3bd59681f8b19d",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "S": "The user opens the Import Lists settings page.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid.",
+        "X4": "Cloning an import list that no longer exists fails with a message that it was not found.",
+        "X5": "If an import list type is selected but its schema is missing, the screen fails saying a schema is required.",
+        "X6": "If no import list type is selected, the screen fails with an error.",
+        "X7": "If the chosen preset can't be found, the screen fails with an error."
+      },
+      "title": "Manage import lists"
+    },
+    "screen-opens-settings-indexers": {
+      "failed": [],
+      "itemsHash": "b5226325698ce5026dfcaebc518acbfa3b7228b80f869528a4661910a212ec06",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "S": "The user opens the Indexers settings page.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid.",
+        "X4": "Cloning an indexer that no longer exists fails with a message that it was not found.",
+        "X5": "If an indexer type is selected but its schema is missing, the screen fails saying a schema is required.",
+        "X6": "If no indexer type is selected, the screen fails with an error.",
+        "X7": "If the chosen preset can't be found, the screen fails with an error."
+      },
+      "title": "Manage indexers"
+    },
+    "screen-opens-settings-mediamanagement": {
+      "failed": [],
+      "itemsHash": "222717c64c61f0fe687cb92e8a6a283d3b1e9323144f5d9ed8d154e554582821",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "C1": "When no file naming settings exist yet, the default naming settings are saved.",
+        "S": "The user opens the Media Management settings page.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid."
+      },
+      "title": "Change media management settings"
+    },
+    "screen-opens-settings-metadata": {
+      "failed": [],
+      "itemsHash": "8a8b8c4a791a18ba9e7fa99c15eb6742118352944aec86c6a28f03504414db80",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "S": "The user opens the Metadata settings page.",
+        "X1": "If a metadata type is selected but its schema is missing, the screen fails saying a schema is required.",
+        "X2": "If no metadata type is selected, the screen fails with an error.",
+        "X3": "If the chosen preset can't be found, the screen fails with an error."
+      },
+      "title": "Manage metadata settings"
+    },
+    "screen-opens-settings-ui": {
+      "failed": [],
+      "itemsHash": "8524a0615e1f8b4f58e0dcd374e0c774702466e267810e35b1c423488b005436",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "S": "The user opens the UI settings page.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid."
+      },
+      "title": "Change UI settings"
+    },
+    "screen-opens-statistics": {
+      "failed": [],
+      "itemsHash": "35af5e7e5a67b61f918736ee3413a77f9feb93a5fd922ea7182ec83d67f81852",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "S": "The user opens the Statistics page.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid.",
+        "X4": "A quality ID that doesn't match any known quality is refused with an error."
+      },
+      "title": "View statistics"
+    },
+    "screen-opens-system-events": {
+      "failed": [],
+      "itemsHash": "268a258c16d2177535b5ab21c1a5179c0c655d04a5586b41135d217f5ae026e5",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "S": "The user opens the System Events page.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid."
+      },
+      "title": "View system event logs"
+    },
+    "screen-opens-system-logs-files": {
+      "failed": [],
+      "itemsHash": "8b614bde49419191acdae7f3b63bb14c20e0559dbdf1be365a47f8e9be43a855",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "S": "The user opens the Log Files page.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid."
+      },
+      "title": "Browse application log files"
+    },
+    "screen-opens-system-logs-files-update": {
+      "failed": [],
+      "itemsHash": "1e91e6496b68e12ff9972380971c29414e621035bca8df6d798d3fbbfc930c35",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "S": "The user opens the Update Log Files page.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid."
+      },
+      "title": "Browse update log files"
+    },
+    "screen-opens-system-status": {
+      "failed": [],
+      "itemsHash": "8b2b46e41e6b7553c64739ce33b6e044f3bba5940cba32f97f6b335cb6a15d4d",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "S": "The user opens the System Status page.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid."
+      },
+      "title": "View system status"
+    },
+    "screen-opens-system-tasks": {
+      "failed": [],
+      "itemsHash": "322f3845c2031c8055fbaeb744487e51d23873644d984962d219aea187df884e",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "S": "The user opens the Tasks page.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid."
+      },
+      "title": "View scheduled tasks"
+    },
+    "screen-opens-system-updates": {
+      "failed": [],
+      "itemsHash": "31a07482ae6f64f85fc1dd8eae6f945eb597440bfee528835031007bb30ba7cf",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "C1": "The app asks an outside update service for the list of available updates.",
+        "S": "The user opens the Updates page.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid.",
+        "X4": "If the update request address is missing a required part, it fails with an error saying the segment is not defined."
+      },
+      "title": "Check available updates"
+    },
+    "screen-opens-wanted-cutoffunmet": {
+      "failed": [],
+      "itemsHash": "91b7f77a7fb62acb076845c63d01f9bdae7c6a430d5e66dc35cef7cd364e817b",
+      "lines": {
+        "A": "Any signed-in user; people who are not signed in are refused.",
+        "S": "The user opens the Cutoff Unmet page under Wanted.",
+        "X1": "An empty request is refused with the message that the request body can't be empty.",
+        "X2": "An empty request is refused with a list of validation errors.",
+        "X3": "A request with an ID of zero or less is refused, saying the ID is not valid.",
+        "X4": "If the selection tools are used outside the part of the page that provides them, the screen fails with an error.",
+        "X5": "If the server answers a request from the page with a failure, the screen shows an error with the status.",
+        "X6": "A request with neither a series nor any episode files is refused, saying one of them must be provided.",
+        "X7": "Giving a series without a season, or a season without a series, is refused as a bad request.",
+        "X8": "If the search for episodes fails, the user sees a bad request error with the failure message."
+      },
+      "title": "Review episodes whose quality cutoff is unmet"
+    }
+  },
+  "version": 1
+}

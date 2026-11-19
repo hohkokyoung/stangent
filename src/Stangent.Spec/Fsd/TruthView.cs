@@ -469,7 +469,7 @@ public static partial class TruthView
             foreach (var i in p.Items)
             {
                 var said = w is null ? "" : w.Failed.Contains(i.Id) ? " · words failed the check" : w.Lines.TryGetValue(i.Id, out var t) ? $" · “{t}”" : "";
-                var when = i.Conditions.Count > 0 ? $" — when `{string.Join("`, `", i.Conditions.Select(Code))}`" : "";
+                var when = i.Conditions.Count > 0 ? $" — {string.Join("; ", i.Conditions.Select(Cell))}" : "";
                 sb.Append($"- {i.Id} ({i.Kind}): `{Code(Cut(i.Code, 160))}`{when} (`{i.At}`){said}\n");
             }
             if (p.MoreChanges + p.MoreStops > 0) sb.Append($"- and {p.MoreChanges} more changes, {p.MoreStops} more stops, in `{p.File}`\n");

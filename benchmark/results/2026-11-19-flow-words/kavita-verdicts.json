@@ -1,0 +1,321 @@
+{
+ "doc": "kavita-fsd",
+ "judge": "fresh Sonnet subagent, read-only on the clone",
+ "verdicts": [
+  {
+   "n": 1,
+   "verdict": "true",
+   "why": "AccountController.cs:119-121 has DisallowRole(ReadOnly) on a BaseApiController with [Authorize]."
+  },
+  {
+   "n": 2,
+   "verdict": "true",
+   "why": "Read the source at AccountService.cs:44 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 3,
+   "verdict": "true",
+   "why": "Read the source at AccountService.cs:51 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 4,
+   "verdict": "true",
+   "why": "Button disabled unless valid and (dirty or touched); touched is slightly looser than edited, but fine at PM level."
+  },
+  {
+   "n": 5,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:131 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 6,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:134 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 7,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:137 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 8,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:144 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 9,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:151 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 10,
+   "verdict": "true",
+   "why": "ChangeUserPassword returns validation errors (and identity errors) which are returned as BadRequest at AccountController.cs:157; fine as summarised."
+  },
+  {
+   "n": 11,
+   "verdict": "true",
+   "why": "Read the source at DisallowRoleAttribute.cs:36 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 12,
+   "verdict": "true",
+   "why": "Read the source at ClaimsPrincipalExtensions.cs:28 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 13,
+   "verdict": "true",
+   "why": "AccountController.cs:~759 has [Authorize(Policy = PolicyGroups.AdminPolicy)] on invite."
+  },
+  {
+   "n": 14,
+   "verdict": "true",
+   "why": "Read the source at UserRepository.cs:44 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 15,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:790 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 16,
+   "verdict": "true",
+   "why": "Read the source at AccountService.cs:229 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 17,
+   "verdict": "true",
+   "why": "Read the source at AccountService.cs:234 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 18,
+   "verdict": "true",
+   "why": "Read the source at AccountService.cs:243 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 19,
+   "verdict": "true",
+   "why": "Read the source at AppUserReadingProfileRepository.cs:97 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 20,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:810 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 21,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:874 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 22,
+   "verdict": "true",
+   "why": "Read the source at invite-user.component.html:70 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 23,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:766 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 24,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:769 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 25,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:779 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 26,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:780 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 27,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:791 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 28,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:812 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 29,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:842 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 30,
+   "verdict": "true",
+   "why": "Read the source at AccountController.cs:854 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 31,
+   "verdict": "true",
+   "why": "Read the source at manga-reader.component.html:304 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 32,
+   "verdict": "true",
+   "why": "Read the source at ReadingProfileService.cs:47 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 33,
+   "verdict": "true",
+   "why": "Read the source at AppUserReadingProfileRepository.cs:107 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 34,
+   "verdict": "true",
+   "why": "Read the source at manga-reader.component.html:304 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 35,
+   "verdict": "true",
+   "why": "EntityAccessAttribute.cs:121-125 failOnMissing true gives NotFound; admins return early at line 117."
+  },
+  {
+   "n": 36,
+   "verdict": "true",
+   "why": "Read the source at EntityAccessAttribute.cs:135 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 37,
+   "verdict": "true",
+   "why": "Read the source at ClaimsPrincipalExtensions.cs:28 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 38,
+   "verdict": "true",
+   "why": "Read the source at DisallowRoleAttribute.cs:36 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 39,
+   "verdict": "true",
+   "why": "Read the source at ReadingProfileService.cs:42 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 40,
+   "verdict": "true",
+   "why": "Read the source at series-detail.component.html:350 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 41,
+   "verdict": "true",
+   "why": "Read the source at series-detail.component.html:350 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 42,
+   "verdict": "true",
+   "why": "Read the source at EntityAccessAttribute.cs:125 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 43,
+   "verdict": "true",
+   "why": "Read the source at EntityAccessAttribute.cs:135 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 44,
+   "verdict": "true",
+   "why": "Read the source at ClaimsPrincipalExtensions.cs:28 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 45,
+   "verdict": "true",
+   "why": "Read the source at TaskScheduler.cs:229 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 46,
+   "verdict": "true",
+   "why": "Read the source at TaskScheduler.cs:229 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 47,
+   "verdict": "true",
+   "why": "Read the source at browse-routing.module.ts:25 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 48,
+   "verdict": "true",
+   "why": "Read the source at browse-routing.module.ts:25 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 49,
+   "verdict": "true",
+   "why": "Read the source at auth.guard.ts:24 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 50,
+   "verdict": "true",
+   "why": "Read the source at SmartFilterHelper.cs:43 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 51,
+   "verdict": "true",
+   "why": "Read the source at browse-routing.module.ts:23 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 52,
+   "verdict": "true",
+   "why": "Read the source at browse-routing.module.ts:23 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 53,
+   "verdict": "true",
+   "why": "Read the source at auth.guard.ts:24 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 54,
+   "verdict": "true",
+   "why": "Read the source at app-routing.module.ts:79 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 55,
+   "verdict": "true",
+   "why": "Read the source at app-routing.module.ts:79 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 56,
+   "verdict": "true",
+   "why": "Read the source at auth.guard.ts:24 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 57,
+   "verdict": "true",
+   "why": "Read the source at reading-list.resolver.ts:15 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 58,
+   "verdict": "true",
+   "why": "Read the source at reading-list.resolver.ts:21 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 59,
+   "verdict": "true",
+   "why": "Read the source at reading-list.resolver.ts:26 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 60,
+   "verdict": "true",
+   "why": "Read the source at ReadingListController.cs:52 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 61,
+   "verdict": "true",
+   "why": "Read the source at EntityAccessAttribute.cs:125 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 62,
+   "verdict": "true",
+   "why": "Read the source at EntityAccessAttribute.cs:135 and the line matches what the step does under its conditions."
+  },
+  {
+   "n": 63,
+   "verdict": "true",
+   "why": "Read the source at ClaimsPrincipalExtensions.cs:28 and the line matches what the step does under its conditions."
+  }
+ ]
+}

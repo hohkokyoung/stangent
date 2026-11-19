@@ -4,8 +4,13 @@ below is one thing a user does in the app. Code has already picked the steps tha
 - **S**: how it starts (the button, link or screen, and the code's name for it).
 - **A**: who may start it (the code's access rule).
 - **C1, C2, …**: what it changes: a save, work queued, a file written, a message pushed, an outside service called, a move
-  to another screen. Conditions after "when" say when the change happens.
-- **X1, X2, …**: how it stops early, with the condition that stops it.
+  to another screen.
+- **X1, X2, …**: how it stops early.
+
+After a step's dash come its conditions, all of which hold together when the step happens (never one or another).
+"only if `x`" means x is true there. "only if `x` is false" means it is false, and "(an earlier guard)" means an earlier
+check on x would have stopped or skipped otherwise, so the step happens only when x is false: "only if `user == null` is
+false (an earlier guard)" means the user was found. "only when …" says when code that always runs, runs.
 
 For each flow, give:
 

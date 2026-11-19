@@ -1,0 +1,506 @@
+{
+ "doc": "sonarr-fsd",
+ "judge": "fresh Sonnet subagent, read-only on the clone",
+ "verdicts": [
+  {
+   "n": 1,
+   "verdict": "true",
+   "why": "Frontend route is served by StaticResourceController with [Authorize(Policy=\"UI\")] (StaticResourceController.cs:14), so sign-in is required."
+  },
+  {
+   "n": 2,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/App/AppRoutes.tsx:88 under its stated condition."
+  },
+  {
+   "n": 3,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 4,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:157 under its stated condition."
+  },
+  {
+   "n": 5,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:37 under its stated condition."
+  },
+  {
+   "n": 6,
+   "verdict": "true",
+   "why": "Frontend route is served by StaticResourceController with [Authorize(Policy=\"UI\")] (StaticResourceController.cs:14), so sign-in is required."
+  },
+  {
+   "n": 7,
+   "verdict": "true",
+   "why": "Text matches the code at src/NzbDrone.Core/Organizer/NamingConfigService.cs:30 under its stated condition."
+  },
+  {
+   "n": 8,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx:58 under its stated condition."
+  },
+  {
+   "n": 9,
+   "verdict": "true",
+   "why": "Route renders ImportSeriesSelectFolder (AppRoutes.tsx:56); \"selects a folder\" is what that page is for."
+  },
+  {
+   "n": 10,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 11,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:157 under its stated condition."
+  },
+  {
+   "n": 12,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:37 under its stated condition."
+  },
+  {
+   "n": 13,
+   "verdict": "true",
+   "why": "Frontend route is served by StaticResourceController with [Authorize(Policy=\"UI\")] (StaticResourceController.cs:14), so sign-in is required."
+  },
+  {
+   "n": 14,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 15,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:157 under its stated condition."
+  },
+  {
+   "n": 16,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:37 under its stated condition."
+  },
+  {
+   "n": 17,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:63 under its stated condition."
+  },
+  {
+   "n": 18,
+   "verdict": "true",
+   "why": "Text matches the code at src/NzbDrone.Core/Localization/LocalizationService.cs:123 under its stated condition."
+  },
+  {
+   "n": 19,
+   "verdict": "true",
+   "why": "Text matches the code at src/NzbDrone.Core/Localization/LocalizationService.cs:143 under its stated condition."
+  },
+  {
+   "n": 20,
+   "verdict": "true",
+   "why": "Text matches the code at src/NzbDrone.Core/Organizer/NamingConfigService.cs:30 under its stated condition."
+  },
+  {
+   "n": 21,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 22,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Api.V5/Series/SeriesLookupController.cs:44 under its stated condition."
+  },
+  {
+   "n": 23,
+   "verdict": "true",
+   "why": "Text matches the code at src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:113 under its stated condition."
+  },
+  {
+   "n": 24,
+   "verdict": "true",
+   "why": "Text matches the code at src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:160 under its stated condition."
+  },
+  {
+   "n": 25,
+   "verdict": "true",
+   "why": "Text matches the code at src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:170 under its stated condition."
+  },
+  {
+   "n": 26,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/App/AppRoutes.tsx:124 under its stated condition."
+  },
+  {
+   "n": 27,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 28,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:37 under its stated condition."
+  },
+  {
+   "n": 29,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/Settings/useProviderSchema.ts:51 under its stated condition."
+  },
+  {
+   "n": 30,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/Settings/useProviderSchema.ts:68 under its stated condition."
+  },
+  {
+   "n": 31,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 32,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:157 under its stated condition."
+  },
+  {
+   "n": 33,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:37 under its stated condition."
+  },
+  {
+   "n": 34,
+   "verdict": "true",
+   "why": "Frontend route is served by StaticResourceController with [Authorize(Policy=\"UI\")] (StaticResourceController.cs:14), so sign-in is required."
+  },
+  {
+   "n": 35,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/App/AppRoutes.tsx:122 under its stated condition."
+  },
+  {
+   "n": 36,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 37,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:157 under its stated condition."
+  },
+  {
+   "n": 38,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/Settings/ImportLists/ImportLists/useImportLists.ts:127 under its stated condition."
+  },
+  {
+   "n": 39,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/Settings/ImportLists/ImportLists/useImportLists.ts:131 under its stated condition."
+  },
+  {
+   "n": 40,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/Settings/useProviderSchema.ts:51 under its stated condition."
+  },
+  {
+   "n": 41,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/Settings/useProviderSchema.ts:68 under its stated condition."
+  },
+  {
+   "n": 42,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/App/AppRoutes.tsx:115 under its stated condition."
+  },
+  {
+   "n": 43,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:157 under its stated condition."
+  },
+  {
+   "n": 44,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:37 under its stated condition."
+  },
+  {
+   "n": 45,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/Settings/Indexers/useIndexers.ts:119 under its stated condition."
+  },
+  {
+   "n": 46,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/Settings/Indexers/useIndexers.ts:123 under its stated condition."
+  },
+  {
+   "n": 47,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/Settings/useProviderSchema.ts:51 under its stated condition."
+  },
+  {
+   "n": 48,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/Settings/useProviderSchema.ts:68 under its stated condition."
+  },
+  {
+   "n": 49,
+   "verdict": "true",
+   "why": "Frontend route is served by StaticResourceController with [Authorize(Policy=\"UI\")] (StaticResourceController.cs:14), so sign-in is required."
+  },
+  {
+   "n": 50,
+   "verdict": "true",
+   "why": "Text matches the code at src/NzbDrone.Core/Organizer/NamingConfigService.cs:30 under its stated condition."
+  },
+  {
+   "n": 51,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/App/AppRoutes.tsx:104 under its stated condition."
+  },
+  {
+   "n": 52,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 53,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:157 under its stated condition."
+  },
+  {
+   "n": 54,
+   "verdict": "true",
+   "why": "Frontend route is served by StaticResourceController with [Authorize(Policy=\"UI\")] (StaticResourceController.cs:14), so sign-in is required."
+  },
+  {
+   "n": 55,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/App/AppRoutes.tsx:126 under its stated condition."
+  },
+  {
+   "n": 56,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/Settings/useProviderSchema.ts:51 under its stated condition."
+  },
+  {
+   "n": 57,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/Settings/useProviderSchema.ts:68 under its stated condition."
+  },
+  {
+   "n": 58,
+   "verdict": "true",
+   "why": "Frontend route is served by StaticResourceController with [Authorize(Policy=\"UI\")] (StaticResourceController.cs:14), so sign-in is required."
+  },
+  {
+   "n": 59,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/App/AppRoutes.tsx:137 under its stated condition."
+  },
+  {
+   "n": 60,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 61,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:157 under its stated condition."
+  },
+  {
+   "n": 62,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:37 under its stated condition."
+  },
+  {
+   "n": 63,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/App/AppRoutes.tsx:72 under its stated condition."
+  },
+  {
+   "n": 64,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:157 under its stated condition."
+  },
+  {
+   "n": 65,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:37 under its stated condition."
+  },
+  {
+   "n": 66,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/App/AppRoutes.tsx:151 under its stated condition."
+  },
+  {
+   "n": 67,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 68,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:157 under its stated condition."
+  },
+  {
+   "n": 69,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:37 under its stated condition."
+  },
+  {
+   "n": 70,
+   "verdict": "true",
+   "why": "Frontend route is served by StaticResourceController with [Authorize(Policy=\"UI\")] (StaticResourceController.cs:14), so sign-in is required."
+  },
+  {
+   "n": 71,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 72,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:157 under its stated condition."
+  },
+  {
+   "n": 73,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:37 under its stated condition."
+  },
+  {
+   "n": 74,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/App/AppRoutes.tsx:155 under its stated condition."
+  },
+  {
+   "n": 75,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 76,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:157 under its stated condition."
+  },
+  {
+   "n": 77,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:37 under its stated condition."
+  },
+  {
+   "n": 78,
+   "verdict": "true",
+   "why": "Frontend route is served by StaticResourceController with [Authorize(Policy=\"UI\")] (StaticResourceController.cs:14), so sign-in is required."
+  },
+  {
+   "n": 79,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/App/AppRoutes.tsx:143 under its stated condition."
+  },
+  {
+   "n": 80,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 81,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:157 under its stated condition."
+  },
+  {
+   "n": 82,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:37 under its stated condition."
+  },
+  {
+   "n": 83,
+   "verdict": "true",
+   "why": "Frontend route is served by StaticResourceController with [Authorize(Policy=\"UI\")] (StaticResourceController.cs:14), so sign-in is required."
+  },
+  {
+   "n": 84,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/App/AppRoutes.tsx:145 under its stated condition."
+  },
+  {
+   "n": 85,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 86,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:157 under its stated condition."
+  },
+  {
+   "n": 87,
+   "verdict": "true",
+   "why": "Frontend route is served by StaticResourceController with [Authorize(Policy=\"UI\")] (StaticResourceController.cs:14), so sign-in is required."
+  },
+  {
+   "n": 88,
+   "verdict": "true",
+   "why": "Text matches the code at src/NzbDrone.Core/Update/UpdatePackageProvider.cs:86 under its stated condition."
+  },
+  {
+   "n": 89,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/App/AppRoutes.tsx:149 under its stated condition."
+  },
+  {
+   "n": 90,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 91,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:157 under its stated condition."
+  },
+  {
+   "n": 92,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:37 under its stated condition."
+  },
+  {
+   "n": 93,
+   "verdict": "true",
+   "why": "Frontend route is served by StaticResourceController with [Authorize(Policy=\"UI\")] (StaticResourceController.cs:14), so sign-in is required."
+  },
+  {
+   "n": 94,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/App/AppRoutes.tsx:96 under its stated condition."
+  },
+  {
+   "n": 95,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:131 under its stated condition."
+  },
+  {
+   "n": 96,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Http/REST/RestController.cs:37 under its stated condition."
+  },
+  {
+   "n": 97,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/App/Select/SelectContext.tsx:31 under its stated condition."
+  },
+  {
+   "n": 98,
+   "verdict": "true",
+   "why": "Text matches the code at frontend/src/Utilities/Fetch/fetchJson.ts:78 under its stated condition."
+  },
+  {
+   "n": 99,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Api.V5/Release/ReleaseController.cs:206 under its stated condition."
+  },
+  {
+   "n": 100,
+   "verdict": "true",
+   "why": "Text matches the code at src/Sonarr.Api.V5/Release/ReleaseController.cs:224 under its stated condition."
+  }
+ ]
+}

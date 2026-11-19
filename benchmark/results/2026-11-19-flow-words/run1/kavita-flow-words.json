@@ -1,0 +1,126 @@
+{
+  "contract": "flow-words",
+  "doc": "kavita-fsd",
+  "flows": {
+    "click-changepasswordcomponent-savepasswordform": {
+      "failed": [],
+      "itemsHash": "e28d15ee9d19be6b753a3499bbb5d8e8fdb9f1ec67583b2ea1fbb4b04b37e02f",
+      "lines": {
+        "A": "Any signed-in user except Read Only users, who are refused.",
+        "C1": "The user's existing password is removed from the account, when there are no password validation problems.",
+        "C2": "The new password is set on the account, when the removal succeeded and there are no password validation problems.",
+        "S": "The user clicks Save on the password form, which is enabled only once the form is valid and has been edited or touched.",
+        "X1": "Stops with a permission-denied message if the user changes their own password without the change-password permission or admin rights, or if the account is not found.",
+        "X2": "Stops with a permission-denied message if a non-admin tries to change someone else's password, or lacks change-password permission for their own, or the account is not found.",
+        "X3": "Stops with an error if a non-admin leaves the old password empty, or when an earlier permission check or missing account would already have stopped it.",
+        "X4": "Stops with a message that the account is managed by the single sign-on provider, when that provider is enabled and syncs user settings.",
+        "X5": "Stops with an invalid-password message when a user changing their own password gives an old password that is wrong.",
+        "X6": "Stops and shows the list of errors when the new password fails the password checks.",
+        "X7": "Stops with an error response when the user holds one of the roles the action is closed to.",
+        "X8": "Stops with a not-authenticated error when the signed-in user's identity cannot be read from the sign-in."
+      },
+      "title": "Change a user's password"
+    },
+    "click-inviteusercomponent-invite": {
+      "failed": [],
+      "itemsHash": "f825ad73f463a732aefe4dcae03a8001d4696b1724c15a9ce865c6f8fb2329d7",
+      "lines": {
+        "A": "Signed-in admins only.",
+        "C1": "The new user record is saved to the database.",
+        "C2": "The new account is created in the sign-in system, when the email is present, valid and the admin is found.",
+        "C3": "Default home page dashboard sections are saved for the new user.",
+        "C4": "Default side navigation entries are saved for the new user.",
+        "C5": "The new user's preferences are saved again, when they include book reader highlight slots.",
+        "C6": "A default reading profile is saved for the new user.",
+        "C7": "Each chosen valid role is added to the new account, when account creation succeeded.",
+        "C8": "An invite email is sent in the background, when the email address is valid and email is set up on the server.",
+        "S": "An admin clicks the Invite button in the invite form.",
+        "X1": "Stops with a permission-denied message when the inviting admin cannot be found.",
+        "X2": "Stops with an invalid-request message when no email address is given.",
+        "X3": "Stops saying the user is already registered when the invited email already belongs to a confirmed account.",
+        "X4": "Stops and shows the errors when creating the account fails.",
+        "X5": "Stops and shows the errors when adding a role to the account fails.",
+        "X6": "Stops with a generic invite-failure message when no confirmation token could be produced.",
+        "X7": "Stops with a generic invite-failure message when something unexpected goes wrong.",
+        "X8": "Stops with a generic invite-failure message when the email checks report problems."
+      },
+      "title": "Invite a new user by email"
+    },
+    "click-mangareadercomponent-updateparentpref": {
+      "failed": [],
+      "itemsHash": "03fd38bfbfb647cf6dcf07b45e9fb219952ddb863cf0a6f08a0a6d4c105c156e",
+      "lines": {
+        "A": "Users with access to the series who are not Read Only; Read Only users are refused.",
+        "C1": "The parent reading profile is updated with the new settings, when a profile exists.",
+        "C2": "A reading profile is deleted.",
+        "S": "The user clicks the Save to button to update the parent reading profile.",
+        "X1": "Stops with not found when no series is identified and the user is not an admin.",
+        "X2": "Stops with not found when the user has no access to the series.",
+        "X3": "Stops with a not-authenticated error when the signed-in user's identity cannot be read.",
+        "X4": "Stops with an error response when the user holds a role the action is closed to.",
+        "X5": "Stops with a profile-does-not-exist error when no profile is found."
+      },
+      "title": "Save reading settings to the parent profile"
+    },
+    "click-seriesdetailcomponent-handlerelatedreload": {
+      "failed": [],
+      "itemsHash": "719221326868be1c6780925ebf6bc71d548d8ae6bd88fd0ad44ef49bf0d94c81",
+      "lines": {
+        "A": "Users who have access to the series.",
+        "S": "The user triggers a reload of the related series section on the series page.",
+        "X1": "Stops with not found when no series is identified and the user is not an admin.",
+        "X2": "Stops with not found when the user has no access to the series.",
+        "X3": "Stops with a not-authenticated error when the signed-in user's identity cannot be read."
+      },
+      "title": "Reload related series"
+    },
+    "job-icleanupservice-cleanupwanttoread": {
+      "failed": [],
+      "itemsHash": "db573bf22294839a173d23b2131400dc4b23813504589c6018a478092f71f286",
+      "lines": {
+        "A": "The system itself runs it on its daily schedule; no user starts it.",
+        "S": "A scheduled job runs the want-to-read cleanup once a day."
+      },
+      "title": "Daily cleanup of want-to-read lists"
+    },
+    "screen-opens-browse-annotations": {
+      "failed": [],
+      "itemsHash": "0caf46e23a27b8bfdf3bea4d2d2bd471045d5fb56dca997b4a7c139b29334249",
+      "lines": {
+        "A": "Any signed-in user.",
+        "S": "The user opens the All Annotations page in the browse area.",
+        "X1": "Users who are not logged in are sent to the login page.",
+        "X2": "Stops with an error when an unsupported kind of item is requested."
+      },
+      "title": "Browse all annotations"
+    },
+    "screen-opens-browse-genres": {
+      "failed": [],
+      "itemsHash": "2d86419ccfd8a926824e32b53002bf26478a44e6c980bc1121e9e6db2f95b433",
+      "lines": {
+        "A": "Any signed-in user.",
+        "S": "The user opens the Browse Genres page.",
+        "X1": "Users who are not logged in are sent to the login page."
+      },
+      "title": "Browse genres"
+    },
+    "screen-opens-lists-readinglistid": {
+      "failed": [],
+      "itemsHash": "c25a7452b664c21c9a51ab66402fba622a184e7d66752643bb112a7ccf78ea05",
+      "lines": {
+        "A": "Users who can access the reading list, including promoted lists.",
+        "S": "The user opens a reading list page.",
+        "X1": "Users who are not logged in are sent to the login page.",
+        "X2": "A missing or zero list id sends the user to the home page.",
+        "X3": "If the reading list is not found, the user is sent to the home page.",
+        "X4": "If loading the reading list fails, the user is sent to the home page.",
+        "X5": "Stops with a message that the reading list is restricted when it cannot be found for the user.",
+        "X6": "Stops with not found when no list is identified and the user is not an admin.",
+        "X7": "Stops with not found when the user has no access to the list.",
+        "X8": "Stops with a not-authenticated error when the signed-in user's identity cannot be read."
+      },
+      "title": "Open a reading list"
+    }
+  },
+  "version": 1
+}

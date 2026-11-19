@@ -62,7 +62,11 @@ public static partial class FlowWords
     {
         var file = (string)indexEntry["file"]!;
         if (PageRun.LoadJson(Path.Combine(root, file)) is not JsonObject flow) return null;
-        static List<string> Conds(JsonNode? n) => [.. (n as JsonArray ?? []).OfType<JsonObject>().Select(c => (string?)c["code"] ?? "").Where(c => c.Length > 0)];
+        // Each condition as the flow's own Markdown reads it (D173, D240): an `unless` is an earlier guard that must be false,
+        // never the bare code, which reads as its opposite (the 2026-11-19 measurement: 22 of 22 false lines).
+        static List<string> Conds(JsonNode? n) => [.. (n as JsonArray ?? []).OfType<JsonObject>()
+            .Where(c => ((string?)c["code"] ?? "").Length > 0)
+            .Select(c => FlowFiles.ConditionText(new Condition((string?)c["kind"] ?? "if", ((string)c["code"]!).Replace('`', '\''), "", 0, (string?)c["case"])))];
         var id = (string)indexEntry["id"]!;
         var name = (string?)flow["name"] ?? (string?)indexEntry["name"] ?? id;
         var start = flow["start"] as JsonObject;
@@ -178,7 +182,7 @@ public static partial class FlowWords
             foreach (var i in p.Items)
             {
                 sb.Append($"- **{i.Id}** ({i.Kind}): `{i.Code.Replace("`", "'", StringComparison.Ordinal)}`");
-                if (i.Conditions.Count > 0) sb.Append($" — when `{string.Join("`, `", i.Conditions.Select(c => c.Replace("`", "'", StringComparison.Ordinal)))}`");
+                if (i.Conditions.Count > 0) sb.Append($" — {string.Join("; ", i.Conditions)}");
                 sb.Append('\n');
             }
             sb.Append('\n');

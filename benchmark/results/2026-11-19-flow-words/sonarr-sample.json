@@ -1,0 +1,1597 @@
+{
+  "doc": "sonarr-fsd",
+  "clone": "sonarr",
+  "seed": 4161,
+  "asked": 100,
+  "population": 131,
+  "failedLines": 0,
+  "sampled": 100,
+  "flows": 19,
+  "pickMismatches": [],
+  "lines": [
+    {
+      "flow": "screen-opens-activity-blocklist",
+      "flowName": "/activity/blocklist",
+      "flowTitle": "View the blocklist",
+      "flowFile": "specs/areas/activity/screen-opens-activity-blocklist.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "signed-in user (no access rule on the action; the app's fallback policy requires a signed-in user)",
+      "at": "frontend/src/App/AppRoutes.tsx:88",
+      "conditions": [],
+      "text": "Any signed-in user can open it; anyone not signed in is refused.",
+      "n": 1,
+      "source": "    82        */}\n    83  \n    84        <Route path=\"/activity/history\" element={<History />} />\n    85  \n    86        <Route path=\"/activity/queue\" element={<Queue />} />\n    87  \n>   88        <Route path=\"/activity/blocklist\" element={<Blocklist />} />\n    89  \n    90        {/*\n    91          Wanted\n    92        */}\n    93  \n    94        <Route path=\"/wanted/missing\" element={<Missing />} />"
+    },
+    {
+      "flow": "screen-opens-activity-blocklist",
+      "flowName": "/activity/blocklist",
+      "flowTitle": "View the blocklist",
+      "flowFile": "specs/areas/activity/screen-opens-activity-blocklist.json",
+      "item": "S",
+      "kind": "start",
+      "code": "/activity/blocklist: <Route path=\"/activity/blocklist\" element={<Blocklist />} />",
+      "at": "frontend/src/App/AppRoutes.tsx:88",
+      "conditions": [],
+      "text": "The user opens the Blocklist page under Activity.",
+      "n": 2,
+      "source": "    82        */}\n    83  \n    84        <Route path=\"/activity/history\" element={<History />} />\n    85  \n    86        <Route path=\"/activity/queue\" element={<Queue />} />\n    87  \n>   88        <Route path=\"/activity/blocklist\" element={<Blocklist />} />\n    89  \n    90        {/*\n    91          Wanted\n    92        */}\n    93  \n    94        <Route path=\"/wanted/missing\" element={<Missing />} />"
+    },
+    {
+      "flow": "screen-opens-activity-blocklist",
+      "flowName": "/activity/blocklist",
+      "flowTitle": "View the blocklist",
+      "flowFile": "specs/areas/activity/screen-opens-activity-blocklist.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 3,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-activity-blocklist",
+      "flowName": "/activity/blocklist",
+      "flowTitle": "View the blocklist",
+      "flowFile": "specs/areas/activity/screen-opens-activity-blocklist.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new ValidationException(errors);",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `resource == null` is false (an earlier guard)"
+      ],
+      "text": "The submitted data fails validation: the app rejects it and returns the validation errors.",
+      "n": 4,
+      "source": "   151                      errors.AddRange(IdValidator.Validate(resource).Errors);\n   152                  }\n   153              }\n   154  \n   155              if (errors.Any())\n   156              {\n>  157                  throw new ValidationException(errors);\n   158              }\n   159          }\n   160  \n   161          protected Results<Accepted<TResource>, NotFound> TypedAccepted(int id)\n   162          {\n   163              var result = GetResourceById(id);"
+    },
+    {
+      "flow": "screen-opens-activity-blocklist",
+      "flowName": "/activity/blocklist",
+      "flowTitle": "View the blocklist",
+      "flowFile": "specs/areas/activity/screen-opens-activity-blocklist.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(id + \" is not a valid ID\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:37",
+      "conditions": [
+        "only if `id <= 0`"
+      ],
+      "text": "The ID given is zero or negative: the app rejects it saying it is not a valid ID.",
+      "n": 5,
+      "source": "    31          private ResourceValidator<TResource> IdValidator { get; set; }\n    32  \n    33          protected void ValidateId(int id)\n    34          {\n    35              if (id <= 0)\n    36              {\n>   37                  throw new BadRequestException(id + \" is not a valid ID\");\n    38              }\n    39          }\n    40  \n    41          protected RestController()\n    42          {\n    43              _logger = NzbDroneLogger.GetLogger(this);"
+    },
+    {
+      "flow": "screen-opens-add-import",
+      "flowName": "/add/import",
+      "flowTitle": "Pick a folder to import existing series",
+      "flowFile": "specs/areas/series-library-import/screen-opens-add-import.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "signed-in user (no access rule on the action; the app's fallback policy requires a signed-in user)",
+      "at": "frontend/src/App/AppRoutes.tsx:56",
+      "conditions": [],
+      "text": "Any signed-in user can open it; anyone not signed in is refused.",
+      "n": 6,
+      "source": "    50        */}\n    51  \n    52        <Route path=\"/series\" element={<SeriesIndex />} />\n    53  \n    54        <Route path=\"/add/new\" element={<AddNewSeries />} />\n    55  \n>   56        <Route path=\"/add/import\" element={<ImportSeriesSelectFolder />} />\n    57  \n    58        <Route path=\"/add/import/:rootFolderId\" element={<ImportSeries />} />\n    59  \n    60        <Route\n    61          path=\"/serieseditor\"\n    62          element={<Navigate to=\"/series\" replace={true} />}"
+    },
+    {
+      "flow": "screen-opens-add-import",
+      "flowName": "/add/import",
+      "flowTitle": "Pick a folder to import existing series",
+      "flowFile": "specs/areas/series-library-import/screen-opens-add-import.json",
+      "item": "C1",
+      "kind": "change",
+      "code": "saves NamingConfig — _repository.Insert(NamingConfig.Default);",
+      "at": "src/NzbDrone.Core/Organizer/NamingConfigService.cs:30",
+      "conditions": [
+        "only if `config == null`",
+        "only if `config == null`"
+      ],
+      "text": "If no naming settings exist yet, the default naming settings are saved.",
+      "n": 7,
+      "source": "    24                  lock (_repository)\n    25                  {\n    26                      config = _repository.SingleOrDefault();\n    27  \n    28                      if (config == null)\n    29                      {\n>   30                          _repository.Insert(NamingConfig.Default);\n    31                          config = _repository.Single();\n    32                      }\n    33                  }\n    34              }\n    35  \n    36              return config;"
+    },
+    {
+      "flow": "screen-opens-add-import",
+      "flowName": "/add/import",
+      "flowTitle": "Pick a folder to import existing series",
+      "flowFile": "specs/areas/series-library-import/screen-opens-add-import.json",
+      "item": "C2",
+      "kind": "change",
+      "code": "goes to `/add/import/${newRootFolder.id}` (navigate) — navigate(`/add/import/${newRootFolder.id}`);",
+      "at": "frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx:58",
+      "conditions": [
+        "only if `!isAdding && wasAdding && !addError && newRootFolder`"
+      ],
+      "text": "After a root folder has just been added successfully with no error, the user is taken to the import page for that folder.",
+      "n": 8,
+      "source": "    52      },\n    53      [addRootFolder]\n    54    );\n    55  \n    56    useEffect(() => {\n    57      if (!isAdding && wasAdding && !addError && newRootFolder) {\n>   58        navigate(`/add/import/${newRootFolder.id}`);\n    59      }\n    60    }, [isAdding, wasAdding, addError, newRootFolder, navigate]);\n    61  \n    62    return (\n    63      <PageContent title={translate('ImportSeries')}>\n    64        <PageContentBody>"
+    },
+    {
+      "flow": "screen-opens-add-import",
+      "flowName": "/add/import",
+      "flowTitle": "Pick a folder to import existing series",
+      "flowFile": "specs/areas/series-library-import/screen-opens-add-import.json",
+      "item": "S",
+      "kind": "start",
+      "code": "/add/import: <Route path=\"/add/import\" element={<ImportSeriesSelectFolder />} />",
+      "at": "frontend/src/App/AppRoutes.tsx:56",
+      "conditions": [],
+      "text": "The user opens the Import Existing Series page and selects a folder.",
+      "n": 9,
+      "source": "    50        */}\n    51  \n    52        <Route path=\"/series\" element={<SeriesIndex />} />\n    53  \n    54        <Route path=\"/add/new\" element={<AddNewSeries />} />\n    55  \n>   56        <Route path=\"/add/import\" element={<ImportSeriesSelectFolder />} />\n    57  \n    58        <Route path=\"/add/import/:rootFolderId\" element={<ImportSeries />} />\n    59  \n    60        <Route\n    61          path=\"/serieseditor\"\n    62          element={<Navigate to=\"/series\" replace={true} />}"
+    },
+    {
+      "flow": "screen-opens-add-import",
+      "flowName": "/add/import",
+      "flowTitle": "Pick a folder to import existing series",
+      "flowFile": "specs/areas/series-library-import/screen-opens-add-import.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 10,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-add-import",
+      "flowName": "/add/import",
+      "flowTitle": "Pick a folder to import existing series",
+      "flowFile": "specs/areas/series-library-import/screen-opens-add-import.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new ValidationException(errors);",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `resource == null` is false (an earlier guard)"
+      ],
+      "text": "The submitted data fails validation: the app rejects it and returns the validation errors.",
+      "n": 11,
+      "source": "   151                      errors.AddRange(IdValidator.Validate(resource).Errors);\n   152                  }\n   153              }\n   154  \n   155              if (errors.Any())\n   156              {\n>  157                  throw new ValidationException(errors);\n   158              }\n   159          }\n   160  \n   161          protected Results<Accepted<TResource>, NotFound> TypedAccepted(int id)\n   162          {\n   163              var result = GetResourceById(id);"
+    },
+    {
+      "flow": "screen-opens-add-import",
+      "flowName": "/add/import",
+      "flowTitle": "Pick a folder to import existing series",
+      "flowFile": "specs/areas/series-library-import/screen-opens-add-import.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(id + \" is not a valid ID\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:37",
+      "conditions": [
+        "only if `id <= 0`"
+      ],
+      "text": "The ID given is zero or negative: the app rejects it saying it is not a valid ID.",
+      "n": 12,
+      "source": "    31          private ResourceValidator<TResource> IdValidator { get; set; }\n    32  \n    33          protected void ValidateId(int id)\n    34          {\n    35              if (id <= 0)\n    36              {\n>   37                  throw new BadRequestException(id + \" is not a valid ID\");\n    38              }\n    39          }\n    40  \n    41          protected RestController()\n    42          {\n    43              _logger = NzbDroneLogger.GetLogger(this);"
+    },
+    {
+      "flow": "screen-opens-add-import-rootfolderid",
+      "flowName": "/add/import/:rootFolderId",
+      "flowTitle": "Import series from a chosen root folder",
+      "flowFile": "specs/areas/series-library-import/screen-opens-add-import-rootfolderid.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "signed-in user (no access rule on the action; the app's fallback policy requires a signed-in user)",
+      "at": "frontend/src/App/AppRoutes.tsx:58",
+      "conditions": [],
+      "text": "Any signed-in user can open it; anyone not signed in is refused.",
+      "n": 13,
+      "source": "    52        <Route path=\"/series\" element={<SeriesIndex />} />\n    53  \n    54        <Route path=\"/add/new\" element={<AddNewSeries />} />\n    55  \n    56        <Route path=\"/add/import\" element={<ImportSeriesSelectFolder />} />\n    57  \n>   58        <Route path=\"/add/import/:rootFolderId\" element={<ImportSeries />} />\n    59  \n    60        <Route\n    61          path=\"/serieseditor\"\n    62          element={<Navigate to=\"/series\" replace={true} />}\n    63        />\n    64  "
+    },
+    {
+      "flow": "screen-opens-add-import-rootfolderid",
+      "flowName": "/add/import/:rootFolderId",
+      "flowTitle": "Import series from a chosen root folder",
+      "flowFile": "specs/areas/series-library-import/screen-opens-add-import-rootfolderid.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 14,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-add-import-rootfolderid",
+      "flowName": "/add/import/:rootFolderId",
+      "flowTitle": "Import series from a chosen root folder",
+      "flowFile": "specs/areas/series-library-import/screen-opens-add-import-rootfolderid.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new ValidationException(errors);",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `resource == null` is false (an earlier guard)"
+      ],
+      "text": "The submitted data fails validation: the app rejects it and returns the validation errors.",
+      "n": 15,
+      "source": "   151                      errors.AddRange(IdValidator.Validate(resource).Errors);\n   152                  }\n   153              }\n   154  \n   155              if (errors.Any())\n   156              {\n>  157                  throw new ValidationException(errors);\n   158              }\n   159          }\n   160  \n   161          protected Results<Accepted<TResource>, NotFound> TypedAccepted(int id)\n   162          {\n   163              var result = GetResourceById(id);"
+    },
+    {
+      "flow": "screen-opens-add-import-rootfolderid",
+      "flowName": "/add/import/:rootFolderId",
+      "flowTitle": "Import series from a chosen root folder",
+      "flowFile": "specs/areas/series-library-import/screen-opens-add-import-rootfolderid.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(id + \" is not a valid ID\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:37",
+      "conditions": [
+        "only if `id <= 0`"
+      ],
+      "text": "The ID given is zero or negative: the app rejects it saying it is not a valid ID.",
+      "n": 16,
+      "source": "    31          private ResourceValidator<TResource> IdValidator { get; set; }\n    32  \n    33          protected void ValidateId(int id)\n    34          {\n    35              if (id <= 0)\n    36              {\n>   37                  throw new BadRequestException(id + \" is not a valid ID\");\n    38              }\n    39          }\n    40  \n    41          protected RestController()\n    42          {\n    43              _logger = NzbDroneLogger.GetLogger(this);"
+    },
+    {
+      "flow": "screen-opens-add-import-rootfolderid",
+      "flowName": "/add/import/:rootFolderId",
+      "flowTitle": "Import series from a chosen root folder",
+      "flowFile": "specs/areas/series-library-import/screen-opens-add-import-rootfolderid.json",
+      "item": "X4",
+      "kind": "stop",
+      "code": "NotFound: return TypedResults.NotFound();",
+      "at": "src/Sonarr.Http/REST/RestController.cs:63",
+      "conditions": [
+        "only if `(ModelNotFoundException)`"
+      ],
+      "text": "The requested item can't be found: the app answers with a not found response.",
+      "n": 17,
+      "source": "    57              try\n    58              {\n    59                  return TypedResults.Ok(GetResourceById(id));\n    60              }\n    61              catch (ModelNotFoundException)\n    62              {\n>   63                  return TypedResults.NotFound();\n    64              }\n    65          }\n    66  \n    67          #nullable enable\n    68          protected virtual TResource? GetResourceById(int id)\n    69          {"
+    },
+    {
+      "flow": "screen-opens-add-import-rootfolderid",
+      "flowName": "/add/import/:rootFolderId",
+      "flowTitle": "Import series from a chosen root folder",
+      "flowFile": "specs/areas/series-library-import/screen-opens-add-import-rootfolderid.json",
+      "item": "X7",
+      "kind": "stop",
+      "code": "throw: throw new ArgumentNullException(nameof(language));",
+      "at": "src/NzbDrone.Core/Localization/LocalizationService.cs:123",
+      "conditions": [
+        "only if `string.IsNullOrEmpty(language)`"
+      ],
+      "text": "A language is required but none is given: the request fails with a missing value error.",
+      "n": 18,
+      "source": "   117          }\n   118  \n   119          private Dictionary<string, string> GetLocalizationDictionary(string language)\n   120          {\n   121              if (string.IsNullOrEmpty(language))\n   122              {\n>  123                  throw new ArgumentNullException(nameof(language));\n   124              }\n   125  \n   126              var startupFolder = _appFolderInfo.StartUpFolder;\n   127  \n   128              var prefix = Path.Combine(startupFolder, \"Localization\", \"Core\");\n   129              var key = prefix + language;"
+    },
+    {
+      "flow": "screen-opens-add-import-rootfolderid",
+      "flowName": "/add/import/:rootFolderId",
+      "flowTitle": "Import series from a chosen root folder",
+      "flowFile": "specs/areas/series-library-import/screen-opens-add-import-rootfolderid.json",
+      "item": "X8",
+      "kind": "stop",
+      "code": "throw: throw new ArgumentNullException(nameof(culture));",
+      "at": "src/NzbDrone.Core/Localization/LocalizationService.cs:143",
+      "conditions": [
+        "only if `string.IsNullOrEmpty(culture)`"
+      ],
+      "text": "A culture is required but none is given: the request fails with a missing value error.",
+      "n": 19,
+      "source": "   137          }\n   138  \n   139          private async Task<Dictionary<string, string>> GetDictionary(string prefix, string culture, string baseFilename)\n   140          {\n   141              if (string.IsNullOrEmpty(culture))\n   142              {\n>  143                  throw new ArgumentNullException(nameof(culture));\n   144              }\n   145  \n   146              var dictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);\n   147  \n   148              var baseFilenamePath = Path.Combine(prefix, baseFilename);\n   149  "
+    },
+    {
+      "flow": "screen-opens-add-new",
+      "flowName": "/add/new",
+      "flowTitle": "Search for and add a new series",
+      "flowFile": "specs/areas/series-add-new/screen-opens-add-new.json",
+      "item": "C2",
+      "kind": "change",
+      "code": "saves NamingConfig — _repository.Insert(NamingConfig.Default);",
+      "at": "src/NzbDrone.Core/Organizer/NamingConfigService.cs:30",
+      "conditions": [
+        "only if `config == null`",
+        "only if `config == null`"
+      ],
+      "text": "If no naming settings exist yet, the default naming settings are saved.",
+      "n": 20,
+      "source": "    24                  lock (_repository)\n    25                  {\n    26                      config = _repository.SingleOrDefault();\n    27  \n    28                      if (config == null)\n    29                      {\n>   30                          _repository.Insert(NamingConfig.Default);\n    31                          config = _repository.Single();\n    32                      }\n    33                  }\n    34              }\n    35  \n    36              return config;"
+    },
+    {
+      "flow": "screen-opens-add-new",
+      "flowName": "/add/new",
+      "flowTitle": "Search for and add a new series",
+      "flowFile": "specs/areas/series-add-new/screen-opens-add-new.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 21,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-add-new",
+      "flowName": "/add/new",
+      "flowTitle": "Search for and add a new series",
+      "flowFile": "specs/areas/series-add-new/screen-opens-add-new.json",
+      "item": "X4",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException($\"Invalid language: {languageId}\");",
+      "at": "src/Sonarr.Api.V5/Series/SeriesLookupController.cs:44",
+      "conditions": [
+        "only if `searchLanguage == null || IsoLanguages.Get(searchLanguage) == null`"
+      ],
+      "text": "The chosen search language is missing or not recognized: the app rejects it saying the language is invalid.",
+      "n": 22,
+      "source": "    38      {\n    39          var languageId = language ?? _configService.PreferredMetadataLanguage;\n    40          var searchLanguage = Language.All.FirstOrDefault(l => l.Id == languageId);\n    41  \n    42          if (searchLanguage == null || IsoLanguages.Get(searchLanguage) == null)\n    43          {\n>   44              throw new BadRequestException($\"Invalid language: {languageId}\");\n    45          }\n    46  \n    47          var tvDbResults = _searchProxy.SearchForNewSeries(term, searchLanguage);\n    48          return TypedResults.Ok(MapToResource(tvDbResults));\n    49      }\n    50  "
+    },
+    {
+      "flow": "screen-opens-add-new",
+      "flowName": "/add/new",
+      "flowTitle": "Search for and add a new series",
+      "flowFile": "specs/areas/series-add-new/screen-opens-add-new.json",
+      "item": "X5",
+      "kind": "stop",
+      "code": "throw: throw new InvalidSearchTermException(\"Invalid search term '{0}'\", title);",
+      "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:113",
+      "conditions": [
+        "only if `title.IsPathValid(PathValidationType.AnyOs)`"
+      ],
+      "text": "The search term is a valid file path: the search is refused as an invalid search term.",
+      "n": 23,
+      "source": "   107          }\n   108  \n   109          public List<Series> SearchForNewSeries(string title, Language language)\n   110          {\n   111              if (title.IsPathValid(PathValidationType.AnyOs))\n   112              {\n>  113                  throw new InvalidSearchTermException(\"Invalid search term '{0}'\", title);\n   114              }\n   115  \n   116              try\n   117              {\n   118                  var lowerTitle = title.ToLowerInvariant();\n   119  "
+    },
+    {
+      "flow": "screen-opens-add-new",
+      "flowName": "/add/new",
+      "flowTitle": "Search for and add a new series",
+      "flowFile": "specs/areas/series-add-new/screen-opens-add-new.json",
+      "item": "X6",
+      "kind": "stop",
+      "code": "throw: throw new SkyHookException(\"Search for '{0}' failed. Unable to communicate with SkyHook. {1}\", ex, title, ex.Message);",
+      "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:160",
+      "conditions": [
+        "only if `(HttpException ex)`",
+        "only if `title.IsPathValid(PathValidationType.AnyOs)` is false (an earlier guard)"
+      ],
+      "text": "The lookup service can't be reached over HTTP: the search fails saying it was unable to communicate with the service.",
+      "n": 24,
+      "source": "   154  \n   155                  return httpResponse.Resource.SelectList(MapSearchResult);\n   156              }\n   157              catch (HttpException ex)\n   158              {\n   159                  _logger.Warn(ex);\n>  160                  throw new SkyHookException(\"Search for '{0}' failed. Unable to communicate with SkyHook. {1}\", ex, title, ex.Message);\n   161              }\n   162              catch (WebException ex)\n   163              {\n   164                  _logger.Warn(ex);\n   165                  throw new SkyHookException(\"Search for '{0}' failed. Unable to communicate with SkyHook. {1}\", ex, title, ex.Message);\n   166              }"
+    },
+    {
+      "flow": "screen-opens-add-new",
+      "flowName": "/add/new",
+      "flowTitle": "Search for and add a new series",
+      "flowFile": "specs/areas/series-add-new/screen-opens-add-new.json",
+      "item": "X8",
+      "kind": "stop",
+      "code": "throw: throw new SkyHookException(\"Search for '{0}' failed. Invalid response received from SkyHook. {1}\", ex, title, ex.Message);",
+      "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:170",
+      "conditions": [
+        "only if `(Exception ex)`",
+        "only if `title.IsPathValid(PathValidationType.AnyOs)` is false (an earlier guard)"
+      ],
+      "text": "Any other error occurs while searching: the search fails saying an invalid response was received from the lookup service.",
+      "n": 25,
+      "source": "   164                  _logger.Warn(ex);\n   165                  throw new SkyHookException(\"Search for '{0}' failed. Unable to communicate with SkyHook. {1}\", ex, title, ex.Message);\n   166              }\n   167              catch (Exception ex)\n   168              {\n   169                  _logger.Warn(ex);\n>  170                  throw new SkyHookException(\"Search for '{0}' failed. Invalid response received from SkyHook. {1}\", ex, title, ex.Message);\n   171              }\n   172          }\n   173  \n   174          private Series MapSearchResult(ShowResource show)\n   175          {\n   176              var series = _seriesService.FindByTvdbId(show.TvdbId);"
+    },
+    {
+      "flow": "screen-opens-settings-connect",
+      "flowName": "/settings/connect",
+      "flowTitle": "Manage notification connections",
+      "flowFile": "specs/areas/settings-connect/screen-opens-settings-connect.json",
+      "item": "S",
+      "kind": "start",
+      "code": "/settings/connect: <Route path=\"/settings/connect\" element={<NotificationSettings />} />",
+      "at": "frontend/src/App/AppRoutes.tsx:124",
+      "conditions": [],
+      "text": "The user opens the Connect settings page.",
+      "n": 26,
+      "source": "   118          path=\"/settings/downloadclients\"\n   119          element={<DownloadClientSettings />}\n   120        />\n   121  \n   122        <Route path=\"/settings/importlists\" element={<ImportListSettings />} />\n   123  \n>  124        <Route path=\"/settings/connect\" element={<NotificationSettings />} />\n   125  \n   126        <Route path=\"/settings/metadata\" element={<MetadataSettings />} />\n   127  \n   128        <Route\n   129          path=\"/settings/metadatasource\"\n   130          element={<MetadataSourceSettings />}"
+    },
+    {
+      "flow": "screen-opens-settings-connect",
+      "flowName": "/settings/connect",
+      "flowTitle": "Manage notification connections",
+      "flowFile": "specs/areas/settings-connect/screen-opens-settings-connect.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 27,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-settings-connect",
+      "flowName": "/settings/connect",
+      "flowTitle": "Manage notification connections",
+      "flowFile": "specs/areas/settings-connect/screen-opens-settings-connect.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(id + \" is not a valid ID\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:37",
+      "conditions": [
+        "only if `id <= 0`"
+      ],
+      "text": "The ID given is zero or negative: the app rejects it saying it is not a valid ID.",
+      "n": 28,
+      "source": "    31          private ResourceValidator<TResource> IdValidator { get; set; }\n    32  \n    33          protected void ValidateId(int id)\n    34          {\n    35              if (id <= 0)\n    36              {\n>   37                  throw new BadRequestException(id + \" is not a valid ID\");\n    38              }\n    39          }\n    40  \n    41          protected RestController()\n    42          {\n    43              _logger = NzbDroneLogger.GetLogger(this);"
+    },
+    {
+      "flow": "screen-opens-settings-connect",
+      "flowName": "/settings/connect",
+      "flowTitle": "Manage notification connections",
+      "flowFile": "specs/areas/settings-connect/screen-opens-settings-connect.json",
+      "item": "X5",
+      "kind": "stop",
+      "code": "throw: throw new Error(",
+      "at": "frontend/src/Settings/useProviderSchema.ts:51",
+      "conditions": [
+        "only if `!selected`",
+        "only if `!selectedSchema` is false (an earlier guard)"
+      ],
+      "text": "A schema is chosen but the matching selected item can't be found: the screen fails with an error.",
+      "n": 29,
+      "source": "    45  \n    46      const selected = schema.find(\n    47        (s: T) => s.implementation === selectedSchema.implementation\n    48      );\n    49  \n    50      if (!selected) {\n>   51        throw new Error(\n    52          `Schema with implementation ${selectedSchema.implementation} not found`\n    53        );\n    54      }\n    55  \n    56      if (selectedSchema.presetName == null) {\n    57        return selected;"
+    },
+    {
+      "flow": "screen-opens-settings-connect",
+      "flowName": "/settings/connect",
+      "flowTitle": "Manage notification connections",
+      "flowFile": "specs/areas/settings-connect/screen-opens-settings-connect.json",
+      "item": "X6",
+      "kind": "stop",
+      "code": "throw: throw new Error(",
+      "at": "frontend/src/Settings/useProviderSchema.ts:68",
+      "conditions": [
+        "only if `!preset`",
+        "only if `selectedSchema.presetName == null` is false (an earlier guard)",
+        "only if `!selected` is false (an earlier guard)",
+        "only if `!selectedSchema` is false (an earlier guard)"
+      ],
+      "text": "The schema names a preset that can't be found: the screen fails with an error.",
+      "n": 30,
+      "source": "    62          ? (selected as ProviderWithPresets<T>).presets?.find(\n    63              (p: T & { name: string }) => p.name === selectedSchema.presetName\n    64            )\n    65          : undefined;\n    66  \n    67      if (!preset) {\n>   68        throw new Error(\n    69          `Preset with name ${selectedSchema.presetName} not found for implementation ${selectedSchema.implementation}`\n    70        );\n    71      }\n    72  \n    73      return preset;\n    74    }, [schema, selectedSchema]);"
+    },
+    {
+      "flow": "screen-opens-settings-general",
+      "flowName": "/settings/general",
+      "flowTitle": "Change general settings",
+      "flowFile": "specs/areas/settings-general/screen-opens-settings-general.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 31,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-settings-general",
+      "flowName": "/settings/general",
+      "flowTitle": "Change general settings",
+      "flowFile": "specs/areas/settings-general/screen-opens-settings-general.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new ValidationException(errors);",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `resource == null` is false (an earlier guard)"
+      ],
+      "text": "The submitted data fails validation: the app rejects it and returns the validation errors.",
+      "n": 32,
+      "source": "   151                      errors.AddRange(IdValidator.Validate(resource).Errors);\n   152                  }\n   153              }\n   154  \n   155              if (errors.Any())\n   156              {\n>  157                  throw new ValidationException(errors);\n   158              }\n   159          }\n   160  \n   161          protected Results<Accepted<TResource>, NotFound> TypedAccepted(int id)\n   162          {\n   163              var result = GetResourceById(id);"
+    },
+    {
+      "flow": "screen-opens-settings-general",
+      "flowName": "/settings/general",
+      "flowTitle": "Change general settings",
+      "flowFile": "specs/areas/settings-general/screen-opens-settings-general.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(id + \" is not a valid ID\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:37",
+      "conditions": [
+        "only if `id <= 0`"
+      ],
+      "text": "The ID given is zero or negative: the app rejects it saying it is not a valid ID.",
+      "n": 33,
+      "source": "    31          private ResourceValidator<TResource> IdValidator { get; set; }\n    32  \n    33          protected void ValidateId(int id)\n    34          {\n    35              if (id <= 0)\n    36              {\n>   37                  throw new BadRequestException(id + \" is not a valid ID\");\n    38              }\n    39          }\n    40  \n    41          protected RestController()\n    42          {\n    43              _logger = NzbDroneLogger.GetLogger(this);"
+    },
+    {
+      "flow": "screen-opens-settings-importlists",
+      "flowName": "/settings/importlists",
+      "flowTitle": "Manage import lists",
+      "flowFile": "specs/areas/settings-import-lists/screen-opens-settings-importlists.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "signed-in user (no access rule on the action; the app's fallback policy requires a signed-in user)",
+      "at": "frontend/src/App/AppRoutes.tsx:122",
+      "conditions": [],
+      "text": "Any signed-in user can open it; anyone not signed in is refused.",
+      "n": 34,
+      "source": "   116  \n   117        <Route\n   118          path=\"/settings/downloadclients\"\n   119          element={<DownloadClientSettings />}\n   120        />\n   121  \n>  122        <Route path=\"/settings/importlists\" element={<ImportListSettings />} />\n   123  \n   124        <Route path=\"/settings/connect\" element={<NotificationSettings />} />\n   125  \n   126        <Route path=\"/settings/metadata\" element={<MetadataSettings />} />\n   127  \n   128        <Route"
+    },
+    {
+      "flow": "screen-opens-settings-importlists",
+      "flowName": "/settings/importlists",
+      "flowTitle": "Manage import lists",
+      "flowFile": "specs/areas/settings-import-lists/screen-opens-settings-importlists.json",
+      "item": "S",
+      "kind": "start",
+      "code": "/settings/importlists: <Route path=\"/settings/importlists\" element={<ImportListSettings />} />",
+      "at": "frontend/src/App/AppRoutes.tsx:122",
+      "conditions": [],
+      "text": "The user opens the Import Lists settings page.",
+      "n": 35,
+      "source": "   116  \n   117        <Route\n   118          path=\"/settings/downloadclients\"\n   119          element={<DownloadClientSettings />}\n   120        />\n   121  \n>  122        <Route path=\"/settings/importlists\" element={<ImportListSettings />} />\n   123  \n   124        <Route path=\"/settings/connect\" element={<NotificationSettings />} />\n   125  \n   126        <Route path=\"/settings/metadata\" element={<MetadataSettings />} />\n   127  \n   128        <Route"
+    },
+    {
+      "flow": "screen-opens-settings-importlists",
+      "flowName": "/settings/importlists",
+      "flowTitle": "Manage import lists",
+      "flowFile": "specs/areas/settings-import-lists/screen-opens-settings-importlists.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 36,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-settings-importlists",
+      "flowName": "/settings/importlists",
+      "flowTitle": "Manage import lists",
+      "flowFile": "specs/areas/settings-import-lists/screen-opens-settings-importlists.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new ValidationException(errors);",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `resource == null` is false (an earlier guard)"
+      ],
+      "text": "The submitted data fails validation: the app rejects it and returns the validation errors.",
+      "n": 37,
+      "source": "   151                      errors.AddRange(IdValidator.Validate(resource).Errors);\n   152                  }\n   153              }\n   154  \n   155              if (errors.Any())\n   156              {\n>  157                  throw new ValidationException(errors);\n   158              }\n   159          }\n   160  \n   161          protected Results<Accepted<TResource>, NotFound> TypedAccepted(int id)\n   162          {\n   163              var result = GetResourceById(id);"
+    },
+    {
+      "flow": "screen-opens-settings-importlists",
+      "flowName": "/settings/importlists",
+      "flowTitle": "Manage import lists",
+      "flowFile": "specs/areas/settings-import-lists/screen-opens-settings-importlists.json",
+      "item": "X4",
+      "kind": "stop",
+      "code": "throw: throw new Error(`ImportList with ID ${cloneId} not found`);",
+      "at": "frontend/src/Settings/ImportLists/ImportLists/useImportLists.ts:127",
+      "conditions": [
+        "only if `cloneId && !cloneImportList`"
+      ],
+      "text": "The user clones an import list that doesn't exist: the screen fails with an error saying that import list was not found.",
+      "n": 38,
+      "source": "   121  ) => {\n   122    const schema = useSelectedSchema<ImportListModel>(PATH, selectedSchema);\n   123    const { schema: allSchemas } = useImportListSchema(selectedSchema != null);\n   124    const cloneImportList = useImportList(cloneId);\n   125  \n   126    if (cloneId && !cloneImportList) {\n>  127      throw new Error(`ImportList with ID ${cloneId} not found`);\n   128    }\n   129  \n   130    if (selectedSchema && !schema) {\n   131      throw new Error('A selected schema is required to manage import list');\n   132    }\n   133  "
+    },
+    {
+      "flow": "screen-opens-settings-importlists",
+      "flowName": "/settings/importlists",
+      "flowTitle": "Manage import lists",
+      "flowFile": "specs/areas/settings-import-lists/screen-opens-settings-importlists.json",
+      "item": "X5",
+      "kind": "stop",
+      "code": "throw: throw new Error('A selected schema is required to manage import list');",
+      "at": "frontend/src/Settings/ImportLists/ImportLists/useImportLists.ts:131",
+      "conditions": [
+        "only if `selectedSchema && !schema`",
+        "only if `cloneId && !cloneImportList` is false (an earlier guard)"
+      ],
+      "text": "A schema is selected but can't be found: the screen fails with an error saying a selected schema is required.",
+      "n": 39,
+      "source": "   125  \n   126    if (cloneId && !cloneImportList) {\n   127      throw new Error(`ImportList with ID ${cloneId} not found`);\n   128    }\n   129  \n   130    if (selectedSchema && !schema) {\n>  131      throw new Error('A selected schema is required to manage import list');\n   132    }\n   133  \n   134    const { preferredMetadataLanguage } = useMetadataSourceSettingsValues();\n   135    const preferredLanguage =\n   136      useLanguageById(preferredMetadataLanguage) ?? DEFAULT_LANGUAGE;\n   137  "
+    },
+    {
+      "flow": "screen-opens-settings-importlists",
+      "flowName": "/settings/importlists",
+      "flowTitle": "Manage import lists",
+      "flowFile": "specs/areas/settings-import-lists/screen-opens-settings-importlists.json",
+      "item": "X6",
+      "kind": "stop",
+      "code": "throw: throw new Error(",
+      "at": "frontend/src/Settings/useProviderSchema.ts:51",
+      "conditions": [
+        "only if `!selected`",
+        "only if `!selectedSchema` is false (an earlier guard)"
+      ],
+      "text": "A schema is chosen but the matching selected item can't be found: the screen fails with an error.",
+      "n": 40,
+      "source": "    45  \n    46      const selected = schema.find(\n    47        (s: T) => s.implementation === selectedSchema.implementation\n    48      );\n    49  \n    50      if (!selected) {\n>   51        throw new Error(\n    52          `Schema with implementation ${selectedSchema.implementation} not found`\n    53        );\n    54      }\n    55  \n    56      if (selectedSchema.presetName == null) {\n    57        return selected;"
+    },
+    {
+      "flow": "screen-opens-settings-importlists",
+      "flowName": "/settings/importlists",
+      "flowTitle": "Manage import lists",
+      "flowFile": "specs/areas/settings-import-lists/screen-opens-settings-importlists.json",
+      "item": "X7",
+      "kind": "stop",
+      "code": "throw: throw new Error(",
+      "at": "frontend/src/Settings/useProviderSchema.ts:68",
+      "conditions": [
+        "only if `!preset`",
+        "only if `selectedSchema.presetName == null` is false (an earlier guard)",
+        "only if `!selected` is false (an earlier guard)",
+        "only if `!selectedSchema` is false (an earlier guard)"
+      ],
+      "text": "The schema names a preset that can't be found: the screen fails with an error.",
+      "n": 41,
+      "source": "    62          ? (selected as ProviderWithPresets<T>).presets?.find(\n    63              (p: T & { name: string }) => p.name === selectedSchema.presetName\n    64            )\n    65          : undefined;\n    66  \n    67      if (!preset) {\n>   68        throw new Error(\n    69          `Preset with name ${selectedSchema.presetName} not found for implementation ${selectedSchema.implementation}`\n    70        );\n    71      }\n    72  \n    73      return preset;\n    74    }, [schema, selectedSchema]);"
+    },
+    {
+      "flow": "screen-opens-settings-indexers",
+      "flowName": "/settings/indexers",
+      "flowTitle": "Manage indexers",
+      "flowFile": "specs/areas/settings-indexers/screen-opens-settings-indexers.json",
+      "item": "S",
+      "kind": "start",
+      "code": "/settings/indexers: <Route path=\"/settings/indexers\" element={<IndexerSettings />} />",
+      "at": "frontend/src/App/AppRoutes.tsx:115",
+      "conditions": [],
+      "text": "The user opens the Indexers settings page.",
+      "n": 42,
+      "source": "   109  \n   110        <Route\n   111          path=\"/settings/customformats\"\n   112          element={<CustomFormatSettingsPage />}\n   113        />\n   114  \n>  115        <Route path=\"/settings/indexers\" element={<IndexerSettings />} />\n   116  \n   117        <Route\n   118          path=\"/settings/downloadclients\"\n   119          element={<DownloadClientSettings />}\n   120        />\n   121  "
+    },
+    {
+      "flow": "screen-opens-settings-indexers",
+      "flowName": "/settings/indexers",
+      "flowTitle": "Manage indexers",
+      "flowFile": "specs/areas/settings-indexers/screen-opens-settings-indexers.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new ValidationException(errors);",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `resource == null` is false (an earlier guard)"
+      ],
+      "text": "The submitted data fails validation: the app rejects it and returns the validation errors.",
+      "n": 43,
+      "source": "   151                      errors.AddRange(IdValidator.Validate(resource).Errors);\n   152                  }\n   153              }\n   154  \n   155              if (errors.Any())\n   156              {\n>  157                  throw new ValidationException(errors);\n   158              }\n   159          }\n   160  \n   161          protected Results<Accepted<TResource>, NotFound> TypedAccepted(int id)\n   162          {\n   163              var result = GetResourceById(id);"
+    },
+    {
+      "flow": "screen-opens-settings-indexers",
+      "flowName": "/settings/indexers",
+      "flowTitle": "Manage indexers",
+      "flowFile": "specs/areas/settings-indexers/screen-opens-settings-indexers.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(id + \" is not a valid ID\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:37",
+      "conditions": [
+        "only if `id <= 0`"
+      ],
+      "text": "The ID given is zero or negative: the app rejects it saying it is not a valid ID.",
+      "n": 44,
+      "source": "    31          private ResourceValidator<TResource> IdValidator { get; set; }\n    32  \n    33          protected void ValidateId(int id)\n    34          {\n    35              if (id <= 0)\n    36              {\n>   37                  throw new BadRequestException(id + \" is not a valid ID\");\n    38              }\n    39          }\n    40  \n    41          protected RestController()\n    42          {\n    43              _logger = NzbDroneLogger.GetLogger(this);"
+    },
+    {
+      "flow": "screen-opens-settings-indexers",
+      "flowName": "/settings/indexers",
+      "flowTitle": "Manage indexers",
+      "flowFile": "specs/areas/settings-indexers/screen-opens-settings-indexers.json",
+      "item": "X4",
+      "kind": "stop",
+      "code": "throw: throw new Error(`Indexer with ID ${cloneId} not found`);",
+      "at": "frontend/src/Settings/Indexers/useIndexers.ts:119",
+      "conditions": [
+        "only if `cloneId && !cloneIndexer`"
+      ],
+      "text": "The user clones an indexer that doesn't exist: the screen fails with an error saying that indexer was not found.",
+      "n": 45,
+      "source": "   113    selectedSchema?: SelectedSchema\n   114  ) => {\n   115    const schema = useSelectedSchema<IndexerModel>(PATH, selectedSchema);\n   116    const cloneIndexer = useIndexer(cloneId);\n   117  \n   118    if (cloneId && !cloneIndexer) {\n>  119      throw new Error(`Indexer with ID ${cloneId} not found`);\n   120    }\n   121  \n   122    if (selectedSchema && !schema) {\n   123      throw new Error('A selected schema is required to manage metadata');\n   124    }\n   125  "
+    },
+    {
+      "flow": "screen-opens-settings-indexers",
+      "flowName": "/settings/indexers",
+      "flowTitle": "Manage indexers",
+      "flowFile": "specs/areas/settings-indexers/screen-opens-settings-indexers.json",
+      "item": "X5",
+      "kind": "stop",
+      "code": "throw: throw new Error('A selected schema is required to manage metadata');",
+      "at": "frontend/src/Settings/Indexers/useIndexers.ts:123",
+      "conditions": [
+        "only if `selectedSchema && !schema`",
+        "only if `cloneId && !cloneIndexer` is false (an earlier guard)"
+      ],
+      "text": "A schema is selected but can't be found: the screen fails with an error saying a selected schema is required.",
+      "n": 46,
+      "source": "   117  \n   118    if (cloneId && !cloneIndexer) {\n   119      throw new Error(`Indexer with ID ${cloneId} not found`);\n   120    }\n   121  \n   122    if (selectedSchema && !schema) {\n>  123      throw new Error('A selected schema is required to manage metadata');\n   124    }\n   125  \n   126    const defaultProvider = useMemo(() => {\n   127      if (cloneId && cloneIndexer) {\n   128        const clonedIndexer = {\n   129          ...cloneIndexer,"
+    },
+    {
+      "flow": "screen-opens-settings-indexers",
+      "flowName": "/settings/indexers",
+      "flowTitle": "Manage indexers",
+      "flowFile": "specs/areas/settings-indexers/screen-opens-settings-indexers.json",
+      "item": "X6",
+      "kind": "stop",
+      "code": "throw: throw new Error(",
+      "at": "frontend/src/Settings/useProviderSchema.ts:51",
+      "conditions": [
+        "only if `!selected`",
+        "only if `!selectedSchema` is false (an earlier guard)"
+      ],
+      "text": "A schema is chosen but the matching selected item can't be found: the screen fails with an error.",
+      "n": 47,
+      "source": "    45  \n    46      const selected = schema.find(\n    47        (s: T) => s.implementation === selectedSchema.implementation\n    48      );\n    49  \n    50      if (!selected) {\n>   51        throw new Error(\n    52          `Schema with implementation ${selectedSchema.implementation} not found`\n    53        );\n    54      }\n    55  \n    56      if (selectedSchema.presetName == null) {\n    57        return selected;"
+    },
+    {
+      "flow": "screen-opens-settings-indexers",
+      "flowName": "/settings/indexers",
+      "flowTitle": "Manage indexers",
+      "flowFile": "specs/areas/settings-indexers/screen-opens-settings-indexers.json",
+      "item": "X7",
+      "kind": "stop",
+      "code": "throw: throw new Error(",
+      "at": "frontend/src/Settings/useProviderSchema.ts:68",
+      "conditions": [
+        "only if `!preset`",
+        "only if `selectedSchema.presetName == null` is false (an earlier guard)",
+        "only if `!selected` is false (an earlier guard)",
+        "only if `!selectedSchema` is false (an earlier guard)"
+      ],
+      "text": "The schema names a preset that can't be found: the screen fails with an error.",
+      "n": 48,
+      "source": "    62          ? (selected as ProviderWithPresets<T>).presets?.find(\n    63              (p: T & { name: string }) => p.name === selectedSchema.presetName\n    64            )\n    65          : undefined;\n    66  \n    67      if (!preset) {\n>   68        throw new Error(\n    69          `Preset with name ${selectedSchema.presetName} not found for implementation ${selectedSchema.implementation}`\n    70        );\n    71      }\n    72  \n    73      return preset;\n    74    }, [schema, selectedSchema]);"
+    },
+    {
+      "flow": "screen-opens-settings-mediamanagement",
+      "flowName": "/settings/mediamanagement",
+      "flowTitle": "Change media management settings",
+      "flowFile": "specs/areas/settings-media-management/screen-opens-settings-mediamanagement.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "signed-in user (no access rule on the action; the app's fallback policy requires a signed-in user)",
+      "at": "frontend/src/App/AppRoutes.tsx:104",
+      "conditions": [],
+      "text": "Any signed-in user can open it; anyone not signed in is refused.",
+      "n": 49,
+      "source": "    98        {/*\n    99          Settings\n   100        */}\n   101  \n   102        <Route path=\"/settings\" element={<Settings />} />\n   103  \n>  104        <Route path=\"/settings/mediamanagement\" element={<MediaManagement />} />\n   105  \n   106        <Route path=\"/settings/profiles\" element={<Profiles />} />\n   107  \n   108        <Route path=\"/settings/quality\" element={<Quality />} />\n   109  \n   110        <Route"
+    },
+    {
+      "flow": "screen-opens-settings-mediamanagement",
+      "flowName": "/settings/mediamanagement",
+      "flowTitle": "Change media management settings",
+      "flowFile": "specs/areas/settings-media-management/screen-opens-settings-mediamanagement.json",
+      "item": "C1",
+      "kind": "change",
+      "code": "saves NamingConfig — _repository.Insert(NamingConfig.Default);",
+      "at": "src/NzbDrone.Core/Organizer/NamingConfigService.cs:30",
+      "conditions": [
+        "only if `config == null`",
+        "only if `config == null`"
+      ],
+      "text": "If no naming settings exist yet, the default naming settings are saved.",
+      "n": 50,
+      "source": "    24                  lock (_repository)\n    25                  {\n    26                      config = _repository.SingleOrDefault();\n    27  \n    28                      if (config == null)\n    29                      {\n>   30                          _repository.Insert(NamingConfig.Default);\n    31                          config = _repository.Single();\n    32                      }\n    33                  }\n    34              }\n    35  \n    36              return config;"
+    },
+    {
+      "flow": "screen-opens-settings-mediamanagement",
+      "flowName": "/settings/mediamanagement",
+      "flowTitle": "Change media management settings",
+      "flowFile": "specs/areas/settings-media-management/screen-opens-settings-mediamanagement.json",
+      "item": "S",
+      "kind": "start",
+      "code": "/settings/mediamanagement: <Route path=\"/settings/mediamanagement\" element={<MediaManagement />} />",
+      "at": "frontend/src/App/AppRoutes.tsx:104",
+      "conditions": [],
+      "text": "The user opens the Media Management settings page.",
+      "n": 51,
+      "source": "    98        {/*\n    99          Settings\n   100        */}\n   101  \n   102        <Route path=\"/settings\" element={<Settings />} />\n   103  \n>  104        <Route path=\"/settings/mediamanagement\" element={<MediaManagement />} />\n   105  \n   106        <Route path=\"/settings/profiles\" element={<Profiles />} />\n   107  \n   108        <Route path=\"/settings/quality\" element={<Quality />} />\n   109  \n   110        <Route"
+    },
+    {
+      "flow": "screen-opens-settings-mediamanagement",
+      "flowName": "/settings/mediamanagement",
+      "flowTitle": "Change media management settings",
+      "flowFile": "specs/areas/settings-media-management/screen-opens-settings-mediamanagement.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 52,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-settings-mediamanagement",
+      "flowName": "/settings/mediamanagement",
+      "flowTitle": "Change media management settings",
+      "flowFile": "specs/areas/settings-media-management/screen-opens-settings-mediamanagement.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new ValidationException(errors);",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `resource == null` is false (an earlier guard)"
+      ],
+      "text": "The submitted data fails validation: the app rejects it and returns the validation errors.",
+      "n": 53,
+      "source": "   151                      errors.AddRange(IdValidator.Validate(resource).Errors);\n   152                  }\n   153              }\n   154  \n   155              if (errors.Any())\n   156              {\n>  157                  throw new ValidationException(errors);\n   158              }\n   159          }\n   160  \n   161          protected Results<Accepted<TResource>, NotFound> TypedAccepted(int id)\n   162          {\n   163              var result = GetResourceById(id);"
+    },
+    {
+      "flow": "screen-opens-settings-metadata",
+      "flowName": "/settings/metadata",
+      "flowTitle": "Manage metadata settings",
+      "flowFile": "specs/areas/settings-metadata/screen-opens-settings-metadata.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "signed-in user (no access rule on the action; the app's fallback policy requires a signed-in user)",
+      "at": "frontend/src/App/AppRoutes.tsx:126",
+      "conditions": [],
+      "text": "Any signed-in user can open it; anyone not signed in is refused.",
+      "n": 54,
+      "source": "   120        />\n   121  \n   122        <Route path=\"/settings/importlists\" element={<ImportListSettings />} />\n   123  \n   124        <Route path=\"/settings/connect\" element={<NotificationSettings />} />\n   125  \n>  126        <Route path=\"/settings/metadata\" element={<MetadataSettings />} />\n   127  \n   128        <Route\n   129          path=\"/settings/metadatasource\"\n   130          element={<MetadataSourceSettings />}\n   131        />\n   132  "
+    },
+    {
+      "flow": "screen-opens-settings-metadata",
+      "flowName": "/settings/metadata",
+      "flowTitle": "Manage metadata settings",
+      "flowFile": "specs/areas/settings-metadata/screen-opens-settings-metadata.json",
+      "item": "S",
+      "kind": "start",
+      "code": "/settings/metadata: <Route path=\"/settings/metadata\" element={<MetadataSettings />} />",
+      "at": "frontend/src/App/AppRoutes.tsx:126",
+      "conditions": [],
+      "text": "The user opens the Metadata settings page.",
+      "n": 55,
+      "source": "   120        />\n   121  \n   122        <Route path=\"/settings/importlists\" element={<ImportListSettings />} />\n   123  \n   124        <Route path=\"/settings/connect\" element={<NotificationSettings />} />\n   125  \n>  126        <Route path=\"/settings/metadata\" element={<MetadataSettings />} />\n   127  \n   128        <Route\n   129          path=\"/settings/metadatasource\"\n   130          element={<MetadataSourceSettings />}\n   131        />\n   132  "
+    },
+    {
+      "flow": "screen-opens-settings-metadata",
+      "flowName": "/settings/metadata",
+      "flowTitle": "Manage metadata settings",
+      "flowFile": "specs/areas/settings-metadata/screen-opens-settings-metadata.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new Error(",
+      "at": "frontend/src/Settings/useProviderSchema.ts:51",
+      "conditions": [
+        "only if `!selected`",
+        "only if `!selectedSchema` is false (an earlier guard)"
+      ],
+      "text": "A schema is chosen but the matching selected item can't be found: the screen fails with an error.",
+      "n": 56,
+      "source": "    45  \n    46      const selected = schema.find(\n    47        (s: T) => s.implementation === selectedSchema.implementation\n    48      );\n    49  \n    50      if (!selected) {\n>   51        throw new Error(\n    52          `Schema with implementation ${selectedSchema.implementation} not found`\n    53        );\n    54      }\n    55  \n    56      if (selectedSchema.presetName == null) {\n    57        return selected;"
+    },
+    {
+      "flow": "screen-opens-settings-metadata",
+      "flowName": "/settings/metadata",
+      "flowTitle": "Manage metadata settings",
+      "flowFile": "specs/areas/settings-metadata/screen-opens-settings-metadata.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: throw new Error(",
+      "at": "frontend/src/Settings/useProviderSchema.ts:68",
+      "conditions": [
+        "only if `!preset`",
+        "only if `selectedSchema.presetName == null` is false (an earlier guard)",
+        "only if `!selected` is false (an earlier guard)",
+        "only if `!selectedSchema` is false (an earlier guard)"
+      ],
+      "text": "The schema names a preset that can't be found: the screen fails with an error.",
+      "n": 57,
+      "source": "    62          ? (selected as ProviderWithPresets<T>).presets?.find(\n    63              (p: T & { name: string }) => p.name === selectedSchema.presetName\n    64            )\n    65          : undefined;\n    66  \n    67      if (!preset) {\n>   68        throw new Error(\n    69          `Preset with name ${selectedSchema.presetName} not found for implementation ${selectedSchema.implementation}`\n    70        );\n    71      }\n    72  \n    73      return preset;\n    74    }, [schema, selectedSchema]);"
+    },
+    {
+      "flow": "screen-opens-settings-ui",
+      "flowName": "/settings/ui",
+      "flowTitle": "Change UI settings",
+      "flowFile": "specs/areas/settings-ui/screen-opens-settings-ui.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "signed-in user (no access rule on the action; the app's fallback policy requires a signed-in user)",
+      "at": "frontend/src/App/AppRoutes.tsx:137",
+      "conditions": [],
+      "text": "Any signed-in user can open it; anyone not signed in is refused.",
+      "n": 58,
+      "source": "   131        />\n   132  \n   133        <Route path=\"/settings/tags\" element={<TagSettings />} />\n   134  \n   135        <Route path=\"/settings/general\" element={<GeneralSettings />} />\n   136  \n>  137        <Route path=\"/settings/ui\" element={<UISettings />} />\n   138  \n   139        {/*\n   140          System\n   141        */}\n   142  \n   143        <Route path=\"/system/status\" element={<Status />} />"
+    },
+    {
+      "flow": "screen-opens-settings-ui",
+      "flowName": "/settings/ui",
+      "flowTitle": "Change UI settings",
+      "flowFile": "specs/areas/settings-ui/screen-opens-settings-ui.json",
+      "item": "S",
+      "kind": "start",
+      "code": "/settings/ui: <Route path=\"/settings/ui\" element={<UISettings />} />",
+      "at": "frontend/src/App/AppRoutes.tsx:137",
+      "conditions": [],
+      "text": "The user opens the UI settings page.",
+      "n": 59,
+      "source": "   131        />\n   132  \n   133        <Route path=\"/settings/tags\" element={<TagSettings />} />\n   134  \n   135        <Route path=\"/settings/general\" element={<GeneralSettings />} />\n   136  \n>  137        <Route path=\"/settings/ui\" element={<UISettings />} />\n   138  \n   139        {/*\n   140          System\n   141        */}\n   142  \n   143        <Route path=\"/system/status\" element={<Status />} />"
+    },
+    {
+      "flow": "screen-opens-settings-ui",
+      "flowName": "/settings/ui",
+      "flowTitle": "Change UI settings",
+      "flowFile": "specs/areas/settings-ui/screen-opens-settings-ui.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 60,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-settings-ui",
+      "flowName": "/settings/ui",
+      "flowTitle": "Change UI settings",
+      "flowFile": "specs/areas/settings-ui/screen-opens-settings-ui.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new ValidationException(errors);",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `resource == null` is false (an earlier guard)"
+      ],
+      "text": "The submitted data fails validation: the app rejects it and returns the validation errors.",
+      "n": 61,
+      "source": "   151                      errors.AddRange(IdValidator.Validate(resource).Errors);\n   152                  }\n   153              }\n   154  \n   155              if (errors.Any())\n   156              {\n>  157                  throw new ValidationException(errors);\n   158              }\n   159          }\n   160  \n   161          protected Results<Accepted<TResource>, NotFound> TypedAccepted(int id)\n   162          {\n   163              var result = GetResourceById(id);"
+    },
+    {
+      "flow": "screen-opens-settings-ui",
+      "flowName": "/settings/ui",
+      "flowTitle": "Change UI settings",
+      "flowFile": "specs/areas/settings-ui/screen-opens-settings-ui.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(id + \" is not a valid ID\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:37",
+      "conditions": [
+        "only if `id <= 0`"
+      ],
+      "text": "The ID given is zero or negative: the app rejects it saying it is not a valid ID.",
+      "n": 62,
+      "source": "    31          private ResourceValidator<TResource> IdValidator { get; set; }\n    32  \n    33          protected void ValidateId(int id)\n    34          {\n    35              if (id <= 0)\n    36              {\n>   37                  throw new BadRequestException(id + \" is not a valid ID\");\n    38              }\n    39          }\n    40  \n    41          protected RestController()\n    42          {\n    43              _logger = NzbDroneLogger.GetLogger(this);"
+    },
+    {
+      "flow": "screen-opens-statistics",
+      "flowName": "/statistics",
+      "flowTitle": "View statistics",
+      "flowFile": "specs/areas/statistics/screen-opens-statistics.json",
+      "item": "S",
+      "kind": "start",
+      "code": "/statistics: <Route path=\"/statistics\" element={<Statistics />} />",
+      "at": "frontend/src/App/AppRoutes.tsx:72",
+      "conditions": [],
+      "text": "The user opens the Statistics page.",
+      "n": 63,
+      "source": "    66          path=\"/seasonpass\"\n    67          element={<Navigate to=\"/series\" replace={true} />}\n    68        />\n    69  \n    70        <Route path=\"/series/:titleSlug\" element={<SeriesDetailsPage />} />\n    71  \n>   72        <Route path=\"/statistics\" element={<Statistics />} />\n    73  \n    74        {/*\n    75          Calendar\n    76        */}\n    77  \n    78        <Route path=\"/calendar\" element={<CalendarPage />} />"
+    },
+    {
+      "flow": "screen-opens-statistics",
+      "flowName": "/statistics",
+      "flowTitle": "View statistics",
+      "flowFile": "specs/areas/statistics/screen-opens-statistics.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new ValidationException(errors);",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `resource == null` is false (an earlier guard)"
+      ],
+      "text": "The submitted data fails validation: the app rejects it and returns the validation errors.",
+      "n": 64,
+      "source": "   151                      errors.AddRange(IdValidator.Validate(resource).Errors);\n   152                  }\n   153              }\n   154  \n   155              if (errors.Any())\n   156              {\n>  157                  throw new ValidationException(errors);\n   158              }\n   159          }\n   160  \n   161          protected Results<Accepted<TResource>, NotFound> TypedAccepted(int id)\n   162          {\n   163              var result = GetResourceById(id);"
+    },
+    {
+      "flow": "screen-opens-statistics",
+      "flowName": "/statistics",
+      "flowTitle": "View statistics",
+      "flowFile": "specs/areas/statistics/screen-opens-statistics.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(id + \" is not a valid ID\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:37",
+      "conditions": [
+        "only if `id <= 0`"
+      ],
+      "text": "The ID given is zero or negative: the app rejects it saying it is not a valid ID.",
+      "n": 65,
+      "source": "    31          private ResourceValidator<TResource> IdValidator { get; set; }\n    32  \n    33          protected void ValidateId(int id)\n    34          {\n    35              if (id <= 0)\n    36              {\n>   37                  throw new BadRequestException(id + \" is not a valid ID\");\n    38              }\n    39          }\n    40  \n    41          protected RestController()\n    42          {\n    43              _logger = NzbDroneLogger.GetLogger(this);"
+    },
+    {
+      "flow": "screen-opens-system-events",
+      "flowName": "/system/events",
+      "flowTitle": "View system event logs",
+      "flowFile": "specs/areas/system/screen-opens-system-events.json",
+      "item": "S",
+      "kind": "start",
+      "code": "/system/events: <Route path=\"/system/events\" element={<LogsTable />} />",
+      "at": "frontend/src/App/AppRoutes.tsx:151",
+      "conditions": [],
+      "text": "The user opens the Events page under System.",
+      "n": 66,
+      "source": "   145        <Route path=\"/system/tasks\" element={<Tasks />} />\n   146  \n   147        <Route path=\"/system/backups\" element={<Backups />} />\n   148  \n   149        <Route path=\"/system/updates\" element={<Updates />} />\n   150  \n>  151        <Route path=\"/system/events\" element={<LogsTable />} />\n   152  \n   153        <Route path=\"/system/logs/files\" element={<AppLogFiles />} />\n   154  \n   155        <Route path=\"/system/logs/files/update\" element={<UpdateLogFiles />} />\n   156  \n   157        {/*"
+    },
+    {
+      "flow": "screen-opens-system-events",
+      "flowName": "/system/events",
+      "flowTitle": "View system event logs",
+      "flowFile": "specs/areas/system/screen-opens-system-events.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 67,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-system-events",
+      "flowName": "/system/events",
+      "flowTitle": "View system event logs",
+      "flowFile": "specs/areas/system/screen-opens-system-events.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new ValidationException(errors);",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `resource == null` is false (an earlier guard)"
+      ],
+      "text": "The submitted data fails validation: the app rejects it and returns the validation errors.",
+      "n": 68,
+      "source": "   151                      errors.AddRange(IdValidator.Validate(resource).Errors);\n   152                  }\n   153              }\n   154  \n   155              if (errors.Any())\n   156              {\n>  157                  throw new ValidationException(errors);\n   158              }\n   159          }\n   160  \n   161          protected Results<Accepted<TResource>, NotFound> TypedAccepted(int id)\n   162          {\n   163              var result = GetResourceById(id);"
+    },
+    {
+      "flow": "screen-opens-system-events",
+      "flowName": "/system/events",
+      "flowTitle": "View system event logs",
+      "flowFile": "specs/areas/system/screen-opens-system-events.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(id + \" is not a valid ID\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:37",
+      "conditions": [
+        "only if `id <= 0`"
+      ],
+      "text": "The ID given is zero or negative: the app rejects it saying it is not a valid ID.",
+      "n": 69,
+      "source": "    31          private ResourceValidator<TResource> IdValidator { get; set; }\n    32  \n    33          protected void ValidateId(int id)\n    34          {\n    35              if (id <= 0)\n    36              {\n>   37                  throw new BadRequestException(id + \" is not a valid ID\");\n    38              }\n    39          }\n    40  \n    41          protected RestController()\n    42          {\n    43              _logger = NzbDroneLogger.GetLogger(this);"
+    },
+    {
+      "flow": "screen-opens-system-logs-files",
+      "flowName": "/system/logs/files",
+      "flowTitle": "Browse log files",
+      "flowFile": "specs/areas/system/screen-opens-system-logs-files.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "signed-in user (no access rule on the action; the app's fallback policy requires a signed-in user)",
+      "at": "frontend/src/App/AppRoutes.tsx:153",
+      "conditions": [],
+      "text": "Any signed-in user can open it; anyone not signed in is refused.",
+      "n": 70,
+      "source": "   147        <Route path=\"/system/backups\" element={<Backups />} />\n   148  \n   149        <Route path=\"/system/updates\" element={<Updates />} />\n   150  \n   151        <Route path=\"/system/events\" element={<LogsTable />} />\n   152  \n>  153        <Route path=\"/system/logs/files\" element={<AppLogFiles />} />\n   154  \n   155        <Route path=\"/system/logs/files/update\" element={<UpdateLogFiles />} />\n   156  \n   157        {/*\n   158          Not Found\n   159        */}"
+    },
+    {
+      "flow": "screen-opens-system-logs-files",
+      "flowName": "/system/logs/files",
+      "flowTitle": "Browse log files",
+      "flowFile": "specs/areas/system/screen-opens-system-logs-files.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 71,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-system-logs-files",
+      "flowName": "/system/logs/files",
+      "flowTitle": "Browse log files",
+      "flowFile": "specs/areas/system/screen-opens-system-logs-files.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new ValidationException(errors);",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `resource == null` is false (an earlier guard)"
+      ],
+      "text": "The submitted data fails validation: the app rejects it and returns the validation errors.",
+      "n": 72,
+      "source": "   151                      errors.AddRange(IdValidator.Validate(resource).Errors);\n   152                  }\n   153              }\n   154  \n   155              if (errors.Any())\n   156              {\n>  157                  throw new ValidationException(errors);\n   158              }\n   159          }\n   160  \n   161          protected Results<Accepted<TResource>, NotFound> TypedAccepted(int id)\n   162          {\n   163              var result = GetResourceById(id);"
+    },
+    {
+      "flow": "screen-opens-system-logs-files",
+      "flowName": "/system/logs/files",
+      "flowTitle": "Browse log files",
+      "flowFile": "specs/areas/system/screen-opens-system-logs-files.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(id + \" is not a valid ID\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:37",
+      "conditions": [
+        "only if `id <= 0`"
+      ],
+      "text": "The ID given is zero or negative: the app rejects it saying it is not a valid ID.",
+      "n": 73,
+      "source": "    31          private ResourceValidator<TResource> IdValidator { get; set; }\n    32  \n    33          protected void ValidateId(int id)\n    34          {\n    35              if (id <= 0)\n    36              {\n>   37                  throw new BadRequestException(id + \" is not a valid ID\");\n    38              }\n    39          }\n    40  \n    41          protected RestController()\n    42          {\n    43              _logger = NzbDroneLogger.GetLogger(this);"
+    },
+    {
+      "flow": "screen-opens-system-logs-files-update",
+      "flowName": "/system/logs/files/update",
+      "flowTitle": "Browse update log files",
+      "flowFile": "specs/areas/system/screen-opens-system-logs-files-update.json",
+      "item": "S",
+      "kind": "start",
+      "code": "/system/logs/files/update: <Route path=\"/system/logs/files/update\" element={<UpdateLogFiles />} />",
+      "at": "frontend/src/App/AppRoutes.tsx:155",
+      "conditions": [],
+      "text": "The user opens the Update Log Files page under System.",
+      "n": 74,
+      "source": "   149        <Route path=\"/system/updates\" element={<Updates />} />\n   150  \n   151        <Route path=\"/system/events\" element={<LogsTable />} />\n   152  \n   153        <Route path=\"/system/logs/files\" element={<AppLogFiles />} />\n   154  \n>  155        <Route path=\"/system/logs/files/update\" element={<UpdateLogFiles />} />\n   156  \n   157        {/*\n   158          Not Found\n   159        */}\n   160  \n   161        <Route path=\"*\" element={<NotFound />} />"
+    },
+    {
+      "flow": "screen-opens-system-logs-files-update",
+      "flowName": "/system/logs/files/update",
+      "flowTitle": "Browse update log files",
+      "flowFile": "specs/areas/system/screen-opens-system-logs-files-update.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 75,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-system-logs-files-update",
+      "flowName": "/system/logs/files/update",
+      "flowTitle": "Browse update log files",
+      "flowFile": "specs/areas/system/screen-opens-system-logs-files-update.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new ValidationException(errors);",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `resource == null` is false (an earlier guard)"
+      ],
+      "text": "The submitted data fails validation: the app rejects it and returns the validation errors.",
+      "n": 76,
+      "source": "   151                      errors.AddRange(IdValidator.Validate(resource).Errors);\n   152                  }\n   153              }\n   154  \n   155              if (errors.Any())\n   156              {\n>  157                  throw new ValidationException(errors);\n   158              }\n   159          }\n   160  \n   161          protected Results<Accepted<TResource>, NotFound> TypedAccepted(int id)\n   162          {\n   163              var result = GetResourceById(id);"
+    },
+    {
+      "flow": "screen-opens-system-logs-files-update",
+      "flowName": "/system/logs/files/update",
+      "flowTitle": "Browse update log files",
+      "flowFile": "specs/areas/system/screen-opens-system-logs-files-update.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(id + \" is not a valid ID\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:37",
+      "conditions": [
+        "only if `id <= 0`"
+      ],
+      "text": "The ID given is zero or negative: the app rejects it saying it is not a valid ID.",
+      "n": 77,
+      "source": "    31          private ResourceValidator<TResource> IdValidator { get; set; }\n    32  \n    33          protected void ValidateId(int id)\n    34          {\n    35              if (id <= 0)\n    36              {\n>   37                  throw new BadRequestException(id + \" is not a valid ID\");\n    38              }\n    39          }\n    40  \n    41          protected RestController()\n    42          {\n    43              _logger = NzbDroneLogger.GetLogger(this);"
+    },
+    {
+      "flow": "screen-opens-system-status",
+      "flowName": "/system/status",
+      "flowTitle": "View system status",
+      "flowFile": "specs/areas/system/screen-opens-system-status.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "signed-in user (no access rule on the action; the app's fallback policy requires a signed-in user)",
+      "at": "frontend/src/App/AppRoutes.tsx:143",
+      "conditions": [],
+      "text": "Any signed-in user can open it; anyone not signed in is refused.",
+      "n": 78,
+      "source": "   137        <Route path=\"/settings/ui\" element={<UISettings />} />\n   138  \n   139        {/*\n   140          System\n   141        */}\n   142  \n>  143        <Route path=\"/system/status\" element={<Status />} />\n   144  \n   145        <Route path=\"/system/tasks\" element={<Tasks />} />\n   146  \n   147        <Route path=\"/system/backups\" element={<Backups />} />\n   148  \n   149        <Route path=\"/system/updates\" element={<Updates />} />"
+    },
+    {
+      "flow": "screen-opens-system-status",
+      "flowName": "/system/status",
+      "flowTitle": "View system status",
+      "flowFile": "specs/areas/system/screen-opens-system-status.json",
+      "item": "S",
+      "kind": "start",
+      "code": "/system/status: <Route path=\"/system/status\" element={<Status />} />",
+      "at": "frontend/src/App/AppRoutes.tsx:143",
+      "conditions": [],
+      "text": "The user opens the Status page under System.",
+      "n": 79,
+      "source": "   137        <Route path=\"/settings/ui\" element={<UISettings />} />\n   138  \n   139        {/*\n   140          System\n   141        */}\n   142  \n>  143        <Route path=\"/system/status\" element={<Status />} />\n   144  \n   145        <Route path=\"/system/tasks\" element={<Tasks />} />\n   146  \n   147        <Route path=\"/system/backups\" element={<Backups />} />\n   148  \n   149        <Route path=\"/system/updates\" element={<Updates />} />"
+    },
+    {
+      "flow": "screen-opens-system-status",
+      "flowName": "/system/status",
+      "flowTitle": "View system status",
+      "flowFile": "specs/areas/system/screen-opens-system-status.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 80,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-system-status",
+      "flowName": "/system/status",
+      "flowTitle": "View system status",
+      "flowFile": "specs/areas/system/screen-opens-system-status.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new ValidationException(errors);",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `resource == null` is false (an earlier guard)"
+      ],
+      "text": "The submitted data fails validation: the app rejects it and returns the validation errors.",
+      "n": 81,
+      "source": "   151                      errors.AddRange(IdValidator.Validate(resource).Errors);\n   152                  }\n   153              }\n   154  \n   155              if (errors.Any())\n   156              {\n>  157                  throw new ValidationException(errors);\n   158              }\n   159          }\n   160  \n   161          protected Results<Accepted<TResource>, NotFound> TypedAccepted(int id)\n   162          {\n   163              var result = GetResourceById(id);"
+    },
+    {
+      "flow": "screen-opens-system-status",
+      "flowName": "/system/status",
+      "flowTitle": "View system status",
+      "flowFile": "specs/areas/system/screen-opens-system-status.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(id + \" is not a valid ID\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:37",
+      "conditions": [
+        "only if `id <= 0`"
+      ],
+      "text": "The ID given is zero or negative: the app rejects it saying it is not a valid ID.",
+      "n": 82,
+      "source": "    31          private ResourceValidator<TResource> IdValidator { get; set; }\n    32  \n    33          protected void ValidateId(int id)\n    34          {\n    35              if (id <= 0)\n    36              {\n>   37                  throw new BadRequestException(id + \" is not a valid ID\");\n    38              }\n    39          }\n    40  \n    41          protected RestController()\n    42          {\n    43              _logger = NzbDroneLogger.GetLogger(this);"
+    },
+    {
+      "flow": "screen-opens-system-tasks",
+      "flowName": "/system/tasks",
+      "flowTitle": "View scheduled tasks",
+      "flowFile": "specs/areas/system/screen-opens-system-tasks.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "signed-in user (no access rule on the action; the app's fallback policy requires a signed-in user)",
+      "at": "frontend/src/App/AppRoutes.tsx:145",
+      "conditions": [],
+      "text": "Any signed-in user can open it; anyone not signed in is refused.",
+      "n": 83,
+      "source": "   139        {/*\n   140          System\n   141        */}\n   142  \n   143        <Route path=\"/system/status\" element={<Status />} />\n   144  \n>  145        <Route path=\"/system/tasks\" element={<Tasks />} />\n   146  \n   147        <Route path=\"/system/backups\" element={<Backups />} />\n   148  \n   149        <Route path=\"/system/updates\" element={<Updates />} />\n   150  \n   151        <Route path=\"/system/events\" element={<LogsTable />} />"
+    },
+    {
+      "flow": "screen-opens-system-tasks",
+      "flowName": "/system/tasks",
+      "flowTitle": "View scheduled tasks",
+      "flowFile": "specs/areas/system/screen-opens-system-tasks.json",
+      "item": "S",
+      "kind": "start",
+      "code": "/system/tasks: <Route path=\"/system/tasks\" element={<Tasks />} />",
+      "at": "frontend/src/App/AppRoutes.tsx:145",
+      "conditions": [],
+      "text": "The user opens the Tasks page under System.",
+      "n": 84,
+      "source": "   139        {/*\n   140          System\n   141        */}\n   142  \n   143        <Route path=\"/system/status\" element={<Status />} />\n   144  \n>  145        <Route path=\"/system/tasks\" element={<Tasks />} />\n   146  \n   147        <Route path=\"/system/backups\" element={<Backups />} />\n   148  \n   149        <Route path=\"/system/updates\" element={<Updates />} />\n   150  \n   151        <Route path=\"/system/events\" element={<LogsTable />} />"
+    },
+    {
+      "flow": "screen-opens-system-tasks",
+      "flowName": "/system/tasks",
+      "flowTitle": "View scheduled tasks",
+      "flowFile": "specs/areas/system/screen-opens-system-tasks.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 85,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-system-tasks",
+      "flowName": "/system/tasks",
+      "flowTitle": "View scheduled tasks",
+      "flowFile": "specs/areas/system/screen-opens-system-tasks.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new ValidationException(errors);",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `resource == null` is false (an earlier guard)"
+      ],
+      "text": "The submitted data fails validation: the app rejects it and returns the validation errors.",
+      "n": 86,
+      "source": "   151                      errors.AddRange(IdValidator.Validate(resource).Errors);\n   152                  }\n   153              }\n   154  \n   155              if (errors.Any())\n   156              {\n>  157                  throw new ValidationException(errors);\n   158              }\n   159          }\n   160  \n   161          protected Results<Accepted<TResource>, NotFound> TypedAccepted(int id)\n   162          {\n   163              var result = GetResourceById(id);"
+    },
+    {
+      "flow": "screen-opens-system-updates",
+      "flowName": "/system/updates",
+      "flowTitle": "Check for available updates",
+      "flowFile": "specs/areas/system/screen-opens-system-updates.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "signed-in user (no access rule on the action; the app's fallback policy requires a signed-in user)",
+      "at": "frontend/src/App/AppRoutes.tsx:149",
+      "conditions": [],
+      "text": "Any signed-in user can open it; anyone not signed in is refused.",
+      "n": 87,
+      "source": "   143        <Route path=\"/system/status\" element={<Status />} />\n   144  \n   145        <Route path=\"/system/tasks\" element={<Tasks />} />\n   146  \n   147        <Route path=\"/system/backups\" element={<Backups />} />\n   148  \n>  149        <Route path=\"/system/updates\" element={<Updates />} />\n   150  \n   151        <Route path=\"/system/events\" element={<LogsTable />} />\n   152  \n   153        <Route path=\"/system/logs/files\" element={<AppLogFiles />} />\n   154  \n   155        <Route path=\"/system/logs/files/update\" element={<UpdateLogFiles />} />"
+    },
+    {
+      "flow": "screen-opens-system-updates",
+      "flowName": "/system/updates",
+      "flowTitle": "Check for available updates",
+      "flowFile": "specs/areas/system/screen-opens-system-updates.json",
+      "item": "C1",
+      "kind": "change",
+      "code": "calls outside the app: outside HTTP GET through IHttpClient: URL built at runtime — var updates = _httpClient.Get<List<UpdatePackage>>(request.Build());",
+      "at": "src/NzbDrone.Core/Update/UpdatePackageProvider.cs:86",
+      "conditions": [],
+      "text": "The app asks an outside update service for the list of available updates, using an address built at runtime.",
+      "n": 88,
+      "source": "    80              if (_analyticsService.IsEnabled)\n    81              {\n    82                  // Send if the system is active so we know which versions to deprecate/ignore\n    83                  request.AddQueryParam(\"active\", _analyticsService.InstallIsActive.ToString().ToLower());\n    84              }\n    85  \n>   86              var updates = _httpClient.Get<List<UpdatePackage>>(request.Build());\n    87  \n    88              return updates.Resource;\n    89          }\n    90      }\n    91  }\n    92  "
+    },
+    {
+      "flow": "screen-opens-system-updates",
+      "flowName": "/system/updates",
+      "flowTitle": "Check for available updates",
+      "flowFile": "specs/areas/system/screen-opens-system-updates.json",
+      "item": "S",
+      "kind": "start",
+      "code": "/system/updates: <Route path=\"/system/updates\" element={<Updates />} />",
+      "at": "frontend/src/App/AppRoutes.tsx:149",
+      "conditions": [],
+      "text": "The user opens the Updates page under System.",
+      "n": 89,
+      "source": "   143        <Route path=\"/system/status\" element={<Status />} />\n   144  \n   145        <Route path=\"/system/tasks\" element={<Tasks />} />\n   146  \n   147        <Route path=\"/system/backups\" element={<Backups />} />\n   148  \n>  149        <Route path=\"/system/updates\" element={<Updates />} />\n   150  \n   151        <Route path=\"/system/events\" element={<LogsTable />} />\n   152  \n   153        <Route path=\"/system/logs/files\" element={<AppLogFiles />} />\n   154  \n   155        <Route path=\"/system/logs/files/update\" element={<UpdateLogFiles />} />"
+    },
+    {
+      "flow": "screen-opens-system-updates",
+      "flowName": "/system/updates",
+      "flowTitle": "Check for available updates",
+      "flowFile": "specs/areas/system/screen-opens-system-updates.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 90,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-system-updates",
+      "flowName": "/system/updates",
+      "flowTitle": "Check for available updates",
+      "flowFile": "specs/areas/system/screen-opens-system-updates.json",
+      "item": "X2",
+      "kind": "stop",
+      "code": "throw: throw new ValidationException(errors);",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "conditions": [
+        "only if `errors.Any()`",
+        "only if `resource == null` is false (an earlier guard)"
+      ],
+      "text": "The submitted data fails validation: the app rejects it and returns the validation errors.",
+      "n": 91,
+      "source": "   151                      errors.AddRange(IdValidator.Validate(resource).Errors);\n   152                  }\n   153              }\n   154  \n   155              if (errors.Any())\n   156              {\n>  157                  throw new ValidationException(errors);\n   158              }\n   159          }\n   160  \n   161          protected Results<Accepted<TResource>, NotFound> TypedAccepted(int id)\n   162          {\n   163              var result = GetResourceById(id);"
+    },
+    {
+      "flow": "screen-opens-system-updates",
+      "flowName": "/system/updates",
+      "flowTitle": "Check for available updates",
+      "flowFile": "specs/areas/system/screen-opens-system-updates.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(id + \" is not a valid ID\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:37",
+      "conditions": [
+        "only if `id <= 0`"
+      ],
+      "text": "The ID given is zero or negative: the app rejects it saying it is not a valid ID.",
+      "n": 92,
+      "source": "    31          private ResourceValidator<TResource> IdValidator { get; set; }\n    32  \n    33          protected void ValidateId(int id)\n    34          {\n    35              if (id <= 0)\n    36              {\n>   37                  throw new BadRequestException(id + \" is not a valid ID\");\n    38              }\n    39          }\n    40  \n    41          protected RestController()\n    42          {\n    43              _logger = NzbDroneLogger.GetLogger(this);"
+    },
+    {
+      "flow": "screen-opens-wanted-cutoffunmet",
+      "flowName": "/wanted/cutoffunmet",
+      "flowTitle": "Review episodes whose quality cutoff is unmet",
+      "flowFile": "specs/areas/wanted/screen-opens-wanted-cutoffunmet.json",
+      "item": "A",
+      "kind": "actor",
+      "code": "signed-in user (no access rule on the action; the app's fallback policy requires a signed-in user)",
+      "at": "frontend/src/App/AppRoutes.tsx:96",
+      "conditions": [],
+      "text": "Any signed-in user can open it; anyone not signed in is refused.",
+      "n": 93,
+      "source": "    90        {/*\n    91          Wanted\n    92        */}\n    93  \n    94        <Route path=\"/wanted/missing\" element={<Missing />} />\n    95  \n>   96        <Route path=\"/wanted/cutoffunmet\" element={<CutoffUnmet />} />\n    97  \n    98        {/*\n    99          Settings\n   100        */}\n   101  \n   102        <Route path=\"/settings\" element={<Settings />} />"
+    },
+    {
+      "flow": "screen-opens-wanted-cutoffunmet",
+      "flowName": "/wanted/cutoffunmet",
+      "flowTitle": "Review episodes whose quality cutoff is unmet",
+      "flowFile": "specs/areas/wanted/screen-opens-wanted-cutoffunmet.json",
+      "item": "S",
+      "kind": "start",
+      "code": "/wanted/cutoffunmet: <Route path=\"/wanted/cutoffunmet\" element={<CutoffUnmet />} />",
+      "at": "frontend/src/App/AppRoutes.tsx:96",
+      "conditions": [],
+      "text": "The user opens the Cutoff Unmet page under Wanted.",
+      "n": 94,
+      "source": "    90        {/*\n    91          Wanted\n    92        */}\n    93  \n    94        <Route path=\"/wanted/missing\" element={<Missing />} />\n    95  \n>   96        <Route path=\"/wanted/cutoffunmet\" element={<CutoffUnmet />} />\n    97  \n    98        {/*\n    99          Settings\n   100        */}\n   101  \n   102        <Route path=\"/settings\" element={<Settings />} />"
+    },
+    {
+      "flow": "screen-opens-wanted-cutoffunmet",
+      "flowName": "/wanted/cutoffunmet",
+      "flowTitle": "Review episodes whose quality cutoff is unmet",
+      "flowFile": "specs/areas/wanted/screen-opens-wanted-cutoffunmet.json",
+      "item": "X1",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(\"Request body can't be empty\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "conditions": [
+        "only if `resource == null`"
+      ],
+      "text": "A request arrives with no body: the app rejects it as a bad request saying the body can't be empty.",
+      "n": 95,
+      "source": "   125          }\n   126  \n   127          protected void ValidateResource(TResource resource, bool validateId = false, bool skipValidate = false, bool skipSharedValidate = false)\n   128          {\n   129              if (resource == null)\n   130              {\n>  131                  throw new BadRequestException(\"Request body can't be empty\");\n   132              }\n   133  \n   134              var errors = new List<ValidationFailure>();\n   135  \n   136              if (!skipSharedValidate)\n   137              {"
+    },
+    {
+      "flow": "screen-opens-wanted-cutoffunmet",
+      "flowName": "/wanted/cutoffunmet",
+      "flowTitle": "Review episodes whose quality cutoff is unmet",
+      "flowFile": "specs/areas/wanted/screen-opens-wanted-cutoffunmet.json",
+      "item": "X3",
+      "kind": "stop",
+      "code": "throw: throw new BadRequestException(id + \" is not a valid ID\");",
+      "at": "src/Sonarr.Http/REST/RestController.cs:37",
+      "conditions": [
+        "only if `id <= 0`"
+      ],
+      "text": "The ID given is zero or negative: the app rejects it saying it is not a valid ID.",
+      "n": 96,
+      "source": "    31          private ResourceValidator<TResource> IdValidator { get; set; }\n    32  \n    33          protected void ValidateId(int id)\n    34          {\n    35              if (id <= 0)\n    36              {\n>   37                  throw new BadRequestException(id + \" is not a valid ID\");\n    38              }\n    39          }\n    40  \n    41          protected RestController()\n    42          {\n    43              _logger = NzbDroneLogger.GetLogger(this);"
+    },
+    {
+      "flow": "screen-opens-wanted-cutoffunmet",
+      "flowName": "/wanted/cutoffunmet",
+      "flowTitle": "Review episodes whose quality cutoff is unmet",
+      "flowFile": "specs/areas/wanted/screen-opens-wanted-cutoffunmet.json",
+      "item": "X4",
+      "kind": "stop",
+      "code": "throw: throw new Error('useSelect must be used within a SelectProvider');",
+      "at": "frontend/src/App/Select/SelectContext.tsx:31",
+      "conditions": [
+        "only if `context === undefined`"
+      ],
+      "text": "A selection control is used outside its selection area: the screen fails with an error saying it must be used within a selection provider.",
+      "n": 97,
+      "source": "    25  }\n    26  \n    27  export function useSelect<T extends SelectStoreModel<Id>>() {\n    28    const context = React.useContext(SelectContext);\n    29  \n    30    if (context === undefined) {\n>   31      throw new Error('useSelect must be used within a SelectProvider');\n    32    }\n    33  \n    34    return context as ReturnType<typeof useSelectStore<T>>;\n    35  }\n    36  "
+    },
+    {
+      "flow": "screen-opens-wanted-cutoffunmet",
+      "flowName": "/wanted/cutoffunmet",
+      "flowTitle": "Review episodes whose quality cutoff is unmet",
+      "flowFile": "specs/areas/wanted/screen-opens-wanted-cutoffunmet.json",
+      "item": "X5",
+      "kind": "stop",
+      "code": "throw: throw new ApiError(path, response.status, response.statusText);",
+      "at": "frontend/src/Utilities/Fetch/fetchJson.ts:78",
+      "conditions": [
+        "only if `!response.ok`"
+      ],
+      "text": "The server answers a request from the screen with a failure: the screen raises an error showing the status.",
+      "n": 98,
+      "source": "    72      // eslint-disable-next-line init-declarations\n    73      let body;\n    74  \n    75      try {\n    76        body = (await response.json()) as ApiErrorResponse;\n    77      } catch {\n>   78        throw new ApiError(path, response.status, response.statusText);\n    79      }\n    80  \n    81      throw new ApiError(path, response.status, response.statusText, body);\n    82    }\n    83  \n    84    if (response.status === 204) {"
+    },
+    {
+      "flow": "screen-opens-wanted-cutoffunmet",
+      "flowName": "/wanted/cutoffunmet",
+      "flowTitle": "Review episodes whose quality cutoff is unmet",
+      "flowFile": "specs/areas/wanted/screen-opens-wanted-cutoffunmet.json",
+      "item": "X7",
+      "kind": "stop",
+      "code": "throw: throw new NzbDroneClientException(HttpStatusCode.BadRequest, \"seriesId and seasonNumber must be provided together\");",
+      "at": "src/Sonarr.Api.V5/Release/ReleaseController.cs:206",
+      "conditions": [
+        "only if `seriesId.HasValue || seasonNumber.HasValue`",
+        "only if `seriesId.HasValue && seasonNumber.HasValue` is false (an earlier guard)",
+        "only if `episodeId.HasValue` is false (an earlier guard)"
+      ],
+      "text": "Only one of series and season is given without an episode: the app rejects it saying both must be provided together.",
+      "n": 99,
+      "source": "   200          {\n   201              return TypedResults.Ok(await GetSeasonReleases(seriesId.Value, seasonNumber.Value));\n   202          }\n   203  \n   204          if (seriesId.HasValue || seasonNumber.HasValue)\n   205          {\n>  206              throw new NzbDroneClientException(HttpStatusCode.BadRequest, \"seriesId and seasonNumber must be provided together\");\n   207          }\n   208  \n   209          return TypedResults.Ok(await GetRss());\n   210      }\n   211  \n   212      private async Task<List<ReleaseResource>> GetEpisodeReleases(int episodeId)"
+    },
+    {
+      "flow": "screen-opens-wanted-cutoffunmet",
+      "flowName": "/wanted/cutoffunmet",
+      "flowTitle": "Review episodes whose quality cutoff is unmet",
+      "flowFile": "specs/areas/wanted/screen-opens-wanted-cutoffunmet.json",
+      "item": "X8",
+      "kind": "stop",
+      "code": "throw: throw new NzbDroneClientException(HttpStatusCode.BadRequest, ex.Message);",
+      "at": "src/Sonarr.Api.V5/Release/ReleaseController.cs:224",
+      "conditions": [
+        "only if `(SearchFailedException ex)`"
+      ],
+      "text": "The episode search fails: the app rejects it as a bad request showing the failure message.",
+      "n": 100,
+      "source": "   218              var history = _historyService.FindByEpisodeId(episodeId);\n   219  \n   220              return MapDecisions(prioritizedDecisions, history);\n   221          }\n   222          catch (SearchFailedException ex)\n   223          {\n>  224              throw new NzbDroneClientException(HttpStatusCode.BadRequest, ex.Message);\n   225          }\n   226          catch (Exception ex)\n   227          {\n   228              _logger.Error(ex, \"Episode search failed: \" + ex.Message);\n   229              throw new NzbDroneClientException(HttpStatusCode.InternalServerError, ex.Message);\n   230          }"
+    }
+  ]
+}
