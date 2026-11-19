@@ -72,6 +72,9 @@ public sealed class FsdSourceTests : IDisposable
     public void The_cache_follows_a_commit_and_a_broken_one_is_read_again()
     {
         Imported();
+        // The memory cache is per process and keyed by tree hash: another test with the same chapters may have filled it,
+        // and then this repo's file is never written. Start each load from nothing, as a new command does.
+        FsdDocument.Forget();
         FsdDocument.Load(Root, "shop");
         var cache = Path.Combine(Root, ".stangent", "fsd", "shop", "chapters-cache.json");
         var tree = (string)JsonNode.Parse(File.ReadAllText(cache))!["tree"]!;
@@ -79,6 +82,7 @@ public sealed class FsdSourceTests : IDisposable
 
         Chapters.Edit(Dir, "Terms.", "Words and what they mean.");
         Committed.All(Root, "edit");
+        FsdDocument.Forget();
         Assert.Equal("Words and what they mean.", Text(FsdDocument.Load(Root, "shop"), "2"));
         Assert.NotEqual(tree, (string)JsonNode.Parse(File.ReadAllText(cache))!["tree"]!);
 

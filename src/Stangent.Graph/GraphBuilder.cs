@@ -131,10 +131,14 @@ public static class GraphBuilder
                     {
                         log.WriteLine($"stangent: {p.RelativePath}: {razor.Count} served views compiled");
                     }
+                    var viewFiles = ProjectScanner.OwnFiles(p, projectDirs).Where(f => f.EndsWith(".cshtml", StringComparison.OrdinalIgnoreCase)).ToList();
+                    // A project with views the Razor compiler made nothing for loses every view: say why, never an empty map (D111).
+                    if (razor.Count == 0 && viewFiles.Count > 0 && RazorMissing(project) is { } why)
+                        lock (graph.LoadErrors) graph.LoadErrors.Add($"{p.RelativePath}: {viewFiles.Count} Razor view(s) not compiled ({why}); they are blind spots");
                     var ctx = new ExtractContext(repo.Root, p.Id, p.Directory, compilation, files, fragment, new Dictionary<string, List<string>>())
                     {
                         RazorFiles = [.. razor.OrderBy(f => f.RelativePath, StringComparer.Ordinal)],
-                        ViewFiles = [.. ProjectScanner.OwnFiles(p, projectDirs).Where(f => f.EndsWith(".cshtml", StringComparison.OrdinalIgnoreCase))],
+                        ViewFiles = [.. viewFiles],
                     };
                     CSharpExtractor.Extract(ctx);
                     foreach (var detector in detectors)
@@ -298,6 +302,30 @@ public static class GraphBuilder
                 .Select(kv => kv.Key + ":" + string.Join(",", kv.Value)))));
         // The module version id changes whenever the extractor's code does (builds are deterministic).
         return $"{typeof(GraphBuilder).Assembly.ManifestModule.ModuleVersionId}\n{GraphStore.SchemaVersion}\n{settings}";
+    }
+
+    /// <summary>Why the Razor compiler made nothing for a project with views: it didn't load, or has no generator. Null when
+    /// it isn't stangent's to say: a project with no Razor compiler (a class library shipping views to compile at runtime),
+    /// or one whose compiler ran and made none.</summary>
+    static string? RazorMissing(Project project)
+    {
+        var razor = project.AnalyzerReferences.OfType<Microsoft.CodeAnalysis.Diagnostics.AnalyzerFileReference>()
+            .Where(r => Path.GetFileName(r.FullPath).Contains("Razor", StringComparison.OrdinalIgnoreCase)).ToList();
+        if (razor.Count == 0) return null;
+        var failures = new List<string>();
+        void Failed(object? sender, Microsoft.CodeAnalysis.Diagnostics.AnalyzerLoadFailureEventArgs e) =>
+            failures.Add($"{Path.GetFileName((sender as Microsoft.CodeAnalysis.Diagnostics.AnalyzerFileReference)?.FullPath)}: {e.ErrorCode} {e.Message}");
+        var generators = 0;
+        foreach (var r in razor)
+        {
+            r.AnalyzerLoadFailed += Failed;
+            try { generators += r.GetGenerators(LanguageNames.CSharp).Length; }
+            catch (Exception e) { failures.Add($"{Path.GetFileName(r.FullPath)}: {e.GetType().Name} {e.Message}"); }
+            finally { r.AnalyzerLoadFailed -= Failed; }
+        }
+        return failures.Count > 0 ? $"the Razor compiler didn't load: {string.Join("; ", failures.Distinct()).Split('\n')[0]}"
+            : generators == 0 ? "the Razor compiler has no generator stangent can run"
+            : null;   // it ran and made none: views compiled at runtime, the project's own choice
     }
 
     /// <summary>An MSBuild workspace set up the way stangent loads projects (also used by the benchmark).</summary>
