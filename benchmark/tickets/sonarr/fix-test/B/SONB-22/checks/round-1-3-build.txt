@@ -1,0 +1,21 @@
+  Determining projects to restore...
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-22/worktree/src/NzbDrone.Common/Sonarr.Common.csproj (in 304 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-22/worktree/src/NzbDrone.SignalR/Sonarr.SignalR.csproj (in 320 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-22/worktree/src/Sonarr.Http/Sonarr.Http.csproj (in 372 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-22/worktree/src/NzbDrone.Test.Common/Sonarr.Test.Common.csproj (in 372 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-22/worktree/src/NzbDrone.Core/Sonarr.Core.csproj (in 372 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-22/worktree/src/Sonarr.Api.V3/Sonarr.Api.V3.csproj (in 392 ms).
+  Restored /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-22/worktree/src/NzbDrone.Api.Test/Sonarr.Api.Test.csproj (in 432 ms).
+  Sonarr.Common -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-22/worktree/_output/net10.0/Sonarr.Common.dll
+  Sonarr.Core -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-22/worktree/_output/net10.0/Sonarr.Core.dll
+  Sonarr.Test.Common -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-22/worktree/_tests/net10.0/Sonarr.Test.Common.dll
+  Sonarr.SignalR -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-22/worktree/_output/net10.0/Sonarr.SignalR.dll
+  Sonarr.Http -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-22/worktree/_output/net10.0/Sonarr.Http.dll
+  Sonarr.Api.V3 -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-22/worktree/_output/net10.0/Sonarr.Api.V3.dll
+  Sonarr.Api.Test -> /Users/hohkokyoung/stangent-bench/sonarr/.stangent/fix/SONB-22/worktree/_tests/net10.0/Sonarr.Api.Test.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:05.77

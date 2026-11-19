@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:truth-map:v2",
+  "title": "specs/fsd/<doc>/truth-map.json: the truth map (contract truth-map v2, D361, D366 (3))",
+  "description": "Written by `stangent fsd rulings-check` from review.json's merged findings (through rulings.yaml), the PM's rulings, git blame, the FSD's sections and the linked flows; the same inputs give the same bytes. Agents read this; truth-map.md is the same for the PM. Never edited.",
+  "type": "object",
+  "required": ["contract", "version", "doc", "title", "fsdVersion", "review", "rulingsHash", "counts", "links", "verifyFirst", "sections", "undocumented", "flows"],
+  "additionalProperties": false,
+  "definitions": {
+    "key": {
+      "type": "object",
+      "required": ["section"],
+      "additionalProperties": false,
+      "properties": { "section": { "type": ["string", "null"] }, "quote": { "type": "string" }, "link": { "type": ["string", "null"] } }
+    },
+    "conditions": { "type": "array", "items": { "type": "string" } },
+    "entry": {
+      "type": "object",
+      "required": ["n", "key", "state", "standing", "link", "fallback", "evidence", "runs", "confidence", "disagrees", "notes", "ruling", "statement", "pmNote", "by", "on", "committed", "flagged", "notFound", "new", "jira", "writtenFrom"],
+      "additionalProperties": false,
+      "properties": {
+        "n": { "description": "The entry's number in truth-map.md, which the PM answers by (`stangent fsd rule <doc> <n> <answer>`, D371).", "type": "integer", "minimum": 1 },
+        "key": { "$ref": "#/definitions/key" },
+        "state": { "enum": ["gap", "conflict", "undocumented", "match"] },
+        "standing": {
+          "description": "not-found and flagged first (the PM must look again), then blank or ruled (a difference, undocumented code), confirmed, unconfirmed or not-a-match (a match). A ticket resting on not-found, flagged, blank, not-a-match, or an unconfirmed medium or low match is unclear (D364, D366 (4)).",
+          "enum": ["blank", "ruled", "flagged", "not-found", "confirmed", "unconfirmed", "not-a-match"]
+        },
+        "link": {
+          "type": "object",
+          "required": ["kind", "id", "title", "exact"],
+          "additionalProperties": false,
+          "properties": { "kind": { "enum": ["flow", "screen", "node", "file"] }, "id": { "type": "string" }, "title": { "type": "string" }, "exact": { "type": "boolean" } }
+        },
+        "fallback": { "description": "Linked by a node or file, not a flow or screen (D362 (4)).", "type": "boolean" },
+        "evidence": { "type": "array", "items": { "type": "string" } },
+        "runs": { "type": "array", "items": { "type": "integer", "minimum": 1 } },
+        "confidence": { "enum": ["high", "medium", "low", null] },
+        "disagrees": { "type": "boolean" },
+        "notes": { "type": "array", "items": { "type": "string" } },
+        "ruling": { "type": ["string", "null"] },
+        "statement": { "type": ["string", "null"] },
+        "pmNote": { "type": ["string", "null"] },
+        "by": { "description": "Who ruled: the author of the commit that last changed the ruling (or the section's matches) line, from git blame.", "type": ["string", "null"] },
+        "on": { "description": "That commit's author date, yyyy-MM-dd (UTC).", "type": ["string", "null"] },
+        "committed": { "description": "False when the ruling line isn't in a commit yet; null when nobody has ruled.", "type": ["boolean", "null"] },
+        "flagged": { "type": ["string", "null"] },
+        "notFound": { "type": ["string", "null"] },
+        "new": { "type": "boolean" },
+        "jira": { "type": ["object", "null"] },
+        "writtenFrom": { "description": "The ruling this confirmed match was written from (D386): rulings.yaml's writtenFrom, as is.", "type": ["object", "null"] }
+      }
+    }
+  },
+  "properties": {
+    "contract": { "const": "truth-map" },
+    "version": { "const": 2 },
+    "doc": { "type": "string" },
+    "title": { "type": "string" },
+    "fsdVersion": { "description": "The imported FSD's version (its original's hash) the section text is from.", "type": "string" },
+    "review": {
+      "type": "object",
+      "required": ["commit", "fsdVersion", "runs"],
+      "additionalProperties": false,
+      "properties": { "commit": { "type": "string" }, "fsdVersion": { "type": "string" }, "runs": { "type": "integer", "minimum": 0 } }
+    },
+    "rulingsHash": { "description": "The rulings.yaml read.", "type": "string" },
+    "counts": { "type": "object" },
+    "links": {
+      "type": "object",
+      "required": ["flow", "screen", "node", "file", "fallback", "fallbackShare"],
+      "properties": {
+        "flow": { "type": "integer" }, "screen": { "type": "integer" }, "node": { "type": "integer" }, "file": { "type": "integer" },
+        "fallback": { "type": "integer" }, "fallbackShare": { "type": "number" }
+      }
+    },
+    "verifyFirst": { "description": "Unconfirmed matches of low, then medium confidence: the PM verifies them at setup (D366 (4)).", "type": "array", "items": { "$ref": "#/definitions/key" } },
+    "sections": {
+      "description": "Every section of the FSD, in order, with its text and its entries; then any section the FSD no longer has that still holds rulings (text null).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["section", "sectionId", "title", "level", "idKind", "text", "matches", "entries"],
+        "additionalProperties": false,
+        "properties": {
+          "section": { "type": "string" },
+          "sectionId": { "type": "string" },
+          "title": { "type": "string" },
+          "level": { "type": "integer" },
+          "idKind": { "type": "string" },
+          "text": { "type": ["string", "null"] },
+          "matches": {
+            "type": "object",
+            "required": ["n", "count", "confirmed", "by", "on", "committed"],
+            "additionalProperties": false,
+            "properties": {
+              "n": { "description": "The number of the question \"are this section's matches right?\" in truth-map.md; null with no matches (D371).", "type": ["integer", "null"] },
+              "count": { "type": "integer" }, "confirmed": { "type": "boolean" },
+              "by": { "type": ["string", "null"] }, "on": { "type": ["string", "null"] }, "committed": { "type": ["boolean", "null"] }
+            }
+          },
+          "entries": { "type": "array", "items": { "$ref": "#/definitions/entry" } }
+        }
+      }
+    },
+    "undocumented": { "description": "Code no section covers.", "type": "array", "items": { "$ref": "#/definitions/entry" } },
+    "flows": {
+      "description": "Each flow an entry links to, by id: its actor, steps with their conditions, scenarios (the edge cases), endings, and how many steps are guesses (🟡) or unknown (❓).",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["name", "kind", "file", "actor", "steps", "scenarios", "exits", "guesses", "unknowns"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" }, "kind": { "type": "string" }, "file": { "type": "string" },
+          "actor": { "type": ["object", "null"] },
+          "steps": { "type": "array", "items": { "type": "object" } },
+          "scenarios": { "type": "array", "items": { "type": "object", "required": ["name", "conditions"], "properties": { "name": { "type": ["string", "null"] }, "conditions": { "$ref": "#/definitions/conditions" } } } },
+          "exits": { "type": "array", "items": { "type": "object" } },
+          "guesses": { "type": "integer" }, "unknowns": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

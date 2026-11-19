@@ -1,0 +1,557 @@
+{
+  "doc": "sonarr-fsd",
+  "note": "Phase 2b (D56, D57): findings in specs/trace.yaml scored against the frozen answer key. 'found' lets a gap be reported as a conflict and back; 'foundAsKind' needs the planted kind.",
+  "found": {
+    "overall": {
+      "found": 29,
+      "of": 30,
+      "share": 0.967,
+      "range95": [
+        0.9,
+        1
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 9,
+      "of": 10,
+      "share": 0.9,
+      "range95": [
+        0.7,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    }
+  },
+  "foundAsKind": {
+    "overall": {
+      "found": 28,
+      "of": 30,
+      "share": 0.933,
+      "range95": [
+        0.833,
+        1
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 8,
+      "of": 10,
+      "share": 0.8,
+      "range95": [
+        0.5,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    }
+  },
+  "noise": {
+    "findings": 546,
+    "unplanted": 517,
+    "worstCaseShare": 0.947,
+    "sample": 20,
+    "handChecked": 0,
+    "realInSample": null
+  },
+  "bars": {
+    "finds": true,
+    "notTooNoisy": null
+  },
+  "finerVerdicts": null,
+  "candidates": {
+    "sections": 0,
+    "byCode": 0,
+    "byAi": 0,
+    "aiFoundNone": 0
+  },
+  "cost": {
+    "finder": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "judge": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "checker": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "disprover": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    }
+  },
+  "items": [
+    {
+      "id": "G1",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S001",
+      "state": "gap"
+    },
+    {
+      "id": "G2",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S002",
+      "state": "gap"
+    },
+    {
+      "id": "G3",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S004",
+      "state": "gap"
+    },
+    {
+      "id": "G4",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S007",
+      "state": "gap"
+    },
+    {
+      "id": "G5",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S008",
+      "state": "gap"
+    },
+    {
+      "id": "G6",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S010",
+      "state": "gap"
+    },
+    {
+      "id": "G7",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S012",
+      "state": "gap"
+    },
+    {
+      "id": "G8",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S014",
+      "state": "gap"
+    },
+    {
+      "id": "G9",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S018",
+      "state": "gap"
+    },
+    {
+      "id": "G10",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S019",
+      "state": "gap"
+    },
+    {
+      "id": "C1",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S003",
+      "state": "conflict"
+    },
+    {
+      "id": "C2",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S005",
+      "state": "conflict"
+    },
+    {
+      "id": "C3",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S006",
+      "state": "conflict"
+    },
+    {
+      "id": "C4",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": false,
+      "by": "S009",
+      "state": "gap"
+    },
+    {
+      "id": "C5",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S011",
+      "state": "conflict"
+    },
+    {
+      "id": "C6",
+      "kind": "conflict",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "C7",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S013",
+      "state": "conflict"
+    },
+    {
+      "id": "C8",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S015",
+      "state": "conflict"
+    },
+    {
+      "id": "C9",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S016",
+      "state": "conflict"
+    },
+    {
+      "id": "C10",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S017",
+      "state": "conflict"
+    },
+    {
+      "id": "U1",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S023",
+      "state": "undocumented"
+    },
+    {
+      "id": "U2",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S024",
+      "state": "undocumented"
+    },
+    {
+      "id": "U3",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S026",
+      "state": "undocumented"
+    },
+    {
+      "id": "U4",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S038",
+      "state": "undocumented"
+    },
+    {
+      "id": "U5",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S081",
+      "state": "undocumented"
+    },
+    {
+      "id": "U6",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S055",
+      "state": "undocumented"
+    },
+    {
+      "id": "U7",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S544",
+      "state": "undocumented"
+    },
+    {
+      "id": "U8",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S513",
+      "state": "undocumented"
+    },
+    {
+      "id": "U9",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S510",
+      "state": "undocumented"
+    },
+    {
+      "id": "U10",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S049",
+      "state": "undocumented"
+    }
+  ],
+  "handCheckSample": [
+    {
+      "id": "S322",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/importlists",
+      "pageQuote": "The FSD doesn't mention the button “Delete” on /settings/importlists. Deletes the exclusion.",
+      "note": "The FSD doesn't mention the button “Delete” on /settings/importlists. Deletes the exclusion."
+    },
+    {
+      "id": "S414",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/mediamanagement",
+      "pageQuote": "The FSD doesn't mention the field “Set Permissions” on /settings/mediamanagement. Sets permissions.",
+      "note": "The FSD doesn't mention the field “Set Permissions” on /settings/mediamanagement. Sets permissions."
+    },
+    {
+      "id": "S367",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/indexers",
+      "pageQuote": "The FSD doesn't mention the field “Enable Interactive Search” on /settings/indexers. Enables interactive search.",
+      "note": "The FSD doesn't mention the field “Enable Interactive Search” on /settings/indexers. Enables interactive search."
+    },
+    {
+      "id": "S203",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/connect",
+      "pageQuote": "The FSD doesn't mention the field with no label (`onSeriesDelete` in the code) on /settings/connect. Notify on series delete.",
+      "note": "The FSD doesn't mention the field with no label (`onSeriesDelete` in the code) on /settings/connect. Notify on series delete."
+    },
+    {
+      "id": "S103",
+      "state": "undocumented",
+      "section": "1",
+      "fsdQuote": "",
+      "page": "page:/series",
+      "pageQuote": "The FSD doesn't mention the button “Previous Airing” on /series. Sort by previous airing.",
+      "note": "The FSD doesn't mention the button “Previous Airing” on /series. Sort by previous airing."
+    },
+    {
+      "id": "S063",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/add/import/:rootFolderId",
+      "pageQuote": "The FSD doesn't mention the field with no label (`qualityProfileId` in the code) on /add/import/:rootFolderId. Default quality profile for imports.",
+      "note": "The FSD doesn't mention the field with no label (`qualityProfileId` in the code) on /add/import/:rootFolderId. Default quality profile for imports."
+    },
+    {
+      "id": "S400",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/mediamanagement",
+      "pageQuote": "The FSD doesn't mention the field “Import Using Script” on /settings/mediamanagement. Imports using a script.",
+      "note": "The FSD doesn't mention the field “Import Using Script” on /settings/mediamanagement. Imports using a script."
+    },
+    {
+      "id": "S100",
+      "state": "undocumented",
+      "section": "1",
+      "fsdQuote": "",
+      "page": "page:/series",
+      "pageQuote": "The FSD doesn't mention the button “Original Country” on /series. Sort by original country.",
+      "note": "The FSD doesn't mention the button “Original Country” on /series. Sort by original country."
+    },
+    {
+      "id": "S164",
+      "state": "undocumented",
+      "section": "1.2",
+      "fsdQuote": "",
+      "page": "page:/series/:titleSlug",
+      "pageQuote": "The FSD doesn't mention the field “Select row” on /series/:titleSlug. Selects a row in the rename preview.",
+      "note": "The FSD doesn't mention the field “Select row” on /series/:titleSlug. Selects a row in the rename preview."
+    },
+    {
+      "id": "S095",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/seasonpass",
+      "pageQuote": "The FSD doesn't describe the screen /seasonpass. Season Pass screen for bulk monitoring changes.",
+      "note": "The FSD doesn't describe the screen /seasonpass. Season Pass screen for bulk monitoring changes."
+    },
+    {
+      "id": "S102",
+      "state": "undocumented",
+      "section": "1",
+      "fsdQuote": "",
+      "page": "page:/series",
+      "pageQuote": "The FSD doesn't mention the button “Next Airing” on /series. Sort by next airing.",
+      "note": "The FSD doesn't mention the button “Next Airing” on /series. Sort by next airing."
+    },
+    {
+      "id": "S088",
+      "state": "undocumented",
+      "section": "2",
+      "fsdQuote": "",
+      "page": "page:/calendar",
+      "pageQuote": "The FSD doesn't mention the field “Icon for Finales” on /calendar. Icon for season finales.",
+      "note": "The FSD doesn't mention the field “Icon for Finales” on /calendar. Icon for season finales."
+    },
+    {
+      "id": "S290",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/general",
+      "pageQuote": "The FSD doesn't mention the field “Enable SSL” on /settings/general. Enables SSL.",
+      "note": "The FSD doesn't mention the field “Enable SSL” on /settings/general. Enables SSL."
+    },
+    {
+      "id": "S293",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/general",
+      "pageQuote": "The FSD doesn't mention the field “SSL Key Path” on /settings/general. SSL key path.",
+      "note": "The FSD doesn't mention the field “SSL Key Path” on /settings/general. SSL key path."
+    },
+    {
+      "id": "S123",
+      "state": "undocumented",
+      "section": "1",
+      "fsdQuote": "",
+      "page": "page:/series",
+      "pageQuote": "The FSD doesn't mention the field “Show Season Count” on /series. Overview show-season-count option.",
+      "note": "The FSD doesn't mention the field “Show Season Count” on /series. Overview show-season-count option."
+    },
+    {
+      "id": "S402",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/mediamanagement",
+      "pageQuote": "The FSD doesn't mention the field “Import Extra Files” on /settings/mediamanagement. Imports extra files.",
+      "note": "The FSD doesn't mention the field “Import Extra Files” on /settings/mediamanagement. Imports extra files."
+    },
+    {
+      "id": "S146",
+      "state": "undocumented",
+      "section": "1",
+      "fsdQuote": "",
+      "page": "page:/series",
+      "pageQuote": "The FSD doesn't mention the field “Monitoring” on /series. Bulk monitoring option.",
+      "note": "The FSD doesn't mention the field “Monitoring” on /series. Bulk monitoring option."
+    },
+    {
+      "id": "S069",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/add/import/:rootFolderId",
+      "pageQuote": "The FSD doesn't mention the button “Metadata Settings” on /add/import/:rootFolderId. Opens metadata settings.",
+      "note": "The FSD doesn't mention the button “Metadata Settings” on /add/import/:rootFolderId. Opens metadata settings."
+    },
+    {
+      "id": "S149",
+      "state": "undocumented",
+      "section": "1",
+      "fsdQuote": "",
+      "page": "page:/series",
+      "pageQuote": "The FSD doesn't mention the button “Rename Files” on /series. Opens bulk rename.",
+      "note": "The FSD doesn't mention the button “Rename Files” on /series. Opens bulk rename."
+    },
+    {
+      "id": "S178",
+      "state": "undocumented",
+      "section": "1.2",
+      "fsdQuote": "",
+      "page": "page:/series/:titleSlug",
+      "pageQuote": "The FSD doesn't mention the field “Monitor New Seasons” on /series/:titleSlug. Chooses whether new seasons are monitored.",
+      "note": "The FSD doesn't mention the field “Monitor New Seasons” on /series/:titleSlug. Chooses whether new seasons are monitored."
+    }
+  ]
+}

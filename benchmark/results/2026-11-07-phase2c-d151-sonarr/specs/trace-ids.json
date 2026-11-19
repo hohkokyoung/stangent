@@ -1,0 +1,10 @@
+{
+  "scopes": {
+    "X": {
+      "format": "X-{0:D4}",
+      "last": 90,
+      "removed": []
+    }
+  },
+  "version": 1
+}

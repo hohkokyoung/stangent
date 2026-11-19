@@ -1,6 +1,13 @@
 import ts from "typescript";
 import type { Context } from "./extract.ts";
 import { BASE, RUNTIME, isBaseName, stringValue } from "./values.ts";
+import { join, paramValues, propertyValues, returns, valuesOf } from "./params.ts";
+import type { Valued } from "./params.ts";
+import { deferredOf, wrapperSendsLater } from "./deferred.ts";
+
+/** D201: whether the call being read runs later (inside a kept callback or a listener), for the facts it writes. */
+let deferredNow = "";
+const deferredData = () => (deferredNow ? { deferred: deferredNow } : {});
 
 const DETECTOR = "frontend-http";
 const ANGULAR_VERBS: Record<string, string> = { get: "GET", post: "POST", put: "PUT", delete: "DELETE", patch: "PATCH", head: "HEAD" };
@@ -17,13 +24,14 @@ export function httpFacts(ctx: Context, sf: ts.SourceFile) {
   const wrappers = parseWrappers(ctx.o.settings[DETECTOR]?.wrappers ?? []);
   const visit = (n: ts.Node) => {
     if (ts.isCallExpression(n)) call(ctx, n, wrappers);
+    if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken) imageSource(ctx, n);
     if (ts.isInterfaceDeclaration(n) || ts.isClassDeclaration(n) || (ts.isTypeAliasDeclaration(n) && ts.isTypeLiteralNode(n.type))) shape(ctx, n);
     ts.forEachChild(n, visit);
   };
   visit(sf);
 }
 
-interface Wrapper { fn: string; urlProp: string | null; verbProp: string | null; verb: string }
+interface Wrapper { fn: string; urlProp: string | null; verbProp: string | null; verb: string; fixed: boolean }
 
 /**
  * "useApiQuery:path" (object argument with a `path` property), "useApiMutation:path:method", "api.get" (URL as first
@@ -35,7 +43,7 @@ function parseWrappers(specs: string[]): Wrapper[] {
   return specs.map((s) => {
     const [spec, fixed] = s.split("@");
     const [fn, urlProp = null, verbProp = null] = spec.split(":");
-    return { fn, urlProp, verbProp, verb: fixed ? fixed.toUpperCase() : verbFromName(fn) };
+    return { fn, urlProp, verbProp, verb: fixed ? fixed.toUpperCase() : verbFromName(fn), fixed: !!fixed };
   });
 }
 
@@ -50,6 +58,56 @@ function verbFromName(fn: string): string {
   return "GET";
 }
 
+const prefixes = new Map<ts.Node, string | null>();
+
+/**
+ * What a wrapper puts in front of its URL, read from its own body: a call there passes the URL property
+ * (`getQueryPath(path)`, `getQueryPath(options.path)`) to a function returning one concatenation that ends
+ * with that parameter (`urlBase + apiRoot + path` → `{base}/api/v5`). Null when the code doesn't show it.
+ */
+function wrapperPrefix(ctx: Context, callee: ts.Expression, urlProp: string): string | null {
+  const fn = declaredFunction(ctx.checker, callee);
+  if (!fn?.body) return null;
+  if (prefixes.has(fn)) return prefixes.get(fn)!;
+  let found: string | null = null;
+  const visit = (n: ts.Node) => {
+    if (found !== null) return;
+    if (ts.isCallExpression(n) && n.arguments.length === 1) {
+      const a = n.arguments[0];
+      const passes = (ts.isIdentifier(a) && a.text === urlProp) || (ts.isPropertyAccessExpression(a) && a.name.text === urlProp);
+      const inner = passes ? declaredFunction(ctx.checker, n.expression) : null;
+      const returned = inner ? returnedExpression(inner) : null;
+      const value = returned ? stringValue(returned, ctx.checker) : null;
+      // Exactly one runtime part, at the end: the parameter itself.
+      if (value && value.endsWith(RUNTIME) && value.indexOf(RUNTIME) === value.length - RUNTIME.length && value.length > RUNTIME.length)
+        found = value.slice(0, -RUNTIME.length);
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(fn.body);
+  prefixes.set(fn, found);
+  return found;
+}
+
+function declaredFunction(checker: ts.TypeChecker, callee: ts.Expression): ts.FunctionLikeDeclaration | null {
+  let symbol = checker.getSymbolAtLocation(ts.isPropertyAccessExpression(callee) ? callee.name : callee);
+  if (symbol && symbol.flags & ts.SymbolFlags.Alias) {
+    try { symbol = checker.getAliasedSymbol(symbol); } catch { return null; }
+  }
+  const d = symbol?.declarations?.length === 1 ? symbol.declarations[0] : null;
+  if (!d) return null;
+  if (ts.isFunctionDeclaration(d)) return d;
+  if (ts.isVariableDeclaration(d) && d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer))) return d.initializer;
+  return null;
+}
+
+function returnedExpression(fn: ts.FunctionLikeDeclaration): ts.Expression | null {
+  if (!fn.body) return null;
+  if (!ts.isBlock(fn.body)) return fn.body;
+  const returns = fn.body.statements.filter(ts.isReturnStatement);
+  return returns.length === 1 ? returns[0].expression ?? null : null;
+}
+
 /** `#N` → the call's Nth argument; anything else → that property of the object in the first argument. */
 function wrapperValue(n: ts.CallExpression, prop: string, checker: ts.TypeChecker): string | null {
   if (/^#\d+$/.test(prop)) return stringValue(n.arguments[Number(prop.slice(1))], checker);
@@ -59,6 +117,7 @@ function wrapperValue(n: ts.CallExpression, prop: string, checker: ts.TypeChecke
 
 function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
   const { checker } = ctx;
+  deferredNow = deferredOf(ctx, n);
   const callee = n.expression;
   const name = ts.isIdentifier(callee) ? callee.text : ts.isPropertyAccessExpression(callee) ? callee.name.text : "";
   const receiver = ts.isPropertyAccessExpression(callee) ? callee.expression : null;
@@ -69,14 +128,26 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
   // In-house wrappers named in stangent.yaml.
   const w = wrappers.find((x) => x.fn === name || x.fn === callee.getText());
   if (w) {
+    // D214: a wrapper whose own body sends later (from a mutation's `mutationFn`) only sets the request up here.
+    deferredNow ||= wrapperSendsLater(ctx, callee, new Set(wrappers.map((x) => x.fn)));
     const url0 = w.urlProp ? wrapperValue(n, w.urlProp, checker) : stringValue(n.arguments[0], checker);
     let url: string | null = url0;
     const v = w.verbProp ? wrapperValue(n, w.verbProp, checker) : null;
     const verb = v ? v.toUpperCase() : w.verb;
-    // Wrappers add the API root themselves (Sonarr: getQueryPath(path) = urlBase + apiRoot + path),
-    // so a relative path is matched against the end of endpoint paths.
-    if (url !== null && !/^(https?:|\{base\})/.test(url)) url = BASE + url.replace(/^\//, "");
-    emit(ctx, owner, file, line, verb, url, `wrapper:${w.fn}`, typeArg(ctx, n, 0), typeArg(ctx, n, 1));
+    // D175: where the verb came from: written at the call, given in the setting (`@VERB`), or read off the wrapper's name.
+    const verbFrom = v && !v.includes(RUNTIME) ? "literal" : w.fixed ? "setting" : "name";
+    // Wrappers add the API root themselves (Sonarr: getQueryPath(path) = urlBase + apiRoot + path). When the
+    // wrapper's own code shows that root, it is added (G2); otherwise a relative path is matched against the
+    // end of endpoint paths.
+    const rooted = (u: string) => {
+      if (/^(https?:|\{base\})/.test(u)) return u;
+      const prefix = w.urlProp ? wrapperPrefix(ctx, callee, w.urlProp) : null;
+      return prefix ? `${prefix.replace(/\/$/, "")}/${u.replace(/^\//, "")}` : BASE + u.replace(/^\//, "");
+    };
+    if (url !== null) url = rooted(url);
+    if (blind(url) && fromParameters(ctx, owner, file, line, w.urlProp ? wrapperExpr(n, w.urlProp) : n.arguments[0],
+        w.verbProp ? wrapperExpr(n, w.verbProp) : undefined, w.verb, w.fixed ? "setting" : "name", rooted, `wrapper:${w.fn}`, typeArg(ctx, n, 0), typeArg(ctx, n, 1))) return;
+    emit(ctx, owner, file, line, verb, url, `wrapper:${w.fn}`, typeArg(ctx, n, 0), typeArg(ctx, n, 1), verbFrom);
     return;
   }
 
@@ -85,22 +156,82 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
     const [verb, urlArg, bodyArg] = name === "request"
       ? [stringValue(n.arguments[0], checker)?.toUpperCase() ?? "ANY", n.arguments[1], n.arguments[2]]
       : [ANGULAR_VERBS[name], n.arguments[0], n.arguments[1]];
-    emit(ctx, owner, file, line, verb, stringValue(urlArg, checker), ctx.typed ? "angular-http" : "angular-http-by-name",
-      typeArg(ctx, n, 0), name === "post" || name === "put" || name === "patch" ? valueType(ctx, bodyArg) : null);
+    const via = ctx.typed ? "angular-http" : "angular-http-by-name";
+    const body = name === "post" || name === "put" || name === "patch" ? valueType(ctx, bodyArg) : null;
+    const url = stringValue(urlArg, checker);
+    if (blind(url) && fromParameters(ctx, owner, file, line, urlArg, name === "request" ? n.arguments[0] : undefined, verb, name !== "request" ? "library" : "runtime", (u) => u, via, typeArg(ctx, n, 0), body)) return;
+    emit(ctx, owner, file, line, verb, url, via, typeArg(ctx, n, 0), body, name !== "request" ? "library" : verb === "ANY" ? "runtime" : "literal");
     return;
   }
 
   // fetch(url, { method }) and axios.get/post/…(url) or axios({ url, method }).
   if (ts.isIdentifier(callee) && name === "fetch") {
     const opts = n.arguments[1];
-    const verb = opts && ts.isObjectLiteralExpression(opts) ? stringValue(objProp(opts, "method") ?? undefined, checker)?.toUpperCase() ?? "GET" : "GET";
-    emit(ctx, owner, file, line, verb, stringValue(n.arguments[0], checker), "fetch", typeArg(ctx, n, 0), null);
+    const method = opts && ts.isObjectLiteralExpression(opts) ? objProp(opts, "method") : null;
+    const written = method ? stringValue(method, checker)?.toUpperCase() ?? null : null;
+    // No options, or options without `method`: fetch's own default, GET. Options or a method the code doesn't show are
+    // still matched as GET, as before, but the verb is unknown (D175).
+    const unknown = (method && !written) || (opts && !ts.isObjectLiteralExpression(opts));
+    const verb = written ?? "GET";
+    const url = stringValue(n.arguments[0], checker);
+    if (blind(url) && fromParameters(ctx, owner, file, line, n.arguments[0], method ?? undefined, verb, unknown ? "runtime" : "library", (u) => u, "fetch", typeArg(ctx, n, 0), null)) return;
+    emit(ctx, owner, file, line, verb, url, "fetch", typeArg(ctx, n, 0), null, unknown ? "runtime" : method ? "literal" : "library");
     return;
   }
   if (receiver && ts.isIdentifier(receiver) && receiver.text === "axios" && ANGULAR_VERBS[name]) {
-    emit(ctx, owner, file, line, ANGULAR_VERBS[name], stringValue(n.arguments[0], checker), "axios", typeArg(ctx, n, 0),
-      name === "post" || name === "put" || name === "patch" ? valueType(ctx, n.arguments[1]) : null);
+    const body = name === "post" || name === "put" || name === "patch" ? valueType(ctx, n.arguments[1]) : null;
+    const url = stringValue(n.arguments[0], checker);
+    if (blind(url) && fromParameters(ctx, owner, file, line, n.arguments[0], undefined, ANGULAR_VERBS[name], "library", (u) => u, "axios", typeArg(ctx, n, 0), body)) return;
+    emit(ctx, owner, file, line, ANGULAR_VERBS[name], url, "axios", typeArg(ctx, n, 0), body, "library");
     return;
+  }
+
+  // D193: Angular's httpResource(() => url | { url, method }): Angular makes the request itself, for each URL the function
+  // returns, at the line it's returned on.
+  if (!receiver && name === "httpResource" && isAngularHttp(ctx, callee)) {
+    const fn = n.arguments[0];
+    if (fn && (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn))) {
+      for (const r of returns(fn)) {
+        const x = ts.isParenthesizedExpression(r) ? r.expression : r;
+        const urlExpr = ts.isObjectLiteralExpression(x) ? objProp(x, "url") ?? undefined : x;
+        const verbExpr = ts.isObjectLiteralExpression(x) ? objProp(x, "method") : null;
+        const verb = verbExpr ? stringValue(verbExpr, checker)?.toUpperCase() ?? "ANY" : "GET";
+        emit(ctx, owner, file, ctx.line(r), verb, stringValue(urlExpr, checker), "angular-httpResource", typeArg(ctx, n, 0), null,
+          verbExpr ? (verb === "ANY" ? "runtime" : "literal") : "library");
+      }
+    }
+    return;
+  }
+
+  // N5: jQuery: $.ajax({ url, type | method }), $.ajax(url, { type }), $.get/post/getJSON(url).
+  if (receiver && ts.isIdentifier(receiver) && (receiver.text === "$" || receiver.text === "jQuery")) {
+    const first = n.arguments[0];
+    if (name === "ajax") {
+      const settings = first && ts.isObjectLiteralExpression(first) ? first : n.arguments[1];
+      const urlArg = first && ts.isObjectLiteralExpression(first) ? objProp(first, "url") ?? undefined : first;
+      const verbArg = settings && ts.isObjectLiteralExpression(settings) ? objProp(settings, "type") ?? objProp(settings, "method") : null;
+      const verb = verbArg ? stringValue(verbArg, checker)?.toUpperCase() ?? "ANY" : "GET";
+      if (settings && ts.isObjectLiteralExpression(settings)) callbacks(ctx, owner, file, settings);
+      const url = stringValue(urlArg, checker);
+      // Fresh check S13: `$.ajax({ ...options })`, options a copy of the app's wrapper's parameter: the url and verb its callers pass.
+      if (!urlArg && settings && ts.isObjectLiteralExpression(settings)) {
+        const param = spreadParameter(checker, settings);
+        if (param) {
+          const urls = propertyValues(ctx, param, "url");
+          const verbs = propertyValues(ctx, param, "method") ?? propertyValues(ctx, param, "type");
+          const rooted = rewritesUrl(param) ? (u: string) => (u.startsWith("/") ? BASE + u : u) : (u: string) => u;
+          if (urls && fromParameters(ctx, owner, file, line, undefined, undefined, "GET", "library", rooted, "jquery", null, null, urls, verbs)) return;
+        }
+      }
+      if (blind(url) && fromParameters(ctx, owner, file, line, urlArg, verbArg ?? undefined, verb === "ANY" ? "GET" : verb, verbArg ? "runtime" : "library", (u) => u, "jquery", null, null)) return;
+      emit(ctx, owner, file, line, verb, url, "jquery", null, null, verb === "ANY" ? "runtime" : verbArg ? "literal" : "library");
+      return;
+    }
+    const JQUERY_VERBS: Record<string, string> = { get: "GET", post: "POST", getJSON: "GET" };
+    if (JQUERY_VERBS[name] && first) {
+      emit(ctx, owner, file, line, JQUERY_VERBS[name], stringValue(first, checker), "jquery", null, null, "library");
+      return;
+    }
   }
 
   // A generated API client whose file isn't in the repo (NSwag writes it at build time).
@@ -110,14 +241,125 @@ function call(ctx: Context, n: ts.CallExpression, wrappers: Wrapper[]) {
   }
 }
 
+/** `#N` → the call's Nth argument; anything else → that property of the object in the first argument: the expression itself. */
+function wrapperExpr(n: ts.CallExpression, prop: string): ts.Expression | undefined {
+  if (/^#\d+$/.test(prop)) return n.arguments[Number(prop.slice(1))];
+  const arg = n.arguments[0];
+  return arg && ts.isObjectLiteralExpression(arg) ? objProp(arg, prop) ?? undefined : undefined;
+}
+
+function blind(url: string | null): boolean {
+  return url === null || url === RUNTIME || url.replace(BASE, "").replace(/\{\*\}/g, "").replace(/[/?&=]/g, "") === "";
+}
+
+/**
+ * D190: a URL the call's own code doesn't show, built from its function's parameters: one `call` fact per value the callers
+ * pass (`from` "parameter", `origin` the point that gave it, `via` the points it passed through, `of` how many), each verb
+ * paired with the URLs written under the same side of a `?:`. False when no caller's value is known, so the call stays ❓.
+ */
+function fromParameters(ctx: Context, owner: string, file: string, line: number, urlExpr: ts.Expression | undefined, verbExpr: ts.Expression | undefined,
+                        defaultVerb: string, defaultFrom: string, rooted: (u: string) => string, via: string, responseType: string | null, bodyType: string | null,
+                        givenUrls: Valued[] | null = null, givenVerbs: Valued[] | null = null): boolean {
+  const urls = givenUrls ?? paramValues(ctx, urlExpr);
+  if (!urls) return false;
+  const verbs = givenVerbs ?? (verbExpr ? valuesOf(ctx, verbExpr) : null);
+  const combos: { verb: string; verbFrom: string; url: string; origin: string; path: string[] }[] = [];
+  const opens = new Map<string, string>();
+  for (const u of urls) {
+    for (const v of verbs ?? [{ value: defaultVerb, origin: null, via: [], when: {} }]) {
+      const both = join(u, { ...v, value: "" });
+      if (!both) continue;
+      const known = verbs !== null && !v.value.includes(RUNTIME);
+      const url = rooted(u.value);
+      if (blind(url)) {
+        // D191: the whole URL is an argument some caller outside the scripts passes (a view's onclick): said, for that caller.
+        if (both.open && u.value === RUNTIME) opens.set(`${both.open}\u0000${known ? v.value.toUpperCase() : defaultVerb}`, known ? "literal" : verbs ? "runtime" : defaultFrom);
+        continue;
+      }
+      combos.push({ verb: known ? v.value.toUpperCase() : defaultVerb, verbFrom: known ? "literal" : verbs ? "runtime" : defaultFrom, url, origin: both.origin ?? "", path: both.via });
+    }
+  }
+  for (const [key, verbFrom] of [...opens].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+    const [open, verb] = key.split("\u0000");
+    ctx.out.fact(DETECTOR, "call-open", owner, file, line, { verb, verbFrom, open, via, ...deferredData() });
+  }
+  if (combos.length === 0) return false;
+  const values = new Set(combos.map((c) => c.url.split("?")[0])).size;
+  combos.sort((a, b) => (a.verb + a.url + a.origin < b.verb + b.url + b.origin ? -1 : a.verb + a.url + a.origin > b.verb + b.url + b.origin ? 1 : 0));
+  const seen = new Set<string>();
+  for (const c of combos) {
+    const key = `${c.verb} ${c.url.split("?")[0]} ${c.origin}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    ctx.out.fact(DETECTOR, "call", owner, file, line, {
+      verb: c.verb, url: c.url.split("?")[0], via, responseType: responseType ?? "", bodyType: bodyType ?? "", verbFrom: c.verbFrom,
+      from: "parameter", origin: c.origin, path: c.path.join("|"), of: String(values), ...deferredData(),
+    });
+  }
+  return true;
+}
+
+/**
+ * D191: what jQuery runs when the request answers (`success: this.success_process`, `error`, `complete`, `beforeSend`): a call
+ * from the code making the request, at the option's line, so a flow walks on into it. An inline function is the caller's own code.
+ */
+function callbacks(ctx: Context, owner: string, file: string, settings: ts.ObjectLiteralExpression) {
+  for (const p of settings.properties) {
+    if (!ts.isPropertyAssignment(p) || !ts.isIdentifier(p.name) || !["beforeSend", "success", "error", "complete"].includes(p.name.text)) continue;
+    const v = p.initializer;
+    if (!ts.isIdentifier(v) && !ts.isPropertyAccessExpression(v)) continue;
+    const target = ctx.symbolId(ctx.checker.getSymbolAtLocation(ts.isPropertyAccessExpression(v) ? v.name : v));
+    if (!target || target === owner) continue;
+    ctx.out.edge(owner, target, "calls");
+    ctx.out.fact("call-sites", "call-site", owner, file, ctx.line(p), { target, label: "0", kind: "calls", callback: p.name.text, ...deferredData() });
+  }
+}
+
+/** `httpResource` from Angular's own package, or, with the packages missing, by its name. */
+function isAngularHttp(ctx: Context, callee: ts.Expression): boolean {
+  let s = ctx.checker.getSymbolAtLocation(callee);
+  if (s && s.flags & ts.SymbolFlags.Alias) { try { s = ctx.checker.getAliasedSymbol(s); } catch { return !ctx.typed; } }
+  const decl = s?.declarations?.[0];
+  return (!!decl && /@angular[\\/]common[\\/]/.test(decl.getSourceFile().fileName)) || !ctx.typed;
+}
+
+/**
+ * D193: an image's address set to a URL (`img.src = this.getPageUrl(…)`, the image an `HTMLImageElement` or `new Image()`):
+ * the browser fetches it with GET. One call per URL the value can be, read through the functions that build it.
+ */
+function imageSource(ctx: Context, n: ts.BinaryExpression) {
+  const left = n.left;
+  if (!ts.isPropertyAccessExpression(left) || left.name.text !== "src" || !isImage(ctx, left.expression)) return;
+  deferredNow = deferredOf(ctx, n);
+  // D201: setting no address (`img.src = ''`) clears the image; it asks for nothing.
+  const literal = stringValue(n.right, ctx.checker);
+  if (literal !== null && !/[A-Za-z0-9]/.test(literal.replace(/\{\*\}|\{base\}/g, ""))) return;
+  const owner = ctx.ownerId(n);
+  const file = ctx.rel(n.getSourceFile().fileName);
+  const line = ctx.line(n);
+  const vs = (valuesOf(ctx, n.right) ?? []).filter((v) => !blind(v.value));
+  if (vs.length === 0) { emit(ctx, owner, file, line, "GET", stringValue(n.right, ctx.checker), "img-src", null, null, "library"); return; }
+  for (const url of [...new Set(vs.map((v) => v.value.split("?")[0]))].sort())
+    ctx.out.fact(DETECTOR, "call", owner, file, line, { verb: "GET", url, via: "img-src", responseType: "", bodyType: "", verbFrom: "library",
+      ...(vs.length > 1 ? { from: "returns", of: String(vs.length) } : {}), ...deferredData() });
+}
+
+function isImage(ctx: Context, e: ts.Expression): boolean {
+  const name = ctx.checker.getTypeAtLocation(e).getSymbol()?.getName();
+  if (name === "HTMLImageElement") return true;
+  if (!ts.isIdentifier(e)) return false;
+  const d = ctx.checker.getSymbolAtLocation(e)?.valueDeclaration;
+  return !!d && ts.isVariableDeclaration(d) && !!d.initializer && ts.isNewExpression(d.initializer) && d.initializer.expression.getText() === "Image";
+}
+
 function emit(ctx: Context, owner: string, file: string, line: number, verb: string, url: string | null, via: string,
-              responseType: string | null, bodyType: string | null) {
+              responseType: string | null, bodyType: string | null, verbFrom: string) {
   if (url === null || url === RUNTIME || url.replace(BASE, "").replace(/\{\*\}/g, "").replace(/[/?&=]/g, "") === "") {
     ctx.out.blind(owner, file, line, `HTTP ${verb} to a URL built at runtime`, DETECTOR);
     return;
   }
   ctx.out.fact(DETECTOR, "call", owner, file, line, {
-    verb, url: url.split("?")[0], via, responseType: responseType ?? "", bodyType: bodyType ?? "",
+    verb, url: url.split("?")[0], via, responseType: responseType ?? "", bodyType: bodyType ?? "", verbFrom, ...deferredData(),
   });
 }
 
@@ -197,6 +439,37 @@ function shape(ctx: Context, n: ts.InterfaceDeclaration | ts.ClassDeclaration | 
   }
   if (props.length > 0)
     ctx.out.fact(DETECTOR, "shape", id, ctx.rel(n.getSourceFile().fileName), ctx.line(n), { props: JSON.stringify(props) });
+}
+
+/** Fresh check S13: the parameter an object literal spreads, directly (`{ ...options }`) or through a local copied from it
+ * (`const copy = { ...options }; $.ajax({ ...copy })`). */
+function spreadParameter(checker: ts.TypeChecker, o: ts.ObjectLiteralExpression, depth = 0): ts.ParameterDeclaration | null {
+  if (depth > 3) return null;
+  for (const p of o.properties) {
+    if (!ts.isSpreadAssignment(p) || !ts.isIdentifier(p.expression)) continue;
+    const d = checker.getSymbolAtLocation(p.expression)?.valueDeclaration;
+    if (d && ts.isParameter(d)) return d;
+    if (d && ts.isVariableDeclaration(d) && d.initializer && ts.isObjectLiteralExpression(d.initializer)) {
+      const inner = spreadParameter(checker, d.initializer, depth + 1);
+      if (inner) return inner;
+    }
+  }
+  return null;
+}
+
+/** Whether the parameter's function file rewrites a request's url with a prefix (`options.url = apiRoot + options.url`): a
+ * relative value its callers pass is then read under the app's API root. */
+function rewritesUrl(param: ts.ParameterDeclaration): boolean {
+  let found = false;
+  const visit = (n: ts.Node) => {
+    if (found) return;
+    if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isPropertyAccessExpression(n.left) && n.left.name.text === "url"
+        && ts.isBinaryExpression(n.right) && n.right.operatorToken.kind === ts.SyntaxKind.PlusToken
+        && ts.isPropertyAccessExpression(n.right.right) && n.right.right.name.text === "url") found = true;
+    ts.forEachChild(n, visit);
+  };
+  visit(param.getSourceFile());
+  return found;
 }
 
 function objProp(o: ts.ObjectLiteralExpression, name: string): ts.Expression | null {

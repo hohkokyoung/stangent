@@ -1,0 +1,496 @@
+{
+  "commit": "f4abc65c5e04bf2ccdbd681550c92a3ed1b50893",
+  "contract": "fsd-review",
+  "costUsd": 0.427009,
+  "counts": {
+    "conflict": 6,
+    "gap": 5,
+    "match": 13,
+    "undocumented": 4
+  },
+  "doc": "kavita-fsd",
+  "dropped": [],
+  "effort": "medium",
+  "findings": [
+    {
+      "evidence": [
+        "UI/Web/src/app/dashboard/_components/dashboard.component.ts:194"
+      ],
+      "fsdQuote": "The On Deck row shows up to 50 series.",
+      "id": "F-001",
+      "note": "The dashboard loads the On Deck row with a page size of 20.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "1",
+      "sectionId": "S-0001",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/library-detail"
+      ],
+      "fsdQuote": "A Random button on the library screen opens a randomly chosen series from that library.",
+      "id": "F-002",
+      "note": "No random-series button or action exists on the library detail screen or anywhere else in the UI templates.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "2.1",
+      "sectionId": "S-0003",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:106-108"
+      ],
+      "fsdQuote": "The Edit button is shown only to administrators, and the Download button only to administrators and users with the Download role.",
+      "id": "F-003",
+      "note": "The Edit button sits inside an isAdmin check.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "3.1",
+      "sectionId": "S-0007",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/book-reader"
+      ],
+      "fsdQuote": "Selected text can be read aloud using the device's text-to-speech voice.",
+      "id": "F-004",
+      "note": "No text-to-speech or speech synthesis code exists in the book reader.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "4.2",
+      "sectionId": "S-0012",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "Kavita.Services/TaskScheduler.cs:229"
+      ],
+      "fsdQuote": "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it.",
+      "id": "F-005",
+      "note": "Removal is done by a recurring cleanup task (RemoveFromWantToRead), not immediately on finishing.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "5",
+      "sectionId": "S-0013",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:23"
+      ],
+      "fsdQuote": null,
+      "id": "F-006",
+      "note": "A Browse Genres screen exists, but the FSD describes only People and Tags under Browse.",
+      "runs": [
+        2
+      ],
+      "screen": "/browse/genres",
+      "section": "8",
+      "sectionId": "S-0020",
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:25"
+      ],
+      "fsdQuote": null,
+      "id": "F-007",
+      "note": "An All Annotations screen exists under Browse, but the FSD does not describe it.",
+      "runs": [
+        2
+      ],
+      "screen": "/browse/annotations",
+      "section": "8",
+      "sectionId": "S-0020",
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:17"
+      ],
+      "fsdQuote": "The People screen lists people with the number of series and issues each appears in, along with a filter panel and a jump bar, and clicking a person opens that person's page.",
+      "id": "F-008",
+      "note": "A People browse route renders BrowsePeopleComponent. This match is based on the route only. I did not read the component for the counts, filter panel or jump bar.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "8.1",
+      "sectionId": "S-0021",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:24"
+      ],
+      "fsdQuote": "The Tags screen lists every tag with the number of series and issues that carry it",
+      "id": "F-009",
+      "note": "A Tags browse route renders the BrowseTagsComponent.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "8.3",
+      "sectionId": "S-0023",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/user-settings/account-settings/account-settings.component.html"
+      ],
+      "fsdQuote": "Users can turn on two-factor sign-in with an authenticator app.",
+      "id": "F-010",
+      "note": "No two-factor option exists in the user settings UI.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "9.1",
+      "sectionId": "S-0025",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "Kavita.Server/Extensions/IdentityServiceExtensions.cs:59",
+        "Kavita.Models/DTOs/RegisterDto.cs:15"
+      ],
+      "fsdQuote": "A new password must be at least 8 characters long.",
+      "id": "F-011",
+      "note": "The server requires a minimum password length of 6, not 8.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "9.1",
+      "sectionId": "S-0025",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/shared/_services/download.service.ts:74"
+      ],
+      "fsdQuote": "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB.",
+      "id": "F-012",
+      "note": "The code's download size confirmation threshold is documented as 100 MB, not 500 MB.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "9.2",
+      "sectionId": "S-0026",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/user-settings/manga-user-preferences/manage-user-preferences.component.ts:109"
+      ],
+      "fsdQuote": "Prompt for Re-Reads sets after how many days without progress Kavita offers to re-read, and 0 turns the prompt off.",
+      "id": "F-013",
+      "note": "A promptForRereadsAfter number setting exists with a minimum of 0.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "9.2",
+      "sectionId": "S-0026",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.html"
+      ],
+      "fsdQuote": "A maintenance mode switch blocks all non-admin users from signing in until it is turned off.",
+      "id": "F-014",
+      "note": "The settings page has no maintenance mode switch. The only maintenance reference in the UI is in the message hub service.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:114-133"
+      ],
+      "fsdQuote": "Changes on this page are stored only when the administrator presses Save.",
+      "id": "F-015",
+      "note": "The General page has no Save button. Valid changes are autosaved after a 300 ms debounce.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:91-98"
+      ],
+      "fsdQuote": "Days of Backups and Days of Logs each accept a value from 1 to 30",
+      "id": "F-016",
+      "note": "Form validators enforce min 1 and max 30 on both total backups and total logs.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:94-95"
+      ],
+      "fsdQuote": "Cache Size must be at least 50 MB",
+      "id": "F-017",
+      "note": "A minimum of 50 is enforced on cache size.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:90"
+      ],
+      "fsdQuote": "the base URL must start and end with a slash",
+      "id": "F-018",
+      "note": "The base URL pattern requires a leading and trailing slash.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:159-169",
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.html:4"
+      ],
+      "fsdQuote": "A Reset to Default button restores these settings after a confirmation.",
+      "id": "F-019",
+      "note": "The Reset to Default button asks for confirmation, then resets the server settings.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "Kavita.Services/SettingsService.cs:443",
+        "Kavita.Services/SettingsService.cs:455"
+      ],
+      "fsdQuote": "Days of Backups and Days of Logs each accept a value from 1 to 30 and both default to 30.",
+      "id": "F-020",
+      "note": "The server rejects Days of Backups and Days of Logs values above 30 or below 1. I did not read the default of 30, so only the range is confirmed.",
+      "runs": [
+        2
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin"
+      ],
+      "fsdQuote": "An invite can be given an expiry date, after which its link stops working.",
+      "id": "F-021",
+      "note": "The admin UI has no invite expiry option. Expiry references there concern licenses only.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "10.2",
+      "sectionId": "S-0029",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:157"
+      ],
+      "fsdQuote": "Manage Collections is turned on by default for a new library.",
+      "id": "F-022",
+      "note": "The new-library form defaults manageCollections to false.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "10.3",
+      "sectionId": "S-0030",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:152-154",
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:152"
+      ],
+      "fsdQuote": "Include in Dashboard and Include in Search are turned on by default.",
+      "id": "F-023",
+      "note": "Both includeInDashboard and includeInSearch default to true.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "10.3",
+      "sectionId": "S-0030",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:269"
+      ],
+      "fsdQuote": "| Manga | Archive, Image |",
+      "id": "F-024",
+      "note": "Manga defaults to the Archive and Images file groups.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "10.3",
+      "sectionId": "S-0030",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:274"
+      ],
+      "fsdQuote": "| Book | Pdf, Epub |",
+      "id": "F-025",
+      "note": "Book defaults to the Pdf and Epub file groups.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "10.3",
+      "sectionId": "S-0030",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:278"
+      ],
+      "fsdQuote": "| Light Novel | Epub |",
+      "id": "F-026",
+      "note": "Light Novel defaults to the Epub file group.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "10.3",
+      "sectionId": "S-0030",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:23"
+      ],
+      "fsdQuote": null,
+      "id": "F-027",
+      "note": "A Genres browse screen lists genres. The FSD describes only People and Tags under Browse.",
+      "runs": [
+        1
+      ],
+      "screen": "/browse/genres",
+      "section": null,
+      "sectionId": null,
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:25"
+      ],
+      "fsdQuote": null,
+      "id": "F-028",
+      "note": "An All Annotations browse screen exists and is not described in the FSD.",
+      "runs": [
+        1
+      ],
+      "screen": "/browse/annotations",
+      "section": null,
+      "sectionId": null,
+      "state": "undocumented"
+    }
+  ],
+  "fsdVersion": "781973da1378f7804d05e38d0ccaf8693e6c1c86b3de76d65d0638a9e9c3df66",
+  "model": "claude-sonnet-5-5",
+  "runs": [
+    {
+      "dropped": 0,
+      "findings": 25,
+      "retried": false,
+      "run": 1,
+      "usage": {
+        "cacheReadTokens": 388131,
+        "cacheWriteTokens": 32977,
+        "calls": 1,
+        "costUsd": 0.321246,
+        "inputTokens": 36,
+        "model": "claude-sonnet-5-5",
+        "ms": 85460,
+        "outputTokens": 11164,
+        "settings": {
+          "agent": "stangent-fsd-reviewer",
+          "claudeVersion": "2.1.292 (Claude Code)",
+          "effort": "medium",
+          "mode": "agentic",
+          "model": "claude-sonnet-5-5"
+        }
+      }
+    },
+    {
+      "dropped": 0,
+      "findings": 7,
+      "retried": false,
+      "run": 2,
+      "usage": {
+        "cacheReadTokens": 102335,
+        "cacheWriteTokens": 12766,
+        "calls": 1,
+        "costUsd": 0.105763,
+        "inputTokens": 16,
+        "model": "claude-sonnet-5-5",
+        "ms": 30535,
+        "outputTokens": 3420,
+        "settings": {
+          "agent": "stangent-fsd-reviewer",
+          "claudeVersion": "2.1.292 (Claude Code)",
+          "effort": "medium",
+          "mode": "agentic",
+          "model": "claude-sonnet-5-5"
+        }
+      }
+    }
+  ],
+  "tokens": 550845,
+  "version": 2
+}

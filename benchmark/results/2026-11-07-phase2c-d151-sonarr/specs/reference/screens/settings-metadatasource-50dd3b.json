@@ -1,0 +1,175 @@
+{
+  "codeTitle": "/settings/metadatasource · MetadataSourceSettings",
+  "entry": "page:tsconfig.json|/settings/metadatasource",
+  "generated": {
+    "bundleHash": "2673dcadb7fa24bbbb52c16351d3d418359e617caf915692ae12cf5d1d6b13a7",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 28894,
+      "cutOff": 11,
+      "depth": 6,
+      "points": 94
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 15930,
+      "calls": 1,
+      "costUsd": 0.067599,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3821,
+      "outputTokens": 370
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 13597,
+      "calls": 1,
+      "costUsd": 0.070808,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 13632,
+      "outputTokens": 1614
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/settings/metadatasource",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MetadataSource/MetadataSourceSettings.tsx#MetadataSourceSettings",
+          "ts|frontend/src/Settings/useSettings.ts#useManageSettings",
+          "ts|frontend/src/Helpers/Hooks/usePendingChangesStore.ts#usePendingChangesStore"
+        ],
+        "id": "A1",
+        "text": "Changing the preferred metadata language stores it as a pending change without saving it."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MetadataSource/MetadataSourceSettings.tsx#MetadataSourceSettings",
+          "ts|frontend/src/Settings/useSettings.ts#useManageSettings",
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings"
+        ],
+        "id": "A2",
+        "text": "Pressing save sends the loaded settings merged with the pending changes to the server with a PUT."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettings.ts#useManageSettings"
+        ],
+        "id": "R1",
+        "text": "Only values that differ from the loaded settings count as changed."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/selectSettings.ts#getValidationFailures",
+          "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#getValidationFailures"
+        ],
+        "id": "R2",
+        "text": "Validation failures are read only from a 400 response, and those flagged as warnings are separated from errors."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/useTheme.ts#useTheme"
+        ],
+        "id": "R3",
+        "text": "The theme used for the TheTVDB logo comes from the UI settings, falling back to the default theme; \"auto\" follows the system dark/light preference."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MetadataSource/MetadataSourceSettings.tsx#MetadataSourceSettings"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Metadata Source\" under the \"Settings\" scope."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MetadataSource/MetadataSourceSettings.tsx#MetadataSourceSettings"
+        ],
+        "id": "S2",
+        "text": "A loading indicator is shown while settings are being fetched and have not yet been fetched."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MetadataSource/MetadataSourceSettings.tsx#MetadataSourceSettings"
+        ],
+        "id": "S3",
+        "text": "When fetching has finished with an error, a danger alert shows the message for loading the metadata source settings failing."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MetadataSource/MetadataSourceSettings.tsx#MetadataSourceSettings"
+        ],
+        "id": "S4",
+        "text": "Once settings are fetched without error, an \"Options\" group is shown with a \"Preferred Metadata Language\" language select, with help text and no \"Any\" option."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MetadataSource/TheTvdb.tsx#TheTvdb",
+          "ts|frontend/src/Settings/MetadataSource/MetadataSourceSettings.tsx#MetadataSourceSettings"
+        ],
+        "id": "S5",
+        "text": "A \"Source\" group shows TheTVDB logo (chosen by the current theme: dark or light), a \"TheTvdb\" heading and a description saying series and episode information is provided by TheTVDB, with a link to the TheTVDB subscribe page."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/MetadataSource/MetadataSourceSettings.tsx#MetadataSourceSettings",
+          "ts|frontend/src/Utilities/selectSettings.ts#selectSettings",
+          "ts|frontend/src/Utilities/selectSettings.ts#getFailures"
+        ],
+        "id": "S6",
+        "text": "Validation errors and warnings from a failed save are passed to the form and attached to the matching setting by property name."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+          "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation"
+        ],
+        "id": "E1",
+        "text": "Saving sends a PUT of the settings to the server, including the API key header."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+          "ts|frontend/src/Settings/useSettings.ts#useManageSettings"
+        ],
+        "id": "E2",
+        "text": "After a successful save, the cached settings are replaced with the server's response and the pending changes are cleared."
+      }
+    ]
+  },
+  "title": "Metadata Source Settings",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSettings",
+      "line": 12,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+      "line": 29,
+      "reason": "HTTP PUT to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

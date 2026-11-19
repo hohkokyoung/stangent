@@ -1,0 +1,578 @@
+{
+  "repo": "sonarr",
+  "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+  "id": "save-indexer",
+  "name": "Save indexer",
+  "kind": "click",
+  "start": {
+    "what": "the Save button's handler in the Edit Indexer modal",
+    "at": "frontend/src/Settings/Indexers/Indexers/EditIndexerModalContent.tsx:313",
+    "code": "onPress={handleSavePress}"
+  },
+  "actor": {
+    "who": "signed-in user (API fallback policy requires an authenticated user)",
+    "why": "no [AllowAnonymous] on IndexerController; fallback policy requires auth",
+    "at": "src/NzbDrone.Host/Startup.cs:232",
+    "code": "options.FallbackPolicy = new AuthorizationPolicyBuilder(\"API\")\n.RequireAuthenticatedUser()\n.Build();"
+  },
+  "checks": [
+    {
+      "what": "Name not empty",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:44",
+      "code": "SharedValidator.RuleFor(c => c.Name).NotEmpty();"
+    },
+    {
+      "what": "Name must be unique among providers",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:45",
+      "code": "SharedValidator.RuleFor(c => c.Name).Must((v, c) => !_providerFactory.All().Any(p => p.Name.EqualsIgnoreCase(c) && p.Id != v.Id)).WithMessage(\"Should be unique\");"
+    },
+    {
+      "what": "Implementation not empty",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:46",
+      "code": "SharedValidator.RuleFor(c => c.Implementation).NotEmpty();"
+    },
+    {
+      "what": "ConfigContract not empty",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:47",
+      "code": "SharedValidator.RuleFor(c => c.ConfigContract).NotEmpty();"
+    },
+    {
+      "what": "POST: Fields not null",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:49",
+      "code": "PostValidator.RuleFor(c => c.Fields).NotNull();"
+    },
+    {
+      "what": "Priority between 1 and 50",
+      "at": "src/Sonarr.Api.V5/Indexers/IndexerController.cs:21",
+      "code": "SharedValidator.RuleFor(c => c.Priority).InclusiveBetween(1, 50);"
+    },
+    {
+      "what": "SeasonSearchMaximumSingleEpisodeAge >= 0",
+      "at": "src/Sonarr.Api.V5/Indexers/IndexerController.cs:22",
+      "code": "SharedValidator.RuleFor(c => c.SeasonSearchMaximumSingleEpisodeAge).GreaterThanOrEqualTo(0);"
+    },
+    {
+      "what": "DownloadClientId refers to an existing download client",
+      "at": "src/Sonarr.Api.V5/Indexers/IndexerController.cs:23",
+      "code": "SharedValidator.RuleFor(c => c.DownloadClientId).SetValidator(downloadClientExistsValidator);"
+    },
+    {
+      "what": "PUT: Id is a valid id (IdValidator)",
+      "at": "src/Sonarr.Http/REST/RestController.cs:50",
+      "code": "IdValidator.RuleFor(r => r.Id).ValidId();"
+    },
+    {
+      "what": "Newznab settings: Categories or AnimeCategories must be provided (runs only when the implementation is Newznab)",
+      "at": "src/NzbDrone.Core/Indexers/Newznab/NewznabSettings.cs:36",
+      "code": "RuleFor(c => c).Custom((c, context) =>\n{\nif (c.Categories.Empty() && c.AnimeCategories.Empty())\n{\ncontext.AddFailure(\"Either 'Categories' or 'Anime Categories' must be provided\");\n}\n});"
+    },
+    {
+      "what": "Newznab settings: BaseUrl is a valid root url",
+      "at": "src/NzbDrone.Core/Indexers/Newznab/NewznabSettings.cs:44",
+      "code": "RuleFor(c => c.BaseUrl).ValidRootUrl();"
+    },
+    {
+      "what": "Newznab settings: ApiPath is a valid url base",
+      "at": "src/NzbDrone.Core/Indexers/Newznab/NewznabSettings.cs:45",
+      "code": "RuleFor(c => c.ApiPath).ValidUrlBase(\"/api\");"
+    },
+    {
+      "what": "Newznab settings: ApiKey not empty for known hosts",
+      "at": "src/NzbDrone.Core/Indexers/Newznab/NewznabSettings.cs:46",
+      "code": "RuleFor(c => c.ApiKey).NotEmpty().When(ShouldHaveApiKey);"
+    },
+    {
+      "what": "Newznab settings: AdditionalParameters match the regex when set",
+      "at": "src/NzbDrone.Core/Indexers/Newznab/NewznabSettings.cs:47",
+      "code": "RuleFor(c => c.AdditionalParameters).Matches(AdditionalParametersRegex)\n.When(c => !c.AdditionalParameters.IsNullOrWhiteSpace());"
+    }
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "from": null,
+      "what": "handler calls saveProvider() from useManageIndexer/useManageProviderSettings",
+      "at": "frontend/src/Settings/Indexers/Indexers/EditIndexerModalContent.tsx:94",
+      "code": "saveProvider();"
+    },
+    {
+      "n": 2,
+      "from": 1,
+      "what": "saveProvider merges pending changes, picks skipTesting/skipValidation options and calls save()",
+      "at": "frontend/src/Settings/useProviderSettings.ts:310",
+      "code": "save(updatedSettings, saveOptions);"
+    },
+    {
+      "n": 3,
+      "from": 2,
+      "what": "fetchJson sends PUT /indexer/{id} for an existing indexer or POST /indexer for a new one, with skipTesting/skipValidation query params",
+      "at": "frontend/src/Settings/useProviderSettings.ts:111",
+      "code": "return fetchJson<T, T>({\npath:\ngetQueryPath(id ? `${path}/${id}` : path) +\ngetQueryString(queryParams),\nmethod: id ? 'PUT' : 'POST',\nheaders: {\n'X-Api-Key': window.Sonarr.apiKey,\n'X-Sonarr-Client': 'Sonarr',\n},\nbody: data,\n});",
+      "conditions": [
+        {
+          "kind": "ternary",
+          "at": "frontend/src/Settings/useProviderSettings.ts:115",
+          "code": "method: id ? 'PUT' : 'POST',"
+        }
+      ]
+    },
+    {
+      "n": 4,
+      "from": 3,
+      "what": "POST /indexer: CreateProvider (new indexer, id 0)",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:81",
+      "code": "public Results<Created<TProviderResource>, NotFound> CreateProvider([FromBody] TProviderResource providerResource, [FromQuery] bool skipTesting = false, [FromQuery] SkipValidation skipValidation = SkipValidation.None)"
+    },
+    {
+      "n": 5,
+      "from": 4,
+      "what": "GetDefinition maps the resource to an IndexerDefinition and validates it",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:83",
+      "code": "var providerDefinition = GetDefinition(providerResource, null, skipValidation, false);"
+    },
+    {
+      "n": 6,
+      "from": 5,
+      "what": "validates the settings when the definition is enabled and validation is not skipped",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:173",
+      "code": "Validate(definition, skipValidation);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:171",
+          "code": "if (skipValidation != SkipValidation.All && (definition.Enable || forceValidate))"
+        }
+      ]
+    },
+    {
+      "n": 7,
+      "from": 6,
+      "what": "asks the implementation's settings object to validate itself",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:294",
+      "code": "var validationResult = definition.Settings.Validate();",
+      "end": {
+        "kind": "unknown",
+        "detail": "IProviderConfig.Validate() is implementation-specific (NewznabSettingsValidator, TorznabSettingsValidator, FileListSettingsValidator, ...); not walked, Newznab rules listed under checks"
+      }
+    },
+    {
+      "n": 8,
+      "from": 6,
+      "what": "turns failures/warnings into a ValidationException",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:296",
+      "code": "VerifyValidationResult(validationResult, skipValidation);"
+    },
+    {
+      "n": 9,
+      "from": 4,
+      "what": "tests the connection when the indexer is enabled and testing is not skipped",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:87",
+      "code": "Test(providerDefinition, skipValidation);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:85",
+          "code": "if (providerDefinition.Enable && !skipTesting)"
+        }
+      ]
+    },
+    {
+      "n": 10,
+      "from": 9,
+      "what": "calls the provider factory's Test (IndexerFactory.Test override)",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:301",
+      "code": "var validationResult = _providerFactory.Test(definition);"
+    },
+    {
+      "n": 11,
+      "from": 10,
+      "what": "IndexerFactory.Test calls the base ProviderFactory.Test",
+      "at": "src/NzbDrone.Core/Indexers/IndexerFactory.cs:154",
+      "code": "var result = base.Test(definition);"
+    },
+    {
+      "n": 12,
+      "from": 11,
+      "what": "builds the indexer instance and calls its Test()",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:81",
+      "code": "return GetInstance(definition).Test();"
+    },
+    {
+      "n": 13,
+      "from": 12,
+      "what": "IndexerBase.Test runs the implementation's Test(failures) (HttpIndexerBase.Test -> TestConnection -> FetchPage)",
+      "at": "src/NzbDrone.Core/Indexers/IndexerBase.cs:116",
+      "code": "Test(failures).GetAwaiter().GetResult();",
+      "end": {
+        "kind": "depth",
+        "detail": "8 calls deep; not walked: HttpIndexerBase.Test -> TestConnection -> FetchPage, which makes an HTTP request to the indexer (outside call); Newznab/Torznab and other implementations override parts of it"
+      }
+    },
+    {
+      "n": 14,
+      "from": 10,
+      "what": "records a successful test for an existing indexer",
+      "at": "src/NzbDrone.Core/Indexers/IndexerFactory.cs:163",
+      "code": "_indexerStatusService.RecordSuccess(definition.Id);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/Indexers/IndexerFactory.cs:161",
+          "code": "if (result == null || result.IsValid)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/NzbDrone.Core/Indexers/IndexerFactory.cs:156",
+          "code": "if (definition.Id == 0)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "IndexerStatus table (ProviderStatusServiceBase.RecordSuccess upserts the status)"
+      }
+    },
+    {
+      "n": 15,
+      "from": 10,
+      "what": "records a failed test for an existing indexer",
+      "at": "src/NzbDrone.Core/Indexers/IndexerFactory.cs:167",
+      "code": "_indexerStatusService.RecordFailure(definition.Id);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/NzbDrone.Core/Indexers/IndexerFactory.cs:161",
+          "code": "if (result == null || result.IsValid)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/NzbDrone.Core/Indexers/IndexerFactory.cs:156",
+          "code": "if (definition.Id == 0)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "IndexerStatus table (RecordFailure)"
+      }
+    },
+    {
+      "n": 16,
+      "from": 9,
+      "what": "turns test failures/warnings into a ValidationException",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:303",
+      "code": "VerifyValidationResult(validationResult, skipValidation);"
+    },
+    {
+      "n": 17,
+      "from": 4,
+      "what": "creates the indexer definition",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:90",
+      "code": "providerDefinition = _providerFactory.Create(providerDefinition);"
+    },
+    {
+      "n": 18,
+      "from": 17,
+      "what": "inserts the indexer row",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:116",
+      "code": "var result = _providerRepository.Insert(definition);",
+      "end": {
+        "kind": "database",
+        "detail": "Indexers table"
+      }
+    },
+    {
+      "n": 19,
+      "from": 17,
+      "what": "publishes ProviderAddedEvent<IIndexer>",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:117",
+      "code": "_eventAggregator.PublishEvent(new ProviderAddedEvent<TProvider>(result));",
+      "end": {
+        "kind": "message",
+        "detail": "ProviderAddedEvent<IIndexer>"
+      }
+    },
+    {
+      "n": 20,
+      "from": 4,
+      "what": "returns TypedCreated(id), which re-reads the definition",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:92",
+      "code": "return TypedCreated(providerDefinition.Id);"
+    },
+    {
+      "n": 21,
+      "from": 20,
+      "what": "loads the saved definition",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:54",
+      "code": "var definition = _providerFactory.Get(id);",
+      "end": {
+        "kind": "database",
+        "detail": "Indexers table (read by id)"
+      }
+    },
+    {
+      "n": 22,
+      "from": 3,
+      "what": "PUT /indexer/{id}: UpdateProvider (existing indexer)",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:98",
+      "code": "public Results<Accepted<TProviderResource>, NotFound> UpdateProvider([FromRoute] int id, [FromBody] TProviderResource providerResource, [FromQuery] bool skipTesting = false, [FromQuery] SkipValidation skipValidation = SkipValidation.None)"
+    },
+    {
+      "n": 23,
+      "from": 22,
+      "what": "finds the existing definition",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:100",
+      "code": "var existingDefinition = _providerFactory.Find(id);",
+      "end": {
+        "kind": "database",
+        "detail": "Indexers table (read by id)"
+      }
+    },
+    {
+      "n": 24,
+      "from": 22,
+      "what": "GetDefinition maps and validates (same walk as steps 5-8)",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:107",
+      "code": "var providerDefinition = GetDefinition(providerResource, existingDefinition, skipValidation, false);",
+      "end": {
+        "kind": "unknown",
+        "detail": "same GetDefinition/Validate walk as step 5"
+      }
+    },
+    {
+      "n": 25,
+      "from": 22,
+      "what": "tests the connection only if enabled, testing not skipped and the definition changed (same walk as steps 9-16)",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:115",
+      "code": "Test(providerDefinition, skipValidation);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:113",
+          "code": "if (providerDefinition.Enable && !skipTesting && hasDefinitionChanged)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "same Test walk as step 9"
+      }
+    },
+    {
+      "n": 26,
+      "from": 22,
+      "what": "updates the definition only if it changed",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:120",
+      "code": "_providerFactory.Update(providerDefinition);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:118",
+          "code": "if (hasDefinitionChanged)"
+        }
+      ]
+    },
+    {
+      "n": 27,
+      "from": 26,
+      "what": "updates the indexer row",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:124",
+      "code": "_providerRepository.Update(definition);",
+      "end": {
+        "kind": "database",
+        "detail": "Indexers table"
+      }
+    },
+    {
+      "n": 28,
+      "from": 26,
+      "what": "publishes ProviderUpdatedEvent<IIndexer>",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:125",
+      "code": "_eventAggregator.PublishEvent(new ProviderUpdatedEvent<TProvider>(definition));",
+      "end": {
+        "kind": "message",
+        "detail": "ProviderUpdatedEvent<IIndexer>"
+      }
+    },
+    {
+      "n": 29,
+      "from": 22,
+      "what": "returns TypedAccepted(id), which re-reads the definition",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:123",
+      "code": "return TypedAccepted(existingDefinition.Id);"
+    },
+    {
+      "n": 30,
+      "from": 29,
+      "what": "loads the saved definition",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:54",
+      "code": "var definition = _providerFactory.Get(id);",
+      "end": {
+        "kind": "database",
+        "detail": "Indexers table (read by id)"
+      }
+    }
+  ],
+  "exits": [
+    {
+      "what": "throws BadRequestException when the request body is empty",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "code": "throw new BadRequestException(\"Request body can't be empty\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Http/REST/RestController.cs:129",
+          "code": "if (resource == null)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Http/REST/RestController.cs:87",
+          "code": "if (Request.Method is \"POST\" or \"PUT\")"
+        },
+        {
+          "kind": "loop",
+          "at": "src/Sonarr.Http/REST/RestController.cs:97",
+          "code": "foreach (var resource in resourceArgs)"
+        }
+      ]
+    },
+    {
+      "what": "throws ValidationException when a shared/post/put/id validator rule fails",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "code": "throw new ValidationException(errors);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Http/REST/RestController.cs:155",
+          "code": "if (errors.Any())"
+        },
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Http/REST/RestController.cs:87",
+          "code": "if (Request.Method is \"POST\" or \"PUT\")"
+        },
+        {
+          "kind": "loop",
+          "at": "src/Sonarr.Http/REST/RestController.cs:97",
+          "code": "foreach (var resource in resourceArgs)"
+        }
+      ]
+    },
+    {
+      "what": "returns 404 when the indexer being updated does not exist",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:104",
+      "code": "return TypedResults.NotFound();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:102",
+          "code": "if (existingDefinition == null)"
+        }
+      ]
+    },
+    {
+      "what": "throws ValidationException on any settings or test failure or warning when skipValidation is None (called from GetDefinition's Validate and from Test)",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:312",
+      "code": "throw new ValidationException(result.Failures);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:310",
+          "code": "if (skipValidation == SkipValidation.None && (!result.IsValid || result.HasWarnings))"
+        }
+      ]
+    },
+    {
+      "what": "throws ValidationException on errors when skipValidation is Warnings",
+      "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:317",
+      "code": "throw new ValidationException(result.Errors);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Api.V5/Provider/ProviderControllerBase.cs:315",
+          "code": "if (skipValidation == SkipValidation.Warnings && !result.IsValid)"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "kind": "message",
+      "to": "ProviderControllerBase.Handle(ProviderAddedEvent) - SignalR broadcast (Sonarr.Api.V5)",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:117",
+      "code": "_eventAggregator.PublishEvent(new ProviderAddedEvent<TProvider>(result));"
+    },
+    {
+      "kind": "message",
+      "to": "IndexerJackettAllCheck (health check, [CheckOn] ProviderAddedEvent<IIndexer>)",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:117",
+      "code": "_eventAggregator.PublishEvent(new ProviderAddedEvent<TProvider>(result));"
+    },
+    {
+      "kind": "message",
+      "to": "IndexerRssCheck (health check, [CheckOn] ProviderAddedEvent<IIndexer>)",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:117",
+      "code": "_eventAggregator.PublishEvent(new ProviderAddedEvent<TProvider>(result));"
+    },
+    {
+      "kind": "message",
+      "to": "IndexerSearchCheck (health check, [CheckOn] ProviderAddedEvent<IIndexer>)",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:117",
+      "code": "_eventAggregator.PublishEvent(new ProviderAddedEvent<TProvider>(result));"
+    },
+    {
+      "kind": "message",
+      "to": "ProviderControllerBase.Handle(ProviderUpdatedEvent) - SignalR broadcast (Sonarr.Api.V5)",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:125",
+      "code": "_eventAggregator.PublishEvent(new ProviderUpdatedEvent<TProvider>(definition));"
+    },
+    {
+      "kind": "message",
+      "to": "CachedIndexerSettingsProvider.Handle(ProviderUpdatedEvent<IIndexer>)",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:125",
+      "code": "_eventAggregator.PublishEvent(new ProviderUpdatedEvent<TProvider>(definition));"
+    },
+    {
+      "kind": "message",
+      "to": "IndexerDownloadClientCheck (health check, [CheckOn] ProviderUpdatedEvent<IIndexer>)",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:125",
+      "code": "_eventAggregator.PublishEvent(new ProviderUpdatedEvent<TProvider>(definition));"
+    },
+    {
+      "kind": "message",
+      "to": "IndexerJackettAllCheck (health check, [CheckOn] ProviderUpdatedEvent<IIndexer>)",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:125",
+      "code": "_eventAggregator.PublishEvent(new ProviderUpdatedEvent<TProvider>(definition));"
+    },
+    {
+      "kind": "message",
+      "to": "IndexerLongTermStatusCheck (health check, [CheckOn] ProviderUpdatedEvent<IIndexer>)",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:125",
+      "code": "_eventAggregator.PublishEvent(new ProviderUpdatedEvent<TProvider>(definition));"
+    },
+    {
+      "kind": "message",
+      "to": "IndexerRssCheck (health check, [CheckOn] ProviderUpdatedEvent<IIndexer>)",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:125",
+      "code": "_eventAggregator.PublishEvent(new ProviderUpdatedEvent<TProvider>(definition));"
+    },
+    {
+      "kind": "message",
+      "to": "IndexerSearchCheck (health check, [CheckOn] ProviderUpdatedEvent<IIndexer>)",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:125",
+      "code": "_eventAggregator.PublishEvent(new ProviderUpdatedEvent<TProvider>(definition));"
+    },
+    {
+      "kind": "message",
+      "to": "IndexerStatusCheck (health check, [CheckOn] ProviderUpdatedEvent<IIndexer>)",
+      "at": "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs:125",
+      "code": "_eventAggregator.PublishEvent(new ProviderUpdatedEvent<TProvider>(definition));"
+    }
+  ],
+  "notes": [
+    "The same modal and hook save both new and existing indexers: id 0 -> POST /indexer (CreateProvider), id > 0 -> PUT /indexer/{id} (UpdateProvider). Frontend apiRoot is /api/v5, so the V5 controllers are followed; V3 has parallel controllers.",
+    "Frontend skip rules in saveProvider (useProviderSettings.ts): 'if (provider.id > 0 && !hasChangedValues && !hasChangedFields) {' sends skipTesting and skipValidation=all; 'if (isResave) {' sends skipTesting; 'if (errors.length === 0 && warnings.length > 0) {' sends skipValidation=warnings.",
+    "ValidateResource runs in RestController.OnActionExecuting before the action (not a step). VerifyValidationResult is reached from GetDefinition (Validate) and from Test.",
+    "Settings validators vary per indexer implementation (Newznab, Torznab, FileList, HDBits, IPTorrents, Nyaa, Torrentleech, TorrentRss, BroadcastheNet, Fanzub); only Newznab rules are listed under checks.",
+    "Test(failures) is implemented per indexer type; HttpIndexerBase.TestConnection's FetchPage is the outside HTTP request, not walked (depth).",
+    "Not followed: V3 IndexerController; HealthCheck [CheckOn] consumers are listed as message links by name.",
+    "Step 2 -> 3: save() is a useCallback wrapping mutate (useProviderSettings.ts:131-135), not walked as its own step."
+  ]
+}

@@ -1,0 +1,1 @@
+src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs · Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.ProcessFile(System.String,System.String,System.String,System.String,NzbDrone.Core.Tv.Series)

@@ -1,0 +1,165 @@
+{
+  "codeTitle": "POST /api/v5/Connection/test",
+  "entry": "endpoint:Sonarr.Api.V5|POST /api/v5/Connection/test",
+  "generated": {
+    "bundleHash": "bb52434d29c8dc14a2a38402afd9dc65a6007611d487c26b1ca8f0f184248384",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 31841,
+      "cutOff": 159,
+      "depth": 4,
+      "points": 59
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 17918,
+      "calls": 1,
+      "costUsd": 0.075171,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5116,
+      "outputTokens": 332
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 15227,
+      "calls": 1,
+      "costUsd": 0.081078,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 11589,
+      "outputTokens": 1989
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|POST /api/v5/Connection/test",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Test(`0,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|POST /api/v5/Connection/test"
+        ],
+        "id": "A1",
+        "text": "POST a connection definition as JSON to test it. An optional skipValidation query value (default None) controls how strictly failures are enforced."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Test(`0,Sonarr.Api.V5.Provider.SkipValidation)",
+          "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)"
+        ],
+        "id": "A2",
+        "text": "If the posted resource has an Id above 0, the existing saved definition is looked up and used, e.g. to restore stored private field values."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderResourceMapper`2.ToModel(`0,`1)",
+          "Sonarr.Common|M:NzbDrone.Common.Reflection.ReflectionExtensions.FindTypeByName(System.Reflection.Assembly,System.String)"
+        ],
+        "id": "R1",
+        "text": "The posted resource is converted to a definition, with settings type found by the config contract name (case-insensitive) and fields read into it."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.GetDefinition(`0,`3,Sonarr.Api.V5.Provider.SkipValidation,System.Boolean)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Validate(`3,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R2",
+        "text": "Settings validation runs before the test unless skipValidation is All; the test always forces it, even for a disabled definition."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.VerifyValidationResult(FluentValidation.Results.ValidationResult,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R3",
+        "text": "With skipValidation None, the call fails if the result has any errors or warnings."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.VerifyValidationResult(FluentValidation.Results.ValidationResult,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R4",
+        "text": "With skipValidation Warnings, only errors cause failure; warnings are ignored."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)"
+        ],
+        "id": "R5",
+        "text": "Private field values (API key or password) sent as the masked placeholder are replaced with the existing stored value when an existing definition is present."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Connections.ConnectionResourceMapper.ToModel(Sonarr.Api.V5.Connections.ConnectionResource,NzbDrone.Core.Notifications.NotificationDefinition)"
+        ],
+        "id": "R6",
+        "text": "A connection definition also carries its on-event triggers and supports-event flags (e.g. OnGrab, OnDownload, OnHealthIssue) from the posted resource."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Test(`0,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "S1",
+        "text": "Returns an empty 204 No Content response when the test passes."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.VerifyValidationResult(FluentValidation.Results.ValidationResult,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "S2",
+        "text": "When the test fails, a validation exception is raised carrying the validation failures instead of a normal response."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Test(`1)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Test(`3,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "E1",
+        "text": "The provider's own connection test is executed for the definition, which contacts the configured provider."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationFactory.Test(NzbDrone.Core.Notifications.NotificationDefinition)"
+        ],
+        "id": "E2",
+        "text": "For a saved notification (Id not 0), a passing test records a success in the notification status service and a failing test records a failure. Unsaved definitions record nothing."
+      }
+    ]
+  },
+  "title": "Test Connection (notification) endpoint",
+  "unknowns": [
+    {
+      "file": "src/NzbDrone.Common/Reflection/ReflectionExtensions.cs",
+      "in": "Sonarr.Common|F:NzbDrone.Common.Reflection.ReflectionExtensions.CoreAssembly",
+      "line": 10,
+      "reason": "reflection: Assembly.Load"
+    },
+    {
+      "file": "src/NzbDrone.Common/Reflection/ReflectionExtensions.cs",
+      "in": "Sonarr.Common|M:NzbDrone.Common.Reflection.ReflectionExtensions.FindTypeByName(System.Reflection.Assembly,System.String)",
+      "line": 72,
+      "reason": "reflection: Assembly.GetExportedTypes"
+    },
+    {
+      "file": "src/Sonarr.Http/ClientSchema/SchemaBuilder.cs",
+      "in": "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)",
+      "line": 58,
+      "reason": "reflection: Activator.CreateInstance"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

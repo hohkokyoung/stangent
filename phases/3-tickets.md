@@ -1,9 +1,9 @@
 ---
 phase: 3
 name: tickets
-status: done
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 5, reference-page: 1, source-document: 1, trace-links: 1 }
-provides: { ticket-bundle: 2, ticket-update: 1, bug-proof: 1 }
+status: needs review
+consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, source-document: 4, trace-links: 4 }
+provides: { ticket-bundle: 3, ticket-update: 1, bug-proof: 2 }
 ---
 
 # Phase 3 · Tickets
@@ -783,3 +783,21 @@ Phase 4 consumes `ticket-bundle` v2 and `bug-proof` v1; it hasn't started, so no
 2. **The proof re-run on Sonarr** (at most about $45, the $40 cap plus about $4 of drafts; last time's recorded cost was $13, held down by D104's bug; owner's OK; remove `bug-proof.json` first; re-sync the benchmark binary), with the drafts phase and replay after it, to re-confirm grounded and repeatable; then the smaller proof issues if they still matter.
 3. **Phase 4's first question:** does the bundle help? The fix agent on the same bugs three ways (Open questions).
 4. **Phase 4:** the graph gaps; recording what a failing test ran as evidence; an agent waits for a person's go on a ticket with no proof (D75).
+
+### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
+v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.
+Checked 2026-11-04 (D20): by grep, `Stangent.Tickets` reads none of the new values; bug proof calls `PlaywrightSpecs.Files(dir)` and `LiteralGotos`, unchanged on a readable tree. All tests pass, so this now consumes `code-graph: 4`.
+
+The code that finds related specs moved from `AppSession` to `PlaywrightSpecs` in `Stangent.Graph`, with the same behaviour; `AppSession.RelatedSpecs` and `RouteMatches` stay, and bug proof's tests pass unchanged.
+
+Checked 2026-11-04 (D20, D117): `source-document` v1 → v2. By grep, `Stangent.Tickets` reads sections through `SpecIndex`, by `id`, `title` and `text`, and never `permanentId` or the document's `schemaVersion`. All tests pass, so this now consumes `source-document: 2`. Its code wasn't touched.
+
+Checked 2026-11-04 (D20, D118): `trace-links` v1 → v3. By grep, `Stangent.Tickets` reads an entry's `state`, `fsd`, `page`, `check` and `decision`, by name, and never `finding`, `severity` or `evidence`, so none reaches a ticket bundle. All tests pass, so this consumes `trace-links: 3`.
+
+Checked 2026-11-04 (D20, D121): `source-document` v2 → v3. By grep, `Stangent.Tickets` never reads a document's `problems`. Moved to `source-document: 3`.
+
+§8 S.3 (D121): attachments go through `ImportPipeline.Attachment`, so a `.pdf` converts or is listed, and the pull never stops. `problems` and `format` stay out of the bundle, so `ticket-bundle` is unchanged. A ticket already pulled with a PDF gains text at its next pull, which changes its bundle and what a saved draft or finder ran on: not checked on a real ticket.
+
+Checked 2026-11-04 (D20, D121): `trace-links` v3 → v4. By grep, `Stangent.Tickets` reads `fsd.section`, `fsd.title` and `fsd.quote` by name, never the whole object. Moved to `trace-links: 4`.
+
+Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions` v2 → v3. By grep, nothing here reads telemetry, and results are read by name, so `components` beside `result` changes nothing. Moved.

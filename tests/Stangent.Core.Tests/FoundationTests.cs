@@ -27,6 +27,17 @@ public class TelemetryTests
     }
 
     [Fact]
+    public void A_command_with_a_hyphen_still_writes_its_event()
+    {
+        using var temp = new TempRepo();
+        var writer = new TelemetryWriter(temp.Repo.TelemetryDir, SchemaRegistry.Embedded, new FixedTime(Now), new StringWriter());
+        var span = writer.Start(TelemetryWriter.SpanName("graph screen-tests"));
+        span.Attributes["stangent.command"] = "graph screen-tests";
+
+        Assert.NotNull(writer.End(span, ok: true));
+    }
+
+    [Fact]
     public void An_event_carrying_anything_outside_the_contract_is_dropped()
     {
         using var temp = new TempRepo();
@@ -56,6 +67,13 @@ public class RepoTests
         Assert.False(repo.Config.Ai.Enabled);
         var gitignore = File.ReadAllLines(Path.Combine(temp.Root, ".gitignore"));
         Assert.All(StangentRepo.GitIgnoreLines, line => Assert.Single(gitignore, line));
+    }
+
+    [Fact]
+    public void Init_ignores_the_graph_and_the_disprove_steps_work_files()
+    {
+        Assert.Contains(".stangent/graph.sqlite*", StangentRepo.GitIgnoreLines);      // documented as git-ignored (D25)
+        Assert.Contains(".stangent/fsd-disprove/", StangentRepo.GitIgnoreLines);      // its bundles hold FSD text and source
     }
 
     [Fact]

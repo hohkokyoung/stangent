@@ -1,0 +1,80 @@
+{
+  "codeTitle": "ANY /api/v3/Blocklist",
+  "entry": "endpoint:Sonarr.Api.V3|ANY /api/v3/Blocklist",
+  "generated": {
+    "bundleHash": "53a4cfe76785a0ccb1ac704996a0c213f3edd1e32946792ca58ce8ae54299042",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 8046,
+      "cutOff": 1,
+      "depth": 4,
+      "points": 7
+    },
+    "verifier": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 6402,
+      "calls": 1,
+      "costUsd": 0.026142,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1905,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 5646,
+      "calls": 1,
+      "costUsd": 0.028048,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4623,
+      "outputTokens": 546
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|ANY /api/v3/Blocklist",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Blocklist.BlocklistController.DeleteBlocklist(System.Int32)",
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Blocklist"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Blocklist"
+        ],
+        "id": "A1",
+        "text": "A caller deletes a single blocklist entry by its numeric id. The call returns nothing."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Blocklist.BlocklistController.DeleteBlocklist(System.Int32)"
+        ],
+        "id": "R1",
+        "text": "The entry to delete is identified by an integer id passed to the delete-by-id route."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Blocklisting.BlocklistService.Delete(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Delete(System.Int32)"
+        ],
+        "id": "E1",
+        "text": "The blocklist service asks the blocklist repository to delete the record with that id."
+      }
+    ]
+  },
+  "title": "Delete blocklist entry",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

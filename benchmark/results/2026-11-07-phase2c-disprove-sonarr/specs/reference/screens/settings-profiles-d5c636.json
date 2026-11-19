@@ -1,0 +1,327 @@
+{
+  "codeTitle": "/settings/profiles · Profiles",
+  "entry": "page:tsconfig.json|/settings/profiles",
+  "generated": {
+    "bundleHash": "79f0a15ad39608e2d43a424ffa3a77af6730c5c35a5c630bcc2c6bfb907add68",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 137134,
+      "cutOff": 71,
+      "depth": 6,
+      "points": 442
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 64963,
+      "calls": 1,
+      "costUsd": 0.266511,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6728,
+      "outputTokens": 648
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 60012,
+      "calls": 1,
+      "costUsd": 0.282608,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 23355,
+      "outputTokens": 4228
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/settings/profiles",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Quality/QualityProfiles.tsx#QualityProfiles",
+          "ts|frontend/src/Settings/Profiles/Quality/QualityProfile.tsx#QualityProfile"
+        ],
+        "id": "A1",
+        "text": "Click 'Add Quality Profile' to open an empty add modal; a card's clone action opens the modal pre-filled from that profile."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Quality/QualityProfile.tsx#QualityProfile",
+          "ts|frontend/src/Settings/Profiles/Quality/EditQualityProfileModalContent.tsx#EditQualityProfileModalContent",
+          "ts|frontend/src/Settings/Profiles/Quality/QualityProfileItems.tsx#QualityProfileItems"
+        ],
+        "id": "A2",
+        "text": "Click a quality profile card to edit it; the edit modal has Name, Upgrades Allowed, Upgrade Until, custom format score fields, a quality list with Qualities/Groups/Sizes modes, and Delete, Cancel and Save buttons."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Quality/EditQualityProfileModalContent.tsx#EditQualityProfileModalContent",
+          "ts|frontend/src/Settings/Profiles/Quality/useQualityProfileDnd.ts#useQualityProfileDnd",
+          "ts|frontend/src/Settings/Profiles/Quality/QualityProfileFormatItem.tsx#QualityProfileFormatItem"
+        ],
+        "id": "A3",
+        "text": "In the quality profile modal, qualities can be allowed or disallowed, grouped, ungrouped, renamed (groups), reordered by drag and drop, and sized; custom format scores can be changed."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Quality/QualityProfile.tsx#QualityProfile",
+          "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider"
+        ],
+        "id": "A4",
+        "text": "Delete a quality profile from its edit modal, then confirm in the 'Delete Quality Profile' dialog."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Delay/DelayProfiles.tsx#DelayProfiles",
+          "ts|frontend/src/Settings/Profiles/Delay/DelayProfile.tsx#DelayProfile"
+        ],
+        "id": "A5",
+        "text": "Click 'Add Delay Profile' or a delay profile row to open the add/edit modal; non-default rows have a delete button that opens a confirmation."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Delay/DelayProfiles.tsx#DelayProfiles",
+          "ts|frontend/src/Settings/Profiles/Delay/useDelayProfiles.ts#useReorderDelayProfile"
+        ],
+        "id": "A6",
+        "text": "Drag non-default delay profiles to reorder them; the new position is sent to the server."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Release/ReleaseProfiles.tsx#ReleaseProfiles",
+          "ts|frontend/src/Settings/Profiles/Release/ReleaseProfileItem.tsx#ReleaseProfileItem"
+        ],
+        "id": "A7",
+        "text": "Click 'Add Release Profile' or a release profile card to open the add/edit modal; a delete action on the card opens a confirmation."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Release/EditReleaseProfileModalContent.tsx#EditReleaseProfileModalContent"
+        ],
+        "id": "A8",
+        "text": "The release profile modal edits Name, Enable Profile, Must Contain, Must Not Contain, Air Date Restriction, grace period, season pack option, Indexer, Tags and Excluded Tags."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Quality/EditQualityProfileModalContent.tsx#EditQualityProfileModalContent",
+          "ts|frontend/src/Settings/Profiles/Quality/useQualityProfileInUse.ts#useQualityProfileInUse"
+        ],
+        "id": "R1",
+        "text": "Deleting a quality profile is disabled while it is used by any series or import list; a popover shows the usage counts."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Quality/EditQualityProfileModalContent.tsx#EditQualityProfileModalContent"
+        ],
+        "id": "R2",
+        "text": "The Upgrade Until field shows only when Upgrades Allowed is checked. Minimum custom format score appears only when the profile has custom formats; the upgrade score fields need both upgrades allowed and custom formats."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Quality/EditQualityProfileModalContent.tsx#EditQualityProfileModalContent"
+        ],
+        "id": "R3",
+        "text": "If the cutoff is unset or no longer allowed, it is set to the first allowed quality."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Quality/EditQualityProfileModalContent.tsx#EditQualityProfileModalContent"
+        ],
+        "id": "R4",
+        "text": "The minimum upgrade format score input has a minimum of 1."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Quality/useQualityProfiles.ts#useManageQualityProfile"
+        ],
+        "id": "R5",
+        "text": "A cloned quality profile gets a copied name, and a new profile starts from the server schema."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Delay/DelayProfile.tsx#DelayProfile",
+          "ts|frontend/src/Settings/Profiles/Delay/EditDelayProfileModalContent.tsx#EditDelayProfileModalContent"
+        ],
+        "id": "R6",
+        "text": "The default delay profile (id 1) cannot be dragged or deleted, and its tags are not editable."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Delay/EditDelayProfileModalContent.tsx#EditDelayProfileModalContent"
+        ],
+        "id": "R7",
+        "text": "Delay profile protocol options set enabled flags and preferred protocol; delay fields show only for enabled protocols, in minutes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Delay/EditDelayProfileModalContent.tsx#EditDelayProfileModalContent"
+        ],
+        "id": "R8",
+        "text": "The minimum custom format score field shows only when 'bypass if above custom format score' is checked."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Release/EditReleaseProfileModalContent.tsx#EditReleaseProfileModalContent"
+        ],
+        "id": "R9",
+        "text": "In release profiles, the air date grace period (hours) shows only when Air Date Restriction is checked, and Delete shows only when editing an existing profile."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Quality/EditQualityProfileModalContent.tsx#EditQualityProfileModalContent",
+          "ts|frontend/src/Settings/Profiles/Delay/EditDelayProfileModalContent.tsx#EditDelayProfileModalContent",
+          "ts|frontend/src/Settings/Profiles/Release/EditReleaseProfileModalContent.tsx#EditReleaseProfileModalContent"
+        ],
+        "id": "R10",
+        "text": "A modal closes automatically after a save finishes without error."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useManageProviderSettings"
+        ],
+        "id": "R11",
+        "text": "Saving an existing profile with no changes skips testing and validation."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Profiles.tsx#Profiles"
+        ],
+        "id": "S1",
+        "text": "The page titled Profiles has three sections: Quality Profiles, Delay Profiles and Release Profiles, each with a heading and description."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Quality/QualityProfiles.tsx#QualityProfiles",
+          "ts|frontend/src/Settings/Profiles/Delay/DelayProfiles.tsx#DelayProfiles",
+          "ts|frontend/src/Settings/Profiles/Release/ReleaseProfiles.tsx#ReleaseProfiles"
+        ],
+        "id": "S2",
+        "text": "Each section shows a load-error message if loading fails: 'QualityProfilesLoadError', 'DelayProfilesLoadError' or 'ReleaseProfilesLoadError' (translation keys)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Quality/QualityProfiles.tsx#QualityProfiles"
+        ],
+        "id": "S3",
+        "text": "Quality profiles appear as cards sorted by name, followed by an 'Add Quality Profile' card."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Quality/QualityProfile.tsx#QualityProfile"
+        ],
+        "id": "S4",
+        "text": "Each quality profile card shows its name, whether upgrades are on or off, the cutoff quality name when set, and chips for allowed qualities. Groups show a count and a tooltip listing their qualities."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Quality/QualityProfile.tsx#QualityProfile"
+        ],
+        "id": "S5",
+        "text": "The cutoff quality chip is highlighted; when upgrades are allowed it has a title explaining upgrades continue until the quality is met or exceeded."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Quality/QualityProfile.tsx#QualityProfile"
+        ],
+        "id": "S6",
+        "text": "A quality profile card with many allowed qualities shows only the first CHIP_CAP_THRESHOLD chips plus a 'show more' count button."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Delay/DelayProfiles.tsx#DelayProfiles",
+          "ts|frontend/src/Settings/Profiles/Delay/useDelayProfiles.ts#useSortedDelayProfiles"
+        ],
+        "id": "S7",
+        "text": "The Delay Profiles list has column headers Tags, Preferred Protocol, Usenet Delay and Torrent Delay. Profiles are ordered by their order value, with the default profile (id 1) shown last, followed by an 'Add Delay Profile' link."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Delay/DelayProfile.tsx#DelayProfile"
+        ],
+        "id": "S8",
+        "text": "Each delay profile row shows a Default label for id 1, its tags (or 'Any' when none), the preferred protocol (only torrent, only usenet, or prefer one), and usenet and torrent delays."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Delay/DelayProfile.tsx#getDelay"
+        ],
+        "id": "S9",
+        "text": "A delay shows '-' when that protocol is disabled, 'No delay' when zero, 'one minute' when 1, otherwise the number of minutes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Release/ReleaseProfiles.tsx#ReleaseProfiles"
+        ],
+        "id": "S10",
+        "text": "Release profiles appear as cards followed by an 'Add Release Profile' card."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Release/ReleaseProfileItem.tsx#ReleaseProfileItem"
+        ],
+        "id": "S11",
+        "text": "Each release profile card shows its name ('Unnamed' if blank), Enabled or Disabled status, required terms (success style) and ignored terms (danger style), tags, excluded tags, and the names of selected indexers."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useManageProviderSettings"
+        ],
+        "id": "E1",
+        "text": "Saving a profile sends it to the server and clears pending edits on success."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider"
+        ],
+        "id": "E2",
+        "text": "Confirming a delete sends an HTTP DELETE for the profile and removes it from the cached list on success."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Profiles/Delay/useDelayProfiles.ts#useReorderDelayProfile"
+        ],
+        "id": "E3",
+        "text": "Reordering a delay profile sends an HTTP PUT to reorder/{id}, with an optional 'after' parameter, and replaces the cached list with the response."
+      }
+    ]
+  },
+  "title": "Profiles settings",
+  "unknowns": [
+    {
+      "file": "frontend/src/Settings/Profiles/Delay/useDelayProfiles.ts",
+      "in": "ts|frontend/src/Settings/Profiles/Delay/useDelayProfiles.ts#useReorderDelayProfile",
+      "line": 121,
+      "reason": "HTTP PUT to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useProviderSettings",
+      "line": 78,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useDeleteProvider",
+      "line": 403,
+      "reason": "HTTP DELETE to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Utilities/Fetch/fetchJson.ts",
+      "in": "ts|frontend/src/Utilities/Fetch/fetchJson.ts#fetchJson",
+      "line": 56,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

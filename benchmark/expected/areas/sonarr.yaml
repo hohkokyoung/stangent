@@ -1,0 +1,426 @@
+# Sonarr's areas, confirmed by the owner on 2026-11-11 (D225): the proposal from commit 0bffefe7c8 with the owner's answers:
+# all 25 ties answered; the sidebar's 'Media › ' heading dropped from names; App frame (Restart, Shutdown) folded into System;
+# backend-folder areas kept as proposed until layer 4, plus four the answers needed (handlers whose leading clicks moved). Large areas are listed for information.
+areas:
+- name: 'Series'
+  menu:
+  - '/series'
+  folders:
+  - 'frontend/src/AddSeries'
+  - 'frontend/src/Series'
+- name: 'Series › Add New'
+  menu:
+  - '/add/new'
+- name: 'Series › Library Import'
+  menu:
+  - '/add/import'
+- name: 'Calendar'
+  menu:
+  - '/calendar'
+  folders:
+  - 'frontend/src/Calendar'
+- name: 'Statistics'
+  menu:
+  - '/statistics'
+  folders:
+  - 'frontend/src/Statistics'
+- name: 'Wanted'
+  menu:
+  - '/wanted/missing'
+  - '/wanted/cutoffunmet'
+  folders:
+  - 'frontend/src/Wanted'
+- name: 'Activity'
+  menu:
+  - '/activity/queue'
+  - '/activity/history'
+  - '/activity/blocklist'
+  folders:
+  - 'frontend/src/Activity'
+- name: 'Settings'
+  menu:
+  - '/settings'
+  - '/settings/metadatasource'
+  folders:
+  - 'frontend/src/Settings'
+- name: 'Settings › Media Management'
+  menu:
+  - '/settings/mediamanagement'
+- name: 'Settings › Profiles'
+  menu:
+  - '/settings/profiles'
+- name: 'Settings › Quality'
+  menu:
+  - '/settings/quality'
+- name: 'Settings › Custom Formats'
+  menu:
+  - '/settings/customformats'
+- name: 'Settings › Indexers'
+  menu:
+  - '/settings/indexers'
+- name: 'Settings › Download Clients'
+  menu:
+  - '/settings/downloadclients'
+- name: 'Settings › Import Lists'
+  menu:
+  - '/settings/importlists'
+- name: 'Settings › Connect'
+  menu:
+  - '/settings/connect'
+- name: 'Settings › Metadata'
+  menu:
+  - '/settings/metadata'
+- name: 'Settings › Tags'
+  menu:
+  - '/settings/tags'
+- name: 'Settings › General'
+  menu:
+  - '/settings/general'
+- name: 'Settings › UI'
+  menu:
+  - '/settings/ui'
+- name: 'System'
+  menu:
+  - '/system/status'
+  - '/system/tasks'
+  - '/system/backups'
+  - '/system/updates'
+  - '/system/events'
+  - '/system/logs/files'
+  folders:
+  - 'frontend/src/System'
+  - 'frontend/src/Components/Page/Header'
+- name: 'NzbDrone.Core › Authentication'
+  folders:
+  - 'src/NzbDrone.Core/Authentication'
+- name: 'NzbDrone.Core › Backup'
+  folders:
+  - 'src/NzbDrone.Core/Backup'
+- name: 'NzbDrone.Core › Blocklisting'
+  folders:
+  - 'src/NzbDrone.Core/Blocklisting'
+- name: 'NzbDrone.Core › Caching'
+  folders:
+  - 'src/NzbDrone.Core/Caching'
+- name: 'NzbDrone.Core › Configuration'
+  folders:
+  - 'src/NzbDrone.Core/Configuration'
+- name: 'NzbDrone.Core › DataAugmentation'
+  folders:
+  - 'src/NzbDrone.Core/DataAugmentation'
+- name: 'NzbDrone.Core › Datastore'
+  folders:
+  - 'src/NzbDrone.Core/Datastore'
+- name: 'NzbDrone.Core › Download'
+  folders:
+  - 'src/NzbDrone.Core/Download'
+- name: 'NzbDrone.Core › Extras'
+  folders:
+  - 'src/NzbDrone.Core/Extras'
+- name: 'NzbDrone.Core › HealthCheck'
+  folders:
+  - 'src/NzbDrone.Core/HealthCheck'
+- name: 'NzbDrone.Core › History'
+  folders:
+  - 'src/NzbDrone.Core/History'
+- name: 'NzbDrone.Core › Housekeeping'
+  folders:
+  - 'src/NzbDrone.Core/Housekeeping'
+- name: 'NzbDrone.Core › IndexerSearch'
+  folders:
+  - 'src/NzbDrone.Core/IndexerSearch'
+- name: 'NzbDrone.Core › Instrumentation'
+  folders:
+  - 'src/NzbDrone.Core/Instrumentation'
+- name: 'NzbDrone.Core › Jobs'
+  folders:
+  - 'src/NzbDrone.Core/Jobs'
+- name: 'NzbDrone.Core › Lifecycle'
+  folders:
+  - 'src/NzbDrone.Core/Lifecycle'
+- name: 'NzbDrone.Core › Localization'
+  folders:
+  - 'src/NzbDrone.Core/Localization'
+- name: 'NzbDrone.Core › MediaFiles'
+  folders:
+  - 'src/NzbDrone.Core/MediaFiles'
+- name: 'NzbDrone.Core › Messaging'
+  folders:
+  - 'src/NzbDrone.Core/Messaging'
+- name: 'NzbDrone.Core › Notifications'
+  folders:
+  - 'src/NzbDrone.Core/Notifications'
+- name: 'NzbDrone.Core › Profiles'
+  folders:
+  - 'src/NzbDrone.Core/Profiles'
+- name: 'NzbDrone.Core › ProgressMessaging'
+  folders:
+  - 'src/NzbDrone.Core/ProgressMessaging'
+- name: 'NzbDrone.Core › Qualities'
+  folders:
+  - 'src/NzbDrone.Core/Qualities'
+- name: 'NzbDrone.Core › ThingiProvider'
+  folders:
+  - 'src/NzbDrone.Core/ThingiProvider'
+- name: 'NzbDrone.Core › Tv'
+  folders:
+  - 'src/NzbDrone.Core/Tv'
+- name: 'NzbDrone.Core › Update'
+  folders:
+  - 'src/NzbDrone.Core/Update'
+- name: 'NzbDrone.Host'
+  folders:
+  - 'src/NzbDrone.Host'
+- name: 'Sonarr.Api.V3 › Commands'
+  folders:
+  - 'src/Sonarr.Api.V3/Commands'
+- name: 'Sonarr.Api.V3 › Health'
+  folders:
+  - 'src/Sonarr.Api.V3/Health'
+- name: 'Sonarr.Api.V3 › Qualities'
+  folders:
+  - 'src/Sonarr.Api.V3/Qualities'
+- name: 'Sonarr.Api.V3 › Series'
+  folders:
+  - 'src/Sonarr.Api.V3/Series'
+- name: 'Sonarr.Api.V3 › System'
+  folders:
+  - 'src/Sonarr.Api.V3/System'
+- name: 'Sonarr.Api.V5 › Commands'
+  folders:
+  - 'src/Sonarr.Api.V5/Commands'
+- name: 'Sonarr.Api.V5 › Health'
+  folders:
+  - 'src/Sonarr.Api.V5/Health'
+- name: 'Sonarr.Api.V5 › Qualities'
+  folders:
+  - 'src/Sonarr.Api.V5/Qualities'
+- name: 'Sonarr.Api.V5 › Series'
+  folders:
+  - 'src/Sonarr.Api.V5/Series'
+- name: 'Sonarr.Api.V5 › System'
+  folders:
+  - 'src/Sonarr.Api.V5/System'
+- name: 'Sonarr.Http › Authentication'
+  folders:
+  - 'src/Sonarr.Http/Authentication'
+- name: 'Sonarr.Api.V3 › EpisodeFiles'
+  folders:
+  - 'src/Sonarr.Api.V3/EpisodeFiles'
+- name: 'Sonarr.Api.V3 › Episodes'
+  folders:
+  - 'src/Sonarr.Api.V3/Episodes'
+- name: 'Sonarr.Api.V5 › EpisodeFiles'
+  folders:
+  - 'src/Sonarr.Api.V5/EpisodeFiles'
+- name: 'Sonarr.Api.V5 › Episodes'
+  folders:
+  - 'src/Sonarr.Api.V5/Episodes'
+large:
+- area: 'Series'
+  flows: 71
+  why: 'over 40, nothing to split by'
+- area: 'Settings'
+  flows: 77
+  why: 'over 40, nothing to split by'
+ties:
+- flow: 'click-captchainput-handlecaptchachange'
+  choose:
+  - 'Series'
+  - 'Series › Library Import'
+  - 'Calendar'
+  - 'Statistics'
+  - 'Wanted'
+  - 'Activity'
+  - 'Settings'
+  - 'Settings › Media Management'
+  - 'Settings › UI'
+  - 'System'
+  answer: 'Settings'
+- flow: 'click-captchainput-handlerefreshpress'
+  choose:
+  - 'Series'
+  - 'Series › Library Import'
+  - 'Calendar'
+  - 'Statistics'
+  - 'Wanted'
+  - 'Activity'
+  - 'Settings'
+  - 'Settings › Media Management'
+  - 'Settings › UI'
+  - 'System'
+  answer: 'Settings'
+- flow: 'click-customfilter-handleremovepress'
+  choose:
+  - 'Series'
+  - 'Calendar'
+  - 'Statistics'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Series'
+- flow: 'click-deviceinput-handlerefreshpress'
+  choose:
+  - 'Series'
+  - 'Series › Library Import'
+  - 'Calendar'
+  - 'Statistics'
+  - 'Wanted'
+  - 'Activity'
+  - 'Settings'
+  - 'Settings › Media Management'
+  - 'Settings › UI'
+  - 'System'
+  answer: 'Settings'
+- flow: 'click-episodedetailsmodalcontent-handlemonitorepisodepress'
+  choose:
+  - 'Series'
+  - 'Calendar'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Series'
+- flow: 'click-episodehistoryrow-handleconfirmmarkasfailed'
+  choose:
+  - 'Series'
+  - 'Calendar'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Series'
+- flow: 'click-episodesummary-handledeleteepisodefile'
+  choose:
+  - 'Series'
+  - 'Calendar'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Series'
+- flow: 'click-filterbuildermodalcontent-handlesavefilterpress'
+  choose:
+  - 'Series'
+  - 'Calendar'
+  - 'Statistics'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Series'
+- flow: 'click-interactiveimportmodalcontentinner-handleconfirmdelete'
+  choose:
+  - 'Series'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Activity'
+- flow: 'click-interactiveimportmodalcontentinner-handleepisodesselect'
+  choose:
+  - 'Series'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Activity'
+- flow: 'click-interactiveimportmodalcontentinner-handleimportselectedpress'
+  choose:
+  - 'Series'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Activity'
+- flow: 'click-interactiveimportmodalcontentinner-handleindexerflagsselect'
+  choose:
+  - 'Series'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Activity'
+- flow: 'click-interactiveimportmodalcontentinner-handlelanguagesselect'
+  choose:
+  - 'Series'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Activity'
+- flow: 'click-interactiveimportmodalcontentinner-handlequalityselect'
+  choose:
+  - 'Series'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Activity'
+- flow: 'click-interactiveimportmodalcontentinner-handlereleasegroupselect'
+  choose:
+  - 'Series'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Activity'
+- flow: 'click-interactiveimportmodalcontentinner-handlereleasetypeselect'
+  choose:
+  - 'Series'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Activity'
+- flow: 'click-interactiveimportmodalcontentinner-handlereprocessitems'
+  choose:
+  - 'Series'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Activity'
+- flow: 'click-interactiveimportmodalcontentinner-handleseasonselect'
+  choose:
+  - 'Series'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Activity'
+- flow: 'click-interactiveimportmodalcontentinner-handleseriesselect'
+  choose:
+  - 'Series'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Activity'
+- flow: 'click-interactivesearchrow-handlegrabpress'
+  choose:
+  - 'Series'
+  - 'Calendar'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Series'
+- flow: 'click-interactivesearchrow-ongrabconfirm'
+  choose:
+  - 'Series'
+  - 'Calendar'
+  - 'Wanted'
+  - 'Activity'
+  answer: 'Series'
+- flow: 'click-oauthinput-handlepress'
+  choose:
+  - 'Series'
+  - 'Series › Library Import'
+  - 'Calendar'
+  - 'Statistics'
+  - 'Wanted'
+  - 'Activity'
+  - 'Settings'
+  - 'Settings › Media Management'
+  - 'Settings › UI'
+  - 'System'
+  answer: 'Settings'
+- flow: 'click-rootfolderrow-handleconfirmdelete'
+  choose:
+  - 'Series › Library Import'
+  - 'Settings › Media Management'
+  answer: 'Settings › Media Management'
+- flow: 'click-rootfolderselectinput-handlenewrootfolderselect'
+  choose:
+  - 'Series'
+  - 'Series › Library Import'
+  - 'Calendar'
+  - 'Statistics'
+  - 'Wanted'
+  - 'Activity'
+  - 'Settings'
+  - 'Settings › Media Management'
+  - 'Settings › UI'
+  - 'System'
+  answer: 'Settings'
+- flow: 'click-seriestaginput-handletagadd'
+  choose:
+  - 'Series'
+  - 'Series › Library Import'
+  - 'Calendar'
+  - 'Statistics'
+  - 'Wanted'
+  - 'Activity'
+  - 'Settings'
+  - 'Settings › Media Management'
+  - 'Settings › UI'
+  - 'System'
+  answer: 'Settings'

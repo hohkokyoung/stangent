@@ -2,6 +2,9 @@ import ts from "typescript";
 
 /** Marks a part of a URL known only at runtime; it matches any one path segment. */
 export const RUNTIME = "{*}";
+/** A value a server-rendered view writes into its inline script (N5): made at runtime wherever it sits. */
+export const SERVER_VALUE = "__server_value__";
+const server = (text: string) => text.split(SERVER_VALUE).join(RUNTIME);
 /** Marks a base URL prefix (environment.apiUrl, this.baseUrl, apiRoot…): matched against the end of an endpoint's path. */
 export const BASE = "{base}";
 
@@ -14,14 +17,16 @@ const BASE_NAMES = /(^|\.)(base|api|root|url|host|endpoint|server)[a-z]*$/i;
  * becomes {base}. Null when nothing at all is known.
  */
 export function stringValue(expr: ts.Expression | undefined, checker: ts.TypeChecker, depth = 0): string | null {
-  if (!expr || depth > 6) return null;
+  if (!expr || depth > 16) return null; // each `+`, template hole and followed name is one level
   expr = skipOuter(expr);
-  if (ts.isStringLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr)) return expr.text;
+  if (ts.isStringLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr)) return expr.text === SERVER_VALUE ? null : server(expr.text);
   if (ts.isNumericLiteral(expr)) return expr.text;
+  if (expr.kind === ts.SyntaxKind.TrueKeyword) return "true";
+  if (expr.kind === ts.SyntaxKind.FalseKeyword) return "false";
   if (ts.isTemplateExpression(expr)) {
-    let s = expr.head.text;
+    let s = server(expr.head.text);
     expr.templateSpans.forEach((span, i) => {
-      s += part(span.expression, checker, depth, i === 0 && expr.head.text === "") + span.literal.text;
+      s += part(span.expression, checker, depth, i === 0 && expr.head.text === "") + server(span.literal.text);
     });
     return s;
   }
@@ -73,6 +78,10 @@ function initializer(expr: ts.Identifier | ts.PropertyAccessExpression, checker:
   const decls = symbol?.declarations ?? [];
   if (decls.length !== 1) return null;
   const d = decls[0];
+  if (ts.isEnumMember(d) && d.initializer) return d.initializer;   // EVENTS.ScanSeries = 'ScanSeries'
+  // D175: a property of a const object literal (`export const environment = { apiUrl: '…' }`), as written in that file.
+  if (ts.isPropertyAssignment(d) && ts.isObjectLiteralExpression(d.parent) && ts.isVariableDeclaration(d.parent.parent)
+      && d.parent.parent.initializer === d.parent && ts.getCombinedNodeFlags(d.parent.parent) & ts.NodeFlags.Const) return d.initializer;
   if ((ts.isVariableDeclaration(d) || ts.isPropertyDeclaration(d)) && d.initializer) {
     if (ts.isVariableDeclaration(d) && !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) && reassigned(d, checker)) return null;
     return d.initializer;
@@ -98,4 +107,9 @@ function reassigned(d: ts.VariableDeclaration, checker: ts.TypeChecker): boolean
   };
   visit(scope);
   return other;
+}
+
+/** The single initialiser a name is bound to, exported for the readers that need the expression itself. */
+export function boundTo(expr: ts.Identifier | ts.PropertyAccessExpression, checker: ts.TypeChecker): ts.Expression | null {
+  return initializer(expr, checker);
 }

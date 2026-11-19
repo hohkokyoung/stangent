@@ -1,0 +1,125 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0004"
+doc: "sonarr-fsd"
+section: "3.1"
+title: "Queue"
+parent: "F-0003"
+children: []
+textHash: "7c41138f4990fb0075c121a399023e6c2a07cf8e0cd03a6165762053881f4af2"
+requirements:
+  - id: "R-0018"
+    title: "Queue lists downloading releases"
+    kind: "data"
+    statement: "The queue lists the releases the download clients are downloading for Sonarr, showing each release's series, episode, quality, progress and time left."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "3.1"
+        text: "The queue lists the releases the download clients are downloading for Sonarr, with each release's series, episode, quality, progress and time left."
+        hash: "e551958cecbf789a4921da9e87669dc8ac6e49b755d3fd1278d986adc1aa81b6"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "d24e9b737da00f71bc2eed9ed6782fc36511bd4c9983512f0bee659b2c4fa387"
+  - id: "R-0019"
+    title: "Queue read from download clients"
+    kind: "rule"
+    statement: "Sonarr does not store the queue; it is read from the download clients."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "3.1"
+        text: "The queue is not stored by Sonarr: it is read from the download clients."
+        hash: "f752012d4d9b0bad17ee229f3463a512295aef53e464245b1a9d8f787000eb26"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "5fffceb2bba4d0bf4757f48d82d6738ea4892a3bab24a31eedee0987fb441dea"
+  - id: "R-0020"
+    title: "Warning for non-importable release"
+    kind: "rule"
+    statement: "A release that can't be imported automatically shows a warning with the reason."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "3.1"
+        text: "A release that can't be imported automatically shows a warning with the reason."
+        hash: "d82a34977a875b8f7781f6b2d9cccd5e55258d6cff02b61526cc596ce361da89"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "db8d865d29ca2412f72d644963df74b24edf5a39590731feae3704bf6f2ae832"
+  - id: "R-0021"
+    title: "User can remove a release"
+    kind: "permission"
+    statement: "The user can remove a release from the queue."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "3.1"
+        text: "The user can remove a release from the queue."
+        hash: "cf7bc327bd11fdde24ab73d3098eb7d1c7d4a2224f295058f20adae8b44f7084"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "f69f431661dd9db127d34d99eabc6652fe2f67bb7cc9ef29aee9a48ee530f768"
+  - id: "R-0022"
+    title: "Removal always blocklists release"
+    kind: "rule"
+    statement: "Removing an item from the queue always adds the release to the blocklist."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "3.1"
+        text: "Removing an item from the queue always adds the release to the blocklist."
+        hash: "7e1523ba3a364e35864c2a58b48a94c64a40cc2190536dbd1a118b61ab8b581f"
+    acceptance:
+      - text: "After a user removes a queue item, its release is on the blocklist."
+        quotes:
+          - doc: "sonarr-fsd"
+            section: "3.1"
+            text: "Removing an item from the queue always adds the release to the blocklist."
+            hash: "7e1523ba3a364e35864c2a58b48a94c64a40cc2190536dbd1a118b61ab8b581f"
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "1966a4b15da4f1b32b834813323fe21b3107c84b68e089d594adeb92ecae24b2"
+  - id: "R-0023"
+    title: "Queue item has priority"
+    kind: "data"
+    statement: "Each queue item has a priority of High, Normal or Low."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "3.1"
+        text: "Each queue item has a priority (High, Normal or Low) that the user can change to reorder the downloads."
+        hash: "5f7ffd3fe2eb43e46c807dfc36f03138cf67c6119904434eb3b9fce00295a1ad"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "670ef502afa7260cd6a43e8b7a569f4340d07d86416357e768915bc067fbd6e3"
+  - id: "R-0024"
+    title: "User can change priority to reorder"
+    kind: "permission"
+    statement: "The user can change a queue item's priority to reorder the downloads."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "3.1"
+        text: "Each queue item has a priority (High, Normal or Low) that the user can change to reorder the downloads."
+        hash: "5f7ffd3fe2eb43e46c807dfc36f03138cf67c6119904434eb3b9fce00295a1ad"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "dc494815e83450fba19c94196a5c5bed7fce2db6560346d3e7c8362c116b36ee"
+definitions: []
+journeys: []
+background: []
+retired: []

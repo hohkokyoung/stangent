@@ -1,0 +1,1 @@
+src/NzbDrone.Core/Extras/Metadata/Consumers/Plex/PlexMetadata.cs · Sonarr.Core|M:NzbDrone.Core.Extras.Metadata.Consumers.Plex.PlexMetadata.SeriesMetadata(NzbDrone.Core.Tv.Series,NzbDrone.Core.Extras.Metadata.SeriesMetadataReason)

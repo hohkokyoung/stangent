@@ -1,0 +1,134 @@
+{
+  "codeTitle": "GET /api/v5/System/status",
+  "entry": "endpoint:Sonarr.Api.V5|GET /api/v5/System/status",
+  "generated": {
+    "bundleHash": "48a01c475261aff8f7dce5a50abe3bb48030f2e8d2dc87d5ebf3f480ac54bad3",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 13258,
+      "cutOff": 13,
+      "depth": 4,
+      "points": 136
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 7988,
+      "calls": 1,
+      "costUsd": 0.032661,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1887,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 6316,
+      "calls": 1,
+      "costUsd": 0.035194,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5933,
+      "outputTokens": 965
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|GET /api/v5/System/status",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.SystemController.GetStatus"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/System/status"
+        ],
+        "id": "A1",
+        "text": "A caller requests GET /api/v5/System/status and receives the status object with a 200 OK response."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.PathExtensions.GetAppDataPath(NzbDrone.Common.EnvironmentInfo.IAppFolderInfo)"
+        ],
+        "id": "R1",
+        "text": "The app data path returned is the app folder info's AppDataFolder."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.SystemController.GetStatus"
+        ],
+        "id": "S1",
+        "text": "Returns a JSON system status object with app name, instance name, version, build time and branch."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.SystemController.GetStatus"
+        ],
+        "id": "S2",
+        "text": "Returns flags for debug build, production, admin, user-interactive, .NET Core (always true), Linux, macOS, Windows and Docker."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.SystemController.GetStatus",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.PathExtensions.GetAppDataPath(NzbDrone.Common.EnvironmentInfo.IAppFolderInfo)"
+        ],
+        "id": "S3",
+        "text": "Returns the startup path, the app data path, the OS name and the OS version."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.SystemController.GetStatus"
+        ],
+        "id": "S4",
+        "text": "Returns the database type, database version and migration version."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.SystemController.GetStatus"
+        ],
+        "id": "S5",
+        "text": "Returns the authentication method, URL base, run mode and start time."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.SystemController.GetStatus"
+        ],
+        "id": "S6",
+        "text": "Returns the runtime name and runtime version."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.SystemController.GetStatus"
+        ],
+        "id": "S7",
+        "text": "Returns the package version, package author, package update mechanism and its message."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "System status",
+  "unknowns": [
+    {
+      "file": "src/NzbDrone.Host/Bootstrap.cs",
+      "in": "Sonarr.Common|P:NzbDrone.Common.Options.AppOptions.InstanceName",
+      "line": 110,
+      "reason": "configuration section 'Sonarr:App' is in no appsettings file of this project (environment variable or secret?)"
+    },
+    {
+      "file": "src/NzbDrone.Host/Bootstrap.cs",
+      "in": "Sonarr.Common|P:NzbDrone.Common.Options.ServerOptions.UrlBase",
+      "line": 112,
+      "reason": "configuration section 'Sonarr:Server' is in no appsettings file of this project (environment variable or secret?)"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

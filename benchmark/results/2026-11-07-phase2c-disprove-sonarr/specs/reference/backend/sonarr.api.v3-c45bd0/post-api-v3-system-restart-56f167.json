@@ -1,0 +1,120 @@
+{
+  "codeTitle": "POST /api/v3/System/restart",
+  "entry": "endpoint:Sonarr.Api.V3|POST /api/v3/System/restart",
+  "generated": {
+    "bundleHash": "58d12ac07694d0e574b438252b0101d30303ff4dcde01b67ae85e6b711cb5809",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 11328,
+      "cutOff": 4,
+      "depth": 4,
+      "points": 16
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 7957,
+      "calls": 1,
+      "costUsd": 0.033517,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2637,
+      "outputTokens": 151
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 13484,
+      "calls": 2,
+      "costUsd": 0.075326,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 12081,
+      "outputTokens": 2083
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|POST /api/v3/System/restart",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/System/restart",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.SystemController.Restart"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/System/restart"
+        ],
+        "id": "A1",
+        "text": "A POST to /api/v3/System/restart requests an application restart, which runs in a background task."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.SystemController.Restart"
+        ],
+        "id": "R1",
+        "text": "The restart runs in the background, so the response does not depend on the restart completing."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Lifecycle.LifecycleService.Restart",
+          "Sonarr.Core|M:NzbDrone.Core.Lifecycle.ApplicationShutdownRequested.#ctor(System.Boolean)"
+        ],
+        "id": "R2",
+        "text": "The shutdown event is published with Restarting set to true."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.SystemController.Restart"
+        ],
+        "id": "S1",
+        "text": "Returns an object with Restarting set to true immediately, without waiting for the restart to happen."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Lifecycle.LifecycleService.Restart"
+        ],
+        "id": "E1",
+        "text": "Logs the message \"Restart requested.\" at info level."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Lifecycle.LifecycleService.Restart"
+        ],
+        "id": "E2",
+        "text": "Marks the runtime info as restart pending (RestartPending = true)."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Lifecycle.LifecycleService.Restart",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Events.IEventAggregator.PublishEvent``1(``0)"
+        ],
+        "id": "E3",
+        "text": "Publishes an ApplicationShutdownRequested event with the restarting flag set."
+      }
+    ]
+  },
+  "title": "Restart application (System API)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "The slice shows only the Handle signatures and a guessed (\uD83D\uDFE1) trigger link. The handler bodies aren't shown, so what each one does with the event isn't supported. The claim that the event is handled by these four is only a detector guess.",
+        "id": "F1",
+        "kind": "unsupported",
+        "outcome": "fixed",
+        "reason": "Removed the statement naming the four handlers, since the slice shows only their signatures and a guessed link.",
+        "statement": "E4",
+        "statementText": "The event is handled by the database log target, the job scheduler, the command executor and the host's application lifetime."
+      }
+    ]
+  }
+}

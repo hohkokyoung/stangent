@@ -1,0 +1,1477 @@
+# nopCommerce's areas, confirmed by the owner on 2026-11-13 (D267): a fresh proposal from commit 77d112f365 (the first was older than
+# step 6's flows) with the owner's answers to its 10 ties: flyout cart, order summary and PunchOut cart forms -> Shopping cart;
+# private message forms -> Inbox; search box -> Search; topic block -> Nop.Web › Topic; customer cache handler -> Admin › Customers;
+# PayPal handler -> Admin › System; Facebook Pixel handler -> Nop.Web › Catalog. Names and backend-folder areas as proposed.
+# Areas proposed by `stangent areas propose` (D218–D228) from commit 77d112f365e210ebdfa2f9790c8202a0e3b1c74e.
+# Copy to specs/areas.yaml and confirm it there: rename an area (`name`), merge two by listing both sources under one name,
+# split one by giving a menu address or a deeper folder its own area, and answer each tie with one of its `choose`.
+# The deepest match wins; new flows land by themselves. `stangent areas check` reads specs/areas.yaml.
+areas:
+- name: 'Admin › Dashboard'  # 1 flow
+  menu:
+  - 'mvc:Admin/Home/Index'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Home'
+- name: 'Admin › Catalog'  # 61 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Product'
+- name: 'Admin › Catalog › Products'  # 1 flow
+  menu:
+  - 'mvc:Admin/Product/List'
+- name: 'Admin › Catalog › Categories'  # 9 flows
+  menu:
+  - 'mvc:Admin/Category/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Category'
+- name: 'Admin › Catalog › Manufacturers'  # 9 flows
+  menu:
+  - 'mvc:Admin/Manufacturer/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Manufacturer'
+- name: 'Admin › Catalog › Product reviews'  # 3 flows
+  menu:
+  - 'mvc:Admin/ProductReview/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/ProductReview'
+- name: 'Admin › Catalog › Product tags'  # 1 flow
+  menu:
+  - 'mvc:Admin/Product/ProductTags'
+- name: 'Admin › Catalog › Filter level values (YMM)'  # 9 flows
+  menu:
+  - 'mvc:Admin/FilterLevelValue/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/FilterLevelValue'
+- name: 'Admin › Catalog › Attributes'  # 34 flows
+  menu:
+  - 'mvc:Admin/ProductAttribute/List'
+  - 'mvc:Admin/SpecificationAttribute/List'
+  - 'mvc:Admin/CheckoutAttribute/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/CheckoutAttribute'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/ProductAttribute'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/SpecificationAttribute'
+- name: 'Admin › Catalog › Price lists'  # 13 flows
+  menu:
+  - 'mvc:Admin/PriceList/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/PriceList'
+- name: 'Admin › Sales'  # 38 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Order'
+- name: 'Admin › Sales › Orders'  # 1 flow
+  menu:
+  - 'mvc:Admin/Order/List'
+- name: 'Admin › Sales › Shipments'  # 1 flow
+  menu:
+  - 'mvc:Admin/Order/ShipmentList'
+- name: 'Admin › Sales › Return requests'  # 11 flows
+  menu:
+  - 'mvc:Admin/ReturnRequest/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/ReturnRequest'
+- name: 'Admin › Sales › Recurring payments'  # 3 flows
+  menu:
+  - 'mvc:Admin/RecurringPayment/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/RecurringPayment'
+- name: 'Admin › Sales › Gift cards'  # 5 flows
+  menu:
+  - 'mvc:Admin/GiftCard/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/GiftCard'
+- name: 'Admin › Sales › Shopping carts and wishlists'  # 1 flow
+  menu:
+  - 'mvc:Admin/ShoppingCart/CurrentCarts'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/ShoppingCart'
+- name: 'Admin › Customers'  # 37 flows
+  menu:
+  - 'mvc:Admin/Customer/List'
+  - 'mvc:Admin/CustomerRole/List'
+  - 'mvc:Admin/OnlineCustomer/List'
+  - 'mvc:Admin/Vendor/List'
+  - 'mvc:Admin/ActivityLog/ActivityLogs'
+  - 'mvc:Admin/ActivityLog/ActivityTypes'
+  - 'mvc:Admin/Customer/GdprLog'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/ActivityLog'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Customer'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/CustomerRole'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/OnlineCustomer'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Vendor'
+- name: 'Admin › Promotions'  # 39 flows
+  menu:
+  - 'mvc:Admin/Discount/List'
+  - 'mvc:Admin/Affiliate/List'
+  - 'mvc:Admin/NewsLetterSubscription/List'
+  - 'mvc:Admin/NewsLetterSubscriptionType/List'
+  - 'mvc:Admin/Campaign/List'
+  - 'mvc:Admin/Reminder/Index'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Affiliate'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Campaign'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Discount'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/NewsLetterSubscription'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/NewsLetterSubscriptionType'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Reminder'
+- name: 'Admin › Content management'  # 27 flows
+  menu:
+  - 'mvc:Admin/Topic/List'
+  - 'mvc:Admin/Menu/List'
+  - 'mvc:Admin/MessageTemplate/List'
+  - 'mvc:Admin/Blog/BlogPosts'
+  - 'mvc:Admin/Blog/BlogComments'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Blog'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Menu'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/MessageTemplate'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Topic'
+- name: 'Admin › Configuration'  # 8 flows
+  menu:
+  - 'mvc:Admin/Tax/Providers'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Payment'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Plugin'
+- name: 'Admin › Configuration › Settings'  # 38 flows
+  menu:
+  - 'mvc:Admin/Setting/GeneralCommon'
+  - 'mvc:Admin/Setting/CustomerUser'
+  - 'mvc:Admin/Setting/Order'
+  - 'mvc:Admin/Setting/Shipping'
+  - 'mvc:Admin/Setting/Tax'
+  - 'mvc:Admin/Setting/Catalog'
+  - 'mvc:Admin/Setting/FilterLevel'
+  - 'mvc:Admin/Setting/ShoppingCart'
+  - 'mvc:Admin/Setting/RewardPoints'
+  - 'mvc:Admin/Setting/Gdpr'
+  - 'mvc:Admin/Setting/Vendor'
+  - 'mvc:Admin/Setting/Blog'
+  - 'mvc:Admin/Setting/Media'
+  - 'mvc:Admin/Setting/AppSettings'
+  - 'mvc:Admin/Setting/AllSettings'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Setting'
+- name: 'Admin › Configuration › Email accounts'  # 5 flows
+  menu:
+  - 'mvc:Admin/EmailAccount/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/EmailAccount'
+- name: 'Admin › Configuration › Stores'  # 5 flows
+  menu:
+  - 'mvc:Admin/Store/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Store'
+- name: 'Admin › Configuration › Countries'  # 11 flows
+  menu:
+  - 'mvc:Admin/Country/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Country'
+- name: 'Admin › Configuration › Languages'  # 6 flows
+  menu:
+  - 'mvc:Admin/Language/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Language'
+- name: 'Admin › Configuration › Currencies'  # 6 flows
+  menu:
+  - 'mvc:Admin/Currency/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Currency'
+- name: 'Admin › Configuration › Payment methods'  # 1 flow
+  menu:
+  - 'mvc:Admin/Payment/Methods'
+- name: 'Admin › Configuration › Payment restrictions'  # 1 flow
+  menu:
+  - 'mvc:Admin/Payment/MethodRestrictions'
+- name: 'Admin › Configuration › SMS providers'  # 1 flow
+  menu:
+  - 'mvc:Admin/Sms/Providers'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Sms'
+- name: 'Admin › Configuration › Tax categories'  # 2 flows
+  menu:
+  - 'mvc:Admin/Tax/Categories'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Tax'
+- name: 'Admin › Configuration › Shipping'  # 24 flows
+  menu:
+  - 'mvc:Admin/Shipping/Providers'
+  - 'mvc:Admin/Shipping/Warehouses'
+  - 'mvc:Admin/Shipping/PickupPointProviders'
+  - 'mvc:Admin/Shipping/DatesAndRanges'
+  - 'mvc:Admin/Measure/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Measure'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Shipping'
+- name: 'Admin › Configuration › Access control list'  # 9 flows
+  menu:
+  - 'mvc:Admin/Security/Permissions'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Security'
+- name: 'Admin › Configuration › Widgets'  # 1 flow
+  menu:
+  - 'mvc:Admin/Widget/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Widget'
+- name: 'Admin › Configuration › Authentication'  # 2 flows
+  menu:
+  - 'mvc:Admin/Authentication/ExternalMethods'
+  - 'mvc:Admin/Authentication/MultiFactorMethods'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Authentication'
+- name: 'Admin › Configuration › Local plugins'  # 1 flow
+  menu:
+  - 'mvc:Admin/Plugin/List'
+- name: 'Admin › Configuration › All plugins and themes'  # 1 flow
+  menu:
+  - 'mvc:Admin/Plugin/OfficialFeed'
+- name: 'Admin › System'  # 13 flows
+  menu:
+  - 'mvc:Admin/Common/SystemInfo'
+  - 'mvc:Admin/Log/List'
+  - 'mvc:Admin/Common/Warnings'
+  - 'mvc:Admin/Common/Maintenance'
+  - 'mvc:Admin/QueuedEmail/List'
+  - 'mvc:Admin/ScheduleTask/List'
+  - 'mvc:Admin/Common/SeNames'
+  - 'mvc:Admin/Template/List'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Common'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Log'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/QueuedEmail'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/ScheduleTask'
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Template'
+- name: 'Admin › Reports'  # 24 flows
+  menu:
+  - 'mvc:Admin/Report/SalesSummary'
+  - 'mvc:Admin/Report/LowStock'
+  - 'mvc:Admin/Report/Bestsellers'
+  - 'mvc:Admin/Report/NeverSold'
+  - 'mvc:Admin/Report/CountrySales'
+  - 'mvc:Admin/Report/RegisteredCustomers'
+  - 'mvc:Admin/Report/BestCustomersByOrderTotal'
+  - 'mvc:Admin/Report/BestCustomersByNumberOfOrders'
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Report'
+- name: 'My account'  # 1 flow
+  menu:
+  - 'route:CustomerInfo'
+- name: 'Orders'  # 12 flows
+  menu:
+  - 'route:CustomerOrders'
+  folders:
+  - 'src/Presentation/Nop.Web/Views/Order'
+- name: 'Withdraw contract'  # 5 flows
+  menu:
+  - 'route:WithdrawalRequestForm'
+  folders:
+  - 'src/Presentation/Nop.Web/Views/ReturnRequest'
+- name: 'Addresses'  # 1 flow
+  menu:
+  - 'route:CustomerAddresses'
+- name: 'Shopping cart'  # 1 flow
+  menu:
+  - 'route:ShoppingCart'
+- name: 'Wishlist'  # 1 flow
+  menu:
+  - 'route:Wishlist'
+- name: 'Apply for vendor account'  # 4 flows
+  menu:
+  - 'route:ApplyVendorAccount'
+  folders:
+  - 'src/Presentation/Nop.Web/Views/Vendor'
+- name: 'Home page'  # 1 flow
+  menu:
+  - 'route:Homepage'
+  folders:
+  - 'src/Presentation/Nop.Web/Views/Home'
+- name: 'New products'  # 1 flow
+  menu:
+  - 'route:NewProducts'
+- name: 'Search'  # 1 flow
+  menu:
+  - 'route:ProductSearch'
+- name: 'Blog'  # 5 flows
+  menu:
+  - 'route:Blog'
+  folders:
+  - 'src/Presentation/Nop.Web/Views/Blog'
+- name: 'Contact us'  # 7 flows
+  menu:
+  - 'route:ContactUs'
+  folders:
+  - 'src/Presentation/Nop.Web/Views/Common'
+- name: 'Register'  # 1 flow
+  menu:
+  - 'route:Register'
+- name: 'Log in'  # 1 flow
+  menu:
+  - 'route:Login'
+- name: 'Inbox'  # 8 flows
+  menu:
+  - 'route:PrivateMessages'
+  folders:
+  - 'src/Presentation/Nop.Web/Views/PrivateMessages'
+- name: 'Nop.Plugin.AIRecommendation.GoogleAI'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.AIRecommendation.GoogleAI/Views'
+- name: 'Nop.Plugin.DiscountRules.CustomerRoles'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.DiscountRules.CustomerRoles/Views'
+- name: 'Nop.Plugin.ExternalAuth.Facebook'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.ExternalAuth.Facebook/Views'
+- name: 'Nop.Plugin.Feed.ChatGptShopping'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Feed.ChatGptShopping/Views'
+- name: 'Nop.Plugin.Misc.AzureBlob'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.AzureBlob/Views'
+- name: 'Nop.Plugin.Misc.Brevo'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.Brevo/Views'
+- name: 'Nop.Plugin.Misc.CloudflareImages'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.CloudflareImages/Views'
+- name: 'Nop.Plugin.Misc.Dynamics365'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.Dynamics365/Views'
+- name: 'Nop.Plugin.Misc.Forums › Admin'  # 6 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.Forums/Admin/Views'
+- name: 'Nop.Plugin.Misc.Forums › Public'  # 20 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.Forums/Public/Views'
+- name: 'Nop.Plugin.Misc.News › Admin'  # 5 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.News/Admin/Views'
+- name: 'Nop.Plugin.Misc.News › Public'  # 2 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.News/Public/Views'
+- name: 'Nop.Plugin.Misc.NopMobileApp'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.NopMobileApp/Views'
+- name: 'Nop.Plugin.Misc.OmnibusDirective'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.OmnibusDirective/Views'
+- name: 'Nop.Plugin.Misc.Omnisend'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.Omnisend/Views'
+- name: 'Nop.Plugin.Misc.Polls › Admin'  # 4 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.Polls/Admin/Views'
+- name: 'Nop.Plugin.Misc.PowerBI'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.PowerBI/Views'
+- name: 'Nop.Plugin.Misc.PunchOut › Configuration'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.PunchOut/Views/Configuration'
+- name: 'Nop.Plugin.Misc.PunchOut › Log'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.PunchOut/Views/Log'
+- name: 'Nop.Plugin.Misc.RFQ'  # 5 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.RFQ/Views'
+- name: 'Nop.Plugin.Misc.RFQ › Admin'  # 8 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.RFQ/Views/Admin'
+- name: 'Nop.Plugin.Misc.WebApi.Frontend'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.WebApi.Frontend/Views'
+- name: 'Nop.Plugin.Misc.Zettle'  # 2 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.Zettle/Views'
+- name: 'Nop.Plugin.MultiFactorAuth.GoogleAuthenticator'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.MultiFactorAuth.GoogleAuthenticator/Views'
+- name: 'Nop.Plugin.Payments.CheckMoneyOrder'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Payments.CheckMoneyOrder/Views'
+- name: 'Nop.Plugin.Payments.PayPalCommerce › Admin'  # 2 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Payments.PayPalCommerce/Views/Admin'
+- name: 'Nop.Plugin.Payments.PayPalCommerce › Public'  # 3 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Payments.PayPalCommerce/Views/Public'
+- name: 'Nop.Plugin.Pickup.PickupInStore'  # 3 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Pickup.PickupInStore/Views'
+- name: 'Nop.Plugin.Search.Lucene'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Search.Lucene/Views'
+- name: 'Nop.Plugin.Shipping.FixedByWeightByTotal'  # 3 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Shipping.FixedByWeightByTotal/Views'
+- name: 'Nop.Plugin.Shipping.UPS'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Shipping.UPS/Views'
+- name: 'Nop.Plugin.Sms.Twilio'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Sms.Twilio/Views'
+- name: 'Nop.Plugin.Tax.Avalara › Configuration'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Tax.Avalara/Views/Configuration'
+- name: 'Nop.Plugin.Tax.Avalara › Customer'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Tax.Avalara/Views/Customer'
+- name: 'Nop.Plugin.Tax.Avalara › ItemClassification'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Tax.Avalara/Views/ItemClassification'
+- name: 'Nop.Plugin.Tax.Avalara › Log'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Tax.Avalara/Views/Log'
+- name: 'Nop.Plugin.Tax.Avalara › Tax'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Tax.Avalara/Views/Tax'
+- name: 'Nop.Plugin.Tax.FixedOrByCountryStateZip'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Tax.FixedOrByCountryStateZip/Views'
+- name: 'Nop.Plugin.Widgets.FacebookPixel › Configuration'  # 3 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Widgets.FacebookPixel/Views/Configuration'
+- name: 'Nop.Plugin.Widgets.GoogleAnalytics'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Widgets.GoogleAnalytics/Views'
+- name: 'Nop.Plugin.Widgets.Jotform'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Widgets.Jotform/Views'
+- name: 'Nop.Plugin.Widgets.Swiper'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Widgets.Swiper/Views'
+- name: 'Nop.Web › Admin › AddressAttribute'  # 9 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/AddressAttribute'
+- name: 'Nop.Web › Admin › ContactFormAttribute'  # 9 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/ContactFormAttribute'
+- name: 'Nop.Web › Admin › CustomerAttribute'  # 9 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/CustomerAttribute'
+- name: 'Nop.Web › Admin › ReviewType'  # 4 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/ReviewType'
+- name: 'Nop.Web › Admin › Shared'  # 3 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/Shared'
+- name: 'Nop.Web › Admin › VendorAttribute'  # 9 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Areas/Admin/Views/VendorAttribute'
+- name: 'Nop.Web › BackInStockSubscription'  # 2 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Views/BackInStockSubscription'
+- name: 'Nop.Web › Catalog'  # 13 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Views/Catalog'
+- name: 'Nop.Web › Checkout'  # 20 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Views/Checkout'
+- name: 'Nop.Web › Customer'  # 39 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Views/Customer'
+- name: 'Nop.Web › Install'  # 3 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Views/Install'
+- name: 'Nop.Web › Newsletter'  # 1 flow
+  folders:
+  - 'src/Presentation/Nop.Web/Views/Newsletter'
+- name: 'Nop.Web › Product'  # 11 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Views/Product'
+- name: 'Nop.Web › Profile'  # 1 flow
+  folders:
+  - 'src/Presentation/Nop.Web/Views/Profile'
+- name: 'Nop.Web › ShoppingCart'  # 6 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Views/ShoppingCart'
+- name: 'Nop.Web › Topic'  # 2 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Views/Topic'
+- name: 'Nop.Services › Caching'  # 4 flows
+  folders:
+  - 'src/Libraries/Nop.Services/Caching'
+- name: 'Nop.Services › Common'  # 2 flows
+  folders:
+  - 'src/Libraries/Nop.Services/Common'
+- name: 'Nop.Services › Customers'  # 5 flows
+  folders:
+  - 'src/Libraries/Nop.Services/Customers'
+- name: 'Nop.Services › Directory'  # 1 flow
+  folders:
+  - 'src/Libraries/Nop.Services/Directory'
+- name: 'Nop.Services › Gdpr'  # 1 flow
+  folders:
+  - 'src/Libraries/Nop.Services/Gdpr'
+- name: 'Nop.Services › Logging'  # 1 flow
+  folders:
+  - 'src/Libraries/Nop.Services/Logging'
+- name: 'Nop.Services › Messages'  # 1 flow
+  folders:
+  - 'src/Libraries/Nop.Services/Messages'
+- name: 'Nop.Services › Orders'  # 2 flows
+  folders:
+  - 'src/Libraries/Nop.Services/Orders'
+- name: 'Nop.Services › Reminders'  # 3 flows
+  folders:
+  - 'src/Libraries/Nop.Services/Reminders'
+- name: 'Nop.Plugin.AIRecommendation.GoogleAI › Services'  # 6 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.AIRecommendation.GoogleAI/Services'
+- name: 'Nop.Plugin.DiscountRules.CustomerRoles › Infrastructure'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.DiscountRules.CustomerRoles/Infrastructure'
+- name: 'Nop.Plugin.ExternalAuth.Facebook › Infrastructure'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.ExternalAuth.Facebook/Infrastructure'
+- name: 'Nop.Plugin.Feed.ChatGptShopping › Services'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Feed.ChatGptShopping/Services'
+- name: 'Nop.Plugin.Misc.Brevo › Services'  # 10 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.Brevo/Services'
+- name: 'Nop.Plugin.Misc.Forums › Services'  # 5 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.Forums/Services'
+- name: 'Nop.Plugin.Misc.News › Services'  # 12 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.News/Services'
+- name: 'Nop.Plugin.Misc.Omnisend › Infrastructure'  # 13 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.Omnisend/Infrastructure'
+- name: 'Nop.Plugin.Misc.Polls › Services'  # 3 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.Polls/Services'
+- name: 'Nop.Plugin.Misc.RFQ › Services'  # 4 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.RFQ/Services'
+- name: 'Nop.Plugin.Misc.Zettle › Services'  # 19 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Misc.Zettle/Services'
+- name: 'Nop.Plugin.Payments.PayPalCommerce › Services'  # 3 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Payments.PayPalCommerce/Services'
+- name: 'Nop.Plugin.Shipping.FixedByWeightByTotal › Infrastructure'  # 1 flow
+  folders:
+  - 'src/Plugins/Nop.Plugin.Shipping.FixedByWeightByTotal/Infrastructure'
+- name: 'Nop.Plugin.Tax.Avalara › Services'  # 6 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Tax.Avalara/Services'
+- name: 'Nop.Plugin.Tax.FixedOrByCountryStateZip › Infrastructure'  # 4 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Tax.FixedOrByCountryStateZip/Infrastructure'
+- name: 'Nop.Plugin.Widgets.FacebookPixel › Services'  # 5 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Widgets.FacebookPixel/Services'
+- name: 'Nop.Plugin.Widgets.GoogleAnalytics (src/Plugins/Nop.Plugin.Widgets.GoogleAnalytics)'  # 4 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Widgets.GoogleAnalytics'
+- name: 'Nop.Plugin.Widgets.Swiper › Infrastructure'  # 3 flows
+  folders:
+  - 'src/Plugins/Nop.Plugin.Widgets.Swiper/Infrastructure'
+- name: 'Nop.Web.Framework › Infrastructure'  # 1 flow
+  folders:
+  - 'src/Presentation/Nop.Web.Framework/Infrastructure'
+- name: 'Nop.Web › Areas'  # 19 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Areas'
+- name: 'Nop.Web › Infrastructure'  # 48 flows
+  folders:
+  - 'src/Presentation/Nop.Web/Infrastructure'
+large:
+- area: 'Admin › Catalog'
+  flows: 61
+  why: 'over 40, nothing to split by'
+- area: 'Nop.Web › Infrastructure'
+  flows: 48
+  why: 'over 40, nothing to split by'
+ties:
+- flow: 'click-cshtml-form-1-255'
+  choose:
+  - 'Admin › Dashboard'
+  - 'Admin › Catalog'
+  - 'Admin › Catalog › Products'
+  - 'Admin › Catalog › Categories'
+  - 'Admin › Catalog › Manufacturers'
+  - 'Admin › Catalog › Product reviews'
+  - 'Admin › Catalog › Product tags'
+  - 'Admin › Catalog › Filter level values (YMM)'
+  - 'Admin › Catalog › Attributes'
+  - 'Admin › Catalog › Price lists'
+  - 'Admin › Sales'
+  - 'Admin › Sales › Orders'
+  - 'Admin › Sales › Shipments'
+  - 'Admin › Sales › Return requests'
+  - 'Admin › Sales › Recurring payments'
+  - 'Admin › Sales › Gift cards'
+  - 'Admin › Sales › Shopping carts and wishlists'
+  - 'Admin › Customers'
+  - 'Admin › Promotions'
+  - 'Admin › Content management'
+  - 'Admin › Configuration'
+  - 'Admin › Configuration › Settings'
+  - 'Admin › Configuration › Email accounts'
+  - 'Admin › Configuration › Stores'
+  - 'Admin › Configuration › Countries'
+  - 'Admin › Configuration › Languages'
+  - 'Admin › Configuration › Currencies'
+  - 'Admin › Configuration › Payment methods'
+  - 'Admin › Configuration › Payment restrictions'
+  - 'Admin › Configuration › SMS providers'
+  - 'Admin › Configuration › Tax categories'
+  - 'Admin › Configuration › Shipping'
+  - 'Admin › Configuration › Access control list'
+  - 'Admin › Configuration › Widgets'
+  - 'Admin › Configuration › Authentication'
+  - 'Admin › Configuration › Local plugins'
+  - 'Admin › Configuration › All plugins and themes'
+  - 'Admin › System'
+  - 'Admin › Reports'
+  - 'My account'
+  - 'Orders'
+  - 'Withdraw contract'
+  - 'Addresses'
+  - 'Shopping cart'
+  - 'Wishlist'
+  - 'Apply for vendor account'
+  - 'Home page'
+  - 'New products'
+  - 'Search'
+  - 'Blog'
+  - 'Contact us'
+  - 'Register'
+  - 'Log in'
+  - 'Inbox'
+  - 'Nop.Plugin.AIRecommendation.GoogleAI'
+  - 'Nop.Plugin.DiscountRules.CustomerRoles'
+  - 'Nop.Plugin.ExternalAuth.Facebook'
+  - 'Nop.Plugin.Feed.ChatGptShopping'
+  - 'Nop.Plugin.Misc.AzureBlob'
+  - 'Nop.Plugin.Misc.Brevo'
+  - 'Nop.Plugin.Misc.CloudflareImages'
+  - 'Nop.Plugin.Misc.Dynamics365'
+  - 'Nop.Plugin.Misc.Forums › Admin'
+  - 'Nop.Plugin.Misc.Forums › Public'
+  - 'Nop.Plugin.Misc.News › Admin'
+  - 'Nop.Plugin.Misc.News › Public'
+  - 'Nop.Plugin.Misc.NopMobileApp'
+  - 'Nop.Plugin.Misc.OmnibusDirective'
+  - 'Nop.Plugin.Misc.Omnisend'
+  - 'Nop.Plugin.Misc.Polls › Admin'
+  - 'Nop.Plugin.Misc.PowerBI'
+  - 'Nop.Plugin.Misc.PunchOut › Configuration'
+  - 'Nop.Plugin.Misc.PunchOut › Log'
+  - 'Nop.Plugin.Misc.RFQ'
+  - 'Nop.Plugin.Misc.RFQ › Admin'
+  - 'Nop.Plugin.Misc.WebApi.Frontend'
+  - 'Nop.Plugin.Misc.Zettle'
+  - 'Nop.Plugin.MultiFactorAuth.GoogleAuthenticator'
+  - 'Nop.Plugin.Payments.CheckMoneyOrder'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Admin'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Public'
+  - 'Nop.Plugin.Pickup.PickupInStore'
+  - 'Nop.Plugin.Search.Lucene'
+  - 'Nop.Plugin.Shipping.FixedByWeightByTotal'
+  - 'Nop.Plugin.Shipping.UPS'
+  - 'Nop.Plugin.Sms.Twilio'
+  - 'Nop.Plugin.Tax.Avalara › Configuration'
+  - 'Nop.Plugin.Tax.Avalara › Customer'
+  - 'Nop.Plugin.Tax.Avalara › ItemClassification'
+  - 'Nop.Plugin.Tax.Avalara › Log'
+  - 'Nop.Plugin.Tax.Avalara › Tax'
+  - 'Nop.Plugin.Tax.FixedOrByCountryStateZip'
+  - 'Nop.Plugin.Widgets.FacebookPixel › Configuration'
+  - 'Nop.Plugin.Widgets.GoogleAnalytics'
+  - 'Nop.Plugin.Widgets.Jotform'
+  - 'Nop.Plugin.Widgets.Swiper'
+  - 'Nop.Web › Admin › AddressAttribute'
+  - 'Nop.Web › Admin › ContactFormAttribute'
+  - 'Nop.Web › Admin › CustomerAttribute'
+  - 'Nop.Web › Admin › ReviewType'
+  - 'Nop.Web › Admin › Shared'
+  - 'Nop.Web › Admin › VendorAttribute'
+  - 'Nop.Web › BackInStockSubscription'
+  - 'Nop.Web › Catalog'
+  - 'Nop.Web › Checkout'
+  - 'Nop.Web › Customer'
+  - 'Nop.Web › Install'
+  - 'Nop.Web › Newsletter'
+  - 'Nop.Web › Product'
+  - 'Nop.Web › Profile'
+  - 'Nop.Web › ShoppingCart'
+  - 'Nop.Web › Topic'
+  - 'Nop.Services › Caching'
+  - 'Nop.Services › Common'
+  - 'Nop.Services › Customers'
+  - 'Nop.Services › Directory'
+  - 'Nop.Services › Gdpr'
+  - 'Nop.Services › Logging'
+  - 'Nop.Services › Messages'
+  - 'Nop.Services › Orders'
+  - 'Nop.Services › Reminders'
+  - 'Nop.Plugin.AIRecommendation.GoogleAI › Services'
+  - 'Nop.Plugin.DiscountRules.CustomerRoles › Infrastructure'
+  - 'Nop.Plugin.ExternalAuth.Facebook › Infrastructure'
+  - 'Nop.Plugin.Feed.ChatGptShopping › Services'
+  - 'Nop.Plugin.Misc.Brevo › Services'
+  - 'Nop.Plugin.Misc.Forums › Services'
+  - 'Nop.Plugin.Misc.News › Services'
+  - 'Nop.Plugin.Misc.Omnisend › Infrastructure'
+  - 'Nop.Plugin.Misc.Polls › Services'
+  - 'Nop.Plugin.Misc.RFQ › Services'
+  - 'Nop.Plugin.Misc.Zettle › Services'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Services'
+  - 'Nop.Plugin.Shipping.FixedByWeightByTotal › Infrastructure'
+  - 'Nop.Plugin.Tax.Avalara › Services'
+  - 'Nop.Plugin.Tax.FixedOrByCountryStateZip › Infrastructure'
+  - 'Nop.Plugin.Widgets.FacebookPixel › Services'
+  - 'Nop.Plugin.Widgets.GoogleAnalytics (src/Plugins/Nop.Plugin.Widgets.GoogleAnalytics)'
+  - 'Nop.Plugin.Widgets.Swiper › Infrastructure'
+  - 'Nop.Web.Framework › Infrastructure'
+  - 'Nop.Web › Areas'
+  - 'Nop.Web › Infrastructure'
+  answer: 'Shopping cart'
+- flow: 'click-cshtml-form-1-256'
+  choose:
+  - 'Shopping cart'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Public'
+  - 'Nop.Web › Checkout'
+  - 'Nop.Web › ShoppingCart'
+  answer: 'Shopping cart'
+- flow: 'click-cshtml-form-1-257'
+  choose:
+  - 'Admin › Dashboard'
+  - 'Admin › Catalog'
+  - 'Admin › Catalog › Products'
+  - 'Admin › Catalog › Categories'
+  - 'Admin › Catalog › Manufacturers'
+  - 'Admin › Catalog › Product reviews'
+  - 'Admin › Catalog › Product tags'
+  - 'Admin › Catalog › Filter level values (YMM)'
+  - 'Admin › Catalog › Attributes'
+  - 'Admin › Catalog › Price lists'
+  - 'Admin › Sales'
+  - 'Admin › Sales › Orders'
+  - 'Admin › Sales › Shipments'
+  - 'Admin › Sales › Return requests'
+  - 'Admin › Sales › Recurring payments'
+  - 'Admin › Sales › Gift cards'
+  - 'Admin › Sales › Shopping carts and wishlists'
+  - 'Admin › Customers'
+  - 'Admin › Promotions'
+  - 'Admin › Content management'
+  - 'Admin › Configuration'
+  - 'Admin › Configuration › Settings'
+  - 'Admin › Configuration › Email accounts'
+  - 'Admin › Configuration › Stores'
+  - 'Admin › Configuration › Countries'
+  - 'Admin › Configuration › Languages'
+  - 'Admin › Configuration › Currencies'
+  - 'Admin › Configuration › Payment methods'
+  - 'Admin › Configuration › Payment restrictions'
+  - 'Admin › Configuration › SMS providers'
+  - 'Admin › Configuration › Tax categories'
+  - 'Admin › Configuration › Shipping'
+  - 'Admin › Configuration › Access control list'
+  - 'Admin › Configuration › Widgets'
+  - 'Admin › Configuration › Authentication'
+  - 'Admin › Configuration › Local plugins'
+  - 'Admin › Configuration › All plugins and themes'
+  - 'Admin › System'
+  - 'Admin › Reports'
+  - 'My account'
+  - 'Orders'
+  - 'Withdraw contract'
+  - 'Addresses'
+  - 'Shopping cart'
+  - 'Wishlist'
+  - 'Apply for vendor account'
+  - 'Home page'
+  - 'New products'
+  - 'Search'
+  - 'Blog'
+  - 'Contact us'
+  - 'Register'
+  - 'Log in'
+  - 'Inbox'
+  - 'Nop.Plugin.AIRecommendation.GoogleAI'
+  - 'Nop.Plugin.DiscountRules.CustomerRoles'
+  - 'Nop.Plugin.ExternalAuth.Facebook'
+  - 'Nop.Plugin.Feed.ChatGptShopping'
+  - 'Nop.Plugin.Misc.AzureBlob'
+  - 'Nop.Plugin.Misc.Brevo'
+  - 'Nop.Plugin.Misc.CloudflareImages'
+  - 'Nop.Plugin.Misc.Dynamics365'
+  - 'Nop.Plugin.Misc.Forums › Admin'
+  - 'Nop.Plugin.Misc.Forums › Public'
+  - 'Nop.Plugin.Misc.News › Admin'
+  - 'Nop.Plugin.Misc.News › Public'
+  - 'Nop.Plugin.Misc.NopMobileApp'
+  - 'Nop.Plugin.Misc.OmnibusDirective'
+  - 'Nop.Plugin.Misc.Omnisend'
+  - 'Nop.Plugin.Misc.Polls › Admin'
+  - 'Nop.Plugin.Misc.PowerBI'
+  - 'Nop.Plugin.Misc.PunchOut › Configuration'
+  - 'Nop.Plugin.Misc.PunchOut › Log'
+  - 'Nop.Plugin.Misc.RFQ'
+  - 'Nop.Plugin.Misc.RFQ › Admin'
+  - 'Nop.Plugin.Misc.WebApi.Frontend'
+  - 'Nop.Plugin.Misc.Zettle'
+  - 'Nop.Plugin.MultiFactorAuth.GoogleAuthenticator'
+  - 'Nop.Plugin.Payments.CheckMoneyOrder'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Admin'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Public'
+  - 'Nop.Plugin.Pickup.PickupInStore'
+  - 'Nop.Plugin.Search.Lucene'
+  - 'Nop.Plugin.Shipping.FixedByWeightByTotal'
+  - 'Nop.Plugin.Shipping.UPS'
+  - 'Nop.Plugin.Sms.Twilio'
+  - 'Nop.Plugin.Tax.Avalara › Configuration'
+  - 'Nop.Plugin.Tax.Avalara › Customer'
+  - 'Nop.Plugin.Tax.Avalara › ItemClassification'
+  - 'Nop.Plugin.Tax.Avalara › Log'
+  - 'Nop.Plugin.Tax.Avalara › Tax'
+  - 'Nop.Plugin.Tax.FixedOrByCountryStateZip'
+  - 'Nop.Plugin.Widgets.FacebookPixel › Configuration'
+  - 'Nop.Plugin.Widgets.GoogleAnalytics'
+  - 'Nop.Plugin.Widgets.Jotform'
+  - 'Nop.Plugin.Widgets.Swiper'
+  - 'Nop.Web › Admin › AddressAttribute'
+  - 'Nop.Web › Admin › ContactFormAttribute'
+  - 'Nop.Web › Admin › CustomerAttribute'
+  - 'Nop.Web › Admin › ReviewType'
+  - 'Nop.Web › Admin › Shared'
+  - 'Nop.Web › Admin › VendorAttribute'
+  - 'Nop.Web › BackInStockSubscription'
+  - 'Nop.Web › Catalog'
+  - 'Nop.Web › Checkout'
+  - 'Nop.Web › Customer'
+  - 'Nop.Web › Install'
+  - 'Nop.Web › Newsletter'
+  - 'Nop.Web › Product'
+  - 'Nop.Web › Profile'
+  - 'Nop.Web › ShoppingCart'
+  - 'Nop.Web › Topic'
+  - 'Nop.Services › Caching'
+  - 'Nop.Services › Common'
+  - 'Nop.Services › Customers'
+  - 'Nop.Services › Directory'
+  - 'Nop.Services › Gdpr'
+  - 'Nop.Services › Logging'
+  - 'Nop.Services › Messages'
+  - 'Nop.Services › Orders'
+  - 'Nop.Services › Reminders'
+  - 'Nop.Plugin.AIRecommendation.GoogleAI › Services'
+  - 'Nop.Plugin.DiscountRules.CustomerRoles › Infrastructure'
+  - 'Nop.Plugin.ExternalAuth.Facebook › Infrastructure'
+  - 'Nop.Plugin.Feed.ChatGptShopping › Services'
+  - 'Nop.Plugin.Misc.Brevo › Services'
+  - 'Nop.Plugin.Misc.Forums › Services'
+  - 'Nop.Plugin.Misc.News › Services'
+  - 'Nop.Plugin.Misc.Omnisend › Infrastructure'
+  - 'Nop.Plugin.Misc.Polls › Services'
+  - 'Nop.Plugin.Misc.RFQ › Services'
+  - 'Nop.Plugin.Misc.Zettle › Services'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Services'
+  - 'Nop.Plugin.Shipping.FixedByWeightByTotal › Infrastructure'
+  - 'Nop.Plugin.Tax.Avalara › Services'
+  - 'Nop.Plugin.Tax.FixedOrByCountryStateZip › Infrastructure'
+  - 'Nop.Plugin.Widgets.FacebookPixel › Services'
+  - 'Nop.Plugin.Widgets.GoogleAnalytics (src/Plugins/Nop.Plugin.Widgets.GoogleAnalytics)'
+  - 'Nop.Plugin.Widgets.Swiper › Infrastructure'
+  - 'Nop.Web.Framework › Infrastructure'
+  - 'Nop.Web › Areas'
+  - 'Nop.Web › Infrastructure'
+  answer: 'Inbox'
+- flow: 'click-cshtml-form-1-258'
+  choose:
+  - 'Admin › Dashboard'
+  - 'Admin › Catalog'
+  - 'Admin › Catalog › Products'
+  - 'Admin › Catalog › Categories'
+  - 'Admin › Catalog › Manufacturers'
+  - 'Admin › Catalog › Product reviews'
+  - 'Admin › Catalog › Product tags'
+  - 'Admin › Catalog › Filter level values (YMM)'
+  - 'Admin › Catalog › Attributes'
+  - 'Admin › Catalog › Price lists'
+  - 'Admin › Sales'
+  - 'Admin › Sales › Orders'
+  - 'Admin › Sales › Shipments'
+  - 'Admin › Sales › Return requests'
+  - 'Admin › Sales › Recurring payments'
+  - 'Admin › Sales › Gift cards'
+  - 'Admin › Sales › Shopping carts and wishlists'
+  - 'Admin › Customers'
+  - 'Admin › Promotions'
+  - 'Admin › Content management'
+  - 'Admin › Configuration'
+  - 'Admin › Configuration › Settings'
+  - 'Admin › Configuration › Email accounts'
+  - 'Admin › Configuration › Stores'
+  - 'Admin › Configuration › Countries'
+  - 'Admin › Configuration › Languages'
+  - 'Admin › Configuration › Currencies'
+  - 'Admin › Configuration › Payment methods'
+  - 'Admin › Configuration › Payment restrictions'
+  - 'Admin › Configuration › SMS providers'
+  - 'Admin › Configuration › Tax categories'
+  - 'Admin › Configuration › Shipping'
+  - 'Admin › Configuration › Access control list'
+  - 'Admin › Configuration › Widgets'
+  - 'Admin › Configuration › Authentication'
+  - 'Admin › Configuration › Local plugins'
+  - 'Admin › Configuration › All plugins and themes'
+  - 'Admin › System'
+  - 'Admin › Reports'
+  - 'My account'
+  - 'Orders'
+  - 'Withdraw contract'
+  - 'Addresses'
+  - 'Shopping cart'
+  - 'Wishlist'
+  - 'Apply for vendor account'
+  - 'Home page'
+  - 'New products'
+  - 'Search'
+  - 'Blog'
+  - 'Contact us'
+  - 'Register'
+  - 'Log in'
+  - 'Inbox'
+  - 'Nop.Plugin.AIRecommendation.GoogleAI'
+  - 'Nop.Plugin.DiscountRules.CustomerRoles'
+  - 'Nop.Plugin.ExternalAuth.Facebook'
+  - 'Nop.Plugin.Feed.ChatGptShopping'
+  - 'Nop.Plugin.Misc.AzureBlob'
+  - 'Nop.Plugin.Misc.Brevo'
+  - 'Nop.Plugin.Misc.CloudflareImages'
+  - 'Nop.Plugin.Misc.Dynamics365'
+  - 'Nop.Plugin.Misc.Forums › Admin'
+  - 'Nop.Plugin.Misc.Forums › Public'
+  - 'Nop.Plugin.Misc.News › Admin'
+  - 'Nop.Plugin.Misc.News › Public'
+  - 'Nop.Plugin.Misc.NopMobileApp'
+  - 'Nop.Plugin.Misc.OmnibusDirective'
+  - 'Nop.Plugin.Misc.Omnisend'
+  - 'Nop.Plugin.Misc.Polls › Admin'
+  - 'Nop.Plugin.Misc.PowerBI'
+  - 'Nop.Plugin.Misc.PunchOut › Configuration'
+  - 'Nop.Plugin.Misc.PunchOut › Log'
+  - 'Nop.Plugin.Misc.RFQ'
+  - 'Nop.Plugin.Misc.RFQ › Admin'
+  - 'Nop.Plugin.Misc.WebApi.Frontend'
+  - 'Nop.Plugin.Misc.Zettle'
+  - 'Nop.Plugin.MultiFactorAuth.GoogleAuthenticator'
+  - 'Nop.Plugin.Payments.CheckMoneyOrder'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Admin'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Public'
+  - 'Nop.Plugin.Pickup.PickupInStore'
+  - 'Nop.Plugin.Search.Lucene'
+  - 'Nop.Plugin.Shipping.FixedByWeightByTotal'
+  - 'Nop.Plugin.Shipping.UPS'
+  - 'Nop.Plugin.Sms.Twilio'
+  - 'Nop.Plugin.Tax.Avalara › Configuration'
+  - 'Nop.Plugin.Tax.Avalara › Customer'
+  - 'Nop.Plugin.Tax.Avalara › ItemClassification'
+  - 'Nop.Plugin.Tax.Avalara › Log'
+  - 'Nop.Plugin.Tax.Avalara › Tax'
+  - 'Nop.Plugin.Tax.FixedOrByCountryStateZip'
+  - 'Nop.Plugin.Widgets.FacebookPixel › Configuration'
+  - 'Nop.Plugin.Widgets.GoogleAnalytics'
+  - 'Nop.Plugin.Widgets.Jotform'
+  - 'Nop.Plugin.Widgets.Swiper'
+  - 'Nop.Web › Admin › AddressAttribute'
+  - 'Nop.Web › Admin › ContactFormAttribute'
+  - 'Nop.Web › Admin › CustomerAttribute'
+  - 'Nop.Web › Admin › ReviewType'
+  - 'Nop.Web › Admin › Shared'
+  - 'Nop.Web › Admin › VendorAttribute'
+  - 'Nop.Web › BackInStockSubscription'
+  - 'Nop.Web › Catalog'
+  - 'Nop.Web › Checkout'
+  - 'Nop.Web › Customer'
+  - 'Nop.Web › Install'
+  - 'Nop.Web › Newsletter'
+  - 'Nop.Web › Product'
+  - 'Nop.Web › Profile'
+  - 'Nop.Web › ShoppingCart'
+  - 'Nop.Web › Topic'
+  - 'Nop.Services › Caching'
+  - 'Nop.Services › Common'
+  - 'Nop.Services › Customers'
+  - 'Nop.Services › Directory'
+  - 'Nop.Services › Gdpr'
+  - 'Nop.Services › Logging'
+  - 'Nop.Services › Messages'
+  - 'Nop.Services › Orders'
+  - 'Nop.Services › Reminders'
+  - 'Nop.Plugin.AIRecommendation.GoogleAI › Services'
+  - 'Nop.Plugin.DiscountRules.CustomerRoles › Infrastructure'
+  - 'Nop.Plugin.ExternalAuth.Facebook › Infrastructure'
+  - 'Nop.Plugin.Feed.ChatGptShopping › Services'
+  - 'Nop.Plugin.Misc.Brevo › Services'
+  - 'Nop.Plugin.Misc.Forums › Services'
+  - 'Nop.Plugin.Misc.News › Services'
+  - 'Nop.Plugin.Misc.Omnisend › Infrastructure'
+  - 'Nop.Plugin.Misc.Polls › Services'
+  - 'Nop.Plugin.Misc.RFQ › Services'
+  - 'Nop.Plugin.Misc.Zettle › Services'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Services'
+  - 'Nop.Plugin.Shipping.FixedByWeightByTotal › Infrastructure'
+  - 'Nop.Plugin.Tax.Avalara › Services'
+  - 'Nop.Plugin.Tax.FixedOrByCountryStateZip › Infrastructure'
+  - 'Nop.Plugin.Widgets.FacebookPixel › Services'
+  - 'Nop.Plugin.Widgets.GoogleAnalytics (src/Plugins/Nop.Plugin.Widgets.GoogleAnalytics)'
+  - 'Nop.Plugin.Widgets.Swiper › Infrastructure'
+  - 'Nop.Web.Framework › Infrastructure'
+  - 'Nop.Web › Areas'
+  - 'Nop.Web › Infrastructure'
+  answer: 'Inbox'
+- flow: 'click-cshtml-form-1-259'
+  choose:
+  - 'Admin › Dashboard'
+  - 'Admin › Catalog'
+  - 'Admin › Catalog › Products'
+  - 'Admin › Catalog › Categories'
+  - 'Admin › Catalog › Manufacturers'
+  - 'Admin › Catalog › Product reviews'
+  - 'Admin › Catalog › Product tags'
+  - 'Admin › Catalog › Filter level values (YMM)'
+  - 'Admin › Catalog › Attributes'
+  - 'Admin › Catalog › Price lists'
+  - 'Admin › Sales'
+  - 'Admin › Sales › Orders'
+  - 'Admin › Sales › Shipments'
+  - 'Admin › Sales › Return requests'
+  - 'Admin › Sales › Recurring payments'
+  - 'Admin › Sales › Gift cards'
+  - 'Admin › Sales › Shopping carts and wishlists'
+  - 'Admin › Customers'
+  - 'Admin › Promotions'
+  - 'Admin › Content management'
+  - 'Admin › Configuration'
+  - 'Admin › Configuration › Settings'
+  - 'Admin › Configuration › Email accounts'
+  - 'Admin › Configuration › Stores'
+  - 'Admin › Configuration › Countries'
+  - 'Admin › Configuration › Languages'
+  - 'Admin › Configuration › Currencies'
+  - 'Admin › Configuration › Payment methods'
+  - 'Admin › Configuration › Payment restrictions'
+  - 'Admin › Configuration › SMS providers'
+  - 'Admin › Configuration › Tax categories'
+  - 'Admin › Configuration › Shipping'
+  - 'Admin › Configuration › Access control list'
+  - 'Admin › Configuration › Widgets'
+  - 'Admin › Configuration › Authentication'
+  - 'Admin › Configuration › Local plugins'
+  - 'Admin › Configuration › All plugins and themes'
+  - 'Admin › System'
+  - 'Admin › Reports'
+  - 'My account'
+  - 'Orders'
+  - 'Withdraw contract'
+  - 'Addresses'
+  - 'Shopping cart'
+  - 'Wishlist'
+  - 'Apply for vendor account'
+  - 'Home page'
+  - 'New products'
+  - 'Search'
+  - 'Blog'
+  - 'Contact us'
+  - 'Register'
+  - 'Log in'
+  - 'Inbox'
+  - 'Nop.Plugin.AIRecommendation.GoogleAI'
+  - 'Nop.Plugin.DiscountRules.CustomerRoles'
+  - 'Nop.Plugin.ExternalAuth.Facebook'
+  - 'Nop.Plugin.Feed.ChatGptShopping'
+  - 'Nop.Plugin.Misc.AzureBlob'
+  - 'Nop.Plugin.Misc.Brevo'
+  - 'Nop.Plugin.Misc.CloudflareImages'
+  - 'Nop.Plugin.Misc.Dynamics365'
+  - 'Nop.Plugin.Misc.Forums › Admin'
+  - 'Nop.Plugin.Misc.Forums › Public'
+  - 'Nop.Plugin.Misc.News › Admin'
+  - 'Nop.Plugin.Misc.News › Public'
+  - 'Nop.Plugin.Misc.NopMobileApp'
+  - 'Nop.Plugin.Misc.OmnibusDirective'
+  - 'Nop.Plugin.Misc.Omnisend'
+  - 'Nop.Plugin.Misc.Polls › Admin'
+  - 'Nop.Plugin.Misc.PowerBI'
+  - 'Nop.Plugin.Misc.PunchOut › Configuration'
+  - 'Nop.Plugin.Misc.PunchOut › Log'
+  - 'Nop.Plugin.Misc.RFQ'
+  - 'Nop.Plugin.Misc.RFQ › Admin'
+  - 'Nop.Plugin.Misc.WebApi.Frontend'
+  - 'Nop.Plugin.Misc.Zettle'
+  - 'Nop.Plugin.MultiFactorAuth.GoogleAuthenticator'
+  - 'Nop.Plugin.Payments.CheckMoneyOrder'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Admin'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Public'
+  - 'Nop.Plugin.Pickup.PickupInStore'
+  - 'Nop.Plugin.Search.Lucene'
+  - 'Nop.Plugin.Shipping.FixedByWeightByTotal'
+  - 'Nop.Plugin.Shipping.UPS'
+  - 'Nop.Plugin.Sms.Twilio'
+  - 'Nop.Plugin.Tax.Avalara › Configuration'
+  - 'Nop.Plugin.Tax.Avalara › Customer'
+  - 'Nop.Plugin.Tax.Avalara › ItemClassification'
+  - 'Nop.Plugin.Tax.Avalara › Log'
+  - 'Nop.Plugin.Tax.Avalara › Tax'
+  - 'Nop.Plugin.Tax.FixedOrByCountryStateZip'
+  - 'Nop.Plugin.Widgets.FacebookPixel › Configuration'
+  - 'Nop.Plugin.Widgets.GoogleAnalytics'
+  - 'Nop.Plugin.Widgets.Jotform'
+  - 'Nop.Plugin.Widgets.Swiper'
+  - 'Nop.Web › Admin › AddressAttribute'
+  - 'Nop.Web › Admin › ContactFormAttribute'
+  - 'Nop.Web › Admin › CustomerAttribute'
+  - 'Nop.Web › Admin › ReviewType'
+  - 'Nop.Web › Admin › Shared'
+  - 'Nop.Web › Admin › VendorAttribute'
+  - 'Nop.Web › BackInStockSubscription'
+  - 'Nop.Web › Catalog'
+  - 'Nop.Web › Checkout'
+  - 'Nop.Web › Customer'
+  - 'Nop.Web › Install'
+  - 'Nop.Web › Newsletter'
+  - 'Nop.Web › Product'
+  - 'Nop.Web › Profile'
+  - 'Nop.Web › ShoppingCart'
+  - 'Nop.Web › Topic'
+  - 'Nop.Services › Caching'
+  - 'Nop.Services › Common'
+  - 'Nop.Services › Customers'
+  - 'Nop.Services › Directory'
+  - 'Nop.Services › Gdpr'
+  - 'Nop.Services › Logging'
+  - 'Nop.Services › Messages'
+  - 'Nop.Services › Orders'
+  - 'Nop.Services › Reminders'
+  - 'Nop.Plugin.AIRecommendation.GoogleAI › Services'
+  - 'Nop.Plugin.DiscountRules.CustomerRoles › Infrastructure'
+  - 'Nop.Plugin.ExternalAuth.Facebook › Infrastructure'
+  - 'Nop.Plugin.Feed.ChatGptShopping › Services'
+  - 'Nop.Plugin.Misc.Brevo › Services'
+  - 'Nop.Plugin.Misc.Forums › Services'
+  - 'Nop.Plugin.Misc.News › Services'
+  - 'Nop.Plugin.Misc.Omnisend › Infrastructure'
+  - 'Nop.Plugin.Misc.Polls › Services'
+  - 'Nop.Plugin.Misc.RFQ › Services'
+  - 'Nop.Plugin.Misc.Zettle › Services'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Services'
+  - 'Nop.Plugin.Shipping.FixedByWeightByTotal › Infrastructure'
+  - 'Nop.Plugin.Tax.Avalara › Services'
+  - 'Nop.Plugin.Tax.FixedOrByCountryStateZip › Infrastructure'
+  - 'Nop.Plugin.Widgets.FacebookPixel › Services'
+  - 'Nop.Plugin.Widgets.GoogleAnalytics (src/Plugins/Nop.Plugin.Widgets.GoogleAnalytics)'
+  - 'Nop.Plugin.Widgets.Swiper › Infrastructure'
+  - 'Nop.Web.Framework › Infrastructure'
+  - 'Nop.Web › Areas'
+  - 'Nop.Web › Infrastructure'
+  answer: 'Search'
+- flow: 'click-cshtml-form-1-260'
+  choose:
+  - 'Admin › Dashboard'
+  - 'Admin › Catalog'
+  - 'Admin › Catalog › Products'
+  - 'Admin › Catalog › Categories'
+  - 'Admin › Catalog › Manufacturers'
+  - 'Admin › Catalog › Product reviews'
+  - 'Admin › Catalog › Product tags'
+  - 'Admin › Catalog › Filter level values (YMM)'
+  - 'Admin › Catalog › Attributes'
+  - 'Admin › Catalog › Price lists'
+  - 'Admin › Sales'
+  - 'Admin › Sales › Orders'
+  - 'Admin › Sales › Shipments'
+  - 'Admin › Sales › Return requests'
+  - 'Admin › Sales › Recurring payments'
+  - 'Admin › Sales › Gift cards'
+  - 'Admin › Sales › Shopping carts and wishlists'
+  - 'Admin › Customers'
+  - 'Admin › Promotions'
+  - 'Admin › Content management'
+  - 'Admin › Configuration'
+  - 'Admin › Configuration › Settings'
+  - 'Admin › Configuration › Email accounts'
+  - 'Admin › Configuration › Stores'
+  - 'Admin › Configuration › Countries'
+  - 'Admin › Configuration › Languages'
+  - 'Admin › Configuration › Currencies'
+  - 'Admin › Configuration › Payment methods'
+  - 'Admin › Configuration › Payment restrictions'
+  - 'Admin › Configuration › SMS providers'
+  - 'Admin › Configuration › Tax categories'
+  - 'Admin › Configuration › Shipping'
+  - 'Admin › Configuration › Access control list'
+  - 'Admin › Configuration › Widgets'
+  - 'Admin › Configuration › Authentication'
+  - 'Admin › Configuration › Local plugins'
+  - 'Admin › Configuration › All plugins and themes'
+  - 'Admin › System'
+  - 'Admin › Reports'
+  - 'My account'
+  - 'Orders'
+  - 'Withdraw contract'
+  - 'Addresses'
+  - 'Shopping cart'
+  - 'Wishlist'
+  - 'Apply for vendor account'
+  - 'Home page'
+  - 'New products'
+  - 'Search'
+  - 'Blog'
+  - 'Contact us'
+  - 'Register'
+  - 'Log in'
+  - 'Inbox'
+  - 'Nop.Plugin.AIRecommendation.GoogleAI'
+  - 'Nop.Plugin.DiscountRules.CustomerRoles'
+  - 'Nop.Plugin.ExternalAuth.Facebook'
+  - 'Nop.Plugin.Feed.ChatGptShopping'
+  - 'Nop.Plugin.Misc.AzureBlob'
+  - 'Nop.Plugin.Misc.Brevo'
+  - 'Nop.Plugin.Misc.CloudflareImages'
+  - 'Nop.Plugin.Misc.Dynamics365'
+  - 'Nop.Plugin.Misc.Forums › Admin'
+  - 'Nop.Plugin.Misc.Forums › Public'
+  - 'Nop.Plugin.Misc.News › Admin'
+  - 'Nop.Plugin.Misc.News › Public'
+  - 'Nop.Plugin.Misc.NopMobileApp'
+  - 'Nop.Plugin.Misc.OmnibusDirective'
+  - 'Nop.Plugin.Misc.Omnisend'
+  - 'Nop.Plugin.Misc.Polls › Admin'
+  - 'Nop.Plugin.Misc.PowerBI'
+  - 'Nop.Plugin.Misc.PunchOut › Configuration'
+  - 'Nop.Plugin.Misc.PunchOut › Log'
+  - 'Nop.Plugin.Misc.RFQ'
+  - 'Nop.Plugin.Misc.RFQ › Admin'
+  - 'Nop.Plugin.Misc.WebApi.Frontend'
+  - 'Nop.Plugin.Misc.Zettle'
+  - 'Nop.Plugin.MultiFactorAuth.GoogleAuthenticator'
+  - 'Nop.Plugin.Payments.CheckMoneyOrder'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Admin'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Public'
+  - 'Nop.Plugin.Pickup.PickupInStore'
+  - 'Nop.Plugin.Search.Lucene'
+  - 'Nop.Plugin.Shipping.FixedByWeightByTotal'
+  - 'Nop.Plugin.Shipping.UPS'
+  - 'Nop.Plugin.Sms.Twilio'
+  - 'Nop.Plugin.Tax.Avalara › Configuration'
+  - 'Nop.Plugin.Tax.Avalara › Customer'
+  - 'Nop.Plugin.Tax.Avalara › ItemClassification'
+  - 'Nop.Plugin.Tax.Avalara › Log'
+  - 'Nop.Plugin.Tax.Avalara › Tax'
+  - 'Nop.Plugin.Tax.FixedOrByCountryStateZip'
+  - 'Nop.Plugin.Widgets.FacebookPixel › Configuration'
+  - 'Nop.Plugin.Widgets.GoogleAnalytics'
+  - 'Nop.Plugin.Widgets.Jotform'
+  - 'Nop.Plugin.Widgets.Swiper'
+  - 'Nop.Web › Admin › AddressAttribute'
+  - 'Nop.Web › Admin › ContactFormAttribute'
+  - 'Nop.Web › Admin › CustomerAttribute'
+  - 'Nop.Web › Admin › ReviewType'
+  - 'Nop.Web › Admin › Shared'
+  - 'Nop.Web › Admin › VendorAttribute'
+  - 'Nop.Web › BackInStockSubscription'
+  - 'Nop.Web › Catalog'
+  - 'Nop.Web › Checkout'
+  - 'Nop.Web › Customer'
+  - 'Nop.Web › Install'
+  - 'Nop.Web › Newsletter'
+  - 'Nop.Web › Product'
+  - 'Nop.Web › Profile'
+  - 'Nop.Web › ShoppingCart'
+  - 'Nop.Web › Topic'
+  - 'Nop.Services › Caching'
+  - 'Nop.Services › Common'
+  - 'Nop.Services › Customers'
+  - 'Nop.Services › Directory'
+  - 'Nop.Services › Gdpr'
+  - 'Nop.Services › Logging'
+  - 'Nop.Services › Messages'
+  - 'Nop.Services › Orders'
+  - 'Nop.Services › Reminders'
+  - 'Nop.Plugin.AIRecommendation.GoogleAI › Services'
+  - 'Nop.Plugin.DiscountRules.CustomerRoles › Infrastructure'
+  - 'Nop.Plugin.ExternalAuth.Facebook › Infrastructure'
+  - 'Nop.Plugin.Feed.ChatGptShopping › Services'
+  - 'Nop.Plugin.Misc.Brevo › Services'
+  - 'Nop.Plugin.Misc.Forums › Services'
+  - 'Nop.Plugin.Misc.News › Services'
+  - 'Nop.Plugin.Misc.Omnisend › Infrastructure'
+  - 'Nop.Plugin.Misc.Polls › Services'
+  - 'Nop.Plugin.Misc.RFQ › Services'
+  - 'Nop.Plugin.Misc.Zettle › Services'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Services'
+  - 'Nop.Plugin.Shipping.FixedByWeightByTotal › Infrastructure'
+  - 'Nop.Plugin.Tax.Avalara › Services'
+  - 'Nop.Plugin.Tax.FixedOrByCountryStateZip › Infrastructure'
+  - 'Nop.Plugin.Widgets.FacebookPixel › Services'
+  - 'Nop.Plugin.Widgets.GoogleAnalytics (src/Plugins/Nop.Plugin.Widgets.GoogleAnalytics)'
+  - 'Nop.Plugin.Widgets.Swiper › Infrastructure'
+  - 'Nop.Web.Framework › Infrastructure'
+  - 'Nop.Web › Areas'
+  - 'Nop.Web › Infrastructure'
+  answer: 'Nop.Web › Topic'
+- flow: 'click-cshtml-form-1-7'
+  choose:
+  - 'Admin › Dashboard'
+  - 'Admin › Catalog'
+  - 'Admin › Catalog › Products'
+  - 'Admin › Catalog › Categories'
+  - 'Admin › Catalog › Manufacturers'
+  - 'Admin › Catalog › Product reviews'
+  - 'Admin › Catalog › Product tags'
+  - 'Admin › Catalog › Filter level values (YMM)'
+  - 'Admin › Catalog › Attributes'
+  - 'Admin › Catalog › Price lists'
+  - 'Admin › Sales'
+  - 'Admin › Sales › Orders'
+  - 'Admin › Sales › Shipments'
+  - 'Admin › Sales › Return requests'
+  - 'Admin › Sales › Recurring payments'
+  - 'Admin › Sales › Gift cards'
+  - 'Admin › Sales › Shopping carts and wishlists'
+  - 'Admin › Customers'
+  - 'Admin › Promotions'
+  - 'Admin › Content management'
+  - 'Admin › Configuration'
+  - 'Admin › Configuration › Settings'
+  - 'Admin › Configuration › Email accounts'
+  - 'Admin › Configuration › Stores'
+  - 'Admin › Configuration › Countries'
+  - 'Admin › Configuration › Languages'
+  - 'Admin › Configuration › Currencies'
+  - 'Admin › Configuration › Payment methods'
+  - 'Admin › Configuration › Payment restrictions'
+  - 'Admin › Configuration › SMS providers'
+  - 'Admin › Configuration › Tax categories'
+  - 'Admin › Configuration › Shipping'
+  - 'Admin › Configuration › Access control list'
+  - 'Admin › Configuration › Widgets'
+  - 'Admin › Configuration › Authentication'
+  - 'Admin › Configuration › Local plugins'
+  - 'Admin › Configuration › All plugins and themes'
+  - 'Admin › System'
+  - 'Admin › Reports'
+  - 'My account'
+  - 'Orders'
+  - 'Withdraw contract'
+  - 'Addresses'
+  - 'Shopping cart'
+  - 'Wishlist'
+  - 'Apply for vendor account'
+  - 'Home page'
+  - 'New products'
+  - 'Search'
+  - 'Blog'
+  - 'Contact us'
+  - 'Register'
+  - 'Log in'
+  - 'Inbox'
+  - 'Nop.Plugin.AIRecommendation.GoogleAI'
+  - 'Nop.Plugin.DiscountRules.CustomerRoles'
+  - 'Nop.Plugin.ExternalAuth.Facebook'
+  - 'Nop.Plugin.Feed.ChatGptShopping'
+  - 'Nop.Plugin.Misc.AzureBlob'
+  - 'Nop.Plugin.Misc.Brevo'
+  - 'Nop.Plugin.Misc.CloudflareImages'
+  - 'Nop.Plugin.Misc.Dynamics365'
+  - 'Nop.Plugin.Misc.Forums › Admin'
+  - 'Nop.Plugin.Misc.Forums › Public'
+  - 'Nop.Plugin.Misc.News › Admin'
+  - 'Nop.Plugin.Misc.News › Public'
+  - 'Nop.Plugin.Misc.NopMobileApp'
+  - 'Nop.Plugin.Misc.OmnibusDirective'
+  - 'Nop.Plugin.Misc.Omnisend'
+  - 'Nop.Plugin.Misc.Polls › Admin'
+  - 'Nop.Plugin.Misc.PowerBI'
+  - 'Nop.Plugin.Misc.PunchOut › Configuration'
+  - 'Nop.Plugin.Misc.PunchOut › Log'
+  - 'Nop.Plugin.Misc.RFQ'
+  - 'Nop.Plugin.Misc.RFQ › Admin'
+  - 'Nop.Plugin.Misc.WebApi.Frontend'
+  - 'Nop.Plugin.Misc.Zettle'
+  - 'Nop.Plugin.MultiFactorAuth.GoogleAuthenticator'
+  - 'Nop.Plugin.Payments.CheckMoneyOrder'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Admin'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Public'
+  - 'Nop.Plugin.Pickup.PickupInStore'
+  - 'Nop.Plugin.Search.Lucene'
+  - 'Nop.Plugin.Shipping.FixedByWeightByTotal'
+  - 'Nop.Plugin.Shipping.UPS'
+  - 'Nop.Plugin.Sms.Twilio'
+  - 'Nop.Plugin.Tax.Avalara › Configuration'
+  - 'Nop.Plugin.Tax.Avalara › Customer'
+  - 'Nop.Plugin.Tax.Avalara › ItemClassification'
+  - 'Nop.Plugin.Tax.Avalara › Log'
+  - 'Nop.Plugin.Tax.Avalara › Tax'
+  - 'Nop.Plugin.Tax.FixedOrByCountryStateZip'
+  - 'Nop.Plugin.Widgets.FacebookPixel › Configuration'
+  - 'Nop.Plugin.Widgets.GoogleAnalytics'
+  - 'Nop.Plugin.Widgets.Jotform'
+  - 'Nop.Plugin.Widgets.Swiper'
+  - 'Nop.Web › Admin › AddressAttribute'
+  - 'Nop.Web › Admin › ContactFormAttribute'
+  - 'Nop.Web › Admin › CustomerAttribute'
+  - 'Nop.Web › Admin › ReviewType'
+  - 'Nop.Web › Admin › Shared'
+  - 'Nop.Web › Admin › VendorAttribute'
+  - 'Nop.Web › BackInStockSubscription'
+  - 'Nop.Web › Catalog'
+  - 'Nop.Web › Checkout'
+  - 'Nop.Web › Customer'
+  - 'Nop.Web › Install'
+  - 'Nop.Web › Newsletter'
+  - 'Nop.Web › Product'
+  - 'Nop.Web › Profile'
+  - 'Nop.Web › ShoppingCart'
+  - 'Nop.Web › Topic'
+  - 'Nop.Services › Caching'
+  - 'Nop.Services › Common'
+  - 'Nop.Services › Customers'
+  - 'Nop.Services › Directory'
+  - 'Nop.Services › Gdpr'
+  - 'Nop.Services › Logging'
+  - 'Nop.Services › Messages'
+  - 'Nop.Services › Orders'
+  - 'Nop.Services › Reminders'
+  - 'Nop.Plugin.AIRecommendation.GoogleAI › Services'
+  - 'Nop.Plugin.DiscountRules.CustomerRoles › Infrastructure'
+  - 'Nop.Plugin.ExternalAuth.Facebook › Infrastructure'
+  - 'Nop.Plugin.Feed.ChatGptShopping › Services'
+  - 'Nop.Plugin.Misc.Brevo › Services'
+  - 'Nop.Plugin.Misc.Forums › Services'
+  - 'Nop.Plugin.Misc.News › Services'
+  - 'Nop.Plugin.Misc.Omnisend › Infrastructure'
+  - 'Nop.Plugin.Misc.Polls › Services'
+  - 'Nop.Plugin.Misc.RFQ › Services'
+  - 'Nop.Plugin.Misc.Zettle › Services'
+  - 'Nop.Plugin.Payments.PayPalCommerce › Services'
+  - 'Nop.Plugin.Shipping.FixedByWeightByTotal › Infrastructure'
+  - 'Nop.Plugin.Tax.Avalara › Services'
+  - 'Nop.Plugin.Tax.FixedOrByCountryStateZip › Infrastructure'
+  - 'Nop.Plugin.Widgets.FacebookPixel › Services'
+  - 'Nop.Plugin.Widgets.GoogleAnalytics (src/Plugins/Nop.Plugin.Widgets.GoogleAnalytics)'
+  - 'Nop.Plugin.Widgets.Swiper › Infrastructure'
+  - 'Nop.Web.Framework › Infrastructure'
+  - 'Nop.Web › Areas'
+  - 'Nop.Web › Infrastructure'
+  answer: 'Shopping cart'
+- flow: 'handler-customercacheeventconsumer-handleeventasync'
+  choose:
+  - 'Admin › Customers'
+  - 'Nop.Web › Customer'
+  answer: 'Admin › Customers'
+- flow: 'handler-eventconsumer-handleeventasync-74'
+  choose:
+  - 'Admin › Dashboard'
+  - 'Admin › System'
+  answer: 'Admin › System'
+- flow: 'handler-eventconsumer-handleeventasync-92'
+  choose:
+  - 'Search'
+  - 'Nop.Web › Catalog'
+  answer: 'Nop.Web › Catalog'

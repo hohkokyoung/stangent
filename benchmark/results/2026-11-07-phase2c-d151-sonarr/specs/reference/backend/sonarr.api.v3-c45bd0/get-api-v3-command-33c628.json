@@ -1,0 +1,102 @@
+{
+  "codeTitle": "GET /api/v3/Command",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/Command",
+  "generated": {
+    "bundleHash": "a73829029232dd9cc2c6801435186121c394a8ceedcb9ee26a42c5aaa0326d6c",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 10468,
+      "cutOff": 13,
+      "depth": 4,
+      "points": 46
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6650,
+      "calls": 1,
+      "costUsd": 0.027309,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2671,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 5004,
+      "calls": 1,
+      "costUsd": 0.029686,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5826,
+      "outputTokens": 939
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/Command",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandController.GetStartedCommands"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Command"
+        ],
+        "id": "A1",
+        "text": "A caller requests the list of commands and receives it as JSON."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandController.GetStartedCommands"
+        ],
+        "id": "R1",
+        "text": "Commands are ordered by status using the command priority comparer, then by priority from highest to lowest."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandController.GetStartedCommands",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.IManageCommandQueue.All"
+        ],
+        "id": "S1",
+        "text": "Returns a list of commands from the command queue, each as a command resource."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandResourceMapper.ToResource(NzbDrone.Core.Messaging.Commands.CommandModel)"
+        ],
+        "id": "S2",
+        "text": "Each command shows id, name, message, body, priority, status, result, queued, started and ended times, duration, exception, trigger, completion message and last execution time."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandResourceMapper.ToResource(NzbDrone.Core.Messaging.Commands.CommandModel)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.SplitCamelCase(System.String)"
+        ],
+        "id": "S3",
+        "text": "Each command also has a command name, which is the command name with spaces inserted at camel-case boundaries."
+      },
+      {
+        "cites": [
+          "Sonarr.Common|M:NzbDrone.Common.Http.UserAgentParser.SimplifyUserAgent(System.String)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandResourceMapper.ToResource(NzbDrone.Core.Messaging.Commands.CommandModel)"
+        ],
+        "id": "S4",
+        "text": "The client user agent is shown as sent, except it is empty when it is missing or starts with \"Mozilla/5.0\"."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "List Commands (GET /api/v3/Command)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,196 @@
+{
+  "codeTitle": "SettingsPage",
+  "entry": "ts|frontend/src/Settings/SettingsPage.tsx#SettingsPage",
+  "generated": {
+    "bundleHash": "53bc04d259ea32eced4b707fe9c816125b0834c4a9f7be0ee5e725fd5aa7fdcb",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 16522,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 64
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 10478,
+      "calls": 1,
+      "costUsd": 0.046151,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5041,
+      "outputTokens": 406
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 17975,
+      "calls": 2,
+      "costUsd": 0.10676,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 17923,
+      "outputTokens": 3430
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Settings/SettingsPage.tsx#SettingsPage",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/SettingsSaveItems.tsx#SettingsSaveItems"
+        ],
+        "id": "A1",
+        "text": "Pressing Save calls the page's save handler."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettingsSave.ts#useSettingsSave",
+          "ts|frontend/src/Helpers/Hooks/useKeyboardShortcuts.ts#useKeyboardShortcuts"
+        ],
+        "id": "A2",
+        "text": "The save keyboard shortcut calls the save handler when there are pending changes. It works globally, including inside input fields."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/PendingChangesModal.tsx#PendingChangesModal",
+          "ts|frontend/src/Settings/useSettingsSave.ts#useSettingsSave"
+        ],
+        "id": "A3",
+        "text": "In the unsaved-changes dialog, the stay-and-review button cancels the navigation and closes the dialog."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/PendingChangesModal.tsx#PendingChangesModal",
+          "ts|frontend/src/Settings/useSettingsSave.ts#useSettingsSave"
+        ],
+        "id": "A4",
+        "text": "In the unsaved-changes dialog, the discard button lets the blocked navigation go ahead."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/PendingChangesModal.tsx#PendingChangesModal"
+        ],
+        "id": "A5",
+        "text": "Closing the dialog is treated as a cancel."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/PendingChangesModal.tsx#PendingChangesModal"
+        ],
+        "id": "A6",
+        "text": "While the dialog is open, the accept-confirm-modal shortcut triggers the discard action."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/SettingsSaveItems.tsx#SettingsSaveItems"
+        ],
+        "id": "R1",
+        "text": "The Save item is disabled when there are no pending changes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettingsSave.ts#useSettingsSave"
+        ],
+        "id": "R2",
+        "text": "Navigating away is blocked only while there are pending changes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/SettingsPage.tsx#SettingsPage"
+        ],
+        "id": "R3",
+        "text": "By default showSave is true, and isSaving and hasPendingChanges are false."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/PendingChangesModal.tsx#PendingChangesModal"
+        ],
+        "id": "R4",
+        "text": "The discard button in the dialog is focused automatically."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/SettingsPage.tsx#SettingsPage"
+        ],
+        "id": "S1",
+        "text": "The page shows a titled content area with a toolbar, the page's own content below it, and a pending-changes confirmation dialog."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/SettingsSaveItems.tsx#SettingsSaveItems"
+        ],
+        "id": "S2",
+        "text": "The toolbar always shows a pinned advanced settings button with its label shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/SettingsSaveItems.tsx#SettingsSaveItems"
+        ],
+        "id": "S3",
+        "text": "The toolbar shows a Save item with a save icon unless showSave is turned off (it defaults to on)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/SettingsSaveItems.tsx#SettingsSaveItems",
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "S4",
+        "text": "The Save item is labelled with the translation of SaveChanges when there are pending changes and with the translation of NoChanges otherwise."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/SettingsSaveItems.tsx#SettingsSaveItems"
+        ],
+        "id": "S5",
+        "text": "The Save item spins while saving."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/PendingChangesModal.tsx#PendingChangesModal",
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "S6",
+        "text": "The unsaved-changes dialog has the header 'UnsavedChanges' and the message 'PendingChangesMessage', each looked up as a translation key. It has two buttons: 'PendingChangesStayReview' and 'PendingChangesDiscardChanges'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettingsSave.ts#useSettingsSave"
+        ],
+        "id": "S7",
+        "text": "The dialog is open only while navigation is blocked."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettingsSave.ts#useSettingsSave"
+        ],
+        "id": "E1",
+        "text": "The save shortcut calls preventDefault on the key event."
+      }
+    ]
+  },
+  "title": "Settings Page",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "The source only shows the translation keys SaveChanges and NoChanges. The translated texts 'Save Changes' and 'No Changes' are not in the slice, because the translations table is not shown.",
+        "id": "F1",
+        "kind": "unsupported",
+        "outcome": "fixed",
+        "reason": "Removed the literal texts 'Save Changes' and 'No Changes'; the statement now refers only to the translations of the keys SaveChanges and NoChanges.",
+        "statement": "S4",
+        "statementText": "The Save item is labelled 'Save Changes' when there are pending changes and 'No Changes' otherwise, using the translation keys SaveChanges and NoChanges."
+      }
+    ]
+  }
+}

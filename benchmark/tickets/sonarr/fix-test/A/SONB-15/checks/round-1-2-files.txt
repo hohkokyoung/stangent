@@ -1,0 +1,1 @@
+planned  src/NzbDrone.Core/CustomFormats/Specifications/ResolutionSpecification.cs

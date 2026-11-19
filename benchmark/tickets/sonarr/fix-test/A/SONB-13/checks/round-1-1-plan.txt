@@ -1,0 +1,2 @@
+src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserProxy.cs · Sonarr.Core|M:NzbDrone.Core.Notifications.Emby.MediaBrowserProxy.ProcessGetRequest``1(NzbDrone.Common.Http.HttpRequest,NzbDrone.Core.Notifications.Emby.MediaBrowserSettings)
+src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserProxy.cs · Sonarr.Core|M:NzbDrone.Core.Notifications.Emby.MediaBrowserProxy.ProcessRequest(NzbDrone.Common.Http.HttpRequest,NzbDrone.Core.Notifications.Emby.MediaBrowserSettings)

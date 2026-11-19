@@ -1,0 +1,21 @@
+@model SettingsModel
+@inject Shop.Web.Localizer T
+<form asp-action="Edit" method="post">
+    <label asp-for="Name"></label>
+    <input asp-for="Name" />
+    <select asp-for="Theme" asp-items="Html.GetEnumSelectList<Theme>()"></select>
+    <label for="notes">@T("Shop.Settings.Notes")</label>
+    <textarea id="notes" name="notes"></textarea>
+    <input type="hidden" asp-for="Notes" />
+    <shop-editor asp-for="Notes" />
+    <select name="size"><option value="s">@T("Shop.Size.Small")</option><option value="l">Large</option></select>
+    <select asp-for="Name" asp-items="Model.AvailableSizes"></select>
+    @Html.Localized(@<div>
+        <input asp-for="@Model.Name" id="localized-name" />
+    </div>)
+    <input type="submit" value="Save" />
+</form>
+<h3>@T("Shop.Settings.Section")</h3>
+<h2>@T("Shop.Settings.Heading")</h2>
+@{ ViewBag.PageTitle = T("Shop.Settings.Title"); }
+<button type="button" aria-label="Close dialog"><span>&times;</span></button>

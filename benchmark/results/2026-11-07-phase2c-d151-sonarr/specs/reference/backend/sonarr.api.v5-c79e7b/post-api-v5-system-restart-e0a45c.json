@@ -1,0 +1,106 @@
+{
+  "codeTitle": "POST /api/v5/System/restart",
+  "entry": "endpoint:Sonarr.Api.V5|POST /api/v5/System/restart",
+  "generated": {
+    "bundleHash": "cc41124d868f59d8b0dbdebb0f3a0bd45d8be94efe8996e8578000fb1a5e54b9",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 11391,
+      "cutOff": 4,
+      "depth": 4,
+      "points": 18
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 7877,
+      "calls": 1,
+      "costUsd": 0.032797,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2316,
+      "outputTokens": 111
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 6119,
+      "calls": 1,
+      "costUsd": 0.035176,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6571,
+      "outputTokens": 1042
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|POST /api/v5/System/restart",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.SystemController.Restart",
+          "Sonarr.Core|M:NzbDrone.Core.Lifecycle.LifecycleService.Restart"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|POST /api/v5/System/restart"
+        ],
+        "id": "A1",
+        "text": "A caller can request an application restart. The restart runs in a background task, so the response is returned without waiting for it."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Lifecycle.LifecycleService.Restart",
+          "Sonarr.Core|M:NzbDrone.Core.Lifecycle.ApplicationShutdownRequested.#ctor(System.Boolean)"
+        ],
+        "id": "R1",
+        "text": "The restart event is created with the restarting flag set to true."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.SystemController.Restart"
+        ],
+        "id": "S1",
+        "text": "Returns an OK response with a Restarting flag set to true."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Lifecycle.LifecycleService.Restart"
+        ],
+        "id": "E1",
+        "text": "The restart logs \"Restart requested.\" and marks the runtime info as restart pending."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Lifecycle.LifecycleService.Restart",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Events.IEventAggregator.PublishEvent``1(``0)"
+        ],
+        "id": "E2",
+        "text": "The restart publishes an ApplicationShutdownRequested event with restarting set to true."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Instrumentation.DatabaseTarget.Handle(NzbDrone.Core.Lifecycle.ApplicationShutdownRequested)",
+          "Sonarr.Core|M:NzbDrone.Core.Jobs.Scheduler.Handle(NzbDrone.Core.Lifecycle.ApplicationShutdownRequested)",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.CommandExecutor.Handle(NzbDrone.Core.Lifecycle.ApplicationShutdownRequested)",
+          "Sonarr.Host|M:NzbDrone.Host.AppLifetime.Handle(NzbDrone.Core.Lifecycle.ApplicationShutdownRequested)"
+        ],
+        "id": "E3",
+        "text": "The shutdown event is handled by the database log target, the job scheduler, the command executor and the host application lifetime."
+      }
+    ]
+  },
+  "title": "System restart (POST /api/v5/System/restart)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

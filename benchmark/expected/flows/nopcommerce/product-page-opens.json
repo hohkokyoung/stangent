@@ -1,0 +1,568 @@
+{
+  "repo": "nopcommerce",
+  "commit": "77d112f365e210ebdfa2f9790c8202a0e3b1c74e",
+  "id": "product-page-opens",
+  "name": "Product page opens",
+  "kind": "screen-opens",
+  "start": {
+    "what": "the public product details action",
+    "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:129",
+    "code": "public virtual async Task<IActionResult> ProductDetails(int productId, int updatecartitemid = 0, int? customwishlistid = null)"
+  },
+  "actor": {
+    "who": "any shopper the store lets navigate (public store navigation permission), including guests",
+    "why": "BasePublicController carries [CheckAccessPublicStore]; the action itself has no permission requirement",
+    "at": "src/Presentation/Nop.Web/Controllers/BasePublicController.cs:9",
+    "code": "[CheckAccessPublicStore]"
+  },
+  "checks": [],
+  "steps": [
+    {
+      "n": 1,
+      "from": null,
+      "what": "loads the product by id",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:131",
+      "code": "var product = await _productService.GetProductByIdAsync(productId);",
+      "end": {
+        "kind": "hub",
+        "detail": "IProductService.GetProductByIdAsync: 264 call sites of _productService.GetProductByIdAsync( in src; reads the Product table"
+      }
+    },
+    {
+      "n": 2,
+      "from": null,
+      "what": "checks the product ACL",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:139",
+      "code": "!await _aclService.AuthorizeAsync(product) ||",
+      "end": {
+        "kind": "hub",
+        "detail": "IAclService.AuthorizeAsync: 20 call sites in src"
+      }
+    },
+    {
+      "n": 3,
+      "from": null,
+      "what": "checks store mapping",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:141",
+      "code": "!await _storeMappingService.AuthorizeAsync(product) ||",
+      "end": {
+        "kind": "hub",
+        "detail": "IStoreMappingService.AuthorizeAsync: 30 call sites in src"
+      }
+    },
+    {
+      "n": 4,
+      "from": null,
+      "what": "checks the availability dates",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:143",
+      "code": "!_productService.ProductIsAvailable(product);"
+    },
+    {
+      "n": 5,
+      "from": null,
+      "what": "checks admin-panel and view-products permissions (to allow preview)",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:146",
+      "code": "var hasAdminAccess = await _permissionService.AuthorizeAsync(StandardPermission.Security.ACCESS_ADMIN_PANEL) && await _permissionService.AuthorizeAsync(StandardPermission.Catalog.PRODUCTS_VIEW);",
+      "end": {
+        "kind": "hub",
+        "detail": "IPermissionService.AuthorizeAsync: 81 call sites of _permissionService.AuthorizeAsync( in src"
+      }
+    },
+    {
+      "n": 6,
+      "from": null,
+      "what": "loads the parent grouped product",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:154",
+      "code": "var parentGroupedProduct = await _productService.GetProductByIdAsync(product.ParentGroupedProductId);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:151",
+          "code": "if (!product.VisibleIndividually)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "IProductService.GetProductByIdAsync: 264 call sites"
+      }
+    },
+    {
+      "n": 7,
+      "from": null,
+      "what": "builds the parent product URL",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:158",
+      "code": "var productUrl = await _nopUrlHelper.RouteGenericUrlAsync(parentGroupedProduct);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:151",
+          "code": "if (!product.VisibleIndividually)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:155",
+          "code": "if (parentGroupedProduct == null)"
+        }
+      ],
+      "end": {
+        "kind": "screen",
+        "detail": "permanent redirect to the parent grouped product page (ProductDetails of the parent)"
+      }
+    },
+    {
+      "n": 8,
+      "from": null,
+      "what": "loads the current customer's cart to find the cart item being edited",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:168",
+      "code": "var cart = await _shoppingCartService.GetShoppingCartAsync(await _workContext.GetCurrentCustomerAsync(), storeId: store.Id, customWishlistId: customwishlistid);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:164",
+          "code": "if (_shoppingCartSettings.AllowCartItemEditing && updatecartitemid > 0)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "ShoppingCartItem table (read)"
+      }
+    },
+    {
+      "n": 9,
+      "from": null,
+      "what": "adds the product to the recently viewed list",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:181",
+      "code": "await _recentlyViewedProductsService.AddProductToRecentlyViewedListAsync(product.Id);"
+    },
+    {
+      "n": 10,
+      "from": 9,
+      "what": "replaces the .RecentlyViewedProducts cookie on the response",
+      "at": "src/Libraries/Nop.Services/Catalog/RecentlyViewedProductsService.cs:152",
+      "code": "await AddRecentlyViewedProductsCookieAsync(productIds);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Libraries/Nop.Services/Catalog/RecentlyViewedProductsService.cs:138",
+          "code": "if (!_catalogSettings.RecentlyViewedProductsEnabled)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "sets a response cookie (Response.Cookies.Append at RecentlyViewedProductsService.cs:100); no database or outside call"
+      }
+    },
+    {
+      "n": 11,
+      "from": null,
+      "what": "checks permissions to show the edit link",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:184",
+      "code": "if (await _permissionService.AuthorizeAsync(StandardPermission.Security.ACCESS_ADMIN_PANEL) &&",
+      "end": {
+        "kind": "hub",
+        "detail": "IPermissionService.AuthorizeAsync: 81 call sites"
+      }
+    },
+    {
+      "n": 12,
+      "from": null,
+      "what": "logs the \"PublicStore.ViewProduct\" activity",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:194",
+      "code": "await _customerActivityService.InsertActivityAsync(\"PublicStore.ViewProduct\",",
+      "end": {
+        "kind": "hub",
+        "detail": "ICustomerActivityService.InsertActivityAsync: 214 call sites; inserts an ActivityLog row when the activity type is enabled"
+      }
+    },
+    {
+      "n": 13,
+      "from": null,
+      "what": "prepares the product details model",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:198",
+      "code": "var model = await _productModelFactory.PrepareProductDetailsModelAsync(product, updatecartitem, false);"
+    },
+    {
+      "n": 14,
+      "from": 13,
+      "what": "reads the stock message",
+      "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1529",
+      "code": "StockAvailability = await _productService.FormatStockMessageAsync(product, string.Empty),",
+      "end": {
+        "kind": "unknown",
+        "detail": "IProductService.FormatStockMessageAsync not walked"
+      }
+    },
+    {
+      "n": 15,
+      "from": 13,
+      "what": "prepares the breadcrumb model",
+      "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1617",
+      "code": "model.Breadcrumb = await PrepareProductBreadcrumbModelAsync(product);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1616",
+          "code": "if (_catalogSettings.CategoryBreadcrumbEnabled && !isAssociatedProduct)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "PrepareProductBreadcrumbModelAsync not walked"
+      }
+    },
+    {
+      "n": 16,
+      "from": 13,
+      "what": "prepares the product tag models",
+      "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1622",
+      "code": "model.ProductTags = await PrepareProductTagModelsAsync(product);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1621",
+          "code": "if (!isAssociatedProduct)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "PrepareProductTagModelsAsync not walked"
+      }
+    },
+    {
+      "n": 17,
+      "from": 13,
+      "what": "prepares the picture and video models",
+      "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1628",
+      "code": "(model.DefaultPictureModel, allPictureModels, allVideoModels) = await PrepareProductDetailsPictureModelAsync(product, isAssociatedProduct);",
+      "end": {
+        "kind": "unknown",
+        "detail": "PrepareProductDetailsPictureModelAsync not walked"
+      }
+    },
+    {
+      "n": 18,
+      "from": 13,
+      "what": "prepares the price model",
+      "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1634",
+      "code": "model.ProductPrice = await PrepareProductPriceModelAsync(product);",
+      "end": {
+        "kind": "unknown",
+        "detail": "PrepareProductPriceModelAsync not walked"
+      }
+    },
+    {
+      "n": 19,
+      "from": 13,
+      "what": "prepares the add-to-cart model",
+      "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1637",
+      "code": "model.AddToCart = await PrepareProductAddToCartModelAsync(product, updatecartitem);",
+      "end": {
+        "kind": "unknown",
+        "detail": "PrepareProductAddToCartModelAsync not walked"
+      }
+    },
+    {
+      "n": 20,
+      "from": 13,
+      "what": "prepares the product attribute models",
+      "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1665",
+      "code": "model.ProductAttributes = await PrepareProductAttributeModelsAsync(product, updatecartitem);",
+      "end": {
+        "kind": "unknown",
+        "detail": "PrepareProductAttributeModelsAsync not walked"
+      }
+    },
+    {
+      "n": 21,
+      "from": 13,
+      "what": "prepares the specification model",
+      "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1670",
+      "code": "model.ProductSpecificationModel = await PrepareProductSpecificationModelAsync(product);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1669",
+          "code": "if (!isAssociatedProduct)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "PrepareProductSpecificationModelAsync not walked"
+      }
+    },
+    {
+      "n": 22,
+      "from": 13,
+      "what": "prepares the review overview and the reviews model",
+      "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1673",
+      "code": "model.ProductReviewOverview = await PrepareProductReviewOverviewModelAsync(product);",
+      "end": {
+        "kind": "unknown",
+        "detail": "PrepareProductReviewOverviewModelAsync / PrepareProductReviewsModelAsync not walked"
+      }
+    },
+    {
+      "n": 23,
+      "from": 13,
+      "what": "prepares the tier prices",
+      "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1678",
+      "code": "model.TierPrices = await PrepareProductTierPriceModelsAsync(product);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1677",
+          "code": "if (await _permissionService.AuthorizeAsync(StandardPermission.PublicStore.DISPLAY_PRICES))"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "PrepareProductTierPriceModelsAsync not walked"
+      }
+    },
+    {
+      "n": 24,
+      "from": 13,
+      "what": "prepares the manufacturer models",
+      "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1681",
+      "code": "model.ProductManufacturers = await PrepareProductManufacturerModelsAsync(product);",
+      "end": {
+        "kind": "unknown",
+        "detail": "PrepareProductManufacturerModelsAsync not walked"
+      }
+    },
+    {
+      "n": 25,
+      "from": 13,
+      "what": "prepares the estimate-shipping model",
+      "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1707",
+      "code": "var estimateShippingModel = await _shoppingCartModelFactory.PrepareEstimateShippingModelAsync(new[] { wrappedProduct });",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1696",
+          "code": "if (_shippingSettings.EstimateShippingProductPageEnabled && !model.IsFreeShipping)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "IShoppingCartModelFactory.PrepareEstimateShippingModelAsync not walked"
+      }
+    },
+    {
+      "n": 26,
+      "from": 13,
+      "what": "prepares each associated product's details model (grouped products)",
+      "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1729",
+      "code": "model.AssociatedProducts.Add(await PrepareProductDetailsModelAsync(associatedProduct, null, true));",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1728",
+          "code": "foreach (var associatedProduct in associatedProducts)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1725",
+          "code": "if (!isAssociatedProduct)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1722",
+          "code": "if (product.ProductType == ProductType.GroupedProduct)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "recursive call; not walked again"
+      }
+    },
+    {
+      "n": 27,
+      "from": null,
+      "what": "resolves the product template view path",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:200",
+      "code": "var productTemplateViewPath = await _productModelFactory.PrepareProductTemplateViewPathAsync(product);"
+    },
+    {
+      "n": 28,
+      "from": 27,
+      "what": "reads the product template row (falls back to the first template)",
+      "at": "src/Presentation/Nop.Web/Factories/ProductModelFactory.cs:1367",
+      "code": "var template = (await _productTemplateService.GetProductTemplateByIdAsync(product.ProductTemplateId) ??",
+      "end": {
+        "kind": "database",
+        "detail": "ProductTemplate table (read)"
+      }
+    },
+    {
+      "n": 29,
+      "from": null,
+      "what": "returns the template view (ProductTemplate.Simple or ProductTemplate.Grouped) with the model",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:202",
+      "code": "return View(productTemplateViewPath, model);",
+      "end": {
+        "kind": "screen",
+        "detail": "product details page rendered by Views/Product/ProductTemplate.Simple.cshtml or ProductTemplate.Grouped.cshtml"
+      }
+    }
+  ],
+  "exits": [
+    {
+      "what": "404 when the product does not exist or is deleted (sets Response.StatusCode = 404, returns EmptyResult)",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:133",
+      "code": "return InvokeHttp404();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:132",
+          "code": "if (product == null || product.Deleted)"
+        }
+      ]
+    },
+    {
+      "what": "404 when the product is not available (unpublished, ACL, store mapping, dates) and the customer has no admin access",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:148",
+      "code": "return InvokeHttp404();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:147",
+          "code": "if (notAvailable && !hasAdminAccess)"
+        }
+      ]
+    },
+    {
+      "what": "redirects to the home page when a not-individually-visible product has no parent grouped product",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:156",
+      "code": "return RedirectToRoute(NopRouteNames.General.HOMEPAGE);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:155",
+          "code": "if (parentGroupedProduct == null)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:151",
+          "code": "if (!product.VisibleIndividually)"
+        }
+      ]
+    },
+    {
+      "what": "permanent redirect to the parent grouped product page",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:159",
+      "code": "return LocalRedirectPermanent(productUrl);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:151",
+          "code": "if (!product.VisibleIndividually)"
+        }
+      ]
+    },
+    {
+      "what": "redirects to the product URL when the cart item being updated is not found",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:173",
+      "code": "return LocalRedirect(productUrl);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:172",
+          "code": "if (updatecartitem == null)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:164",
+          "code": "if (_shoppingCartSettings.AllowCartItemEditing && updatecartitemid > 0)"
+        }
+      ]
+    },
+    {
+      "what": "redirects to the product URL when the cart item belongs to another product",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:177",
+      "code": "return LocalRedirect(productUrl);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:176",
+          "code": "if (product.Id != updatecartitem.ProductId)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:164",
+          "code": "if (_shoppingCartSettings.AllowCartItemEditing && updatecartitemid > 0)"
+        }
+      ]
+    },
+    {
+      "what": "Challenge when the customer lacks public store navigation permission (filter on the controller base class)",
+      "at": "src/Presentation/Nop.Web.Framework/Mvc/Filters/CheckAccessPublicStoreAttribute.cs:90",
+      "code": "context.Result = new ChallengeResult();",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web.Framework/Mvc/Filters/CheckAccessPublicStoreAttribute.cs:86",
+          "code": "if (await _permissionService.AuthorizeAsync(StandardPermission.PublicStore.PUBLIC_STORE_ALLOW_NAVIGATION))"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web.Framework/Mvc/Filters/CheckAccessPublicStoreAttribute.cs:82",
+          "code": "if (actionFilter?.IgnoreFilter ?? _ignoreFilter)"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "kind": "screen",
+      "to": "Product page opened (grouped parent product page)",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:159",
+      "code": "return LocalRedirectPermanent(productUrl);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:151",
+          "code": "if (!product.VisibleIndividually)"
+        }
+      ]
+    },
+    {
+      "kind": "screen",
+      "to": "Home page",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:156",
+      "code": "return RedirectToRoute(NopRouteNames.General.HOMEPAGE);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:155",
+          "code": "if (parentGroupedProduct == null)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:151",
+          "code": "if (!product.VisibleIndividually)"
+        }
+      ]
+    },
+    {
+      "kind": "continues",
+      "to": "hub: IProductService.GetProductByIdAsync",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:131",
+      "code": "var product = await _productService.GetProductByIdAsync(productId);"
+    },
+    {
+      "kind": "continues",
+      "to": "hub: ICustomerActivityService.InsertActivityAsync",
+      "at": "src/Presentation/Nop.Web/Controllers/ProductController.cs:194",
+      "code": "await _customerActivityService.InsertActivityAsync(\"PublicStore.ViewProduct\","
+    }
+  ],
+  "notes": [
+    "Route: SlugRouteTransformer maps a product URL slug to Product/ProductDetails (src/Presentation/Nop.Web.Framework/Mvc/Routing/SlugRouteTransformer.cs:110); GenericUrlRouteProvider also maps the generic routes.",
+    "InvokeHttp404 (BasePublicController.cs:15) sets Response.StatusCode = 404 and returns EmptyResult; counted as an exit because it is a 404 response.",
+    "Branch cutoff: PrepareProductDetailsModelAsync calls many model-building helpers; only the direct calls are listed and none walked further.",
+    "GetLocalizedAsync (383 call sites) and other small reads at the top of PrepareProductDetailsModelAsync are left out as hub noise.",
+    "The view includes the Add to cart partial; that click is a separate flow (add-to-cart).",
+    "Implementation followed: ProductService, ProductModelFactory, RecentlyViewedProductsService, CustomerActivityService."
+  ]
+}

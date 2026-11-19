@@ -21,6 +21,15 @@ static class TicketCommands
             var t = await TicketPull.RunAsync(ctx.Repo, tracker, pr.GetValue(KeyArg)!);
             var summary = Summary(ctx, t);
             summary["read"] = tracker.Replaying ? "replay" : "live";
+            // Truth map layer 5 (D364, D374): a `Ruling:` reply to the PM's question, drafted into rulings.yaml uncommitted.
+            // The pull itself is done and on disk: a reply that can't be read is reported, never a failed pull.
+            JsonObject rulings;
+            try { rulings = RulingReplies.Read(ctx.Repo, (string)t["key"]!, t); }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                rulings = new JsonObject { ["state"] = "failed", ["summary"] = $"`Ruling:` replies weren't read: {e.Message}" };
+            }
+            if ((string?)rulings["state"] != "off") summary["rulings"] = rulings;
             return (JsonNode)summary;
         })));
         ticket.Subcommands.Add(pull);
@@ -126,7 +135,7 @@ static class TicketCommands
             ["attachments"] = new JsonArray([.. t["attachments"]!.AsArray().Select(a => (JsonNode)new JsonObject
             {
                 ["fileName"] = a!["fileName"]!.DeepClone(), ["kind"] = a["kind"]!.DeepClone(), ["hash"] = a["hash"]?.DeepClone(),
-                ["chars"] = a["chars"]?.DeepClone(), ["truncated"] = a["truncated"]?.DeepClone(), ["notDownloaded"] = a["notDownloaded"]?.DeepClone(),
+                ["chars"] = a["chars"]?.DeepClone(), ["truncated"] = a["truncated"]?.DeepClone(), ["notDownloaded"] = a["notDownloaded"]?.DeepClone(), ["notConverted"] = a["notConverted"]?.DeepClone(),
             })]),
             ["missingBugFields"] = t["bug"]?["missing"]?.DeepClone(),
             ["file"] = paths.Relative(paths.TicketJson),

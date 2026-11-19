@@ -1,0 +1,140 @@
+{
+  "codeTitle": "POST /api/v3/system/backup/restore/{id:int}",
+  "entry": "endpoint:Sonarr.Api.V3|POST /api/v3/system/backup/restore/{id:int}",
+  "generated": {
+    "bundleHash": "89013f304d638912f64078888ee0d181704aa0e85b36c4ac2ce21acfc7c54321",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 14729,
+      "cutOff": 9,
+      "depth": 4,
+      "points": 20
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 9252,
+      "calls": 1,
+      "costUsd": 0.039937,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3336,
+      "outputTokens": 275
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 7127,
+      "calls": 1,
+      "costUsd": 0.042958,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 9103,
+      "outputTokens": 1417
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|POST /api/v3/system/backup/restore/{id:int}",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.Backup.BackupController.Restore(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Backup.IBackupService.Restore(System.String)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/system/backup/restore/{id:int}"
+        ],
+        "id": "A1",
+        "text": "Restores the application from the backup identified by the id in the route."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.Backup.BackupController.GetBackup(System.Int32)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.Backup.BackupController.GetBackupId(NzbDrone.Core.Backup.Backup)",
+          "Sonarr.Common|M:NzbDrone.Common.Crypto.HashConverter.GetHashInt31(System.String)"
+        ],
+        "id": "R1",
+        "text": "The id is matched against the list of existing backups; each backup's id is a 31-bit hash of 'backup-{type}-{name}'. Exactly one backup must match (more than one match raises an error)."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.Backup.BackupController.Restore(System.Int32)",
+          "Sonarr.Http|M:Sonarr.Http.REST.NotFoundException.#ctor(System.Object)"
+        ],
+        "id": "R2",
+        "text": "If no backup matches the id, a NotFound (404) error is thrown."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.Backup.BackupController.GetBackupPath(NzbDrone.Core.Backup.Backup)",
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.GetBackupFolder(NzbDrone.Core.Backup.BackupType)"
+        ],
+        "id": "R3",
+        "text": "The backup file path is the backup folder for its type (a lowercase type-named subfolder) combined with the backup name."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.GetBackups"
+        ],
+        "id": "R4",
+        "text": "Backups are listed from each backup type's folder, if the folder exists."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.Restore(System.String)"
+        ],
+        "id": "R5",
+        "text": "A .zip backup is extracted to a temporary folder; if it contains no config files and no database files, restore fails with NotFound 'Unable to restore database file from backup'."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.Restore(System.String)"
+        ],
+        "id": "R6",
+        "text": "Config and database files from a zip are all validated before any are restored."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.Restore(System.String)"
+        ],
+        "id": "R7",
+        "text": "A .xml backup is validated and restored as a config file; any other file is validated and restored as a database."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.System.Backup.BackupController.Restore(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "On success it returns an object with RestartRequired set to true."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.Restore(System.String)"
+        ],
+        "id": "E1",
+        "text": "Restoring replaces the application's config file and/or database with the backup's contents."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.Restore(System.String)"
+        ],
+        "id": "E2",
+        "text": "For zip backups, the temporary folder 'sonarr_backup_restore' is deleted before extraction and again afterwards, even on failure."
+      }
+    ]
+  },
+  "title": "Restore backup",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

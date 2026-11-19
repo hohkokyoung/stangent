@@ -1,0 +1,152 @@
+# Areas (contract `areas` v1, rebuild layer 3)
+
+An **area** is a part of the app as its users would name it (Sonarr's Series, Activity, Settings › Indexers; nopCommerce's
+Admin › Catalog), holding the flows that start there. Code proposes areas from the app's menu, with folders as the fallback;
+a person confirms them once in `specs/areas.yaml`; code checks that file and writes `specs/areas.json`. No AI anywhere (D156).
+Decisions: D218–D234, D312; plan and numbers: `phases/r3-flows.md`. Flows and pages live under their area (D230): `docs/flows.md`
+says where each flow's files sit.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `stangent areas propose [--fresh]` | Reads `.stangent/graph.sqlite` and `specs/flows/index.json`, and writes `specs/areas.proposed.yaml` (never `specs/areas.yaml`, D180). Once `specs/areas.yaml` exists, the proposal builds on it (D234, below); `--fresh` proposes from scratch. Prints the menus taken, each area with its count of start flows, the ties (and how many are unanswered), any flow it couldn't place, the areas flagged large, and, built on a confirmed file, what it added and the answers it dropped. |
+| `stangent areas check` | Reads `specs/areas.yaml` and writes `specs/areas.json` and one page per area, `specs/areas/<area>/page.md` (D230). Exit 1 with `problems` when a start flow sits in no area, a tie is unanswered, an answer's flow is gone or names no area, a menu item or folder a flow sits on is in no area, two areas list the same address, folder or name, flow files aren't where `areas.yaml` puts them (run `stangent flows build`), or an old area's page holds layer 4's words. |
+
+After editing `areas.yaml`: `areas check` (pages and `areas.json` follow at once; it says when flows must move), then
+`flows build` (moves them), then `areas check` again.
+
+Output follows `docs/cli-conventions.md`. A missing graph is `no_graph`, a missing index or `areas.yaml` `not_found` (exit 3).
+
+## What goes in an area
+
+- **Start flows only** (D218): clicks and submits, screen openings, jobs and handlers. A shared flow belongs to none; `areas.json`
+  lists, per area, the shared flows its starts reach.
+- **Screens** (D219): every page a route opens (its routed component) and every MVC action that shows a page (its view;
+  display-only ones too). A view path known only at runtime takes MVC's convention, `Views/<controller>` in its project.
+- **Homes** (D219): a frontend's root is the deepest folder holding all its screens; a screen's home is the next folder down
+  (Sonarr `frontend/src/Series`). A Razor screen's home is the folder after `Views/`, named with its project and the folders
+  between, `Areas/` dropped (`Nop.Web › Admin › Product`). A route matching any URL (`*`, `**`) makes no home.
+- **The menu** (D221, D226): `menu-item` facts (`docs/code-graph.md`). A menu needs three or more items leading to screens; the
+  one reaching most screens is taken first, and one more than half of whose screens a taken menu already reaches is skipped.
+  An item matches a screen by its address: a route's path (a `:param` matches any one segment; the fewest params win), or an
+  MVC action (`mvc:<area>/<controller>/<action>`, `route:<name>` through a named conventional route). A screen takes the
+  deepest item matching it. Names come from the translation files: `en.json` and the like, then .NET XML resources, looked up ignoring case (D228, D229).
+- **Menu areas**: each taken menu's top-level item is an area, two with one name merged; addresses leading into an MVC area
+  prefix it (`Admin › Catalog`). A home whose screens sit on menu items joins the area holding most of them, so its other
+  screens follow (Sonarr's series details join Series).
+- **Folder areas**: a home no menu reaches is an area of its own (Kavita's `manga-reader`).
+- **Clicks** (D219, D222): a click in a home takes the screens of that home that show it (walking up through what renders,
+  opens or calls it). A click in a shared folder takes every screen the walk reaches, or code in another home; more than one
+  area is a tie for the person. One only the app's frame shows (the walk reaches code nothing shows) goes to **App frame**;
+  one that reaches nothing is a tie with every area. The catch-all route's screen goes to App frame too.
+- **Jobs and handlers** (D223, D227): the start flows leading to one, directly or through shared flows, are counted by area;
+  the deepest area holding more than half takes it (a split area counts its parts), and a job so placed counts for those it
+  leads to, repeated until nothing changes. An even split between exactly two areas is a tie; otherwise it goes to its
+  backend folder, the first folder below its class's project (`NzbDrone.Core › Tv`); an interface's job takes its one
+  implementation's.
+- **Size** (D221, D224, D226, D227): an area over 40 start flows splits, a menu area by its children (`Settings › Indexers`), a
+  folder area by its next folder; a home most of whose menu screens sit in one part moves to it; a click two parts could
+  hold goes to the area itself. A part left empty folds back; an area with no flows isn't proposed. Over 40 with nothing
+  to split by is listed in `large`, unless its frontend folders have subfolders to split by (D312, below).
+
+## Files (D225)
+
+`areas.yaml` (and `areas.proposed.yaml`, the same shape, with each area's count as a comment):
+
+```yaml
+areas:
+- name: 'Series'          # the person's name for it
+  menu:                   # menu items' addresses it holds
+  - '/series'
+  folders:                # screens' homes and backend folders it holds
+  - 'frontend/src/Series'
+large:
+- area: 'Settings'
+  flows: 77
+  why: 'over 40, nothing to split by'
+ties:
+- flow: 'click-episodedetailsmodalcontent-handlemonitorepisodepress'
+  choose: ['Series', 'Activity']
+  answer: ''              # the person's pick, one of choose
+```
+
+A flow's screen matches the area listing its menu address; otherwise, or when another area lists a folder holding it deeper
+than any folder the menu's area lists, the area listing the deepest folder holding it. So a person **merges** by listing two
+sources under one name, **splits** by giving a menu address or a deeper folder its own area, and new flows land by themselves.
+An area's **parts** are the areas named `<it> › …` (D227). A tie is keyed by flow id: a renamed flow's answer shows as gone.
+
+`areas.json` (contract `areas` v1, code-made, committed): `contract`, `version`, `commit` (the flow index's), `areas` (each
+`name`, its `folder` (`specs/areas/<area>`), its start `flows`, and the `shared` flows they reach), `flows` (every placed start
+flow → its area), `open` (ties still unanswered → their choices) and `unplaced`. The same graph, index and `areas.yaml` write the
+same bytes.
+
+## Pages (D230, D233)
+
+`specs/areas/<area>/page.md`, one per area, beside its flows, written by `areas check`:
+
+```markdown
+<!-- generated by `stangent areas check` (D230): … only the text between the two layer 4 lines is kept -->
+
+# Series
+
+- **Start flows:** 78 (12 screens, 50 clicks, 10 jobs, 6 handlers)
+- **Shared flows they reach:** 210 (35 in this folder, 175 in `shared/`)
+
+<!-- layer 4: this area in plain words goes below; `stangent areas check` keeps everything up to the next line -->
+<!-- end of layer 4's words -->
+
+## Screens (12)
+
+- [Series](screen-opens-series.md) `screen-opens-series`
+
+## Clicks (50) · ## Jobs · ## Handlers
+
+## Shared flows (210)
+
+- [Load series](../shared/shared-load-series.md) `shared-load-series`
+```
+
+Code writes no prose: the name, counts and links are rebuilt every time, sorted by name then id; the text between the two
+layer 4 lines is kept as found. That place holds layer 4's developer page by code and the page
+opens with its note (`docs/pages.md`; always on since D381). A page whose area is gone is removed,
+unless it holds other words between the lines: then it stays and `areas check` fails until a person moves them. `shared/` and `unplaced/` have no page.
+
+## Proposing again on a confirmed file (D234)
+
+Once `areas.yaml` exists, `areas propose` keeps it as the person left it (names, merges, splits, areas added by hand) and
+carries each tie answer while the flow still ties and the answer is still a choice; answers are applied before jobs are
+counted, so a job whose majority an answer took away shows up. Then it adds only what's new, by the rules above: a menu address
+no area lists goes to the area listing its nearest listed parent item, else an area of its top item's name; a home or frame
+folder no area covers becomes an area; a job or handler in no area adds its backend folder. It splits nothing by menu or by
+D226's next folder; only D312's folder split (below) runs on it. It prints what it `added` (D312's splits and moved answers among
+it) and the `droppedAnswers` (flow gone, no longer a tie, or the answer no longer a choice).
+
+## Splitting a large area by folder (D312)
+
+An area over 40 start flows with no menu children its flows sit on is split, fresh or on a confirmed file, by the subfolders of
+its frontend folders (folders it lists that are screens' homes, or sit in or above one; a backend folder never splits):
+
+- **Parts.** Each subfolder one of its start flows sits in becomes `<Area> › <Subfolder>` listing that folder, the folder's name
+  as words (`MonitoringOptions` → Monitoring Options, `manage-users` → Manage Users). A subfolder most of whose menu screens sit
+  on one of the area's existing parts joins that part instead (Sonarr's `AddSeries/ImportSeries` → Series › Library Import). A
+  subfolder already listed by an area is left alone.
+- **Small folders stay.** A part that would gain fewer than 3 start flows is dropped and its flows stay with the parent
+  (Sonarr's `Series/Edit`, `Delete`, `MonitoringOptions`, one or two clicks each). One part holding all but a few of the area's
+  flows is no split (Kavita's `settings/_components`, every Customize flow): the area stays in `large`.
+- **The parent** keeps its menu addresses, its folders and the flows sitting directly in them, and a click two parts could hold
+  (D227). A screen whose folder is a part's still goes to the part, by the deepest-folder rule (D225): Sonarr's `/series` list
+  screen lands in Series › Index although `/series` stays listed on Series.
+- **Background.** A split area gets a `<Area> › Background` part with no menu or folders. A job or handler (no frontend folder)
+  goes with the click that sets it off: the deepest area holding more than half its leaders (D227). When that is the split area
+  itself and its own flows don't hold more than half of what leads there, it goes to Background, never to whichever part sorts
+  first; a job only Background jobs lead goes there too. Background is dropped when it holds nothing. `areas check` reads the
+  same rule from `areas.yaml`: an area with a `› Background` part.
+- **Once more.** A part made so that is still over 40 splits once more by the same rule; anything else over 40 is in `large`
+  (Background, which has no folders, included).
+- **Answers** (D234) are kept while still a choice. One naming the split area, of whose parts exactly one is now a choice, moves
+  to that part (listed in `added`); otherwise the tie is asked again with an empty answer, for the person.
+
+Run on the three clones (2026-11-14): Sonarr's Series (78) became Series 9, › Details 7, › Index 11, › Background 47, with
+`AddSeries/ImportSeries` joining › Library Import (6); Settings (72), Kavita's Customize (131) and nopCommerce's Admin › Catalog
+(61, flat Razor views) and Nop.Web › Infrastructure (48, backend) had nothing to split by and stay in `large`.

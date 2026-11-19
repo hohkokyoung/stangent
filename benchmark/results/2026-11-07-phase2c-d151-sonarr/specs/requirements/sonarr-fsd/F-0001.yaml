@@ -1,0 +1,91 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0001"
+doc: "sonarr-fsd"
+section: "1"
+title: "Library"
+parent: null
+children:
+  - "F-0005"
+  - "F-0007"
+textHash: "b04344cbbf1d1bad5b9d67873321b9d7662fd48646bc7129e94a22567b920f8d"
+requirements:
+  - id: "R-0001"
+    title: "Library holds all added series"
+    kind: "data"
+    statement: "The library holds every series the user has added."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1"
+        text: "The library holds every series the user has added."
+        hash: "8a72bc608ca82948f81082b84ad5b023e6ca041fb3dcac49840a87c8eabaf6f2"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "c7ae1496af0f0e3d94b5ce7a4d266714d03ce084afff34d4c1acdd6a44d60fd4"
+  - id: "R-0002"
+    title: "Series has a root folder"
+    kind: "data"
+    statement: "Each series has a root folder."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1"
+        text: "Each series has a root folder, a quality profile, a series type and a set of tags."
+        hash: "22d06f1f878175c65dcbad333ff5528c6b557808bed0b6b40a99fbc5438168ac"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "e72bcf203a8a5852b0f5ed8957052d7815f02618f19565dfa9881e08dfe938ae"
+  - id: "R-0003"
+    title: "Series has a quality profile"
+    kind: "data"
+    statement: "Each series has a quality profile."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1"
+        text: "Each series has a root folder, a quality profile, a series type and a set of tags."
+        hash: "22d06f1f878175c65dcbad333ff5528c6b557808bed0b6b40a99fbc5438168ac"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "d2ac5f2c759fb1f7925c995967a5cf13165da587598f0de21d0ed9d7cefbc957"
+  - id: "R-0004"
+    title: "Series has a series type"
+    kind: "data"
+    statement: "Each series has a series type."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1"
+        text: "Each series has a root folder, a quality profile, a series type and a set of tags."
+        hash: "22d06f1f878175c65dcbad333ff5528c6b557808bed0b6b40a99fbc5438168ac"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "d5f1d677a1d942c58b1542d18b1896cda62f2e5597080401df8af051889b53ac"
+  - id: "R-0005"
+    title: "Series has a set of tags"
+    kind: "data"
+    statement: "Each series has a set of tags."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1"
+        text: "Each series has a root folder, a quality profile, a series type and a set of tags."
+        hash: "22d06f1f878175c65dcbad333ff5528c6b557808bed0b6b40a99fbc5438168ac"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "83b93555410f28c976e9f20b4c6f80c93c5d52a35833ee33aa3cbd4d111881c7"
+definitions: []
+journeys: []
+background: []
+retired: []

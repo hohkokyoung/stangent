@@ -1,0 +1,160 @@
+{
+  "doc": "kavita-fsd",
+  "findings": [
+    {
+      "state": "conflict",
+      "section": "1",
+      "fsdQuote": "The On Deck row shows up to 50 series.",
+      "screen": null,
+      "note": "The dashboard On Deck row requests page 1 with a page size of 20, not 50.",
+      "evidence": [
+        "UI/Web/src/app/dashboard/_components/dashboard.component.ts:194"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "9.1",
+      "fsdQuote": "A new password must be at least 8 characters long.",
+      "screen": null,
+      "note": "The code requires only 6 characters, both in the client forms and in the server identity options.",
+      "evidence": [
+        "UI/Web/src/app/registration/_components/register/register.component.ts:41",
+        "Kavita.Server/Extensions/IdentityServiceExtensions.cs:59"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "9.2",
+      "fsdQuote": "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB.",
+      "screen": null,
+      "note": "The download size warning threshold is 100 MB (104,857,600 bytes), not 500 MB.",
+      "evidence": [
+        "UI/Web/src/app/shared/_services/download.service.ts:76"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "10.1",
+      "fsdQuote": "Changes on this page are stored only when the administrator presses Save.",
+      "screen": null,
+      "note": "The General page saves automatically: a debounced subscription on the form model pushes valid changes to the server, with no Save button step.",
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:114-133"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "10.1",
+      "fsdQuote": "A maintenance mode switch blocks all non-admin users from signing in until it is turned off.",
+      "screen": null,
+      "note": "No maintenance mode setting or switch exists; 'maintenance' only appears as the nightly maintenance task in the server controller.",
+      "evidence": [
+        "Kavita.Server/Controllers/ServerController.cs:79"
+      ]
+    },
+    {
+      "state": "conflict",
+      "section": "10.3",
+      "fsdQuote": "Manage Collections is turned on by default for a new library.",
+      "screen": null,
+      "note": "The new library form defaults manageCollections to false.",
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:157"
+      ]
+    },
+    {
+      "state": "match",
+      "section": "10.3",
+      "fsdQuote": "Include in Dashboard and Include in Search are turned on by default.",
+      "screen": null,
+      "note": "The new library form defaults includeInDashboard and includeInSearch to true.",
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:152",
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:154"
+      ]
+    },
+    {
+      "state": "match",
+      "section": "10.3",
+      "fsdQuote": "Each type starts with its own file types:",
+      "screen": null,
+      "note": "Default file types per library type match the table (Manga archive+image, Comic/ComicVine archive, Book pdf+epub, Light Novel epub, Image image).",
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:266-279"
+      ]
+    },
+    {
+      "state": "match",
+      "section": "10.1",
+      "fsdQuote": "Days of Backups and Days of Logs each accept a value from 1 to 30 and both default to 30.",
+      "screen": null,
+      "note": "Form validation and the server both limit both values to 1-30, and both are seeded with 30.",
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:92-98",
+        "Kavita.Services/SettingsService.cs:443",
+        "Kavita.Services/SettingsService.cs:455",
+        "Kavita.Database/Seed.cs:174-175"
+      ]
+    },
+    {
+      "state": "match",
+      "section": "10.1",
+      "fsdQuote": "Cache Size must be at least 50 MB",
+      "screen": null,
+      "note": "The form requires cacheSize to be at least 50.",
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:95"
+      ]
+    },
+    {
+      "state": "match",
+      "section": "10.1",
+      "fsdQuote": "the base URL must start and end with a slash.",
+      "screen": null,
+      "note": "The base URL field must match a pattern that begins and ends with a slash.",
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:90"
+      ]
+    },
+    {
+      "state": "match",
+      "section": "10.1",
+      "fsdQuote": "A Reset to Default button restores these settings after a confirmation.",
+      "screen": null,
+      "note": "Reset to defaults asks for confirmation, then calls the server reset and reloads the form.",
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:159-168"
+      ]
+    },
+    {
+      "state": "gap",
+      "section": "4.2",
+      "fsdQuote": "Selected text can be read aloud using the device's text-to-speech voice.",
+      "screen": null,
+      "note": "No speech synthesis or text-to-speech code was found in the book reader.",
+      "evidence": [
+        "UI/Web/src/app/book-reader"
+      ]
+    },
+    {
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "screen": "/browse/genres",
+      "note": "A Genres browse screen exists that the FSD does not describe.",
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:23"
+      ]
+    },
+    {
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "screen": "/browse/annotations",
+      "note": "An All Annotations browse screen exists that the FSD does not describe.",
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:25"
+      ]
+    }
+  ]
+}

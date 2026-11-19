@@ -1,0 +1,1 @@
+changes[0]: no point `NotificationService.Handle(ManualInteractionRequiredEvent)` in the code graph at the base

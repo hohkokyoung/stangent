@@ -1,0 +1,20 @@
+diff --git a/src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserProxy.cs b/src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserProxy.cs
+index b5e6cd9d74..cb9712f9bb 100644
+--- a/src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserProxy.cs
++++ b/src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserProxy.cs
+@@ -143,6 +143,7 @@ private T ProcessGetRequest<T>(HttpRequest request, MediaBrowserSettings setting
+             where T : new()
+         {
+             request.Headers.Add("X-MediaBrowser-Token", settings.ApiKey);
++            request.Headers.Add("Authorization", $"MediaBrowser Token=\"{settings.ApiKey}\"");
+ 
+             var response = _httpClient.Get<T>(request);
+             _logger.Trace("Response: {0}", response.Content);
+@@ -155,6 +156,7 @@ private T ProcessGetRequest<T>(HttpRequest request, MediaBrowserSettings setting
+         private string ProcessRequest(HttpRequest request, MediaBrowserSettings settings)
+         {
+             request.Headers.Add("X-MediaBrowser-Token", settings.ApiKey);
++            request.Headers.Add("Authorization", $"MediaBrowser Token=\"{settings.ApiKey}\"");
+ 
+             var response = _httpClient.Post(request);
+             _logger.Trace("Response: {0}", response.Content);

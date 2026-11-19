@@ -33,8 +33,86 @@ public sealed class HttpServicesDetector : IDetector
                 if (name is null) continue;
                 if (name is "AddProject" or "AddDotnetProject" or "AddCSharpApp") Service(ctx, file, call);
                 else if (name == "AddHttpClient") Client(ctx, file, call);
-                else if (Calls.ContainsKey(name) || name == "SendAsync") Request(ctx, file, call, name);
+                else if (!((Calls.ContainsKey(name) || name == "SendAsync") && Request(ctx, file, call, name)) && !Mail(ctx, file, call)) OtherClient(ctx, file, call);
             }
+    }
+
+    /// <summary>
+    /// Outside calls through a client other than System.Net.Http's (G4): Flurl's string and Url extensions, and an
+    /// app's own client type (<c>IHttpClient</c>, <c>…HttpClient</c>; Sonarr's). A literal URL becomes a <c>call</c>
+    /// fact; anything else is ❓, so a flow never looks complete when it reaches outside.
+    /// </summary>
+    void OtherClient(ExtractContext ctx, SourceFile file, InvocationExpressionSyntax call)
+    {
+        if (call.Expression is not MemberAccessExpressionSyntax access || access.Expression is ThisExpressionSyntax or BaseExpressionSyntax) return;
+        if (file.Model.GetSymbolInfo(call).Symbol is not IMethodSymbol method) return;
+        var verb = VerbOf(method.Name);
+        if (verb is null) return;
+        var flurl = method.ContainingNamespace?.ToDisplayString().StartsWith("Flurl", StringComparison.Ordinal) == true
+            && method.Name.EndsWith("Async", StringComparison.Ordinal);
+        var receiver = method.ReducedFrom is not null ? method.ReceiverType : method.ContainingType;
+        if (!flurl && !(receiver is INamedTypeSymbol type && IsClient(type) && !ExtractContext.IsOrDerives(type, "System.Net.Http.HttpClient"))) return;
+        var owner = ctx.OwnerId(call, file.Model);
+        if (owner is null) return;
+        string? url = null, start = null;
+        if (flurl)
+        {
+            // "https://x".AppendPathSegment(id).WithHeader(…).PostJsonAsync(…): the URL starts at the chain's first receiver.
+            var root = access.Expression;
+            var changed = false;
+            while (root is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax inner } link
+                   && file.Model.GetSymbolInfo(link).Symbol is IMethodSymbol m && m.ContainingNamespace?.ToDisplayString().StartsWith("Flurl", StringComparison.Ordinal) == true)
+            {
+                // F6: only path, query and fragment calls change the URL; WithHeader, WithTimeout, AllowHttpStatus keep it.
+                if (UrlChanging.Any(w => m.Name.StartsWith(w, StringComparison.Ordinal))) changed = true;
+                root = inner.Expression;
+            }
+            start = ExtractContext.StringValue(root, file.Model);
+            if (!changed && start is not null && !start.Contains("{*}", StringComparison.Ordinal)) url = start;
+        }
+        var via = flurl ? "Flurl" : receiver!.Name;
+        if (url is null)
+        {
+            ctx.AddBlindSpot(owner, call, start is null
+                ? $"outside HTTP {verb} through {via}: URL built at runtime"
+                : $"outside HTTP {verb} through {via} to {start}…: rest of the URL built at runtime", Name);
+            return;
+        }
+        ctx.AddFact(Name, "call", owner, call, ("method", verb), ("url", url), ("client", ""));
+    }
+
+    /// <summary>
+    /// D199: a mail client's connect, sign-in or send (MailKit's or .NET's <c>SmtpClient</c>, a short list like G4's HTTP
+    /// clients) talks to a mail server outside the app, whose address is read at runtime: ❓ "outside SMTP …", which a flow
+    /// shows as an outside call.
+    /// </summary>
+    bool Mail(ExtractContext ctx, SourceFile file, InvocationExpressionSyntax call)
+    {
+        if (file.Model.GetSymbolInfo(call).Symbol is not IMethodSymbol method) return false;
+        // The client the call is made on (MailKit's SendAsync is declared on a base class of SmtpClient).
+        var on = call.Expression is MemberAccessExpressionSyntax access ? file.Model.GetTypeInfo(access.Expression).Type : method.ContainingType;
+        INamedTypeSymbol? client = null;
+        for (var t = on as INamedTypeSymbol; t is not null && client is null; t = t.BaseType)
+            if (t.Name == "SmtpClient" && t.ContainingNamespace?.ToDisplayString() is "MailKit.Net.Smtp" or "System.Net.Mail") client = t;
+        if (client is null) return false;
+        var what = method.Name.StartsWith("Connect", StringComparison.Ordinal) ? "connect" : method.Name.StartsWith("Authenticate", StringComparison.Ordinal) ? "sign-in"
+            : method.Name.StartsWith("Send", StringComparison.Ordinal) ? "send" : null;
+        if (what is null || ctx.OwnerId(call, file.Model) is not { } owner) return true;
+        ctx.AddBlindSpot(owner, call, $"outside SMTP {what} through {client.ToDisplayString()}: the mail server is set at runtime", Name);
+        return true;
+    }
+
+    static readonly string[] UrlChanging = ["AppendPathSegment", "AppendQueryParam", "SetQueryParam", "RemoveQueryParam", "SetFragment", "RemoveFragment", "ResetToRoot", "RemovePath", "AppendPath"];
+
+    static bool IsClient(INamedTypeSymbol type) =>
+        type.Name == "IHttpClient" || type.Name.EndsWith("HttpClient", StringComparison.Ordinal) || type.AllInterfaces.Any(i => i.Name == "IHttpClient");
+
+    /// <summary>The verb a client method's name says: Get…/Post…/Put…/Patch…/Delete…/Head…/Download…; Execute/Send/Request → ANY.</summary>
+    static string? VerbOf(string name)
+    {
+        foreach (var (prefix, verb) in new[] { ("Get", "GET"), ("Download", "GET"), ("Post", "POST"), ("Put", "PUT"), ("Patch", "PATCH"), ("Delete", "DELETE"), ("Head", "HEAD") })
+            if (name.StartsWith(prefix, StringComparison.Ordinal)) return verb;
+        return name is "Execute" or "ExecuteAsync" or "Send" or "SendAsync" or "Request" or "RequestAsync" ? "ANY" : null;
     }
 
     void Service(ExtractContext ctx, SourceFile file, InvocationExpressionSyntax call)
@@ -74,27 +152,30 @@ public sealed class HttpServicesDetector : IDetector
         ctx.AddFact(Name, "client", client, call, ("client", client), ("base", address ?? ""));
     }
 
-    void Request(ExtractContext ctx, SourceFile file, InvocationExpressionSyntax call, string name)
+    /// <summary>A System.Net.Http.HttpClient call; false when it isn't one, so other clients get a look.</summary>
+    bool Request(ExtractContext ctx, SourceFile file, InvocationExpressionSyntax call, string name)
     {
-        if (file.Model.GetSymbolInfo(call).Symbol is not IMethodSymbol method) return;
+        if (file.Model.GetSymbolInfo(call).Symbol is not IMethodSymbol method) return false;
         var receiver = method.ReducedFrom is not null ? method.ReceiverType : method.ContainingType;
-        if (!ExtractContext.IsOrDerives(receiver, "System.Net.Http.HttpClient")) return;
+        if (!ExtractContext.IsOrDerives(receiver, "System.Net.Http.HttpClient")) return false;
         var owner = ctx.OwnerId(call, file.Model);
-        if (owner is null) return;
+        if (owner is null) return true;
         if (name == "SendAsync")
         {
-            ctx.AddBlindSpot(owner, call, "HTTP call through SendAsync: method and path not followed", Name);
-            return;
+            // D201: worded as the other outside clients' (D198), so a flow ends it `outside-call`.
+            ctx.AddBlindSpot(owner, call, "outside HTTP call through HttpClient.SendAsync: method and path not followed", Name);
+            return true;
         }
         var arg = call.ArgumentList.Arguments.FirstOrDefault()?.Expression;
         if (arg is BaseObjectCreationExpressionSyntax uri) arg = uri.ArgumentList?.Arguments.FirstOrDefault()?.Expression;
         var url = ExtractContext.StringValue(arg, file.Model);
         if (url is null)
         {
-            ctx.AddBlindSpot(owner, call, $"HTTP {Calls[name]} to a URL built at runtime", Name);
-            return;
+            ctx.AddBlindSpot(owner, call, $"outside HTTP {Calls[name]} through HttpClient: URL built at runtime", Name);
+            return true;
         }
         ctx.AddFact(Name, "call", owner, call, ("method", Calls[name]), ("url", url), ("client", DocIds.ContainingType(owner) ?? ""));
+        return true;
     }
 
     public void Link(LinkContext ctx)

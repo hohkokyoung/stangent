@@ -1,0 +1,448 @@
+{
+  "doc": "sonarr-fsd",
+  "frozen": "2026-11-03",
+  "note": "Frozen key of 30 tickets for scoring ticket-to-FSD-sentence matching (requirement-code, requirement-no-code, none); written by a fresh agent before anything it scores was built.",
+  "matching": {
+    "right": "A suggestion on a requirement-code or requirement-no-code ticket is right when one of the suggested requirement's FSD quotes and one of the ticket's listed quotes overlap: whitespace collapsed, case kept, one contains the other. So an atomic requirement cut from the right sentence counts, even if it's another clause of that sentence: this key can't tell clauses apart.",
+    "suggestionsRight": "Right suggestions / all suggestions, across all 30 tickets; a suggestion on a none ticket is wrong. Bar: at least 90%. No suggestions at all fails this bar.",
+    "none": "A none ticket scores when it ends with no suggestion and its run didn't fail. Bar: at least 8 of 10.",
+    "found": "A requirement ticket scores when it ends with a right suggestion. Bar: at least 14 of 20.",
+    "failedRun": "A ticket whose run failed has no suggestion and doesn't score: it counts against 'none' or 'found', and is reported apart.",
+    "outcome": "If suggestionsRight or none fails, matching ships off and requirements stay context. If only found fails, it ships on and the report says so (D99). Bars are not moved after a run.",
+    "approval": "Scored with approval skipped (the benchmark setting, D99), and the result says so."
+  },
+  "tickets": [
+    {
+      "id": "MK-01",
+      "group": "none",
+      "type": "Bug",
+      "summary": "\"search for missing\" in calendar tab not doing anything",
+      "description": "Current Behavior\n\n\"search for missing\" in calendar tab is not doing anything\n\nExpected Behavior\n\nwork as expected\n\nOS: Windows 10\nSonarr: 5.0.0.2608\nDocker Install: No\nBrowser: Chrome",
+      "source": "sonarr#9121",
+      "section": null,
+      "quotes": [],
+      "expectation": null,
+      "codeEvidence": null,
+      "why": "Nearest text is the Calendar chapter on views, show/hide and the iCal feed; it never mentions searching from the calendar, so nothing decides what the button should do."
+    },
+    {
+      "id": "MK-02",
+      "group": "requirement-code",
+      "type": "Bug",
+      "summary": "Deleted show is gone from Sonarr but its folder is still on the NAS",
+      "description": "Finished with a show so I deleted it from its page and clicked through the dialog. It's gone from the library, but /tv/The Long Way Home/ is still sitting there with 40GB in it. I assumed deleting a show takes what's on disk with it, that's what delete means to me, and now I have to go and clean up by hand. Happens every time, not just this show.\n\nSonarr 5.0.0.2569, Docker.",
+      "source": "written",
+      "section": "Library / Series details",
+      "quotes": [
+        "Deleting a series always deletes its folder and all its files from disk."
+      ],
+      "expectation": "agrees",
+      "codeEvidence": "frontend/src/Series/Delete/DeleteSeriesModalContent.tsx: deleteFiles state starts false and is a tick box; src/Sonarr.Api.V3/Series/SeriesController.cs DeleteSeries has deleteFiles = false by default. The UI calls V5: src/Sonarr.Api.V5/Series/SeriesController.cs line 244, same default.",
+      "why": "The sentence says deletion always removes the folder and files; the reporter expects that, the code makes it an option that is off by default."
+    },
+    {
+      "id": "MK-03",
+      "group": "requirement-code",
+      "type": "Story",
+      "summary": "Add Warn / Error as logging choices",
+      "description": "The logging dropdown only has three entries and even the quietest one writes a line for every RSS sync. This runs on a little ARM box with a slow SD card. I'd like to only get log lines when something's actually wrong, so please add Warn and Error to that dropdown.",
+      "source": "written",
+      "section": "Settings / General / Logging",
+      "quotes": [
+        "The log level can be set to info, debug or trace."
+      ],
+      "expectation": "against",
+      "codeEvidence": "frontend/src/Settings/General/LoggingSettings.tsx logLevelOptions: info, debug, trace only.",
+      "why": "The sentence fixes the choices at three levels; the reporter wants others added."
+    },
+    {
+      "id": "MK-04",
+      "group": "requirement-no-code",
+      "type": "Story",
+      "summary": "Can't find where to set a colour on a tag",
+      "description": "We've got about 15 tags now and they all look the same grey pill on every series. I went to Settings > Tags to make \"anime\" and \"kids\" stand out, but clicking one only tells me what's using it. Where do I pick the colour? Is it hidden behind advanced settings?",
+      "source": "written",
+      "section": "Settings / Tags",
+      "quotes": [
+        "Each tag has a colour, chosen from a palette of 12 colours, which is shown wherever the tag appears."
+      ],
+      "expectation": null,
+      "codeEvidence": "Searched color/colour in src/NzbDrone.Core/Tags, src/Sonarr.Api.V3/Tags, src/Sonarr.Api.V5/Tags and frontend/src/Settings/Tags/Tag.tsx: nothing. Tag.cs and TagResource.cs have only a label.",
+      "why": "The sentence promises tag colours, the reporter looks for them, and tags in the code have only a label."
+    },
+    {
+      "id": "MK-05",
+      "group": "requirement-code",
+      "type": "Bug",
+      "summary": "Low quality episode not showing on Wanted > Missing",
+      "description": "Steps:\n1. Profile is HD-1080p with Bluray-1080p as the target\n2. S02E03 of a show is on disk as HDTV-720p\n3. Open Wanted > Missing\n\nExpected: S02E03 is listed, I don't have the version I actually want yet so it's still missing as far as I'm concerned.\n\nActual: not in the list. Refreshed the series and reloaded the page, same. Possibly a caching thing?\n\nv4.0.20 on Windows.",
+      "source": "written",
+      "section": "Wanted / Missing episodes",
+      "quotes": [
+        "The missing screen lists monitored episodes that have aired but have no file on disk.",
+        "Episodes whose file exists but whose quality is below the cutoff are not listed here."
+      ],
+      "expectation": "against",
+      "codeEvidence": "src/NzbDrone.Core/Tv/EpisodeRepository.cs EpisodesWithoutFilesBuilder: filters on EpisodeFileId == 0, so any episode with a file is left out; below-cutoff files go through EpisodesWhereCutoffUnmet instead.",
+      "why": "Either sentence decides it: the list is episodes with no file, and below-cutoff files are named as left out; the reporter expects them to be listed."
+    },
+    {
+      "id": "MK-06",
+      "group": "none",
+      "type": "Bug",
+      "summary": "Season Folder tick sticks for the next show I add",
+      "description": "Added a miniseries with Season Folder unticked because I don't want a \"Season 01\" folder for a single season. The next show I went to add also had it unticked and I didn't notice, so now that one's flat too. It should go back to ticked each time and only apply to the one show.",
+      "source": "written",
+      "section": null,
+      "quotes": [],
+      "expectation": null,
+      "codeEvidence": null,
+      "why": "Nearest is the Add New options table in Adding a series; Season Folder isn't among its options and nothing says whether a choice carries over to the next add."
+    },
+    {
+      "id": "MK-07",
+      "group": "none",
+      "type": "Bug",
+      "summary": "Mark as Failed from History starts a new search immediately",
+      "description": "Current behaviour: opened a grab in Activity > History, pressed Mark as Failed because the release was bad. Sonarr immediately went off and grabbed a different one, which was also rubbish, and I was about to pick one by hand.\n\nExpected: it should just mark it, or at least ask me whether to search again.\n\nSonarr 4.0.20.3014, Linux, Docker",
+      "source": "written",
+      "section": null,
+      "quotes": [],
+      "expectation": null,
+      "codeEvidence": null,
+      "why": "Nearest is History on event types and grabbed-release details; it says nothing about marking a release as failed or what follows from it."
+    },
+    {
+      "id": "MK-08",
+      "group": "requirement-code",
+      "type": "Bug",
+      "summary": "Calendar subscription in Google Calendar stops after about a month",
+      "description": "I subscribe to the Sonarr iCal link from Google Calendar so the family can see what's on. It only reaches about 4 weeks ahead and a week back. I was counting on it going out roughly two months, and two weeks behind, since I plan around that. Tried removing and re-adding the subscription in case Google was caching an old copy, no change.",
+      "source": "written",
+      "section": "Calendar",
+      "quotes": [
+        "Sonarr can share the calendar as an iCal feed, which covers the previous 14 days and the next 60 days."
+      ],
+      "expectation": "agrees",
+      "codeEvidence": "src/Sonarr.Api.V3/Calendar/CalendarFeedController.cs GetCalendarFeed: pastDays = 7, futureDays = 28. The UI's API version: src/Sonarr.Api.V5/Calendar/CalendarFeedController.cs line 30, same defaults.",
+      "why": "The sentence gives the 14-back, 60-ahead range the reporter expects; the code's defaults are 7 and 28."
+    },
+    {
+      "id": "MK-09",
+      "group": "requirement-no-code",
+      "type": "Story",
+      "summary": "How do I get a show's episodes into a spreadsheet?",
+      "description": "I want one show's episodes with their air dates in Excel. I've been through every button at the top of the series page and the ... menu and can't see a download or export anywhere. Copy and paste from the page makes a mess. Have I missed it?",
+      "source": "written",
+      "section": "Library / Series details",
+      "quotes": [
+        "The episode list of a series can be exported as a CSV file."
+      ],
+      "expectation": null,
+      "codeEvidence": "Searched src and frontend/src for text/csv, .csv, exportcsv, csvhelper, ExportEpisode: no non-test hits. The only export string in en.json is ExportCustomFormat.",
+      "why": "The sentence promises the export, the reporter can't find it, and no such code exists."
+    },
+    {
+      "id": "MK-10",
+      "group": "requirement-code",
+      "type": "Bug",
+      "summary": "Can't create a tag called \"kids shows\"",
+      "description": "tried to add a tag \"kids shows\", red validation error. tried \"kids_shows\", same. \"kidsshows\" goes thru. whats wrong with a space or an underscore, those should just work",
+      "source": "written",
+      "section": "Settings / Tags",
+      "quotes": [
+        "Tag labels may contain letters, numbers, spaces and underscores."
+      ],
+      "expectation": "agrees",
+      "codeEvidence": "src/Sonarr.Api.V3/Tags/TagController.cs: label must match ^[a-z0-9-]+$ (ignore case). The UI calls V5: src/Sonarr.Api.V5/Tags/TagController.cs line 32, same pattern.",
+      "why": "The sentence allows spaces and underscores as the reporter expects; the validator rejects both."
+    },
+    {
+      "id": "MK-11",
+      "group": "none",
+      "type": "Bug",
+      "summary": "\"Enable Color-Impaired Mode\" Has No Effect, New UI Is Not CVD Friendly",
+      "description": "Current Behavior\n\nTurning on \"Enable Color-Impaired Mode\" in Settings->UI->Style does not change the colors in the web UI. The default colour bars used underneath shows in Media->Series are very narrow and low-contrast, making it very hard for users with CVD (colourblindness) to differentiate between them.\n\nExpected Behavior\n\nThis behaviour is new along with the new UI in the 5.0.0.2569 release, so I'm not sure how it's meant to look. Regardless, I would expect the \"Enable Color-Impaired Mode\" tickbox to make some difference to the colours used in the web UI, which it isn't doing.\n\nSteps To Reproduce\n\n1. In Vivaldi browser, observe the colour style and colour of the indicator bars beneath each series, also the key at the bottom left of the series list\n2. Navigate to Settings->UI->Style and tick/clear the \"Enable Color-Impaired Mode\" box as appropriate\n3. Return to Media->Series and observe that the colour bars under the series and the key have not changed\n\nI have had it confirmed by a friend with regular colour vision that the colours are identical in each image.\n\nThey have also commented that the thin colour bars are difficult for them to distinguish between unless they look very closely.",
+      "source": "sonarr#9113",
+      "section": null,
+      "quotes": [],
+      "expectation": null,
+      "codeEvidence": null,
+      "why": "Nearest is the Interface section's theme, date and language settings; colour-impaired mode isn't mentioned, nor are the series progress bars."
+    },
+    {
+      "id": "MK-12",
+      "group": "requirement-code",
+      "type": "Bug",
+      "summary": "Stops upgrading at WEB-1080p even though better qualities are enabled in the profile",
+      "description": "Profile has WEB-1080p set as Upgrade Until, with Bluray-1080p and Remux-1080p also ticked and ordered above it. Upgrades Allowed is on.\n\nEpisode is on disk as WEB-1080p. Interactive search shows Remux releases but all rejected, saying the existing file meets the cutoff.\n\nIf I've enabled higher qualities in the profile, Sonarr should keep going up to the top one. Otherwise what's the point of them being in the list? Is it a sorting bug?",
+      "source": "written",
+      "section": "Settings / Profiles / Quality profiles",
+      "quotes": [
+        "A quality profile lists the qualities the user wants, in order of preference, and the quality at which upgrades stop (the cutoff).",
+        "Upgrades Allowed: when ticked, a file is replaced by a better release until the cutoff is reached."
+      ],
+      "expectation": "against",
+      "codeEvidence": "src/NzbDrone.Core/DecisionEngine/Specifications/UpgradableSpecification.cs: returns UpgradeableRejectReason.QualityCutoff when the existing item meets the cut-off.",
+      "why": "Either sentence decides it: upgrades stop at the cutoff; the reporter wants them to continue past it."
+    },
+    {
+      "id": "MK-13",
+      "group": "requirement-code",
+      "type": "Bug",
+      "summary": "Release I removed from the queue came back on the next RSS sync",
+      "description": "Current Behavior\n\nA release had the wrong audio, so I removed it from Activity > Queue, left the dialog as it came and hit confirm. 15 minutes later Sonarr grabbed exactly the same release again, so I now have the same bad file downloading a second time, and it used up another of my tracker's daily grabs.\n\nExpected Behavior\n\nThere's a dropdown in that dialog about the blocklist and it starts on the do-not option. I shouldn't have to remember that. Anything I throw out of the queue should be treated as bad and not grabbed again, no choice needed.\n\nSteps To Reproduce\n\n1. Have a release downloading that you don't want\n2. Activity > Queue, press the x on its row\n3. Leave the options alone and press Remove\n4. Wait for the next RSS sync\n\nOS: Debian 12\nSonarr: 5.0.0.2569\nDocker Install: Yes\nBrowser: Firefox\n\nLogs, in case they help. The first line is the original grab and the rest is the sync after I removed it:\n\n2026-10-09 20:52:17.3|Info|DownloadService|Report sent to qBittorrent. Indexer MyTracker. The.Long.Way.Home.S02E03.1080p.WEB-DL.DDP5.1.H.264-GRP\n2026-10-09 21:14:02.1|Info|RssSyncService|Starting RSS Sync\n2026-10-09 21:14:09.8|Info|DownloadDecisionMaker|Processing 412 releases\n2026-10-09 21:14:12.4|Info|DownloadService|Report sent to qBittorrent. Indexer MyTracker. The.Long.Way.Home.S02E03.1080p.WEB-DL.DDP5.1.H.264-GRP\n2026-10-09 21:14:12.6|Info|RssSyncService|RSS Sync Completed. Reports found: 412, Reports grabbed: 1",
+      "source": "written",
+      "section": "3 Activity / 3.1 Queue",
+      "quotes": [
+        "Removing an item from the queue always adds the release to the blocklist."
+      ],
+      "expectation": "agrees",
+      "codeEvidence": "frontend/src/Activity/Queue/RemoveQueueItemModal.tsx: blocklistMethod options; queueOptionsStore.ts default doNotBlocklist; src/Sonarr.Api.V3/Queue/QueueController.cs RemoveAction has blocklist = false. The UI calls V5: src/Sonarr.Api.V5/Queue/QueueController.cs, where blocklistMethod is a required parameter, so the only default is the frontend store's (queueOptionsStore.ts line 150).",
+      "why": "The sentence says removal always blocklists, as the reporter expects; the code makes it an option defaulting to no."
+    },
+    {
+      "id": "MK-14",
+      "group": "none",
+      "type": "Story",
+      "summary": "Let me change the RSS Sync interval from the Tasks page",
+      "description": "System > Tasks shows RSS Sync every 15 minutes, but the interval isn't editable there. It took me a while to work out it lives under the Indexers options instead. Could the Tasks page let me change it, or at least link there?",
+      "source": "written",
+      "section": null,
+      "quotes": [],
+      "expectation": null,
+      "codeEvidence": null,
+      "why": "The FSD's System chapter has only the backups screen; it never mentions scheduled tasks or the RSS interval."
+    },
+    {
+      "id": "MK-15",
+      "group": "requirement-no-code",
+      "type": "Story",
+      "summary": "Scheduled backups only land on local disk",
+      "description": "if this disk dies my backups go with it, which isnt much use. went thru System > Backup and Settings > General looking for a place to give it our S3 details so each backup gets pushed up on its own and theres nothing there. right now i have a cron job with the aws cli doing it, which breaks whenever the container moves",
+      "source": "written",
+      "section": "System / Backups",
+      "quotes": [
+        "Backups can be copied automatically to an S3 bucket."
+      ],
+      "expectation": null,
+      "codeEvidence": "Searched src and frontend/src for AWSSDK, S3Client, AmazonS3, bucket: only an unrelated parser test; no S3 strings in en.json; src/NzbDrone.Core/Backup/BackupService.cs has no upload or remote copy.",
+      "why": "The sentence promises S3 copies, the reporter looks for them, and no such code exists."
+    },
+    {
+      "id": "MK-16",
+      "group": "requirement-code",
+      "type": "Story",
+      "summary": "Show \"Yesterday\" rather than 11/2/26",
+      "description": "Dates in the lists on my install all come up as 11/2/26 style. A friend's install says Yesterday, Today, Tomorrow, which is far easier to read at a glance. Can mine do that? Not sure if it's a version thing, I'm on 4.0.19.",
+      "source": "written",
+      "section": "Settings / Interface",
+      "quotes": [
+        "The short date format, long date format and time format can be chosen, and dates can be shown relative to today."
+      ],
+      "expectation": "agrees",
+      "codeEvidence": "frontend/src/Settings/UI/UISettings.tsx: showRelativeDates setting; src/Sonarr.Api.V3/Config/UiConfigResource.cs ShowRelativeDates. The UI calls V5: src/Sonarr.Api.V5/Settings/UiSettingsResource.cs ShowRelativeDates.",
+      "why": "The sentence says dates can be shown relative to today, which is what the reporter wants; the code has it."
+    },
+    {
+      "id": "MK-17",
+      "group": "none",
+      "type": "Bug",
+      "summary": "Removing from queue deletes the torrent in qbit even tho its still seeding",
+      "description": "had a release stuck in the queue so i hit the x and removed it, left the dialog as it was. the torrent is gone from qBittorrent as well, data and all. it was only at 0.4 ratio on a private tracker so now i have a hit and run. i only wanted sonarr to stop tracking it, not to touch my download client. leaving it alone in the client needs to be the starting choice, or is there a setting for this somewhere?\n\n5.0.0.2608 on unraid, linuxserver image",
+      "source": "written",
+      "section": null,
+      "quotes": [],
+      "expectation": null,
+      "codeEvidence": null,
+      "why": "Nearest is the Queue sentence on removing an item, which only speaks of the blocklist; nothing says what happens to the download in the client. Holds at this code: queueOptionsStore.ts removalMethod defaults to removeFromClient, and Sonarr.Api.V5 QueueController calls RemoveItem(item, true)."
+    },
+    {
+      "id": "MK-18",
+      "group": "requirement-code",
+      "type": "Story",
+      "summary": "Allow the same show twice for 4K and 1080p copies",
+      "description": "i keep a 4k copy and a 1080p copy of a few shows, in seperate root folders with seperate profiles. when i search for the show again theres just a tick on it and i cant go any further. please let me add it again with a different root folder, dont want to run a second instance only for this",
+      "source": "written",
+      "section": "Library / Adding a series",
+      "quotes": [
+        "A series that is already in the library is marked as such in the search results and can't be added a second time."
+      ],
+      "expectation": "against",
+      "codeEvidence": "frontend/src/AddSeries/AddNewSeries/AddNewSeriesSearchResult.tsx isExistingSeries / AlreadyInYourLibrary; src/NzbDrone.Core/Validation/Paths/SeriesExistsValidator.cs rejects a known TVDB id.",
+      "why": "The sentence rules out adding a series a second time; the reporter wants to."
+    },
+    {
+      "id": "MK-19",
+      "group": "requirement-code",
+      "type": "Bug",
+      "summary": "Automatic backup every 14 days won't save",
+      "description": "Settings > General > Backups. Put 14 in the interval box since fortnightly is plenty for me, and Save gives me a validation error. 7 saves fine. Anything up to a month seems reasonable here to me, it's only a number of days. Is 7 a hard limit for some reason?\n\nCurrent: error on save\nExpected: saves, backs up every 14 days\n\nSonarr 4.0.20, Ubuntu 24.04, no Docker",
+      "source": "written",
+      "section": "Settings / General / Backups",
+      "quotes": [
+        "Interval: how often an automatic backup is taken, from 1 to 30 days."
+      ],
+      "expectation": "agrees",
+      "codeEvidence": "src/Sonarr.Api.V3/Config/HostConfigController.cs: BackupInterval InclusiveBetween(1, 7). The UI calls V5: src/Sonarr.Api.V5/Settings/GeneralSettingsController.cs line 127, same range.",
+      "why": "The sentence allows up to 30 days as the reporter expects; the code stops at 7."
+    },
+    {
+      "id": "MK-20",
+      "group": "requirement-no-code",
+      "type": "Bug",
+      "summary": "Can't move an episode to a different day on the calendar",
+      "description": "Current Behavior\n\nThe network moved Thursday's episode to Friday and the listing data hasn't caught up, so Sonarr keeps thinking it's late and my family keeps asking where it is. In month view on the Calendar I grabbed the episode and pulled it over to Friday, but it won't pick up at all, just highlights the text. Same in Chrome and Firefox, so maybe not a browser problem?\n\nExpected Behavior\n\nIt should drop on the new day and keep that date.\n\nSteps To Reproduce\n\n1. Calendar, month view\n2. Press and hold on any upcoming episode\n3. Move it to another day and let go\n\nOS: Windows 11\nSonarr: 5.0.0.2569\nDocker Install: No\nUsing Reverse Proxy: No\nBrowser: Chrome, Firefox\n\nNothing in the browser console and no request shows up in the network tab when I let go.",
+      "source": "written",
+      "section": "Calendar",
+      "quotes": [
+        "Episodes can be dragged to another day to change their air date."
+      ],
+      "expectation": null,
+      "codeEvidence": "Searched frontend/src for draggable, onDragStart, useDrag, useDrop: only quality profile, delay profile and table options files, none in Calendar. src/Sonarr.Api.V3/Episodes/EpisodeController.cs PUT only sets monitored, so no air date change exists. The UI calls V5: src/Sonarr.Api.V5/Episodes/EpisodeController.cs line 57, also sets only monitored.",
+      "why": "The sentence promises dragging to change the date, the reporter expects it, and no such code exists."
+    },
+    {
+      "id": "MK-21",
+      "group": "none",
+      "type": "Story",
+      "summary": "No way to fix a typo in a tag name",
+      "description": "I made a tag \"anmie\" ages ago and it's on 60 series, a release profile and an indexer. I can't see how to rename it. Only option seems to be making a new one and retagging everything. You should be able to just edit the name.",
+      "source": "written",
+      "section": null,
+      "quotes": [],
+      "expectation": null,
+      "codeEvidence": null,
+      "why": "Nearest is the Tags section on what tags link to, labels, usage counts and deleting; it never says whether a tag can be renamed."
+    },
+    {
+      "id": "MK-22",
+      "group": "requirement-code",
+      "type": "Bug",
+      "summary": "Backup folder setting writes to the wrong place",
+      "description": "Sonarr lives in /opt/Sonarr. I set the backup folder to backups-nightly, expecting /opt/Sonarr/backups-nightly, because a relative path means relative to the program in nearly everything else I run. Instead the zips are turning up in /var/lib/sonarr/backups-nightly.\n\nCould be the systemd unit's working directory? Either way it should go next to the install.",
+      "source": "written",
+      "section": "Settings / General / Backups",
+      "quotes": [
+        "Folder: where backups are written; a relative path is inside Sonarr's data folder."
+      ],
+      "expectation": "against",
+      "codeEvidence": "src/NzbDrone.Core/Backup/BackupService.cs GetBackupFolder: unrooted paths are combined with _appFolderInfo.GetAppDataPath().",
+      "why": "The sentence says a relative path is inside the data folder; the reporter expects the install folder."
+    },
+    {
+      "id": "MK-23",
+      "group": "none",
+      "type": "Bug",
+      "summary": "Multi-language releases land mid-list when sorting interactive search by language",
+      "description": "Ran an interactive search on an episode and clicked the Languages column to sort. Releases with one language sort alphabetically, fine, but anything with more than one gets dropped in wherever the word Multi falls, so between Japanese and Spanish in my results. I'd want those together at the top or bottom, they're usually the ones I'm after.",
+      "source": "written",
+      "section": null,
+      "quotes": [],
+      "expectation": null,
+      "codeEvidence": null,
+      "why": "Nearest is Series details on searching interactively, which says nothing about sorting the results. Holds at this code: frontend/src/InteractiveSearch/useReleases.ts languages sort predicate returns the MultiLanguages string for releases with several languages."
+    },
+    {
+      "id": "MK-24",
+      "group": "requirement-code",
+      "type": "Story",
+      "summary": "Get rid of the \"are you sure\" on Search All",
+      "description": "Every time I press Search All on the missing list a dialog pops up wanting an OK from me first and telling me how many episodes. I just clicked the button, I meant it. Just go.",
+      "source": "written",
+      "section": "Wanted / Missing episodes",
+      "quotes": [
+        "Search All starts straight away, without asking the user to confirm."
+      ],
+      "expectation": "agrees",
+      "codeEvidence": "frontend/src/Wanted/Missing/Missing.tsx: handleSearchAllPress opens a ConfirmModal; the search runs in handleSearchAllMissingConfirmed.",
+      "why": "The sentence says it starts without confirmation, as the reporter wants; the code asks first."
+    },
+    {
+      "id": "MK-25",
+      "group": "none",
+      "type": "Story",
+      "summary": "Select several backups to delete at once",
+      "description": "Moving servers and tidying up. System > Backup has 30-odd manual backups. Each one needs its own trash icon click and then a confirmation dialog. Have I missed a bulk option somewhere? Checkboxes and one delete button would save me a lot of clicking.",
+      "source": "written",
+      "section": null,
+      "quotes": [],
+      "expectation": null,
+      "codeEvidence": null,
+      "why": "Nearest is System / Backups on listing, backing up now and restoring; it never mentions deleting backups, singly or together."
+    },
+    {
+      "id": "MK-26",
+      "group": "requirement-no-code",
+      "type": "Bug",
+      "summary": "Text is tiny on my 4K TV and I can't make it bigger",
+      "description": "Using Sonarr on the living room TV from the couch. The text is too small to read. Settings > UI has theme and dates and so on, but nothing to make the writing bigger, unless it's somewhere I haven't looked? Browser zoom makes the posters huge and the layout falls apart, so that's no answer. Sonarr should have its own setting for this.\n\nSonarr 5.0.0.2608, Chrome on an Android TV box",
+      "source": "written",
+      "section": "Settings / Interface",
+      "quotes": [
+        "The font size can be set to small, medium or large."
+      ],
+      "expectation": null,
+      "codeEvidence": "Searched frontend/src, NzbDrone.Core and both API projects for fontSize, font size, uiFontSize: nothing. en.json has no such string; UiConfigResource.cs has no such field.",
+      "why": "The sentence promises a font size setting, the reporter looks for one, and no such code exists."
+    },
+    {
+      "id": "MK-27",
+      "group": "requirement-code",
+      "type": "Bug",
+      "summary": "Log Size Limit won't go above 10",
+      "description": "trying to chase an intermitent import problem with trace on and the logs roll over within minutes, so what i need is gone before i get to it. set Log Size Limit to 50 and the field wont have it, max is 10 MB. 50 should be accepted imo, thats a perfectly reasonable size for a log file these days\n\nversion 5.0.0.2608 on docker (hotio)",
+      "source": "written",
+      "section": "Settings / General / Logging",
+      "quotes": [
+        "Each log file can grow up to 50 megabytes before a new one is started."
+      ],
+      "expectation": "agrees",
+      "codeEvidence": "src/Sonarr.Api.V3/Config/HostConfigController.cs: LogSizeLimit InclusiveBetween(1, 10); src/NzbDrone.Core/Configuration/ConfigFileProvider.cs clamps to 10; frontend/src/Settings/General/LoggingSettings.tsx max={10}. The UI calls V5: src/Sonarr.Api.V5/Settings/GeneralSettingsController.cs line 120, same range.",
+      "why": "The sentence allows 50 MB per file as the reporter expects; the code stops at 10."
+    },
+    {
+      "id": "MK-28",
+      "group": "none",
+      "type": "Bug",
+      "summary": "Nothing happens after taking a release off the blocklist",
+      "description": "Took a release off Activity > Blocklist because I'd blocked it by mistake. Assumed Sonarr would then go and get it, but the episode just sits there, I had to run a search myself. Is it supposed to do that? It should search, or at least offer to.",
+      "source": "written",
+      "section": null,
+      "quotes": [],
+      "expectation": null,
+      "codeEvidence": null,
+      "why": "The only mention of the blocklist is that queue removal adds to it; nothing covers the blocklist screen or what follows taking something off it."
+    },
+    {
+      "id": "MK-29",
+      "group": "requirement-code",
+      "type": "Bug",
+      "summary": "New delay profile ignored for most of my series",
+      "description": "Created a new delay profile with a 2 hour torrent wait. It wouldn't save without a tag, so I gave it a tag called \"wait\" and tagged a couple of shows to test.\n\nThose shows wait. Everything else in my library still grabs right away. I'd expect a profile I've created to hold back everything; I'm not going to tag 400 series. Looks like a bug in the way it picks the profile?",
+      "source": "written",
+      "section": "Settings / Profiles / Delay profiles",
+      "quotes": [
+        "Tags: a delay profile applies to the series with the same tags."
+      ],
+      "expectation": "against",
+      "codeEvidence": "src/NzbDrone.Core/Profiles/Delay/DelayProfileService.cs AllForTags/FetchBestForTags: profiles match by intersecting tags, or empty tags; src/Sonarr.Api.V3/Profiles/Delay/DelayProfileController.cs requires tags on non-default profiles. The UI calls V5: src/Sonarr.Api.V5/Profiles/Delay/DelayProfileController.cs lines 22-23, same rule.",
+      "why": "The sentence limits a profile to series with the same tags; the reporter expects it to apply to all."
+    },
+    {
+      "id": "MK-30",
+      "group": "requirement-code",
+      "type": "Story",
+      "summary": "Restoring a zip copied over from my old machine",
+      "description": "New server, fresh install. I have sonarr_backup_v4.0.19.zip from the old box on my laptop. What I want is to give that zip to Sonarr from the web page and have it restore, rather than messing around in the data folder over SSH. The list of backups on the new install is empty, so there's nothing to click restore on. Should this be possible from the UI?",
+      "source": "written",
+      "section": "System / Backups",
+      "quotes": [
+        "The user can take a backup now, restore from a backup in the list, or restore from a backup file they upload."
+      ],
+      "expectation": "agrees",
+      "codeEvidence": "src/Sonarr.Api.V3/System/Backup/BackupController.cs UploadAndRestore (POST restore/upload); frontend/src/System/Backup/RestoreBackupModalContent.tsx and the restore-backup toolbar item in Backups.tsx. The UI calls V5: src/Sonarr.Api.V5/System/Backup/BackupController.cs (POST restore/upload, line 95).",
+      "why": "The sentence says an uploaded file can be restored, as the reporter hopes; the code has it."
+    }
+  ]
+}

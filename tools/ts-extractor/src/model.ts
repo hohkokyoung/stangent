@@ -6,9 +6,17 @@ export type Line =
   | { t: "edge"; source: string; target: string; kind: string; label: 0 | 1; detector: string }
   | { t: "blind"; node: string; file: string; line: number; reason: string; detector: string }
   | { t: "fact"; detector: string; kind: string; node: string; file: string | null; line: number; data: Record<string, string> }
+  | { t: "enum"; id: string; name: string; file: string; line: number; endLine: number; members: { name: string; value: string | null; line: number }[] }
   | { t: "warning"; message: string };
 
+/** N5: a `<script>` block inside a server-rendered view: its code belongs to the view, its lines to the view's file. */
+export interface InlineScript { owner: string; file: string; line: number; text: string }
+
 export interface Options {
+  /** N5: plain scripts with no tsconfig: these files (absolute), read as browser scripts; `tsconfig` is then their folder. */
+  files?: string[];
+  /** N5: views' inline scripts, read with `files`. */
+  inline?: InlineScript[];
   /** The project's tsconfig (tsconfig.app.json or tsconfig.json). */
   tsconfig: string;
   /** Repo root; every path in the output is relative to it, with forward slashes. */
@@ -17,6 +25,12 @@ export interface Options {
   projectId: string;
   /** detectorSettings from stangent.yaml, e.g. { "frontend-http": { wrappers: ["useApiQuery:path"] } }. */
   settings: Record<string, Record<string, string[]>>;
+  /** Also print enums, members and values (C.2). Off, the output is what it always was. */
+  enums?: boolean;
+  /** Also a page for each screen the app's root shows with no route. Off, the output is what it always was. */
+  rootScreens?: boolean;
+  /** Also a page for `<Route path render|children>`, read from the JSX it shows. Off, the output is what it always was. */
+  routeRender?: boolean;
 }
 
 /** Collects lines, dropping duplicate nodes and edges, in the order they were first seen. */
@@ -45,6 +59,10 @@ export class Output {
 
   fact(detector: string, kind: string, node: string, file: string | null, line: number, data: Record<string, string>) {
     this.lines.push({ t: "fact", detector, kind, node, file, line, data });
+  }
+
+  enumDecl(e: Omit<Extract<Line, { t: "enum" }>, "t">) {
+    this.lines.push({ t: "enum", ...e });
   }
 
   warning(message: string) {

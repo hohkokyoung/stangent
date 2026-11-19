@@ -1,0 +1,209 @@
+import ts from "typescript";
+import { qualifiedName, testName, type Context } from "./extract.ts";
+import { declaredFunction, returns } from "./params.ts";
+import { boundTo } from "./values.ts";
+
+/** Library calls that register a function to run when an event comes, not now. */
+const LISTENERS = new Set(["on", "once", "addEventListener", "addListener", "onmessage"]);
+/**
+ * D214: libraries' mutation hooks keep the functions they're given (`useMutation({ mutationFn, onSuccess })`) and run them when
+ * the mutation is started (`mutate(…)`), not when the hook runs.
+ */
+const MUTATIONS = new Set(["useMutation", "createMutation", "injectMutation", "useSWRMutation"]);
+/** D306: a DOM-style event property (`onload`, `onsuccess`, `onmessage`): a function stored there runs when the event comes. */
+const EVENT_PROPERTY = /^on[a-z]/;
+/** D212: the browser's and Node's timers run a function after a delay or on a repeat, not now. */
+const TIMERS = new Set(["setTimeout", "setInterval", "requestAnimationFrame", "requestIdleCallback", "setImmediate"]);
+
+/**
+ * D201: whether code at this node runs when its point runs. Code inside a function handed to another function runs then only
+ * if that function calls it. One handed to the repo's own code that keeps it (stores it, never calls it, nor passes it on to
+ * code that does) runs later, when something else calls it: `kept:<callee>`. One registered with a library's event listener
+ * (`connection.on(…)`, `addEventListener`) runs when the event comes: `listener:<name>`; one given to a timer (`setTimeout`,
+ * `setInterval`) runs after its delay: `timer:<name>` (D212); one given to a mutation hook runs when the mutation starts:
+ * `mutation:<name>` (D214). Library callbacks otherwise
+ * (`map`, `forEach`, `subscribe`, `then`) run as part of this code: "". Stops at the point that owns the code.
+ */
+export function deferredOf(ctx: Context, node: ts.Node): string {
+  // D306: a deferral found inside a function that is itself only kept (stored for a later call) is the kept one: the code
+  // doesn't run in this flow at all, so the outermost keeping wins over a stream, listener or timer inside it.
+  let inner = "";
+  for (let p: ts.Node | undefined = node.parent; p && !ts.isSourceFile(p); p = p.parent) {
+    if (qualifiedName(p) || testName(p)) return inner;
+    if (!(ts.isArrowFunction(p) || ts.isFunctionExpression(p))) continue;
+    // D306: a function assigned to a property (`action.callback = (a) => …`) is stored there, to run when something calls it later.
+    const stored = storedAs(p);
+    // An event property (`reader.onload = …`, `xhr.onerror = …`) is a listener: it runs when the event comes, as D201's `on(…)`.
+    if (stored !== null && EVENT_PROPERTY.test(stored)) { inner ||= `listener:${stored}`; continue; }
+    if (stored !== null) return `kept:${stored}`;
+    // D202: a function written as an object's property (`{ readFunc: (v) => … }`) is stored there, to be called later, unless
+    // the object goes straight to a library call that runs it (`subscribe({ next, error })`, `$.ajax({ success })`).
+    if (ts.isPropertyAssignment(p.parent) && ts.isObjectLiteralExpression(p.parent.parent)) {
+      // A top-level object's function (`var AjaxCart = { send_ajax: function () {…} }`) is a point of its own (D191).
+      if (qualifiedName(p.parent)) return inner;
+      const obj = p.parent.parent;
+      const holder = ts.isCallExpression(obj.parent) && obj.parent.arguments.includes(obj) ? obj.parent : null;
+      if (!holder) return `kept:${p.parent.name.getText()}`;
+      const fnOf = declaredFunction(ctx.checker, holder.expression);
+      if (fnOf && ctx.isOwn(fnOf.getSourceFile())) return `kept:${p.parent.name.getText()}`;
+      const holderName = calledName(holder);
+      if (MUTATIONS.has(holderName)) { inner ||= `mutation:${holderName}`; continue; }
+      const stream = streamOf(ctx, holder);
+      if (stream) inner ||= stream;
+      continue;
+    }
+    if (!ts.isCallExpression(p.parent) || !p.parent.arguments.includes(p)) continue;
+    const call = p.parent;
+    const name = ts.isIdentifier(call.expression) ? call.expression.text : ts.isPropertyAccessExpression(call.expression) ? call.expression.name.text : "";
+    const fn = declaredFunction(ctx.checker, call.expression);
+    if (fn && fn.getSourceFile() && ctx.isOwn(fn.getSourceFile())) {
+      if (!callsParam(ctx, fn, call.arguments.indexOf(p), 0, new Set())) return `kept:${name}`;
+      continue;
+    }
+    if (LISTENERS.has(name)) { inner ||= `listener:${name}`; continue; }
+    if (TIMERS.has(name)) { inner ||= `timer:${name}`; continue; }
+    if (MUTATIONS.has(name)) { inner ||= `mutation:${name}`; continue; }
+    const stream = streamOf(ctx, call);
+    if (stream) inner ||= stream;
+  }
+  return inner;
+}
+
+/** D306: the property a function is assigned to (`x.callback = () => …`, `x["cb"] = …`), or null when it isn't. */
+function storedAs(fn: ts.Node): string | null {
+  let e: ts.Node = fn;
+  while (ts.isParenthesizedExpression(e.parent)) e = e.parent;
+  const b = e.parent;
+  if (!b || !ts.isBinaryExpression(b) || b.operatorToken.kind !== ts.SyntaxKind.EqualsToken || b.right !== e) return null;
+  if (ts.isPropertyAccessExpression(b.left)) return b.left.name.text;
+  if (ts.isElementAccessExpression(b.left)) return b.left.argumentExpression.getText().replace(/^["'`]|["'`]$/g, "");
+  return null;
+}
+
+/** D306: the node sits in a function stored for a later call (assigned to a property) between it and <paramref name="stop"/>. */
+function inStored(node: ts.Node, stop: ts.Node): boolean {
+  for (let p: ts.Node | undefined = node.parent; p && p !== stop; p = p.parent)
+    if ((ts.isArrowFunction(p) || ts.isFunctionExpression(p)) && storedAs(p) !== null && !EVENT_PROPERTY.test(storedAs(p)!)) return true;
+  return false;
+}
+
+function calledName(call: ts.CallExpression): string {
+  return ts.isIdentifier(call.expression) ? call.expression.text : ts.isPropertyAccessExpression(call.expression) ? call.expression.name.text : "";
+}
+
+/**
+ * D214: when a wrapper (the repo's own function named in the settings) sends its request from code that runs later (a mutation
+ * hook's `mutationFn`, a timer), a call of the wrapper only sets the request up: the deferral its sending calls (`fetch`, or
+ * another wrapper) share inside its body; "" when any of them sends now, or none is found.
+ */
+export function wrapperSendsLater(ctx: Context, callee: ts.Expression, senders: Set<string>): string {
+  const fn = declaredFunction(ctx.checker, callee);
+  if (!fn || !ctx.isOwn(fn.getSourceFile()) || !fn.body) return "";
+  const found: string[] = [];
+  const visit = (n: ts.Node) => {
+    if (ts.isCallExpression(n) && (senders.has(calledName(n)) || calledName(n) === "fetch")) found.push(deferredOf(ctx, n));
+    ts.forEachChild(n, visit);
+  };
+  visit(fn.body);
+  return found.length > 0 && found.every((d) => d !== "" && d === found[0]) ? found[0] : "";
+}
+
+/**
+ * D202: a callback given to a stream (`.subscribe(…)`, or an operator inside `.pipe(…)`) runs when the stream sends a value.
+ * A stream that starts with a request (an HTTP call, or the repo's own function returning one) sends its answer as part of
+ * this code: "". Any other (a form's `valueChanges`, a subject, a signal's observable, route data) sends values when they
+ * come: `stream:<source>`. Not a stream callback: "".
+ */
+function streamOf(ctx: Context, call: ts.CallExpression): string {
+  let streamCall: ts.CallExpression | null = null;
+  if (ts.isPropertyAccessExpression(call.expression) && call.expression.name.text === "subscribe") streamCall = call;
+  else if (ts.isCallExpression(call.parent) && ts.isPropertyAccessExpression(call.parent.expression) && call.parent.expression.name.text === "pipe"
+           && call.parent.arguments.includes(call)) streamCall = call.parent;
+  if (!streamCall) return "";
+  const source = sourceOf((streamCall.expression as ts.PropertyAccessExpression).expression);
+  if (isRequest(ctx, source, 0)) return "";
+  // The source by its name: a call as `toObservable(…)`, anything else as written, on one line.
+  const named = ts.isCallExpression(source) ? `${source.expression.getText()}(…)` : source.getText();
+  // Fresh check S30: operators before the callback that let only some values through (`filter(confirmed => confirmed)`).
+  const gates = gatesBefore(streamCall, call).map((g) => g.getText().replace(/\s+/g, " ").slice(0, 60));
+  return `stream:${named.replace(/\s+/g, " ").slice(0, 80)}${gates.length > 0 ? ` when ${gates.join(", ")}` : ""}`;
+}
+
+const GATES = new Set(["filter", "takeWhile", "skipWhile", "first", "find", "single", "takeUntil"]);
+
+/** The gating operators a value passes before reaching the callback: earlier arguments of its own `.pipe(…)`, and every
+ * `.pipe(…)` on the chain the stream is built from. */
+function gatesBefore(streamCall: ts.CallExpression, call: ts.CallExpression): ts.CallExpression[] {
+  const out: ts.CallExpression[] = [];
+  const isGate = (a: ts.Expression): a is ts.CallExpression => ts.isCallExpression(a) && ts.isIdentifier(a.expression) && GATES.has(a.expression.text)
+    && (a.expression.text !== "first" || a.arguments.length > 0);
+  const chain: ts.CallExpression[] = [];
+  for (let e: ts.Expression = (streamCall.expression as ts.PropertyAccessExpression).expression;
+       ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === "pipe"; e = e.expression.expression) chain.unshift(e);
+  for (const pipe of chain) out.push(...pipe.arguments.filter(isGate));
+  if (streamCall !== call) out.push(...streamCall.arguments.slice(0, streamCall.arguments.indexOf(call)).filter(isGate));
+  return out;
+}
+
+/** The start of a stream's chain: past `.pipe(…)` calls. */
+function sourceOf(e: ts.Expression): ts.Expression {
+  while (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === "pipe") e = e.expression.expression;
+  while (ts.isParenthesizedExpression(e)) e = e.expression;
+  return e;
+}
+
+const VERBS = new Set(["get", "post", "put", "delete", "patch", "head", "request", "jsonp"]);
+
+/** An HTTP call (`this.http.get(…)`, `httpClient.post(…)`), a `forkJoin`/`combineLatest` of them, or the repo's function returning one. */
+function isRequest(ctx: Context, e: ts.Expression, depth: number): boolean {
+  if (depth > 4) return false;
+  e = sourceOf(e);
+  if (ts.isIdentifier(e) || ts.isPropertyAccessExpression(e) && !ts.isCallExpression(e.parent)) {
+    const init = ts.isIdentifier(e) || ts.isPropertyAccessExpression(e) ? boundTo(e, ctx.checker) : null;
+    return init ? isRequest(ctx, init, depth + 1) : false;
+  }
+  if (!ts.isCallExpression(e)) return false;
+  const callee = e.expression;
+  const name = ts.isIdentifier(callee) ? callee.text : ts.isPropertyAccessExpression(callee) ? callee.name.text : "";
+  if (ts.isPropertyAccessExpression(callee) && VERBS.has(name)) {
+    const type = ctx.checker.getTypeAtLocation(callee.expression).getSymbol()?.getName();
+    if (type === "HttpClient" || (!ctx.typed && /http/i.test(callee.expression.getText()))) return true;
+  }
+  if ((name === "forkJoin" || name === "combineLatest" || name === "zip") && e.arguments.length > 0) {
+    const args = e.arguments.length === 1 && ts.isArrayLiteralExpression(e.arguments[0]) ? [...e.arguments[0].elements]
+      : e.arguments.length === 1 && ts.isObjectLiteralExpression(e.arguments[0]) ? e.arguments[0].properties.filter(ts.isPropertyAssignment).map((p) => p.initializer) : [...e.arguments];
+    return args.length > 0 && args.every((a) => isRequest(ctx, a, depth + 1));
+  }
+  const fn = declaredFunction(ctx.checker, callee);
+  return !!fn && ctx.isOwn(fn.getSourceFile()) && returns(fn).some((r) => isRequest(ctx, r, depth + 1));
+}
+
+/** The function calls its parameter at this index, or passes it on to code that may (a library's, or the repo's that does). */
+function callsParam(ctx: Context, fn: ts.SignatureDeclaration, index: number, depth: number, seen: Set<ts.Node>): boolean {
+  if (depth > 6) return true;           // too deep to read: it may run
+  if (seen.has(fn)) return false;       // passed back into a function already being read (recursion): nothing new
+  seen.add(fn);
+  const param = fn.parameters[index];
+  const body = (fn as ts.FunctionLikeDeclaration).body;
+  if (!param || !ts.isIdentifier(param.name) || !body) return true;   // a rest parameter or a pattern: not read, so it may run
+  const symbol = ctx.checker.getSymbolAtLocation(param.name);
+  let found = false;
+  const visit = (n: ts.Node) => {
+    if (found) return;
+    if (ts.isIdentifier(n) && ctx.checker.getSymbolAtLocation(n) === symbol && n !== param.name) {
+      const p = n.parent;
+      // D306: a call inside a function the body only stores (`action.callback = (a) => handler(a)`) runs later, when something
+      // calls the stored function, not when this function runs.
+      if (inStored(n, body)) { /* stored for later: not a call now */ }
+      else if (ts.isCallExpression(p) && p.expression === n) found = true;
+      else if (ts.isPropertyAccessExpression(p) && p.expression === n && ["call", "apply"].includes(p.name.text)) found = true;
+      else if (ts.isCallExpression(p) && p.arguments.includes(n as ts.Expression)) {
+        const next = declaredFunction(ctx.checker, p.expression);
+        found = next && ctx.isOwn(next.getSourceFile()) ? callsParam(ctx, next, p.arguments.indexOf(n as ts.Expression), depth + 1, seen) : true;
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(body);
+  return found;
+}

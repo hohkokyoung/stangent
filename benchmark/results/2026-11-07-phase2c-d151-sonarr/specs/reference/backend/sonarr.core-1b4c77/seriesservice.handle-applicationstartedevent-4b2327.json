@@ -1,0 +1,125 @@
+{
+  "codeTitle": "SeriesService.Handle(ApplicationStartedEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+  "generated": {
+    "bundleHash": "6b1d441cd16ec2a6e90434ea2346eb187d012ecca29343ff2c01e04d7b2b5078",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 15661,
+      "cutOff": 16,
+      "depth": 4,
+      "points": 56
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 10042,
+      "calls": 1,
+      "costUsd": 0.040877,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2252,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 7691,
+      "calls": 1,
+      "costUsd": 0.046674,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8807,
+      "outputTokens": 1563
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.ClearStalePendingPaths"
+        ],
+        "id": "A1",
+        "text": "When the application has started, the series service checks for series with a leftover pending path and clears it. This handler runs last among the handlers for this event."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.ClearStalePendingPaths",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.IsNotNullOrWhiteSpace(System.String)"
+        ],
+        "id": "R1",
+        "text": "Only series whose pending path is not null, empty or whitespace are considered."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.ClearStalePendingPaths",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.EnumerableExtensions.Empty``1(System.Collections.Generic.IEnumerable{``0})"
+        ],
+        "id": "R2",
+        "text": "If no series has a pending path, nothing further happens."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.GetSeriesIdsWithPendingMove",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.IManageCommandQueue.All"
+        ],
+        "id": "R3",
+        "text": "A series is a pending-move series if a queued or started command is a single series move or a bulk series move that includes its id. Commands with other statuses are ignored."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.ClearStalePendingPaths",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.GetSeriesIdsWithPendingMove"
+        ],
+        "id": "R4",
+        "text": "A series with a pending path is stale, and gets cleared, only when no queued or started move command covers it. If no series is stale, nothing is changed."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.BasicRepository`1.SetFields(System.Collections.Generic.IList{`0},System.Linq.Expressions.Expression{System.Func{`0,System.Object}}[])"
+        ],
+        "id": "R5",
+        "text": "Saving fails with an error if any series being updated has an Id of 0."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.ClearStalePendingPaths"
+        ],
+        "id": "E1",
+        "text": "For each stale series, a warning is logged saying it has a stale PendingPath left over from an interrupted move and is being cleared."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.ClearStalePendingPaths",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.BasicRepository`1.SetFields(System.Collections.Generic.IList{`0},System.Linq.Expressions.Expression{System.Func{`0,System.Object}}[])",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.BasicRepository`1.UpdateFields(System.Data.IDbConnection,System.Data.IDbTransaction,System.Collections.Generic.IList{`0},System.Collections.Generic.List{System.Reflection.PropertyInfo})"
+        ],
+        "id": "E2",
+        "text": "The pending path of each stale series is set to null and saved. Only the pending path field is updated, in one transaction for all stale series."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.BasicRepository`1.SetFields(System.Collections.Generic.IList{`0},System.Linq.Expressions.Expression{System.Func{`0,System.Object}}[])",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.BasicRepository`1.ModelUpdated(`0,System.Boolean)"
+        ],
+        "id": "E3",
+        "text": "After the save, an Updated model event is published for each updated series."
+      }
+    ]
+  },
+  "title": "Clear stale pending paths on application start",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

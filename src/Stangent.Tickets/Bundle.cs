@@ -16,11 +16,12 @@ namespace Stangent.Tickets;
 /// source code. Over <c>tickets.bundleChars</c>, first the impact answer's item lists go (its counts stay), then the
 /// lowest-ranked pages become pointers; the starting points are never cut. Missing and stale pages are flagged, never
 /// generated. Code only: the same inputs give the same bytes, and the result is validated against
-/// <c>ticket-bundle.v2.json</c>.
+/// <c>ticket-bundle.v3.json</c>. v3 (truth map layer 4, D361): <c>truth</c>, the truth map's entries that apply to the
+/// ticket (<see cref="TruthList"/>), with the <c>truth-verdict</c> component on.
 /// </summary>
 public static class TicketBundle
 {
-    public const string Schema = "ticket-bundle.v2.json";
+    public const string Schema = "ticket-bundle.v3.json";
     public const int ImpactDepth = 2;
 
     public static JsonObject Build(StangentRepo repo, TicketContext ctx, string key)
@@ -61,6 +62,22 @@ public static class TicketBundle
             : ctx.Analyzer.AnalyzeStarts(starts, "starting-points", $"{starts.Count} point(s) from the ticket's starting points", repo.Root, ImpactDepth,
                 (reached, expand) => FsdImpact.Sections(repo.Root, reached, expand));
 
+        // The truth map's entries for the ticket's own files (D361): the file points, the symbol points' files, and the
+        // files the page points' statements cite. Not the impact answer's: an entry two lines away doesn't judge the ticket.
+        var truthFiles = files
+            .Concat(list.Where(p => p.Kind == StartingPoint.Symbol).Select(p => ctx.Analyzer.Find(p.Id)?.File).OfType<string>())
+            .Concat(written.Where(d => pagePoints.Contains(d.Id))
+                .SelectMany(d => PageChecks.Statements(ctx.Index.Pages[d.Id]).SelectMany(s => s.Statement["cites"]!.AsArray().Select(c => ctx.Analyzer.Find((string)c!)?.File))).OfType<string>())
+            .Distinct(StringComparer.Ordinal).ToList();
+        // D410: and the entries on the flows the ticket's own code is on, and the screens they open: the method each found
+        // file's quoted line sits in, and each symbol point's span.
+        var truthSpans = list.Where(p => p.Kind == StartingPoint.File && p.Line is not null)
+            .SelectMany(p => TruthList.SpansOfLine(repo.Root, p.Id, p.Line!, ctx.Analyzer.InFile))
+            .Concat(list.Where(p => p.Kind == StartingPoint.Symbol).Select(p => ctx.Analyzer.Find(p.Id))
+                .OfType<Node>().Where(n => n.File is not null && n.Line > 0 && n.EndLine >= n.Line).Select(n => new TruthList.Span(n.File!, n.Line, n.EndLine)))
+            .Distinct().ToList();
+        var truth = TruthList.Build(repo, truthFiles, truthSpans);
+
         // Whether the finder's answer is stale is judged now, against the code the bundle is built on (D101).
         var codeNow = points["ai"]?["commit"] is null ? "" : TicketPoints.CodeState(repo.Root);
 
@@ -91,7 +108,7 @@ public static class TicketBundle
             }
             var bundle = new JsonObject
             {
-                ["schemaVersion"] = 2,
+                ["schemaVersion"] = 3,
                 ["key"] = paths.Key,
                 ["source"] = pulled["source"]!.DeepClone(),
                 ["raw"] = pulled["raw"]!.DeepClone(),
@@ -113,6 +130,7 @@ public static class TicketBundle
                     : null,
                 ["pages"] = pages,
                 ["sections"] = Sections(repo, ctx, included.Select(d => d.Id).ToHashSet(StringComparer.Ordinal)),
+                ["truth"] = truth.DeepClone(),
                 ["impact"] = shownImpact.DeepClone(),
                 // A cut page point keeps its citations (it is a starting point); a cut page that only explains a file
                 // takes its citations with it: the file it explains is a pointer of its own.
@@ -124,7 +142,8 @@ public static class TicketBundle
                 },
                 ["missingPages"] = new JsonArray([.. missing.Select(m => (JsonNode)m)]),
                 ["stalePages"] = new JsonArray([.. included.Concat(written.Where(d => cut.Contains(d.Id) && pagePoints.Contains(d.Id))).Where(IsStale).Select(d => (JsonNode)d.Id)]),
-                ["findings"] = repo.Config.Fsd.Findings,
+                // Always false since D388 removed the old route's findings; the field leaves at ticket-bundle's next bump.
+                ["findings"] = false,
             };
             bundle["cap"]!["chars"] = Size(bundle);
             return bundle;
@@ -201,6 +220,10 @@ public static class TicketBundle
                 var c = a!.DeepClone().AsObject();
                 c.Remove("chars");
                 c.Remove("bytes");
+                c.Remove("notConverted");
+                c.Remove("problems");
+                c.Remove("format");
+                c.Remove("converted");
                 return (JsonNode)c;
             })]),
             ["isBug"] = pulled["isBug"]!.DeepClone(),
@@ -210,12 +233,12 @@ public static class TicketBundle
     }
 
     /// <summary>FSD sections linked to the included pages (D53): the section's text and each link's state, whether a
-    /// person decided it. Findings (gap, conflict, undocumented) only when <c>fsd.findings</c> is on, marked unconfirmed.</summary>
+    /// person decided it. The old route's findings (gap, conflict, undocumented) are not shown (D388): the truth map judges now.</summary>
     static JsonArray Sections(StangentRepo repo, TicketContext ctx, IReadOnlySet<string> pages)
     {
-        var findings = repo.Config.Fsd.Findings;
         var entries = ctx.Trace.Where(e => e["fsd"] is JsonObject && (string?)e["page"]?["id"] is { } p && pages.Contains(p))
-            .Where(e => findings || (string?)e["state"] == "agree");
+            // An unanswered security flag stays in sight whatever else happened to its finding (D148).
+            .Where(e => (string?)e["state"] == "agree" || TraceFindings.SecurityOpen(e)).Where(e => !TraceFindings.Closed(e) || TraceFindings.SecurityOpen(e));
         var result = new JsonArray();
         foreach (var g in entries.GroupBy(e => ((string)e["fsd"]!["doc"]!, (string)e["fsd"]!["section"]!))
                      .OrderBy(g => g.Key.Item1, StringComparer.Ordinal).ThenBy(g => TraceFile.SectionKey(g.Key.Item2), StringComparer.Ordinal))
@@ -234,6 +257,7 @@ public static class TicketBundle
                             ["check"] = (string?)e["check"], ["decision"] = (string?)e["decision"], ["decided"] = e["decision"] is not null,
                         };
                         if ((string)e["state"]! != "agree") link["unconfirmed"] = e["decision"] is null;
+                        if (TraceFindings.SecurityView(e) is { } flag) link["security"] = flag;
                         return (JsonNode)link;
                     })]),
             });
@@ -241,11 +265,16 @@ public static class TicketBundle
         return result;
     }
 
+    /// <summary>A flag beside its link (D148), plain when nobody has answered it. An AI's flag and not a security review, so a clean bundle says nothing about holes.</summary>
+    static string SecurityMark(JsonNode? flag) => flag is null ? ""
+        : (string?)flag["answer"] == "unanswered" ? $" · **SECURITY FLAG, UNANSWERED:** {flag["why"]} (`{flag["at"]}`, the AI's reading; no person has answered it)"
+        : $" · security flag {flag["answer"]} by {flag["answerBy"]}";
+
     /// <summary>The written pages that explain the file points (D101), best first, each with the files it explains:
     /// pages whose statements cite code in a file ("cites"), ranked by how many of the files they cite, then by the
     /// first file's rank; for a file no page cites, the pages whose slice holds it ("slice"). A nearby page from a graph
     /// walk isn't used: it explained the fix in 1 of 12 Sonarr bugs (phases/3-tickets.md, 2026-11-02).</summary>
-    static Dictionary<string, List<(string File, string How)>> Explaining(TicketContext ctx, List<string> files)
+    public static Dictionary<string, List<(string File, string How)>> Explaining(TicketContext ctx, List<string> files)
     {
         var result = new Dictionary<string, List<(string File, string How)>>(StringComparer.Ordinal);
         if (files.Count == 0) return result;
@@ -415,10 +444,12 @@ public static class TicketBundle
             {
                 md.Append($"### §{s!["id"]} {s["title"]} ({s["doc"]})\n\n");
                 foreach (var l in s["links"]!.AsArray())
-                    md.Append($"- {l!["state"]} with `{l["page"]}`{(l["statement"] is null ? "" : $" {l["statement"]}")}{((bool)l["decided"]! ? $" · decided: {l["decision"]}" : " · not decided yet")}{((bool?)l["unconfirmed"] == true ? " · unconfirmed" : "")}\n");
+                    md.Append($"- {l!["state"]} with `{l["page"]}`{(l["statement"] is null ? "" : $" {l["statement"]}")}{((bool)l["decided"]! ? $" · decided: {l["decision"]}" : " · not decided yet")}{((bool?)l["unconfirmed"] == true ? " · unconfirmed" : "")}{SecurityMark(l["security"])}\n");
                 md.Append('\n');
             }
         }
+
+        TruthList.Markdown(md, b["truth"] as JsonObject);
 
         md.Append("## Impact\n\n");
         md.Append(b["impact"]!["groups"]!.AsArray().Count == 0 ? "No symbols to start from.\n\n" : ImpactAnalyzer.Markdown(b["impact"]!.AsObject()) + "\n");

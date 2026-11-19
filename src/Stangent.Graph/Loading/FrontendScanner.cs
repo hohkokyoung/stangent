@@ -6,7 +6,13 @@ using Stangent.Core;
 namespace Stangent.Graph.Loading;
 
 /// <summary>A frontend project: a tsconfig (tsconfig.app.json preferred) beside a package.json.</summary>
-public sealed record FrontendProject(string Id, string TsConfig, string RelativeTsConfig, string Directory);
+public sealed record FrontendProject(string Id, string TsConfig, string RelativeTsConfig, string Directory)
+{
+    /// <summary>N5: plain browser scripts with no tsconfig (absolute paths); <see cref="TsConfig"/> is then their C# project's folder.</summary>
+    public IReadOnlyList<string>? Files { get; init; }
+    /// <summary>N5: the project's views' inline <c>&lt;script&gt;</c> blocks, as the extractor reads them (JSON).</summary>
+    public string? Inline { get; init; }
+}
 
 /// <summary>
 /// Finds frontend projects, fingerprints them, restores their packages and runs the bundled
@@ -19,7 +25,8 @@ public static class FrontendScanner
 
     static readonly string[] SourceExtensions = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts", ".html", ".json"];
 
-    public static List<FrontendProject> Find(string root)
+    /// <param name="plainReact">Also a React app with no tsconfig: a package.json naming React (D127). Only a repo with Python, or with a switch for React routes on, asks for this, so any other repo keeps the map it had.</param>
+    public static List<FrontendProject> Find(string root, bool plainReact = false)
     {
         var byDir = new SortedDictionary<string, string>(StringComparer.Ordinal);
         foreach (var file in Walk(root).Where(f => Path.GetFileName(f) is "tsconfig.json" or "tsconfig.app.json"))
@@ -30,6 +37,10 @@ public static class FrontendScanner
                 byDir[dir] = file;
             _ = existing;
         }
+        if (plainReact)
+            foreach (var file in Walk(root).Where(f => Path.GetFileName(f) == "package.json"))
+                if (Path.GetDirectoryName(file) is { } dir && !byDir.ContainsKey(dir) && NamesReact(file))
+                    byDir[dir] = file;
         return [.. byDir.Select(kv =>
         {
             var rel = ProjectScanner.Rel(root, kv.Value);
@@ -37,9 +48,55 @@ public static class FrontendScanner
         })];
     }
 
+    static bool NamesReact(string packageJson)
+    {
+        try
+        {
+            var pkg = JsonNode.Parse(File.ReadAllText(packageJson));
+            return new[] { "dependencies", "devDependencies" }.Any(k => pkg?[k]?["react"] is not null);
+        }
+        catch (Exception e) when (e is JsonException or InvalidOperationException or IOException) { return false; }
+    }
+
     /// <summary>Changes when any of the frontend's own source, template, config or lock files change.</summary>
+    /// <summary>Folders of other people's code, or of build tooling, that a project's plain scripts skip (N5).</summary>
+    static readonly HashSet<string> ScriptSkipDirs = new(StringComparer.OrdinalIgnoreCase)
+        { "lib", "libs", "lib_npm", "vendor", "vendors", "bower_components", "gulp", "grunt", "wwwroot-dist" };
+
+    /// <summary>
+    /// N5: a C# project's own plain <c>.js</c> (no tsconfig: a server-rendered app's <c>wwwroot/js</c>, say) and its views'
+    /// inline scripts, read by the same extractor as browser scripts. Libraries (<c>lib</c>, <c>vendor</c>…), minified files,
+    /// build tooling (<c>gulpfile.js</c>, <c>*.config.js</c>) and anything inside a tsconfig project stay out.
+    /// </summary>
+    public static List<FrontendProject> Scripts(string root, IReadOnlyList<RepoProject> projects, IReadOnlyList<FrontendProject> frontends, CodeGraph graph)
+    {
+        var projectDirs = projects.Select(p => p.Directory).ToHashSet(StringComparer.Ordinal);
+        var frontendDirs = frontends.Select(f => f.Directory).ToHashSet(StringComparer.Ordinal);
+        var result = new List<FrontendProject>();
+        foreach (var p in projects.OrderBy(p => p.RelativePath, StringComparer.Ordinal))
+        {
+            if (frontendDirs.Any(d => p.Directory == d || p.Directory.StartsWith(d + Path.DirectorySeparatorChar, StringComparison.Ordinal))) continue;
+            var files = Walk(p.Directory, d => (d == p.Directory || !projectDirs.Contains(d)) && !frontendDirs.Contains(d) && !ScriptSkipDirs.Contains(Path.GetFileName(d)))
+                .Where(f => Path.GetExtension(f) is ".js" or ".mjs" && !f.EndsWith(".min.js", StringComparison.OrdinalIgnoreCase)
+                    && Path.GetFileName(f) is not ("gulpfile.js" or "Gruntfile.js") && !f.EndsWith(".config.js", StringComparison.OrdinalIgnoreCase))
+                .Order(StringComparer.Ordinal).ToList();
+            var inline = graph.Fragments.GetValueOrDefault(p.Id)?.Facts.Where(f => f.Kind == "script" && f.Detector == "razor-views")
+                .Select(f => new JsonObject { ["owner"] = f.Owner, ["file"] = f.File, ["line"] = f.Line, ["text"] = f["text"] }).ToList() ?? [];
+            if (files.Count == 0 && inline.Count == 0) continue;
+            var rel = ProjectScanner.Rel(root, p.Directory);
+            result.Add(new FrontendProject($"project:{rel}/scripts", p.Directory, $"{rel} (scripts)", p.Directory)
+            {
+                Files = files,
+                Inline = new JsonArray([.. inline]).ToJsonString(),
+            });
+        }
+        return result;
+    }
+
     public static string Fingerprint(string root, FrontendProject p, IEnumerable<string> otherProjectDirs)
     {
+        if (p.Files is not null)
+            return CanonicalJson.Hash(string.Join("\n", p.Files.Select(f => $"{ProjectScanner.Rel(root, f)}\t{CanonicalJson.Hash(File.ReadAllText(f))}")) + "\n" + p.Inline);
         var nested = otherProjectDirs.Where(d => d != p.Directory && d.StartsWith(p.Directory + Path.DirectorySeparatorChar, StringComparison.Ordinal)).ToHashSet();
         var parts = Walk(p.Directory, d => !nested.Contains(d))
             .Where(f => SourceExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase)
@@ -103,6 +160,26 @@ public static class FrontendScanner
     }
 
     /// <summary>Hash of the extractor bundle, so a new extractor re-extracts every frontend.</summary>
+    /// <summary>
+    /// Each spec's steps, as JSON lines, from the bundle beside the extractor (D149). Parsing only: nothing is run. It isn't the extractor, so the graph's hash doesn't move with it.
+    /// </summary>
+    public static (List<string> Lines, string? Error) TestSteps(string root, IEnumerable<string> specs)
+    {
+        if (ExtractorPath() is not { } extractor || Path.Combine(Path.GetDirectoryName(extractor)!, "stangent-test-steps.mjs") is var bundle && !File.Exists(bundle))
+            return ([], "the test-steps reader isn't installed with this stangent build");
+        var list = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(list, string.Join('\n', specs));
+            var (code, output) = Run("node", $"\"{bundle}\" --root \"{root}\" --files \"{list}\"", root, TimeSpan.FromMinutes(10), splitStderr: true);
+            return code != 0 ? ([], $"the test-steps reader failed (exit {code}): {Tail(output)}") : ([.. output.Split('\n', StringSplitOptions.RemoveEmptyEntries)], null);
+        }
+        finally
+        {
+            File.Delete(list);
+        }
+    }
+
     public static string ExtractorHash() => ExtractorPath() is { } p ? CanonicalJson.Hash(Convert.ToBase64String(File.ReadAllBytes(p))) : "none";
 
     public static bool NodeAvailable() => Run("node", "--version", Directory.GetCurrentDirectory(), TimeSpan.FromSeconds(20)).Code == 0;
@@ -110,7 +187,7 @@ public static class FrontendScanner
     /// <summary>Runs the extractor and reads its JSON lines into a fragment; warnings come back separately.</summary>
     public static (ProjectFragment Fragment, List<string> Warnings, string? Error) Extract(
         string root, FrontendProject p, string fingerprint, IReadOnlyDictionary<string, Dictionary<string, List<string>>> settings,
-        string? extractorOverride = null)
+        string? extractorOverride = null, bool enums = false, bool rootScreens = false, bool routeRender = false)
     {
         var fragment = new ProjectFragment { ProjectId = p.Id, Fingerprint = fingerprint };
         var warnings = new List<string>();
@@ -118,10 +195,37 @@ public static class FrontendScanner
         if (extractor is null)
             return (fragment, warnings, $"{p.RelativeTsConfig}: the TypeScript extractor isn't installed with this stangent build");
         var settingsJson = JsonSerializer.Serialize(settings);
-        var args = $"\"{extractor}\" --tsconfig \"{p.TsConfig}\" --root \"{root}\" --project \"{p.Id}\" --settings {Quote(settingsJson)}";
-        var (code, output) = Run("node", args, root, TimeSpan.FromMinutes(10), splitStderr: true);
+        var args = $"\"{extractor}\" --tsconfig \"{p.TsConfig}\" --root \"{root}\" --project \"{p.Id}\" --settings {Quote(settingsJson)}" + (enums ? " --enums" : "") + (rootScreens ? " --root-screens" : "") + (routeRender ? " --route-render" : "");
+        string? list = null, inline = null;
+        if (p.Files is not null)
+        {
+            list = Path.GetTempFileName();
+            inline = Path.GetTempFileName();
+            File.WriteAllText(list, string.Join('\n', p.Files));
+            File.WriteAllText(inline, p.Inline ?? "[]");
+            args += $" --files \"{list}\" --inline \"{inline}\"";
+        }
+        int code;
+        string output;
+        try { (code, output) = Run("node", args, root, TimeSpan.FromMinutes(10), splitStderr: true); }
+        finally
+        {
+            if (list is not null) File.Delete(list);
+            if (inline is not null) File.Delete(inline);
+        }
         if (code != 0) return (fragment, warnings, $"{p.RelativeTsConfig}: TypeScript extractor failed (exit {code}): {Tail(output)}");
 
+        ReadFragment(output, fragment, warnings, p.RelativeTsConfig);
+        // The extractor always reports at least the project itself; nothing at all means it didn't
+        // really run (a broken or wrong bundle). Say so, never leave the frontend silently empty.
+        if (!fragment.Nodes.Any(n => n.Id == p.Id))
+            return (fragment, warnings, $"{p.RelativeTsConfig}: the TypeScript extractor produced no output ({extractor})");
+        return (fragment, warnings, null);
+    }
+
+    /// <summary>An extractor's JSON lines, into a fragment. Warnings are named after the project they came from.</summary>
+    internal static void ReadFragment(string output, ProjectFragment fragment, List<string> warnings, string projectLabel)
+    {
         foreach (var line in output.Split('\n'))
         {
             if (line.Length == 0 || line[0] != '{') continue;
@@ -142,16 +246,15 @@ public static class FrontendScanner
                     fragment.Facts.Add(new Fact((string)o["detector"]!, (string)o["kind"]!, (string)o["node"]!, (string?)o["file"], (int)o["line"]!,
                         o["data"]!.AsObject().ToDictionary(kv => kv.Key, kv => (string)kv.Value!, StringComparer.Ordinal)));
                     break;
+                case "enum":
+                    fragment.Enums.Add(new CodeEnum((string)o["id"]!, (string)o["name"]!, fragment.ProjectId, (string)o["file"]!, (int)o["line"]!, (int)o["endLine"]!,
+                        [.. o["members"]!.AsArray().OfType<JsonObject>().Select(m => new CodeEnumMember((string)m["name"]!, (string?)m["value"], (int)m["line"]!))]));
+                    break;
                 case "warning":
-                    warnings.Add($"{p.RelativeTsConfig}: {(string?)o["message"]}");
+                    warnings.Add($"{projectLabel}: {(string?)o["message"]}");
                     break;
             }
         }
-        // The extractor always reports at least the project itself; nothing at all means it didn't
-        // really run (a broken or wrong bundle). Say so, never leave the frontend silently empty.
-        if (!fragment.Nodes.Any(n => n.Id == p.Id))
-            return (fragment, warnings, $"{p.RelativeTsConfig}: the TypeScript extractor produced no output ({extractor})");
-        return (fragment, warnings, null);
     }
 
     static string Quote(string s) => "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";

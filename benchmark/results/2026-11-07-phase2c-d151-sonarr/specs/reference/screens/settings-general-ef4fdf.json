@@ -1,0 +1,320 @@
+{
+  "codeTitle": "/settings/general · GeneralSettings",
+  "entry": "page:tsconfig.json|/settings/general",
+  "generated": {
+    "bundleHash": "0ec23d91e7d2d4e5219f06de65304d7d0d7217c635d3b6aeddec9eeb187d3bf6",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 80552,
+      "cutOff": 15,
+      "depth": 6,
+      "points": 337
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 39827,
+      "calls": 1,
+      "costUsd": 0.164677,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6441,
+      "outputTokens": 519
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 36062,
+      "calls": 1,
+      "costUsd": 0.175108,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 16924,
+      "outputTokens": 3058
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/settings/general",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/GeneralSettings.tsx#GeneralSettings",
+          "ts|frontend/src/Settings/useSettings.ts#useManageSettings"
+        ],
+        "id": "A1",
+        "text": "Editing any field stores a pending change; the page is marked as having pending changes until saved."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettings.ts#useManageSettings",
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings"
+        ],
+        "id": "A2",
+        "text": "Pressing save sends the settings with the changed values merged in to the server and clears pending changes on success."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/SecuritySettings.tsx#SecuritySettings",
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "A3",
+        "text": "Pressing the API key reset button opens a confirmation (Reset API Key); confirming runs the reset API key command."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/GeneralSettings.tsx#GeneralSettings",
+          "ts|frontend/src/System/useSystem.ts#useRestart"
+        ],
+        "id": "A4",
+        "text": "In the restart-required dialog, Restart Now triggers a server restart and Restart Later closes the dialog."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/HostSettings.tsx#HostSettings",
+          "ts|frontend/src/Settings/General/ProxySettings.tsx#ProxySettings"
+        ],
+        "id": "R1",
+        "text": "Port Number, SSL Port and Proxy Port accept values from 1 to 65535."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/LoggingSettings.tsx#LoggingSettings"
+        ],
+        "id": "R2",
+        "text": "Log Size Limit accepts values from 1 to 10 MB."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/GeneralSettings.tsx#GeneralSettings"
+        ],
+        "id": "R3",
+        "text": "After a successful save that changed a restart-requiring setting, a restart-required dialog opens."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/GeneralSettings.tsx#GeneralSettings",
+          "ts|frontend/src/System/Status/useSystemStatus.ts#useIsWindowsService"
+        ],
+        "id": "R4",
+        "text": "The restart dialog adds a Windows service note when the app runs as a Windows service."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/GeneralSettings.tsx#GeneralSettings"
+        ],
+        "id": "R5",
+        "text": "When an API key reset finishes, the browser page reloads once saving is not in progress."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R6",
+        "text": "The same command is not run again within 5 seconds; the repeat is ignored."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/selectSettings.ts#selectSettings",
+          "ts|frontend/src/Utilities/selectSettings.ts#getFailures"
+        ],
+        "id": "R7",
+        "text": "Save validation errors and warnings (HTTP 400) are matched to fields by property name and shown on the form."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/UpdateSettings.tsx#UpdateSettings"
+        ],
+        "id": "R8",
+        "text": "The Branch field is read-only when an external update mechanism is used."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/GeneralSettings.tsx#GeneralSettings"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"General\" under the \"Settings\" scope and contains sections for Host, Security, Proxy, Logging, Analytics, Updates and Backups."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/GeneralSettings.tsx#GeneralSettings"
+        ],
+        "id": "S2",
+        "text": "While settings are loading for the first time, a loading indicator is shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/GeneralSettings.tsx#GeneralSettings"
+        ],
+        "id": "S3",
+        "text": "If loading fails, an error alert shows the general settings load error message and the form is hidden."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/HostSettings.tsx#HostSettings"
+        ],
+        "id": "S4",
+        "text": "The Host section has Bind Address, Port Number, Url Base, Allowed Hosts, Instance Name, Application URL and Enable SSL fields."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/HostSettings.tsx#HostSettings"
+        ],
+        "id": "S5",
+        "text": "SSL Port, SSL Cert Path, SSL Key Path and SSL Cert Password are shown only when Enable SSL is checked."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/HostSettings.tsx#HostSettings"
+        ],
+        "id": "S6",
+        "text": "The Open Browser On Start checkbox is shown only on Windows when the app is not running as a service."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/SecuritySettings.tsx#SecuritySettings"
+        ],
+        "id": "S7",
+        "text": "The Security section has Authentication, API Key, Certificate Validation and Trusted Networks fields. Authentication Required is shown only when the authentication method is not 'none'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/AuthenticationMethodSettings.tsx#AuthenticationMethodSettings",
+          "ts|frontend/src/Settings/General/FormsAuthenticationSettings.tsx#FormsAuthenticationSettings"
+        ],
+        "id": "S8",
+        "text": "With the 'forms' authentication method, Username, Password and Password Confirmation fields are shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/AuthenticationMethodSettings.tsx#AuthenticationMethodSettings",
+          "ts|frontend/src/Settings/General/OidcAuthenticationSettings.tsx#OidcAuthenticationSettings"
+        ],
+        "id": "S9",
+        "text": "With the 'oidc' authentication method, Authority, Client Id, Client Secret, User Identifier and Scopes fields are shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/SecuritySettings.tsx#SecuritySettings"
+        ],
+        "id": "S10",
+        "text": "The API key field is read-only, with a copy button and a reset button; the reset icon spins while a reset is running."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/ProxySettings.tsx#ProxySettings"
+        ],
+        "id": "S11",
+        "text": "The Proxy section shows a Use Proxy checkbox. Type, Hostname, Port, Username, Password, Ignored Addresses and Bypass Proxy For Local Addresses appear only when it is checked."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/ProxySettings.tsx#ProxySettings"
+        ],
+        "id": "S12",
+        "text": "Proxy type options are HTTP(S), Socks4 and Socks5."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/LoggingSettings.tsx#LoggingSettings"
+        ],
+        "id": "S13",
+        "text": "The Logging section has a Log Level select, with a warning shown when the level is 'trace', and a Log Size Limit in MB."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/AnalyticSettings.tsx#AnalyticSettings"
+        ],
+        "id": "S14",
+        "text": "The Analytics section has a checkbox to send anonymous usage data, with a restart-required warning."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/UpdateSettings.tsx#UpdateSettings"
+        ],
+        "id": "S15",
+        "text": "The Updates section is shown only when advanced settings are shown. It has Branch, Automatic, Mechanism and, for the 'script' mechanism, Script Path."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/UpdateSettings.tsx#UpdateSettings"
+        ],
+        "id": "S16",
+        "text": "The Mechanism options are the external package mechanism (title-cased) or Built-in, plus Script."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/General/BackupSettings.tsx#BackupSettings"
+        ],
+        "id": "S17",
+        "text": "The Backups section is shown only when advanced settings are shown. It has Folder, Interval (days) and Retention (days)."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings"
+        ],
+        "id": "E1",
+        "text": "Saving sends a PUT of the settings to the general settings API path and updates the cached settings with the response."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/useSystem.ts#useRestart",
+          "ts|frontend/src/App/appStore.ts#pingServerAfterTimeout"
+        ],
+        "id": "E2",
+        "text": "Confirming restart sends POST /system/restart, then marks the app as restarting and starts pinging the server until it responds."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "E3",
+        "text": "Resetting the API key posts a command to /command and adds it to the cached command list."
+      }
+    ]
+  },
+  "title": "General Settings",
+  "unknowns": [
+    {
+      "file": "frontend/src/App/appStore.ts",
+      "in": "ts|frontend/src/App/appStore.ts#pingServerAfterTimeout",
+      "line": 122,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSettings",
+      "line": 12,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+      "line": 29,
+      "reason": "HTTP PUT to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Utilities/requestAction.js",
+      "in": "ts|frontend/src/Utilities/requestAction.js#requestAction",
+      "line": 37,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

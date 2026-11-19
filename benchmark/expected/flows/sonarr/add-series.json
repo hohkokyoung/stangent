@@ -1,0 +1,360 @@
+{
+  "repo": "sonarr",
+  "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+  "id": "add-series",
+  "name": "Add series",
+  "kind": "click",
+  "start": {
+    "what": "the Add button's handler in the Add New Series modal",
+    "at": "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:367",
+    "code": "onPress={handleAddSeriesPress}"
+  },
+  "actor": {
+    "who": "signed-in user (API fallback policy requires an authenticated user)",
+    "why": "no [AllowAnonymous] on SeriesController; fallback policy requires auth",
+    "at": "src/NzbDrone.Host/Startup.cs:232",
+    "code": "options.FallbackPolicy = new AuthorizationPolicyBuilder(\"API\")\n.RequireAuthenticatedUser()\n.Build();"
+  },
+  "checks": [
+    {
+      "what": "Path: valid path, root folder, mapped drive, series path, ancestor and system folder checks (only when Path is set)",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:78",
+      "code": "SharedValidator.RuleFor(s => s.Path).Cascade(CascadeMode.Stop)\n.IsValidPath()\n.SetValidator(rootFolderValidator)\n.SetValidator(mappedNetworkDriveValidator)\n.SetValidator(seriesPathValidator)\n.SetValidator(seriesAncestorValidator)\n.SetValidator(systemFolderValidator)\n.When(s => s.Path.IsNotNullOrWhiteSpace());"
+    },
+    {
+      "what": "POST: Path required and valid when no RootFolderPath",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:87",
+      "code": "PostValidator.RuleFor(s => s.Path).Cascade(CascadeMode.Stop)\n.NotEmpty()\n.IsValidPath()\n.When(s => s.RootFolderPath.IsNullOrWhiteSpace());"
+    },
+    {
+      "what": "POST: RootFolderPath required, valid, exists, is not a series folder (only when Path is empty)",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:91",
+      "code": "PostValidator.RuleFor(s => s.RootFolderPath).Cascade(CascadeMode.Stop)\n.NotEmpty()\n.IsValidPath()\n.SetValidator(rootFolderExistsValidator)\n.SetValidator(seriesFolderAsRootFolderValidator)\n.When(s => s.Path.IsNullOrWhiteSpace());"
+    },
+    {
+      "what": "QualityProfileId is a valid id and the profile exists",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:102",
+      "code": "SharedValidator.RuleFor(s => s.QualityProfileId).Cascade(CascadeMode.Stop)\n.ValidId()\n.SetValidator(qualityProfileExistsValidator);"
+    },
+    {
+      "what": "Language not null and a known ISO language",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:106",
+      "code": "SharedValidator.RuleFor(s => s.Language).Cascade(CascadeMode.Stop)\n.NotNull()\n.Must(l => IsoLanguages.Get(l!) != null)\n.WithMessage(\"Invalid Language value\");"
+    },
+    {
+      "what": "SeasonType not empty",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:111",
+      "code": "SharedValidator.RuleFor(s => s.SeasonType).NotEmpty();"
+    },
+    {
+      "what": "POST: Title not empty",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:114",
+      "code": "PostValidator.RuleFor(s => s.Title).NotEmpty();"
+    },
+    {
+      "what": "POST: TvdbId > 0 and the series does not already exist",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:115",
+      "code": "PostValidator.RuleFor(s => s.TvdbId).GreaterThan(0).SetValidator(seriesExistsValidator);"
+    },
+    {
+      "what": "AddSeriesValidator: Path is a valid path, root folder, series path and ancestor ok",
+      "at": "src/NzbDrone.Core/Tv/AddSeriesValidator.cs:19",
+      "code": "RuleFor(c => c.Path).Cascade(CascadeMode.Stop)\n.IsValidPath()\n.SetValidator(rootFolderValidator)\n.SetValidator(seriesPathValidator)\n.SetValidator(seriesAncestorValidator);"
+    },
+    {
+      "what": "AddSeriesValidator: TitleSlug passes SeriesTitleSlugValidator",
+      "at": "src/NzbDrone.Core/Tv/AddSeriesValidator.cs:25",
+      "code": "RuleFor(c => c.TitleSlug).SetValidator(seriesTitleSlugValidator);"
+    }
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "from": null,
+      "what": "handler calls the add mutation with the series, root folder, add options, quality profile, series type, season type, language, season folder and tags",
+      "at": "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:142",
+      "code": "addSeries({"
+    },
+    {
+      "n": 2,
+      "from": 1,
+      "what": "mutation POSTs the series to /series (useApiMutation -> fetchJson)",
+      "at": "frontend/src/AddSeries/AddNewSeries/useAddSeries.ts:49",
+      "code": "const { isPending, error, mutate } = useApiMutation<Series, AddSeriesPayload>(\n{\npath: '/series',\nmethod: 'POST',\nmutationOptions: {"
+    },
+    {
+      "n": 3,
+      "from": 2,
+      "what": "controller action AddSeries receives the SeriesResource body",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:195",
+      "code": "public Results<Created<SeriesResource>, NotFound> AddSeries([FromBody] SeriesResource seriesResource)"
+    },
+    {
+      "n": 4,
+      "from": 3,
+      "what": "AddSeriesService.AddSeries(Series) (the single-series overload)",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:197",
+      "code": "var series = _addSeriesService.AddSeries(seriesResource.ToModel());"
+    },
+    {
+      "n": 5,
+      "from": 4,
+      "what": "AddSkyhookData fetches series info and merges the request onto it",
+      "at": "src/NzbDrone.Core/Tv/AddSeriesService.cs:48",
+      "code": "newSeries = AddSkyhookData(newSeries);"
+    },
+    {
+      "n": 6,
+      "from": 5,
+      "what": "asks the metadata source (SkyHookProxy) for the series info",
+      "at": "src/NzbDrone.Core/Tv/AddSeriesService.cs:120",
+      "code": "tuple = _seriesInfo.GetSeriesInfo(newSeries.TvdbId, newSeries.Language, newSeries.SeasonType);"
+    },
+    {
+      "n": 7,
+      "from": 6,
+      "what": "GETs shows/{iso language}/{tvdbId}/{seasonType} from the SkyHook metadata service",
+      "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:54",
+      "code": "var httpResponse = _httpClient.Get<ShowResource>(httpRequest);",
+      "end": {
+        "kind": "outside-call",
+        "detail": "HTTP GET to the SkyHook metadata service (shows/<lang>/<tvdbId>/<seasonType>)"
+      }
+    },
+    {
+      "n": 8,
+      "from": 4,
+      "what": "SetPropertiesAndValidate sets path, titles, added date and validates",
+      "at": "src/NzbDrone.Core/Tv/AddSeriesService.cs:49",
+      "code": "newSeries = SetPropertiesAndValidate(newSeries);"
+    },
+    {
+      "n": 9,
+      "from": 8,
+      "what": "builds the series folder name when no Path was supplied",
+      "at": "src/NzbDrone.Core/Tv/AddSeriesService.cs:146",
+      "code": "var folderName = _fileNameBuilder.GetSeriesFolder(newSeries);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/Tv/AddSeriesService.cs:144",
+          "code": "if (string.IsNullOrWhiteSpace(newSeries.Path))"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "IBuildFileNames.GetSeriesFolder: 17 call sites in src (git grep 'GetSeriesFolder(' excluding tests)"
+      }
+    },
+    {
+      "n": 10,
+      "from": 8,
+      "what": "runs AddSeriesValidator on the new series (rules listed under checks)",
+      "at": "src/NzbDrone.Core/Tv/AddSeriesService.cs:159",
+      "code": "var validationResult = _addSeriesValidator.Validate(newSeries);",
+      "end": {
+        "kind": "unknown",
+        "detail": "validators SeriesPathValidator, SeriesAncestorValidator, SeriesTitleSlugValidator, RootFolderValidator not walked; their rules are named under checks"
+      }
+    },
+    {
+      "n": 11,
+      "from": 4,
+      "what": "SeriesService.AddSeries(Series) stores the series",
+      "at": "src/NzbDrone.Core/Tv/AddSeriesService.cs:52",
+      "code": "_seriesService.AddSeries(newSeries);"
+    },
+    {
+      "n": 12,
+      "from": 11,
+      "what": "inserts the series row",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:84",
+      "code": "_seriesRepository.Insert(newSeries);",
+      "end": {
+        "kind": "database",
+        "detail": "Series table (BasicRepository.Insert, INSERT ... INTO Series)"
+      }
+    },
+    {
+      "n": 13,
+      "from": 11,
+      "what": "publishes SeriesAddedEvent",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:85",
+      "code": "_eventAggregator.PublishEvent(new SeriesAddedEvent(GetSeries(newSeries.Id)));",
+      "end": {
+        "kind": "message",
+        "detail": "SeriesAddedEvent"
+      }
+    },
+    {
+      "n": 14,
+      "from": 3,
+      "what": "returns TypedCreated(series.Id), which re-reads the resource",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:199",
+      "code": "return TypedCreated(series.Id);"
+    },
+    {
+      "n": 15,
+      "from": 14,
+      "what": "GetResourceById override builds the SeriesResource for the new id",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:182",
+      "code": "return GetSeriesResourceById(id, includeSeasonImages);"
+    },
+    {
+      "n": 16,
+      "from": 15,
+      "what": "loads the series from the database by id",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:187",
+      "code": "var series = _seriesService.GetSeries(id);",
+      "end": {
+        "kind": "hub",
+        "detail": "ISeriesService.GetSeries(int): 63 call sites of _seriesService.GetSeries( in src (non-test) across 30 files"
+      }
+    }
+  ],
+  "exits": [
+    {
+      "what": "throws BadRequestException when the request body is empty",
+      "at": "src/Sonarr.Http/REST/RestController.cs:131",
+      "code": "throw new BadRequestException(\"Request body can't be empty\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Http/REST/RestController.cs:129",
+          "code": "if (resource == null)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Http/REST/RestController.cs:87",
+          "code": "if (Request.Method is \"POST\" or \"PUT\")"
+        },
+        {
+          "kind": "loop",
+          "at": "src/Sonarr.Http/REST/RestController.cs:97",
+          "code": "foreach (var resource in resourceArgs)"
+        }
+      ]
+    },
+    {
+      "what": "throws ValidationException when any shared/post validator rule fails",
+      "at": "src/Sonarr.Http/REST/RestController.cs:157",
+      "code": "throw new ValidationException(errors);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Http/REST/RestController.cs:155",
+          "code": "if (errors.Any())"
+        },
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Http/REST/RestController.cs:87",
+          "code": "if (Request.Method is \"POST\" or \"PUT\")"
+        },
+        {
+          "kind": "loop",
+          "at": "src/Sonarr.Http/REST/RestController.cs:97",
+          "code": "foreach (var resource in resourceArgs)"
+        }
+      ]
+    },
+    {
+      "what": "throws ValidationException when TheTVDB says the series id is unknown",
+      "at": "src/NzbDrone.Core/Tv/AddSeriesService.cs:126",
+      "code": "throw new ValidationException(new List<ValidationFailure>",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "src/NzbDrone.Core/Tv/AddSeriesService.cs:122",
+          "code": "catch (SeriesNotFoundException)"
+        }
+      ]
+    },
+    {
+      "what": "throws SeriesNotFoundException when SkyHook returns 404",
+      "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:60",
+      "code": "throw new SeriesNotFoundException(tvdbSeriesId);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:58",
+          "code": "if (httpResponse.StatusCode == HttpStatusCode.NotFound)"
+        },
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:56",
+          "code": "if (httpResponse.HasHttpError)"
+        }
+      ]
+    },
+    {
+      "what": "throws HttpException when SkyHook returns any other HTTP error",
+      "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:64",
+      "code": "throw new HttpException(httpRequest, httpResponse);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:58",
+          "code": "if (httpResponse.StatusCode == HttpStatusCode.NotFound)"
+        },
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/MetadataSource/SkyHook/SkyHookProxy.cs:56",
+          "code": "if (httpResponse.HasHttpError)"
+        }
+      ]
+    },
+    {
+      "what": "throws ValidationException when AddSeriesValidator fails",
+      "at": "src/NzbDrone.Core/Tv/AddSeriesService.cs:163",
+      "code": "throw new ValidationException(validationResult.Errors);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/Tv/AddSeriesService.cs:161",
+          "code": "if (!validationResult.IsValid)"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "kind": "message",
+      "to": "SeriesAddedHandler.Handle(SeriesAddedEvent)",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:85",
+      "code": "_eventAggregator.PublishEvent(new SeriesAddedEvent(GetSeries(newSeries.Id)));"
+    },
+    {
+      "kind": "message",
+      "to": "SceneMappingService.Handle(SeriesAddedEvent)",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:85",
+      "code": "_eventAggregator.PublishEvent(new SeriesAddedEvent(GetSeries(newSeries.Id)));"
+    },
+    {
+      "kind": "message",
+      "to": "TrackedDownloadService.Handle(SeriesAddedEvent)",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:85",
+      "code": "_eventAggregator.PublishEvent(new SeriesAddedEvent(GetSeries(newSeries.Id)));"
+    },
+    {
+      "kind": "runs-later",
+      "to": "Refresh series",
+      "at": "src/NzbDrone.Core/Tv/SeriesAddedHandler.cs:22",
+      "code": "_commandQueueManager.Push(new RefreshSeriesCommand(new List<int> { message.Series.Id }, true));"
+    },
+    {
+      "kind": "continues",
+      "to": "hub: ISeriesService.GetSeries",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:187",
+      "code": "var series = _seriesService.GetSeries(id);"
+    }
+  ],
+  "notes": [
+    "Frontend request path is '/series' under apiRoot '/api/v5'; backend controller is [V5ApiController] Sonarr.Api.V5 SeriesController.",
+    "Validators run in RestController.OnActionExecuting before the action (not a step): shared rules then PostValidator rules.",
+    "BasicRepository.Insert also calls ModelCreated (ModelEvent<Series>, handled by RestControllerWithSignalR.Handle for SignalR) - not walked.",
+    "After the 201, useAddSeries onSuccess only updates the react-query cache for ['/series']; it does not navigate.",
+    "Not followed: GetSeriesResource statistics/translations/alternate titles/root-folder lookups after step 16; AddSkyhookData's ApplyChanges.",
+    "The multi-series AddSeries(List<Series>) overload is used by import lists, not this flow.",
+    "Step 1 starts at the addSeries(...) call inside handleAddSeriesPress (line 141 is the useCallback declaration)."
+  ]
+}

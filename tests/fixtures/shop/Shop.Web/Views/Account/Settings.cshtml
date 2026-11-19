@@ -1,0 +1,20 @@
+@model RegisterModel
+<form asp-action="Settings">
+    <input asp-for="Email" />
+    <button type="submit" formaction="@Url.Action("Settings")" formmethod="get">Preview</button>
+    <button type="submit" formaction="@Model.Email">Elsewhere</button>
+    <partial name="_SaveButtons" />
+    <partial name="_Popup" />
+    <partial name="_Upload" />
+    <partial name="_Grid" />
+</form>
+<form action="/account/settings">
+    <button type="submit">Search</button>
+</form>
+<form asp-action="Notes" method="post">
+    <button type="submit">Note</button>
+</form>
+<partial name="../Shared/_Closed" />
+<partial name="_Orphan" />
+@await Component.InvokeAsync("Tips")
+@await Component.InvokeAsync("Summary")

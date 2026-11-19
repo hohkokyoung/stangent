@@ -54,6 +54,14 @@ if (argList.Count >= 3 && argList[0] == "--score-fsd")
     Console.WriteLine(scoreText);
     return 0;
 }
+// Rebuild layer 3's frozen key (D177, D183): `--score-flows <clone> <key-dir> [--out file]` scores the clone's specs/flows/.
+if (argList.Count >= 3 && argList[0] == "--score-flows")
+{
+    var flowText = Stangent.Benchmark.Flows.FlowScore.Run(Path.GetFullPath(argList[1]), argList[2]).ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+    if (argList.IndexOf("--out") is var fo and >= 0) File.WriteAllText(argList[fo + 1], flowText + "\n");
+    Console.WriteLine(flowText);
+    return 0;
+}
 // Phase 3's frozen set (D78): `--select-tickets <clone> --out-dir benchmark/tickets/sonarr [--repo Sonarr/Sonarr] [--bugs 40] [--not-bugs 10]`.
 if (argList.Count >= 2 && argList[0] == "--select-tickets")
 {

@@ -1,0 +1,392 @@
+version: 4
+entries:
+  - id: "S001"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "1"
+      quote: "The On Deck row shows up to 50 series."
+    page: null
+    note: "The On Deck row loads page 1 with a page size of 20, so it shows 20 series at first (more via the carousel's next-page loader), not 50."
+  - id: "S002"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "1"
+      quote: "Each row on the Home screen can be collapsed, and Kavita remembers the choice on the next visit."
+    page: null
+    note: "The carousel row has only a title and prev/next buttons; there is no collapse control and nothing stores a collapsed state."
+  - id: "S003"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "1"
+      quote: "The Home screen is the default screen and shows rows of series such as On Deck, Recently Updated Series, Newly Added Series and More In a randomly picked genre."
+    page: null
+    note: "The root path redirects to home, and the dashboard renders On Deck, Recently Updated, Newly Added and More In Genre streams; the genre is picked at random."
+  - id: "S004"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "1"
+      quote: "Clicking the title of one of these rows opens All Series with a matching filter and sort order."
+    page: null
+    note: "Each row's title click builds a filter and sort (last chapter added, read progress, created, or genre) and navigates to all-series."
+  - id: "S005"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "1"
+      quote: "Users without the Read Only role can choose which rows appear, and in what order, from the Customize page in their settings."
+    page: null
+    note: "The Customize settings tab is hidden from users with the Read Only role."
+  - id: "S006"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "2.1"
+      quote: "The library screen shows the library's name, its actions menu and the number of series it holds."
+    page: null
+    note: "The header shows the library name, an actions menu and the series count."
+  - id: "S007"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "2.1"
+      quote: "Series appear as cards with a jump bar for skipping to a starting letter, and several series can be selected at once for a bulk action."
+    page: null
+    note: "Series are shown as cards in a layout with jump bar keys and bulk operations, with selection allowed."
+  - id: "S008"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "2.1"
+      quote: "A Random button on the library screen opens a randomly chosen series from that library."
+    page: null
+    note: "The library screen template has no Random button and the library-detail code has no random-series logic."
+  - id: "S009"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "2.2"
+      quote: "The filter panel builds rules on fields such as genre, tag, people, read progress, rating and publication status, and the rules can match all or any of them."
+    page: null
+    note: "The metadata builder offers an And/Or combination selector over the filter statements."
+  - id: "S010"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "2.2"
+      quote: "Results can be sorted by a chosen field in either direction and limited to a set number, and a filter can be named and saved as a smart filter."
+    page: null
+    note: "The panel has a limit input, sort field select with an ascending/descending button, and a name input for saving a smart filter on series."
+  - id: "S011"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "2.3"
+      quote: "All Series lists the series from every library the user can access, with the same filter panel and bulk selection as a library screen."
+    page: null
+    note: "All Series uses the same card layout with a filter panel and bulk operations."
+  - id: "S012"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: "The arrow beside the Read button offers the same action in incognito mode, which does not save progress."
+    page: null
+    note: "The split dropdown beside Read has one item that reads in incognito mode (glasses icon)."
+  - id: "S013"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: "A star button adds the series to Want to Read or removes it."
+    page: null
+    note: "A star button toggles Want to Read with an add/remove tooltip."
+  - id: "S014"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: "The Edit button is shown only to administrators, and the Download button only to administrators and users with the Download role."
+    page: null
+    note: "The Edit button is wrapped in an admin check, and the download button is only rendered when canDownload() is true."
+  - id: "S015"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: "in book and light novel libraries the Volumes tab is called Books."
+    page: null
+    note: "The Volumes tab title switches to Books when the book logic applies."
+  - id: "S016"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: "Manga series open on the Volumes tab by default."
+    page: null
+    note: "For manga libraries the default tab is Storyline; Volumes is only the default for book/light novel libraries."
+  - id: "S017"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.2"
+      quote: "The Reviews tab appears on a volume only when the volume holds a single chapter."
+    page: null
+    note: "The volume's Reviews tab is wrapped in a check that the volume has exactly one chapter."
+  - id: "S018"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.3"
+      quote: "has a Related tab listing the reading lists that contain the chapter when there are any."
+    page: null
+    note: "The chapter's Related tab is shown only when the chapter's readingLists list is non-empty."
+  - id: "S019"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.1"
+      quote: "Brightness can be set anywhere from 0% to 100%."
+    page: null
+    note: "The darkness (brightness) setting is validated with a minimum of 10 and maximum of 100, so 0% is not allowed."
+  - id: "S020"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.1"
+      quote: "A slideshow mode turns the page automatically after a set number of seconds."
+    page: null
+    note: "No slideshow or auto-play feature exists in the manga reader code."
+  - id: "S021"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "5"
+      quote: "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it."
+    page: null
+    note: "Removal is done by a daily scheduled cleanup job that drops fully-read series from Want to Read, not immediately on finishing."
+  - id: "S022"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "5"
+      quote: "The Want to Read screen lists the series the user has starred, with a count and the same filter panel and bulk selection as a library screen."
+    page: null
+    note: "The screen shows a series count, filter panel, and bulk operations over series cards."
+  - id: "S023"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "6.1"
+      quote: "It has a jump bar but no filter panel."
+    page: null
+    note: "The collections screen passes jump bar keys and disables filtering."
+  - id: "S024"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "6.1"
+      quote: "The Collections screen shows every collection the user can see, with the name of the user who created it and a mark on promoted collections."
+    page: null
+    note: "Each collection card shows an owner component as subtitle and a promoted icon beside the title."
+  - id: "S025"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "6.2"
+      quote: "A collection's screen shows its title, number of series and actions menu, and a collection synced from an outside service also shows how many of the source's series are on this server and when it last synced."
+    page: null
+    note: "The header shows title, actions menu and series count; for externally sourced collections a sync progress (collected / total) and last-sync tooltip appear."
+  - id: "S026"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "6.2"
+      quote: "Its series can be filtered and selected in bulk."
+    page: null
+    note: "The collection detail uses the filter panel and bulk operations over series cards."
+  - id: "S027"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "6.2"
+      quote: "The series in a collection can be exported to a CSV file."
+    page: null
+    note: "No CSV export exists in the collection detail component or elsewhere in the repo."
+  - id: "S028"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.1"
+      quote: "Administrators and users with the Promote role can promote or unpromote a list from its actions menu."
+    page: null
+    note: "Promote/Unpromote actions on reading lists render only for admins or users with the Promote role."
+  - id: "S029"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "with a Read button whose menu also offers incognito reading."
+    page: null
+    note: "The Read/Continue button has a dropdown with incognito (glasses) read and continue items."
+  - id: "S030"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "The list's owner sees an Edit button and, on larger screens, a Reorder button."
+    page: null
+    note: "Edit and Reorder (hidden below md) buttons are shown only when the list is owned by the user."
+  - id: "S031"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "In reorder mode each item gets a remove button, and an Order Numbers switch adds a box to each item for typing its new position."
+    page: null
+    note: "In edit mode the list shows remove buttons and an Order Numbers switch that enables accessibility mode."
+  - id: "S032"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "A filter box for finding items appears once a list has more than 25 items."
+    page: null
+    note: "The filter box appears when the list has more than 10 items, not 25."
+  - id: "S033"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "and only administrators see its Promote switch."
+    page: null
+    note: "The edit modal's Promote switch is wrapped in an admin-role check."
+  - id: "S034"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "The edit dialog holds the title, which is required and must be unique, the summary, the starting and ending month and year, tags and the cover image"
+    page: null
+    note: "The edit modal has title (with duplicate-name validation), summary, start/end month and year, Tags and Cover Image tabs."
+  - id: "S035"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "The owner can share a reading list through a public link that opens without signing in."
+    page: null
+    note: "No public share link feature exists in the reading list UI; all reading list routes sit behind the auth guard."
+  - id: "S036"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/genres"
+      quote: "A Genres browse screen lists genres; the FSD describes only People and Tags under Browse."
+    note: "A Genres browse screen lists genres; the FSD describes only People and Tags under Browse."
+  - id: "S037"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/annotations"
+      quote: "An All Annotations browse screen with a filter exists but is not in the FSD."
+    note: "An All Annotations browse screen with a filter exists but is not in the FSD."
+  - id: "S038"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "A new password must be at least 8 characters long."
+    page: null
+    note: "The server's identity options require a minimum password length of 6."
+  - id: "S039"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB."
+    page: null
+    note: "The size warning threshold is 100 MB (104,857,600 bytes), not 500 MB."
+  - id: "S040"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Days of Backups and Days of Logs each accept a value from 1 to 30 and both default to 30."
+    page: null
+    note: "Both fields are validated min 1 / max 30 and seeded with 30."
+  - id: "S041"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Cache Size must be at least 50 MB"
+    page: null
+    note: "Cache size is validated with a minimum of 50."
+  - id: "S042"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "the base URL must start and end with a slash."
+    page: null
+    note: "The base URL is validated with a pattern that requires a leading and trailing slash."
+  - id: "S043"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "A Reset to Default button restores these settings after a confirmation."
+    page: null
+    note: "Reset to Default asks for confirmation, then calls the reset API and reloads the form."
+  - id: "S044"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "A notice warns that changing the port, base URL, cache size or IP addresses needs a restart of Kavita."
+    page: null
+    note: "The page shows a notice that a restart is required."
+  - id: "S045"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Changes on this page are stored only when the administrator presses Save."
+    page: null
+    note: "There is no Save button; valid form changes are auto-saved after a 300 ms debounce."
+  - id: "S046"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "A maintenance mode switch blocks all non-admin users from signing in until it is turned off."
+    page: null
+    note: "No maintenance mode setting or switch exists on the General page or in the server settings."
+  - id: "S047"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.2"
+      quote: "The Login role is selected by default, and choosing Admin locks the other roles."
+    page: null
+    note: "The invite form defaults roles to Login, and other roles are disabled when Admin is selected."
+  - id: "S048"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.2"
+      quote: "If the invite email cannot be sent, the form shows the invite link so the administrator can pass it on."
+    page: null
+    note: "The invite response's emailLink is stored in a signal that is shown and disables further sending."
+  - id: "S049"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.2"
+      quote: "An invite can be given an expiry date, after which its link stops working."
+    page: null
+    note: "The invite form has no expiry field."

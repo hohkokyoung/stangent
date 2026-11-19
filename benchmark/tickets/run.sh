@@ -14,11 +14,15 @@
 #   replay    pull, points and bundle again from the saved MCP results: byte-identical bundles, and no AI call
 # AI cost (D81, worst case): prove ≈ $40 (40 attempts × $1 cap), points + drafts ≈ $5, pages ≈ $10–20.
 #
-# usage: run.sh <clone> <tickets dir> <phase>... [--model M] [--jobs N] [--only KEY,...]
+# usage: run.sh <clone> <tickets dir> <phase>... [--max-cost USD|none] [--model M] [--jobs N] [--only KEY,...]
+# --max-cost covers the whole run across its phases (T.2, plugin/scripts/cost-guard.sh): at a stop it exits 5, and the
+# same command resumes. Without a choice the first paid step stops the run (exit 2).
 # env:   STANGENT (default: the stangent CLI), PLUGIN_DIR (default: this repo's plugin)
 # out:   <tickets dir>/run/<KEY>.json per ticket (times, replay checks) and run.log lines
 set -euo pipefail
 
+usage() { sed -n 's/^# usage: //p' "$0" >&2; exit 2; }
+[ $# -ge 3 ] || usage
 CLONE="$(cd "$1" && pwd)"; TICKETS="$(cd "$2" && pwd)"; shift 2
 PHASES=(); MODEL=""; JOBS=1; ONLY=""
 while [ $# -gt 0 ]; do
@@ -26,10 +30,13 @@ while [ $# -gt 0 ]; do
     --model) MODEL="$2"; shift 2 ;;
     --jobs) JOBS="$2"; shift 2 ;;
     --only) ONLY="$2"; shift 2 ;;
+    --max-cost) export STANGENT_MAX_COST="$2"; shift 2 ;;
     *) PHASES+=("$1"); shift ;;
   esac
 done
 HERE="$(cd "$(dirname "$0")/../.." && pwd)"
+# One ledger for every driver this run starts, so the cap is for the run and not for each ticket.
+export STANGENT_COST_DIR="${STANGENT_COST_DIR:-$(mktemp -d)}"
 export STANGENT="${STANGENT:-dotnet $HOME/stangent-bench/stangent-bin/stangent.dll}"
 export PLUGIN_DIR="${PLUGIN_DIR:-$HERE/plugin}"
 # Older Sonarr commits target net8.0: a .NET with both the 10 SDK and the 8 runtimes, installed for the benchmark by
@@ -65,9 +72,14 @@ now_ms() { python3 -c 'import time; print(int(time.time() * 1000))'; }   # macOS
 timed() {
   local key="$1" step="$2"; shift 2; local t0 t1 rc=0
   t0=$(now_ms); "$@" || rc=$?; t1=$(now_ms); record "$key" ".steps.\"$step\".ms = $((t1 - t0))"
-  [ "$rc" -eq 0 ] || stop "$step $key exited $rc (see run.log)"
+  # A refused step (I.10): that ticket has no result, the rest can still run. The hard stop's own codes end the run.
+  if [ "$rc" -eq 1 ]; then log "$step $key: refused or failed, going on (see run.log)"; return 0; fi
+  [ "$rc" -eq 0 ] || stop "$step $key exited $rc (see run.log)" "$rc"
 }
-stop() { log "STOPPED: $*"; exit 1; }
+stop() {
+  log "STOPPED: $1"
+  case "${2:-1}" in 2|5) exit "$2" ;; *) exit 1 ;; esac
+}
 
 # Back to a commit with the SDK pin (D28's approach: past issues are judged against today's graph and pages).
 at() {
@@ -113,7 +125,7 @@ phase_pages() {
   local pages=() p list
   # Page ids may hold spaces (an endpoint's "ANY /api/v3/Command"): one per line, passed as whole arguments. The list
   # is built first, so a broken ticket list stops the run (pipefail) instead of quietly giving fewer pages.
-  list="$(issues | while read -r n kind run key; do jq -r '.missingPages[]?' ".stangent/tickets/$key/bundle.json" 2>/dev/null; done | sort -u)"
+  list="$(issues | while read -r n kind run key; do jq -r '.missingPages[]?' ".stangent/tickets/$key/bundle.json" 2>/dev/null || true; done | sort -u)"
   while IFS= read -r p; do [ -n "$p" ] && pages+=("$p"); done <<<"$list"
   log "pages: ${#pages[@]} to generate"
   [ ${#pages[@]} -eq 0 ] && return 0
@@ -241,6 +253,9 @@ PY
   cp "$TICKETS/run/stangent.yaml.live" stangent.yaml
 }
 
+# Before anything runs: a typo in the last phase mustn't cost the paid ones before it.
+[ ${#PHASES[@]} -gt 0 ] || usage
+for p in "${PHASES[@]}"; do declare -F "phase_$p" >/dev/null || usage; done
 for p in "${PHASES[@]}"; do
   log "== phase $p"
   "phase_$p"

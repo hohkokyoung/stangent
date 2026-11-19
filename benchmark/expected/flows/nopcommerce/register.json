@@ -1,0 +1,1870 @@
+{
+  "repo": "nopcommerce",
+  "commit": "77d112f365e210ebdfa2f9790c8202a0e3b1c74e",
+  "id": "register",
+  "name": "Register",
+  "kind": "click",
+  "start": {
+    "what": "the Register form (posts to the register route)",
+    "at": "src/Presentation/Nop.Web/Views/Customer/Register.cshtml:18",
+    "code": "<form asp-route=\"@NopRouteNames.Standard.REGISTER\""
+  },
+  "actor": {
+    "who": "any visitor, including guests (navigation check is switched off for this action)",
+    "why": "the POST action carries [CheckAccessPublicStore(ignore: true)] and no permission requirement; BasePublicController otherwise applies [CheckAccessPublicStore]",
+    "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1007",
+    "code": "[CheckAccessPublicStore(ignore: true)]"
+  },
+  "checks": [
+    {
+      "what": "CAPTCHA token is validated by the filter (result passed as captchaValid)",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1004",
+      "code": "[ValidateCaptcha]"
+    },
+    {
+      "what": "honeypot field must be empty",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1005",
+      "code": "[ValidateHoneypot]"
+    },
+    {
+      "what": "CAPTCHA must be valid when enabled on the registration page",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1041",
+      "code": "if (_captchaSettings.Enabled && _captchaSettings.ShowOnRegistrationPage && !captchaValid)"
+    },
+    {
+      "what": "verified phone number must not belong to another customer",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1048",
+      "code": "if (await _customerService.IsAlreadyExistsVerifiedPhoneNumberAsync(customer, phoneNumber))"
+    },
+    {
+      "what": "required GDPR consents must be ticked",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1060",
+      "code": "ValidateRequiredConsents(consents, form);"
+    },
+    {
+      "what": "custom customer attributes pass the attribute parser",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1036",
+      "code": "var customerAttributeWarnings = await _customerAttributeParser.GetAttributeWarningsAsync(customerAttributesXml);"
+    },
+    {
+      "what": "Email required",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:19",
+      "code": "RuleFor(x => x.Email).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.Email.Required\"));"
+    },
+    {
+      "what": "Email is a valid address",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:20",
+      "code": "RuleFor(x => x.Email)\n.IsEmailAddress()\n.WithMessageAwait(localizationService.GetResourceAsync(\"Common.WrongEmail\"));"
+    },
+    {
+      "what": "ConfirmEmail required when EnteringEmailTwice",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:26",
+      "code": "RuleFor(x => x.ConfirmEmail).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.ConfirmEmail.Required\"));"
+    },
+    {
+      "what": "ConfirmEmail is a valid address",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:27",
+      "code": "RuleFor(x => x.ConfirmEmail)\n.IsEmailAddress()\n.WithMessageAwait(localizationService.GetResourceAsync(\"Common.WrongEmail\"));"
+    },
+    {
+      "what": "ConfirmEmail equals Email",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:30",
+      "code": "RuleFor(x => x.ConfirmEmail).Equal(x => x.Email).WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.Email.EnteredEmailsDoNotMatch\"));"
+    },
+    {
+      "what": "Username required when UsernamesEnabled",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:35",
+      "code": "RuleFor(x => x.Username).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.Username.Required\"));"
+    },
+    {
+      "what": "Username is a valid username",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:36",
+      "code": "RuleFor(x => x.Username).IsUsername(customerSettings).WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.Username.NotValid\"));"
+    },
+    {
+      "what": "FirstName required when enabled and required",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:39",
+      "code": "if (customerSettings.FirstNameEnabled && customerSettings.FirstNameRequired)\nRuleFor(x => x.FirstName).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.FirstName.Required\"));"
+    },
+    {
+      "what": "LastName required when enabled and required",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:41",
+      "code": "if (customerSettings.LastNameEnabled && customerSettings.LastNameRequired)\nRuleFor(x => x.LastName).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.LastName.Required\"));"
+    },
+    {
+      "what": "Password passes the password rules (length, upper/lower/digit/special per CustomerSettings)",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:45",
+      "code": "RuleFor(x => x.Password).IsPassword(localizationService, customerSettings);"
+    },
+    {
+      "what": "ConfirmPassword required",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:47",
+      "code": "RuleFor(x => x.ConfirmPassword).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.ConfirmPassword.Required\"));"
+    },
+    {
+      "what": "ConfirmPassword equals Password",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:48",
+      "code": "RuleFor(x => x.ConfirmPassword).Equal(x => x.Password).WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.Password.EnteredPasswordsDoNotMatch\"));"
+    },
+    {
+      "what": "Country required when enabled and required",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:51",
+      "code": "if (customerSettings.CountryEnabled && customerSettings.CountryRequired)\n{\nRuleFor(x => x.CountryId)\n.NotEqual(0)\n.WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.Country.Required\"));\n}"
+    },
+    {
+      "what": "StateProvince required when the selected country has states",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:57",
+      "code": "if (customerSettings.CountryEnabled &&\ncustomerSettings.StateProvinceEnabled &&\ncustomerSettings.StateProvinceRequired)\n{\nRuleFor(x => x.StateProvinceId).MustAsync(async (x, _, _) =>"
+    },
+    {
+      "what": "DateOfBirth entered when required",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:75",
+      "code": "if (customerSettings.DateOfBirthEnabled && customerSettings.DateOfBirthRequired)\n{\n//entered?\nRuleFor(x => x.DateOfBirthDay).Must((x, context) =>"
+    },
+    {
+      "what": "DateOfBirth meets the minimum age",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:88",
+      "code": "RuleFor(x => x.DateOfBirthDay).Must((x, context) =>\n{"
+    },
+    {
+      "what": "Company required",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:99",
+      "code": "if (customerSettings.CompanyRequired && customerSettings.CompanyEnabled)\nRuleFor(x => x.Company).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.Company.Required\"));"
+    },
+    {
+      "what": "StreetAddress required",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:101",
+      "code": "if (customerSettings.StreetAddressRequired && customerSettings.StreetAddressEnabled)\nRuleFor(x => x.StreetAddress).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.StreetAddress.Required\"));"
+    },
+    {
+      "what": "StreetAddress2 required",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:103",
+      "code": "if (customerSettings.StreetAddress2Required && customerSettings.StreetAddress2Enabled)\nRuleFor(x => x.StreetAddress2).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.StreetAddress2.Required\"));"
+    },
+    {
+      "what": "ZipPostalCode required",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:105",
+      "code": "if (customerSettings.ZipPostalCodeRequired && customerSettings.ZipPostalCodeEnabled)\nRuleFor(x => x.ZipPostalCode).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.ZipPostalCode.Required\"));"
+    },
+    {
+      "what": "County required",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:107",
+      "code": "if (customerSettings.CountyRequired && customerSettings.CountyEnabled)\nRuleFor(x => x.County).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.County.Required\"));"
+    },
+    {
+      "what": "City required",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:109",
+      "code": "if (customerSettings.CityRequired && customerSettings.CityEnabled)\nRuleFor(x => x.City).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.City.Required\"));"
+    },
+    {
+      "what": "Phone required",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:111",
+      "code": "if (customerSettings.PhoneRequired && customerSettings.PhoneEnabled)\nRuleFor(x => x.Phone).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.Phone.Required\"));"
+    },
+    {
+      "what": "Phone is a valid phone number when phone is enabled",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:113",
+      "code": "if (customerSettings.PhoneEnabled)\nRuleFor(x => x.Phone).IsPhoneNumber(customerSettings).WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.Phone.NotValid\"));"
+    },
+    {
+      "what": "Fax required",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:115",
+      "code": "if (customerSettings.FaxRequired && customerSettings.FaxEnabled)\nRuleFor(x => x.Fax).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.Fax.Required\"));"
+    },
+    {
+      "what": "VatNumber required when EU VAT is enabled and required",
+      "at": "src/Presentation/Nop.Web/Validators/Customer/RegisterValidator.cs:119",
+      "code": "if (taxSettings.EuVatEnabled && taxSettings.EuVatRequired)\nRuleFor(x => x.VatNumber).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync(\"Account.Fields.VatNumber.Required\"));"
+    },
+    {
+      "what": "request has a customer that is not a search engine, background task or already registered account",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:246",
+      "code": "if (request.Customer.IsSearchEngineAccount())"
+    },
+    {
+      "what": "email provided",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:264",
+      "code": "if (string.IsNullOrEmpty(request.Email))"
+    },
+    {
+      "what": "email is a valid address",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:270",
+      "code": "if (!CommonHelper.IsValidEmail(request.Email))"
+    },
+    {
+      "what": "password provided",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:276",
+      "code": "if (string.IsNullOrWhiteSpace(request.Password))"
+    },
+    {
+      "what": "username provided when UsernamesEnabled",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:282",
+      "code": "if (_customerSettings.UsernamesEnabled && string.IsNullOrEmpty(request.Username))"
+    },
+    {
+      "what": "email not already used by another customer",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:289",
+      "code": "if (await _customerService.GetCustomerByEmailAsync(request.Email) != null)"
+    },
+    {
+      "what": "username not already used by another customer",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:295",
+      "code": "if (_customerSettings.UsernamesEnabled && await _customerService.GetCustomerByUsernameAsync(request.Username) != null)"
+    }
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "from": null,
+      "what": "the Register form posts to the Register route (POST /register/)",
+      "at": "src/Presentation/Nop.Web/Views/Customer/Register.cshtml:18",
+      "code": "<form asp-route=\"@NopRouteNames.Standard.REGISTER\""
+    },
+    {
+      "n": 2,
+      "from": 1,
+      "what": "Register POST action receives the RegisterModel (validated by RegisterValidator before the action runs)",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1008",
+      "code": "public virtual async Task<IActionResult> Register(RegisterModel model, string returnUrl, bool captchaValid, IFormCollection form)"
+    },
+    {
+      "n": 3,
+      "from": 2,
+      "what": "checks whether the current customer is already registered",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1018",
+      "code": "if (await _customerService.IsRegisteredAsync(customer))",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1011",
+          "code": "if (_customerSettings.UserRegistrationType == UserRegistrationType.Disabled)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "ICustomerService.IsRegisteredAsync: 77 call sites of _customerService.IsRegisteredAsync( in src"
+      }
+    },
+    {
+      "n": 4,
+      "from": 2,
+      "what": "signs the registered customer out",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1021",
+      "code": "await _authenticationService.SignOutAsync();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1018",
+          "code": "if (await _customerService.IsRegisteredAsync(customer))"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1011",
+          "code": "if (_customerSettings.UserRegistrationType == UserRegistrationType.Disabled)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "IAuthenticationService.SignOutAsync (cookie sign-out) not walked"
+      }
+    },
+    {
+      "n": 5,
+      "from": 2,
+      "what": "publishes CustomerLoggedOutEvent",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1024",
+      "code": "await _eventPublisher.PublishAsync(new CustomerLoggedOutEvent(customer));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1018",
+          "code": "if (await _customerService.IsRegisteredAsync(customer))"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1011",
+          "code": "if (_customerSettings.UserRegistrationType == UserRegistrationType.Disabled)"
+        }
+      ],
+      "end": {
+        "kind": "message",
+        "detail": "CustomerLoggedOutEvent (no IConsumer<CustomerLoggedOutEvent> found in src)"
+      }
+    },
+    {
+      "n": 6,
+      "from": 2,
+      "what": "inserts a new guest customer",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1026",
+      "code": "customer = await _customerService.InsertGuestCustomerAsync();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1018",
+          "code": "if (await _customerService.IsRegisteredAsync(customer))"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1011",
+          "code": "if (_customerSettings.UserRegistrationType == UserRegistrationType.Disabled)"
+        }
+      ]
+    },
+    {
+      "n": 7,
+      "from": 6,
+      "what": "inserts the guest Customer row",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerService.cs:624",
+      "code": "public virtual async Task<Customer> InsertGuestCustomerAsync()",
+      "end": {
+        "kind": "database",
+        "detail": "Customer table (INSERT of the guest customer, plus its Guests role mapping)"
+      }
+    },
+    {
+      "n": 8,
+      "from": 2,
+      "what": "makes the guest customer the current customer",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1029",
+      "code": "await _workContext.SetCurrentCustomerAsync(customer);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1018",
+          "code": "if (await _customerService.IsRegisteredAsync(customer))"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1011",
+          "code": "if (_customerSettings.UserRegistrationType == UserRegistrationType.Disabled)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "IWorkContext.SetCurrentCustomerAsync (sets the current customer and its cookie) not walked"
+      }
+    },
+    {
+      "n": 9,
+      "from": 2,
+      "what": "parses the custom customer attributes from the form",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1035",
+      "code": "var customerAttributesXml = await ParseCustomCustomerAttributesAsync(form);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1011",
+          "code": "if (_customerSettings.UserRegistrationType == UserRegistrationType.Disabled)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "ParseCustomCustomerAttributesAsync reads CustomerAttribute rows; not walked"
+      }
+    },
+    {
+      "n": 10,
+      "from": 2,
+      "what": "collects warnings for the custom customer attributes",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1036",
+      "code": "var customerAttributeWarnings = await _customerAttributeParser.GetAttributeWarningsAsync(customerAttributesXml);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1011",
+          "code": "if (_customerSettings.UserRegistrationType == UserRegistrationType.Disabled)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "ICustomerAttributeParser.GetAttributeWarningsAsync not walked"
+      }
+    },
+    {
+      "n": 11,
+      "from": 2,
+      "what": "adds the wrong-CAPTCHA error message",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1042",
+      "code": "ModelState.AddModelError(\"\", await _localizationService.GetResourceAsync(\"Common.WrongCaptchaMessage\"));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1041",
+          "code": "if (_captchaSettings.Enabled && _captchaSettings.ShowOnRegistrationPage && !captchaValid)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1011",
+          "code": "if (_customerSettings.UserRegistrationType == UserRegistrationType.Disabled)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "ILocalizationService.GetResourceAsync: 1733 call sites"
+      }
+    },
+    {
+      "n": 12,
+      "from": 2,
+      "what": "asks whether the phone number is already verified for another customer",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1048",
+      "code": "if (await _customerService.IsAlreadyExistsVerifiedPhoneNumberAsync(customer, phoneNumber))",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1046",
+          "code": "if (_otpSettings.LoginByPhoneEnabled && !string.IsNullOrEmpty(phoneNumber))"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1011",
+          "code": "if (_customerSettings.UserRegistrationType == UserRegistrationType.Disabled)"
+        }
+      ]
+    },
+    {
+      "n": 13,
+      "from": 12,
+      "what": "looks the customer up by phone",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerService.cs:610",
+      "code": "var customerByPhone = await GetCustomerByPhoneAsync(phone);",
+      "end": {
+        "kind": "database",
+        "detail": "Customer table (read by phone)"
+      }
+    },
+    {
+      "n": 14,
+      "from": 2,
+      "what": "loads the GDPR consents to check the required ones",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1057",
+      "code": "var consents = (await _gdprService",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1055",
+          "code": "if (_gdprSettings.GdprEnabled)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1011",
+          "code": "if (_customerSettings.UserRegistrationType == UserRegistrationType.Disabled)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "GdprConsent table (read)"
+      }
+    },
+    {
+      "n": 15,
+      "from": 2,
+      "what": "registers the customer through the registration service",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1078",
+      "code": "var registrationResult = await _customerRegistrationService.RegisterCustomerAsync(registrationRequest);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "n": 16,
+      "from": 15,
+      "what": "looks the customer up by email to enforce unique emails",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:289",
+      "code": "if (await _customerService.GetCustomerByEmailAsync(request.Email) != null)",
+      "end": {
+        "kind": "database",
+        "detail": "Customer table (read by email)"
+      }
+    },
+    {
+      "n": 17,
+      "from": 15,
+      "what": "looks the customer up by username to enforce unique usernames",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:295",
+      "code": "if (_customerSettings.UsernamesEnabled && await _customerService.GetCustomerByUsernameAsync(request.Username) != null)",
+      "end": {
+        "kind": "database",
+        "detail": "Customer table (read by username)"
+      }
+    },
+    {
+      "n": 18,
+      "from": 15,
+      "what": "stores the password (clear, encrypted or hashed per PasswordFormat)",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:326",
+      "code": "await _customerService.InsertCustomerPasswordAsync(customerPassword);",
+      "end": {
+        "kind": "database",
+        "detail": "CustomerPassword table (INSERT)"
+      }
+    },
+    {
+      "n": 19,
+      "from": 15,
+      "what": "loads the Registered role",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:331",
+      "code": "var registeredRole = await _customerService.GetCustomerRoleBySystemNameAsync(NopCustomerDefaults.RegisteredRoleName) ?? throw new NopException(\"'Registered' role could not be loaded\");",
+      "end": {
+        "kind": "database",
+        "detail": "CustomerRole table (read)"
+      }
+    },
+    {
+      "n": 20,
+      "from": 15,
+      "what": "adds the customer to the Registered role",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:333",
+      "code": "await _customerService.AddCustomerRoleMappingAsync(new CustomerCustomerRoleMapping { CustomerId = request.Customer.Id, CustomerRoleId = registeredRole.Id });",
+      "end": {
+        "kind": "database",
+        "detail": "CustomerCustomerRoleMapping table (INSERT)"
+      }
+    },
+    {
+      "n": 21,
+      "from": 15,
+      "what": "removes the customer from the Guests role",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:339",
+      "code": "await _customerService.RemoveCustomerRoleMappingAsync(request.Customer, guestRole);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:336",
+          "code": "if (await _customerService.IsGuestAsync(request.Customer))"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "CustomerCustomerRoleMapping table (DELETE)"
+      }
+    },
+    {
+      "n": 22,
+      "from": 15,
+      "what": "adds reward points for registration",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:347",
+      "code": "await _rewardPointService.AddRewardPointsHistoryEntryAsync(request.Customer, _rewardPointsSettings.PointsForRegistration,",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:343",
+          "code": "if (_rewardPointsSettings.Enabled && _rewardPointsSettings.PointsForRegistration > 0)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "RewardPointsHistory table (INSERT)"
+      }
+    },
+    {
+      "n": 23,
+      "from": 15,
+      "what": "saves the customer (username, email, Active = IsApproved)",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:351",
+      "code": "await _customerService.UpdateCustomerAsync(request.Customer);",
+      "end": {
+        "kind": "database",
+        "detail": "Customer table (UPDATE)"
+      }
+    },
+    {
+      "n": 24,
+      "from": 2,
+      "what": "checks the VAT number",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1090",
+      "code": "var (vatNumberStatus, _, vatAddress) =",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1086",
+          "code": "if (_taxSettings.EuVatEnabled)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "outside-call",
+        "detail": "ICheckVatService.CheckVatAsync (TaxService.cs:334) asks the EU VAT checking service about the number; not walked further"
+      }
+    },
+    {
+      "n": 25,
+      "from": 2,
+      "what": "queues the new-VAT-number notification to the store owner",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1095",
+      "code": "await _workflowMessageService.SendNewVatSubmittedStoreOwnerNotificationAsync(customer,",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1094",
+          "code": "if (!string.IsNullOrEmpty(model.VatNumber) && _taxSettings.EuVatEmailAdminWhenNewVatSubmitted)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1086",
+          "code": "if (_taxSettings.EuVatEnabled)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "n": 26,
+      "from": 25,
+      "what": "builds and queues the email (WorkflowMessageService.SendNotificationAsync)",
+      "at": "src/Libraries/Nop.Services/Messages/WorkflowMessageService.cs:2421",
+      "code": "return await SendNotificationAsync(messageTemplate, emailAccount, languageId, tokens, toEmail, toName,",
+      "end": {
+        "kind": "hub",
+        "detail": "WorkflowMessageService.SendNotificationAsync: 59 call sites in src; its last step inserts a QueuedEmail row"
+      }
+    },
+    {
+      "n": 27,
+      "from": 2,
+      "what": "saves the customer's profile fields",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1131",
+      "code": "await _customerService.UpdateCustomerAsync(customer);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Customer table (UPDATE)"
+      }
+    },
+    {
+      "n": 28,
+      "from": 2,
+      "what": "looks up the newsletter subscriptions for the email",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1141",
+      "code": "var currentSubscriptions = await _newsLetterSubscriptionService",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1134",
+          "code": "if (_customerSettings.NewsletterEnabled)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "NewsLetterSubscription table (read)"
+      }
+    },
+    {
+      "n": 29,
+      "from": 2,
+      "what": "activates an existing, inactive newsletter subscription",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1156",
+      "code": "await _newsLetterSubscriptionService.UpdateNewsLetterSubscriptionAsync(",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1152",
+          "code": "if (!existingSubscription.Active && isNewsletterActive)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1150",
+          "code": "if (existingSubscription is not null)"
+        },
+        {
+          "kind": "loop",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1146",
+          "code": "foreach (var activeSubscription in activeSubscriptions)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1143",
+          "code": "if (currentSubscriptions.Any())"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1134",
+          "code": "if (_customerSettings.NewsletterEnabled)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "NewsLetterSubscription table (UPDATE)"
+      }
+    },
+    {
+      "n": 30,
+      "from": 2,
+      "what": "inserts a newsletter subscription for the type",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1162",
+      "code": "await _newsLetterSubscriptionService.InsertNewsLetterSubscriptionAsync(new()",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1150",
+          "code": "if (existingSubscription is not null)"
+        },
+        {
+          "kind": "loop",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1146",
+          "code": "foreach (var activeSubscription in activeSubscriptions)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1143",
+          "code": "if (currentSubscriptions.Any())"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1134",
+          "code": "if (_customerSettings.NewsletterEnabled)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "NewsLetterSubscription table (INSERT)"
+      }
+    },
+    {
+      "n": 31,
+      "from": 2,
+      "what": "inserts a newsletter subscription when the email had none",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1181",
+      "code": "await _newsLetterSubscriptionService.InsertNewsLetterSubscriptionAsync(new()",
+      "conditions": [
+        {
+          "kind": "loop",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1179",
+          "code": "foreach (var activeSubscription in activeSubscriptions)"
+        },
+        {
+          "kind": "else",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1143",
+          "code": "if (currentSubscriptions.Any())"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1134",
+          "code": "if (_customerSettings.NewsletterEnabled)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "NewsLetterSubscription table (INSERT)"
+      }
+    },
+    {
+      "n": 32,
+      "from": 2,
+      "what": "logs newsletter GDPR consent",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1199",
+      "code": "await _gdprService.InsertLogAsync(customer, 0, GdprRequestType.ConsentAgree,",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1196",
+          "code": "if (anyNewSubscriptions && _gdprSettings.GdprEnabled && _gdprSettings.LogNewsletterConsent)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1134",
+          "code": "if (_customerSettings.NewsletterEnabled)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "GdprLog table (INSERT; IGdprService.InsertLogAsync has 23 call sites)"
+      }
+    },
+    {
+      "n": 33,
+      "from": 2,
+      "what": "logs privacy policy GDPR consent",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1209",
+      "code": "await _gdprService.InsertLogAsync(customer, 0, GdprRequestType.ConsentAgree,",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1208",
+          "code": "if (_gdprSettings.GdprEnabled && _gdprSettings.LogPrivacyPolicyConsent)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1204",
+          "code": "if (_customerSettings.AcceptPrivacyPolicyEnabled)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "GdprLog table (INSERT)"
+      }
+    },
+    {
+      "n": 34,
+      "from": 2,
+      "what": "logs the agreed GDPR consent",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1225",
+      "code": "await _gdprService.InsertLogAsync(customer, consent.Id, GdprRequestType.ConsentAgree,",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1222",
+          "code": "if (!StringValues.IsNullOrEmpty(cbConsent) && cbConsent.ToString().Equals(\"on\"))"
+        },
+        {
+          "kind": "loop",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1218",
+          "code": "foreach (var consent in consents)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1214",
+          "code": "if (_gdprSettings.GdprEnabled)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "GdprLog table (INSERT)"
+      }
+    },
+    {
+      "n": 35,
+      "from": 2,
+      "what": "logs the declined GDPR consent",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1231",
+      "code": "await _gdprService.InsertLogAsync(customer, consent.Id, GdprRequestType.ConsentDisagree,",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1222",
+          "code": "if (!StringValues.IsNullOrEmpty(cbConsent) && cbConsent.ToString().Equals(\"on\"))"
+        },
+        {
+          "kind": "loop",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1218",
+          "code": "foreach (var consent in consents)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1214",
+          "code": "if (_gdprSettings.GdprEnabled)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "GdprLog table (INSERT)"
+      }
+    },
+    {
+      "n": 36,
+      "from": 2,
+      "what": "checks the default address is valid",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1259",
+      "code": "if (await _addressService.IsAddressValidAsync(defaultAddress))",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "IAddressService.IsAddressValidAsync (7 call sites) not walked"
+      }
+    },
+    {
+      "n": 37,
+      "from": 2,
+      "what": "inserts the default address",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1269",
+      "code": "await _addressService.InsertAddressAsync(defaultAddress);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1259",
+          "code": "if (await _addressService.IsAddressValidAsync(defaultAddress))"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Address table (INSERT)"
+      }
+    },
+    {
+      "n": 38,
+      "from": 2,
+      "what": "links the address to the customer",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1271",
+      "code": "await _customerService.InsertCustomerAddressAsync(customer, defaultAddress);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1259",
+          "code": "if (await _addressService.IsAddressValidAsync(defaultAddress))"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "CustomerAddressMapping table (INSERT)"
+      }
+    },
+    {
+      "n": 39,
+      "from": 2,
+      "what": "saves the billing and shipping address ids",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1276",
+      "code": "await _customerService.UpdateCustomerAsync(customer);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1259",
+          "code": "if (await _addressService.IsAddressValidAsync(defaultAddress))"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Customer table (UPDATE)"
+      }
+    },
+    {
+      "n": 40,
+      "from": 2,
+      "what": "queues the new-customer notification to the store owner",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1282",
+      "code": "await _workflowMessageService.SendCustomerRegisteredStoreOwnerNotificationMessageAsync(customer,",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1280",
+          "code": "if (_customerSettings.NotifyNewCustomerRegistration)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "n": 41,
+      "from": 40,
+      "what": "builds and queues the email (WorkflowMessageService.SendNotificationAsync)",
+      "at": "src/Libraries/Nop.Services/Messages/WorkflowMessageService.cs:178",
+      "code": "return await SendNotificationAsync(messageTemplate, emailAccount, languageId, tokens, toEmail, toName,",
+      "end": {
+        "kind": "hub",
+        "detail": "WorkflowMessageService.SendNotificationAsync: 59 call sites in src; its last step inserts a QueuedEmail row (WorkflowMessageService.cs:2894)"
+      }
+    },
+    {
+      "n": 42,
+      "from": 2,
+      "what": "publishes CustomerRegisteredEvent",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1287",
+      "code": "await _eventPublisher.PublishAsync(new CustomerRegisteredEvent(customer));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "message",
+        "detail": "CustomerRegisteredEvent"
+      }
+    },
+    {
+      "n": 43,
+      "from": 2,
+      "what": "saves the account activation token",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1293",
+      "code": "await _genericAttributeService.SaveAttributeAsync(customer,",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1291",
+          "code": "case UserRegistrationType.EmailValidation:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "GenericAttribute table (INSERT/UPDATE; IGenericAttributeService.SaveAttributeAsync has 90 call sites)"
+      }
+    },
+    {
+      "n": 44,
+      "from": 2,
+      "what": "queues the email-validation message to the customer",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1295",
+      "code": "await _workflowMessageService",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1291",
+          "code": "case UserRegistrationType.EmailValidation:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "n": 45,
+      "from": 44,
+      "what": "builds and queues the email (WorkflowMessageService.SendNotificationAsync)",
+      "at": "src/Libraries/Nop.Services/Messages/WorkflowMessageService.cs:263",
+      "code": "return await SendNotificationAsync(messageTemplate, emailAccount, languageId, tokens, toEmail, toName);",
+      "end": {
+        "kind": "hub",
+        "detail": "WorkflowMessageService.SendNotificationAsync: 59 call sites in src; its last step inserts a QueuedEmail row"
+      }
+    },
+    {
+      "n": 46,
+      "from": 2,
+      "what": "queues the welcome message to the customer",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1315",
+      "code": "await _workflowMessageService.SendCustomerWelcomeMessageAsync(customer, language.Id);",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1313",
+          "code": "case UserRegistrationType.Standard:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "n": 47,
+      "from": 46,
+      "what": "builds and queues the email (WorkflowMessageService.SendNotificationAsync)",
+      "at": "src/Libraries/Nop.Services/Messages/WorkflowMessageService.cs:221",
+      "code": "return await SendNotificationAsync(messageTemplate, emailAccount, languageId, tokens, toEmail, toName);",
+      "end": {
+        "kind": "hub",
+        "detail": "WorkflowMessageService.SendNotificationAsync: 59 call sites in src; its last step inserts a QueuedEmail row"
+      }
+    },
+    {
+      "n": 48,
+      "from": 2,
+      "what": "publishes CustomerActivatedEvent",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1318",
+      "code": "await _eventPublisher.PublishAsync(new CustomerActivatedEvent(customer));",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1313",
+          "code": "case UserRegistrationType.Standard:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "message",
+        "detail": "CustomerActivatedEvent"
+      }
+    },
+    {
+      "n": 49,
+      "from": 2,
+      "what": "signs the new customer in and returns the redirect",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1327",
+      "code": "return await _customerRegistrationService.SignInCustomerAsync(customer, returnUrl, true);",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1313",
+          "code": "case UserRegistrationType.Standard:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "n": 50,
+      "from": 49,
+      "what": "migrates the guest shopping cart to the customer",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:467",
+      "code": "await _shoppingCartService.MigrateShoppingCartAsync(currentCustomer, customer, true);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:459",
+          "code": "if (currentCustomer?.Id != customer.Id)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "IShoppingCartService.MigrateShoppingCartAsync not walked"
+      }
+    },
+    {
+      "n": 51,
+      "from": 49,
+      "what": "signs the customer in (authentication cookie)",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:473",
+      "code": "await _authenticationService.SignInAsync(customer, isPersist);",
+      "end": {
+        "kind": "unknown",
+        "detail": "IAuthenticationService.SignInAsync sets the auth cookie; 5 call sites; not walked"
+      }
+    },
+    {
+      "n": 52,
+      "from": 49,
+      "what": "publishes CustomerLoggedinEvent",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:477",
+      "code": "await _eventPublisher.PublishAsync(new CustomerLoggedinEvent(customer, guestCustomer));",
+      "end": {
+        "kind": "message",
+        "detail": "CustomerLoggedinEvent"
+      }
+    },
+    {
+      "n": 53,
+      "from": 49,
+      "what": "logs the PublicStore.SuccessfulLogin activity",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:480",
+      "code": "await _customerActivityService.InsertActivityAsync(customer, \"PublicStore.SuccessfulLogin\",",
+      "end": {
+        "kind": "hub",
+        "detail": "ICustomerActivityService.InsertActivityAsync: 214 call sites; inserts an ActivityLog row"
+      }
+    },
+    {
+      "n": 54,
+      "from": 49,
+      "what": "redirects to the returnUrl built above (register result or phone verification page)",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:485",
+      "code": "return new RedirectResult(returnUrl);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:484",
+          "code": "if (!string.IsNullOrEmpty(returnUrl) && _webHelper.CheckIsLocalUrl(returnUrl))"
+        }
+      ],
+      "end": {
+        "kind": "screen",
+        "detail": "Register result page (or OTP phone verification page)"
+      }
+    },
+    {
+      "n": 55,
+      "from": 2,
+      "what": "shows the error notification for an exception thrown while registering",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1340",
+      "code": "await _notificationService.ErrorNotificationAsync(exc);",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1338",
+          "code": "catch (Exception exc)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "INotificationService.ErrorNotificationAsync: 115 call sites"
+      }
+    },
+    {
+      "n": 56,
+      "from": 2,
+      "what": "prepares the model and redisplays the Register form",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1345",
+      "code": "model = await _customerModelFactory.PrepareRegisterModelAsync(model, true, customerAttributesXml);",
+      "end": {
+        "kind": "screen",
+        "detail": "Register page redisplayed with the errors (return View(model))"
+      }
+    }
+  ],
+  "exits": [
+    {
+      "what": "redirects to the register result page (registration disabled)",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1012",
+      "code": "return RedirectToRoute(NopRouteNames.Standard.REGISTER_RESULT, new { resultId = (int)UserRegistrationType.Disabled, returnUrl });",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1011",
+          "code": "if (_customerSettings.UserRegistrationType == UserRegistrationType.Disabled)"
+        }
+      ]
+    },
+    {
+      "what": "redirects back to the same page when the honeypot field is filled (bot caught)",
+      "at": "src/Presentation/Nop.Web.Framework/Mvc/Filters/ValidateHoneypotAttribute.cs:90",
+      "code": "context.Result = new RedirectResult(page);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web.Framework/Mvc/Filters/ValidateHoneypotAttribute.cs:82",
+          "code": "if (!StringValues.IsNullOrEmpty(inputValue))"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Presentation/Nop.Web.Framework/Mvc/Filters/ValidateHoneypotAttribute.cs:75",
+          "code": "if (!_securitySettings.HoneypotEnabled)"
+        }
+      ]
+    },
+    {
+      "what": "redirects to phone verification after email-validation registration",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1299",
+      "code": "return RedirectToRoute(NopRouteNames.Standard.OTP_PHONE_VERIFICATION,",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1298",
+          "code": "if (_otpSettings.LoginByPhoneEnabled)"
+        },
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1291",
+          "code": "case UserRegistrationType.EmailValidation:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "what": "redirects to the register result page after email-validation registration",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1302",
+      "code": "return RedirectToRoute(NopRouteNames.Standard.REGISTER_RESULT,",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1298",
+          "code": "if (_otpSettings.LoginByPhoneEnabled)"
+        },
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1291",
+          "code": "case UserRegistrationType.EmailValidation:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "what": "redirects to phone verification after registration that awaits admin approval",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1307",
+      "code": "return RedirectToRoute(NopRouteNames.Standard.OTP_PHONE_VERIFICATION,",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1306",
+          "code": "if (_otpSettings.LoginByPhoneEnabled)"
+        },
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1305",
+          "code": "case UserRegistrationType.AdminApproval:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "what": "redirects to the register result page after registration that awaits admin approval",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1310",
+      "code": "return RedirectToRoute(NopRouteNames.Standard.REGISTER_RESULT,",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1306",
+          "code": "if (_otpSettings.LoginByPhoneEnabled)"
+        },
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1305",
+          "code": "case UserRegistrationType.AdminApproval:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "what": "redirects to the home page when the registration type is none of the three handled",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1330",
+      "code": "return RedirectToRoute(NopRouteNames.General.HOMEPAGE);",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1329",
+          "code": "default:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "what": "redirects to the return URL after standard registration signs the customer in",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:485",
+      "code": "return new RedirectResult(returnUrl);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:484",
+          "code": "if (!string.IsNullOrEmpty(returnUrl) && _webHelper.CheckIsLocalUrl(returnUrl))"
+        },
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1313",
+          "code": "case UserRegistrationType.Standard:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "what": "redirects to the home page when the return URL is empty or not local",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:487",
+      "code": "return new RedirectToRouteResult(NopRouteNames.General.HOMEPAGE, null);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:484",
+          "code": "if (!string.IsNullOrEmpty(returnUrl) && _webHelper.CheckIsLocalUrl(returnUrl))"
+        },
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1313",
+          "code": "case UserRegistrationType.Standard:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "what": "throws ArgumentException when the request has no customer (caught by the controller's catch)",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:243",
+      "code": "throw new ArgumentException(\"Can't load current customer\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:242",
+          "code": "if (request.Customer == null)"
+        }
+      ]
+    },
+    {
+      "what": "throws NopException when the Registered role is missing (caught by the controller's catch)",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:331",
+      "code": "var registeredRole = await _customerService.GetCustomerRoleBySystemNameAsync(NopCustomerDefaults.RegisteredRoleName) ?? throw new NopException(\"'Registered' role could not be loaded\");"
+    }
+  ],
+  "links": [
+    {
+      "kind": "message",
+      "to": "CustomerRegisteredEvent consumer: Omnisend EventConsumer.HandleEventAsync(CustomerRegisteredEvent)",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1287",
+      "code": "await _eventPublisher.PublishAsync(new CustomerRegisteredEvent(customer));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "CustomerRegisteredEvent consumer: FacebookPixel EventConsumer.HandleEventAsync(CustomerRegisteredEvent)",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1287",
+      "code": "await _eventPublisher.PublishAsync(new CustomerRegisteredEvent(customer));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "CustomerActivatedEvent consumer: ReminderEventConsumer.HandleEventAsync(CustomerActivatedEvent)",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1318",
+      "code": "await _eventPublisher.PublishAsync(new CustomerActivatedEvent(customer));",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1313",
+          "code": "case UserRegistrationType.Standard:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "CustomerActivatedEvent consumer: Avalara EventConsumer.HandleEventAsync(CustomerActivatedEvent)",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1318",
+      "code": "await _eventPublisher.PublishAsync(new CustomerActivatedEvent(customer));",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1313",
+          "code": "case UserRegistrationType.Standard:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "CustomerLoggedinEvent consumer: Omnisend EventConsumer.HandleEventAsync(CustomerLoggedinEvent)",
+      "at": "src/Libraries/Nop.Services/Customers/CustomerRegistrationService.cs:477",
+      "code": "await _eventPublisher.PublishAsync(new CustomerLoggedinEvent(customer, guestCustomer));"
+    },
+    {
+      "kind": "runs-later",
+      "to": "Queued messages send task (welcome email)",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1315",
+      "code": "await _workflowMessageService.SendCustomerWelcomeMessageAsync(customer, language.Id);",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1313",
+          "code": "case UserRegistrationType.Standard:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "kind": "runs-later",
+      "to": "Queued messages send task (email validation message)",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1295",
+      "code": "await _workflowMessageService",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1291",
+          "code": "case UserRegistrationType.EmailValidation:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "kind": "runs-later",
+      "to": "Queued messages send task (store owner notification)",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1282",
+      "code": "await _workflowMessageService.SendCustomerRegisteredStoreOwnerNotificationMessageAsync(customer,",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1280",
+          "code": "if (_customerSettings.NotifyNewCustomerRegistration)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "kind": "runs-later",
+      "to": "Queued messages send task (new VAT number notification)",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1095",
+      "code": "await _workflowMessageService.SendNewVatSubmittedStoreOwnerNotificationAsync(customer,",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1094",
+          "code": "if (!string.IsNullOrEmpty(model.VatNumber) && _taxSettings.EuVatEmailAdminWhenNewVatSubmitted)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1086",
+          "code": "if (_taxSettings.EuVatEnabled)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "kind": "screen",
+      "to": "Register result page (RegisterResult action)",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1302",
+      "code": "return RedirectToRoute(NopRouteNames.Standard.REGISTER_RESULT,",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1298",
+          "code": "if (_otpSettings.LoginByPhoneEnabled)"
+        },
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1291",
+          "code": "case UserRegistrationType.EmailValidation:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "kind": "screen",
+      "to": "Home page",
+      "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1330",
+      "code": "return RedirectToRoute(NopRouteNames.General.HOMEPAGE);",
+      "conditions": [
+        {
+          "kind": "case",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1329",
+          "code": "default:"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1079",
+          "code": "if (registrationResult.Success)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Presentation/Nop.Web/Controllers/CustomerController.cs:1063",
+          "code": "if (ModelState.IsValid)"
+        }
+      ]
+    },
+    {
+      "kind": "continues",
+      "to": "hub: WorkflowMessageService.SendNotificationAsync (59 call sites)",
+      "at": "src/Libraries/Nop.Services/Messages/WorkflowMessageService.cs:221",
+      "code": "return await SendNotificationAsync(messageTemplate, emailAccount, languageId, tokens, toEmail, toName);"
+    }
+  ],
+  "notes": [
+    "Route: RouteProvider.cs:45 maps \"{lang}/register/\" to Customer/Register; the form posts to it by route name.",
+    "RegisterValidator (FluentValidation) runs on the model before the action; its failures make ModelState invalid so the registration block at line 1063 is skipped and the form is redisplayed.",
+    "The Register POST has [ValidateHoneypot] and [ValidateCaptcha]; CaptchaHttpClient.cs:62 `await _httpClient.GetStringAsync(url)` is the HTTP call to the CAPTCHA verifier (only when a CAPTCHA response is posted and CAPTCHA is enabled).",
+    "Password hashing/encryption calls inside RegisterCustomerAsync (EncryptText, CreateSaltKey, CreatePasswordHash) are not listed as steps.",
+    "Entity inserts and updates also publish EntityInsertedEvent / EntityUpdatedEvent through the repository; those consumers are not listed.",
+    "Registration types: Disabled returns early; EmailValidation, AdminApproval and Standard are the switch cases; any other value takes default.",
+    "isApproved is true only for UserRegistrationType.Standard (line 1070), which sets Customer.Active.",
+    "The step at line 1345 is reached for invalid models, for failed registration results and after the catch."
+  ]
+}

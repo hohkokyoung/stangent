@@ -1,0 +1,89 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0012"
+doc: "sonarr-fsd"
+section: "Settings / Profiles / Quality profiles"
+title: "Quality profiles"
+parent: "F-0011"
+children: []
+textHash: "26b4ac67e9b36c300b945a0a750f5aeac0c6e6a46737b2b67ed5f2587a3669dc"
+requirements:
+  - id: "R-0061"
+    title: "Profile lists wanted qualities in order"
+    kind: "data"
+    statement: "A quality profile lists the qualities the user wants, in order of preference."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Profiles / Quality profiles"
+        text: "A quality profile lists the qualities the user wants, in order of preference, and the quality at which upgrades stop (the cutoff)."
+        hash: "72dde572a453ffb806bd156050714933aa03fc82bbb45f498c5a715903bdfeee"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "48182c67fd57dd753fbd14a4a62ae38c2de7a05904c74ee5604122b1db147e86"
+  - id: "R-0062"
+    title: "Profile has an upgrade cutoff"
+    kind: "data"
+    statement: "A quality profile holds the quality at which upgrades stop (the cutoff)."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Profiles / Quality profiles"
+        text: "A quality profile lists the qualities the user wants, in order of preference, and the quality at which upgrades stop (the cutoff)."
+        hash: "72dde572a453ffb806bd156050714933aa03fc82bbb45f498c5a715903bdfeee"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "6eaddb4204de6711b987fb9537fa27f8a0e8a232afad5633b422ac4c029553f9"
+  - id: "R-0063"
+    title: "Profile name is required"
+    kind: "validation"
+    statement: "A quality profile must have a name."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Profiles / Quality profiles"
+        text: "Name: the profile's name, which is required."
+        hash: "7ede953b79415f3e35a2fa69eaacda5baaebf285610538dc53dfb5050ed45d6c"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "fbe394f1670cd149dd6aebaaa6ab6170cf993f336bf0dd32f0cf08265b1ffab8"
+  - id: "R-0064"
+    title: "Upgrades replace files until cutoff"
+    kind: "rule"
+    statement: "When Upgrades Allowed is ticked, a file is replaced by a better release until the cutoff is reached."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Profiles / Quality profiles"
+        text: "Upgrades Allowed: when ticked, a file is replaced by a better release until the cutoff is reached."
+        hash: "ba138516ebd64c3ab1479e94f6352388a99c4431b39df64ef67ccd4bb2e43374"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "890bb4beb9a47e7465c5c680a29eb522f02f545e9e0f1404eae817415c94f533"
+  - id: "R-0065"
+    title: "Upgrade Until is the cutoff quality"
+    kind: "data"
+    statement: "Upgrade Until holds the cutoff quality."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Profiles / Quality profiles"
+        text: "Upgrade Until: the cutoff quality."
+        hash: "85f7bcc978ee32ca90a569d35bbc505e0702f3c0afd838c576b90e3adfdc9f3f"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "bed887fc7f045a8253760ed68234a26a08a7d10248700be87ee04f23b7e0c76c"
+definitions: []
+journeys: []
+background: []
+retired: []

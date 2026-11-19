@@ -1,0 +1,98 @@
+{
+  "codeTitle": "DELETE /api/v3/Blocklist/bulk",
+  "entry": "endpoint:Sonarr.Api.V3|DELETE /api/v3/Blocklist/bulk",
+  "generated": {
+    "bundleHash": "dcc705436b8ab9ffc049d869e9fc9fdcb643e4576134d7fe1fc6f01deaf70393",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 8591,
+      "cutOff": 1,
+      "depth": 4,
+      "points": 8
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 5978,
+      "calls": 1,
+      "costUsd": 0.025411,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5702,
+      "outputTokens": 132
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 9911,
+      "calls": 2,
+      "costUsd": 0.056124,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 9576,
+      "outputTokens": 1592
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|DELETE /api/v3/Blocklist/bulk",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V3|DELETE /api/v3/Blocklist/bulk",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Blocklist.BlocklistController.Remove(Sonarr.Api.V3.Blocklist.BlocklistBulkResource)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|DELETE /api/v3/Blocklist/bulk"
+        ],
+        "id": "A1",
+        "text": "A caller sends DELETE /api/v3/Blocklist/bulk with a JSON body containing a list of ids, and those blocklist entries are removed."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Blocklist.BlocklistController.Remove(Sonarr.Api.V3.Blocklist.BlocklistBulkResource)"
+        ],
+        "id": "R1",
+        "text": "The ids to delete are taken from the Ids list in the JSON request body."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Blocklist.BlocklistController.Remove(Sonarr.Api.V3.Blocklist.BlocklistBulkResource)"
+        ],
+        "id": "S1",
+        "text": "Returns an empty JSON object once the deletion call completes."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Blocklisting.BlocklistService.Delete(System.Collections.Generic.List{System.Int32})",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.DeleteMany(System.Collections.Generic.IEnumerable{System.Int32})"
+        ],
+        "id": "E1",
+        "text": "The blocklist service deletes all the given ids from the blocklist repository in one DeleteMany call."
+      }
+    ]
+  },
+  "title": "Bulk delete blocklist entries",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "The source shows ids read from resource.Ids, but nothing shows the request body is required beyond [FromBody]; the required claim is a framework behavior not shown in the slice.",
+        "id": "F1",
+        "kind": "unsupported",
+        "outcome": "fixed",
+        "reason": "Removed the claim that the request body is required; the rule now only states that ids come from the body's Ids list.",
+        "statement": "R1",
+        "statementText": "The ids to delete are taken from the request body's Ids list; the request body is required."
+      }
+    ]
+  }
+}

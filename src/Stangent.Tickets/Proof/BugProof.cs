@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Stangent.Core;
+using Stangent.Core.State;
 using Stangent.Graph;
 using Stangent.Spec.Pages;
 
@@ -17,7 +18,7 @@ namespace Stangent.Tickets.Proof;
 /// </summary>
 public static partial class BugProof
 {
-    public const string Schema = "bug-proof.v1.json";
+    public const string Schema = "bug-proof.v2.json";
     public const int PlaywrightRuns = 3;
     /// <summary>A run where the test runner itself failed (D90): our setup, not the reproducer's test.</summary>
     public const string RunnerError = "runner-error";
@@ -51,9 +52,45 @@ public static partial class BugProof
             return new RunStep("recorded", "none", Errors: [reason]);
         }
 
+        // Truth map layer 4 (D361, D364): a ticket no agreed rule can back gets no test and no AI call. Nothing covers its
+        // files, or every entry that does is blank, flagged, not found again, not a match, or a match not yet confirmed.
+        if ((string?)bundle["truth"]?["state"] is null or "off")
+            throw new StangentException("stale_bundle", $"{key}'s bundle was built before the truth map was always on (D381), so it has no truth map entries to judge the ticket by. Run `stangent ticket bundle {key}` again.", ExitCodes.Failed);
+        var truth = bundle["truth"] is JsonObject { } t && (string?)t["state"] == "built" ? t : null;
+        if (truth is not null && !truth["entries"]!.AsArray().OfType<JsonObject>().Any(e => (bool)e["usable"]!))
+        {
+            var entries = truth["entries"]!.AsArray().OfType<JsonObject>().ToList();
+            var reason = entries.Count == 0
+                ? "nothing in the truth map covers this ticket's files: no rule the PM agreed says what should happen (D364)"
+                : "no truth map entry for this ticket's files can back it yet: " + string.Join("; ", entries.Select(e => $"{e["id"]} ({e["doc"]} item {e["n"]}) {e["why"]}"));
+            var truthInputs = CanonicalJson.Hash(reason + CanonicalJson.Serialize(truth) + (hint ?? ""));
+            if (Latest(proof) is { } last && (string?)last["inputs"] == truthInputs) return new RunStep("current", "none");
+            // A failure already reproduced (perhaps confirmed) isn't wiped because a rule it rested on now needs the PM:
+            // the proof stands, and the developer is told to ask (D364).
+            if ((string?)proof?["outcome"] == "reproduced")
+                return new RunStep("current", "none", Warning: $"{reason}. The reproduced proof is kept; ask the PM with `stangent ticket draft {key} --kind questions` before relying on it.");
+            Record(repo, paths, new JsonObject
+            {
+                ["outcome"] = "not-provable", ["noProof"] = "unclear", ["reason"] = reason, ["hint"] = hint, ["commit"] = Commit(repo.Root, null), ["inputs"] = truthInputs,
+                ["verdict"] = new JsonObject
+                {
+                    ["verdict"] = "unclear", ["forced"] = true, ["entry"] = entries.Count == 0 ? null : entries[0].DeepClone(), ["quote"] = null,
+                    ["why"] = entries.Count == 0 ? "not covered" : (string?)entries[0]["why"], ["pmConfirmed"] = false,
+                },
+            });
+            return new RunStep("recorded", "none", Errors: [reason]);
+        }
+
         var targets = Targets(repo, ctx, bundle);
 
-        if (targets.Count == 0)
+        // D408: the verdict comes before the test check. With no test target but a truth map entry that can back the
+        // ticket, the reproducer still gives the verdict, with no test to write: contradicted and unclear stop as always,
+        // and backed is recorded without a test. Only with no truth map does "no test target" end it before any AI call.
+        var verdictOnly = targets.Count == 0 && truth is not null;
+        // As with a rule that later needs the PM: a failure already reproduced isn't wiped because its targets are gone.
+        if (verdictOnly && (string?)proof?["outcome"] == "reproduced")
+            return new RunStep("current", "none", Warning: "no test target covers the code now, so no verdict-only attempt was made; the reproduced proof is kept (D408).");
+        if (targets.Count == 0 && !verdictOnly)
         {
             const string reason = "no unit-test project covers the code at the starting points, and tickets.app isn't set for Playwright (D76)";
             var codeInputs = CanonicalJson.Hash(reason + (hint ?? ""));
@@ -68,18 +105,19 @@ public static partial class BugProof
         // Playwright: the repo's specs that open the ticket's screens, and the script the reproducer runs its own with (D86).
         var related = targets.Any(t => t.Kind == TestTarget.Playwright) ? AppSession.RelatedSpecs(repo, bundle) : [];
         if (targets.Any(t => t.Kind == TestTarget.Playwright)) { AppSession.WriteScript(repo, paths, related); AppSession.WriteConfig(repo); }
-        var input = Input(repo, pulled, bundle, targets, related, hint, proof);
+        var input = Input(repo, pulled, bundle, targets, related, hint, proof, truth is not null);
         // Earlier attempts are shown to the reproducer but aren't an input change: an unchanged ticket, bundle, targets
         // and hint make no new AI call (D18). A new hint does.
-        var hash = CanonicalJson.Hash(Input(repo, pulled, bundle, targets, related, hint, null));
+        var hash = CanonicalJson.Hash(Input(repo, pulled, bundle, targets, related, hint, null, truth is not null));
         if (Latest(proof) is { } latest && (string?)latest["inputs"] == hash && (string?)latest["outcome"] != "failed") return new RunStep("current", "none");
         AiPolicy.EnsureAllowed(repo.Config, "ticket prove");
         var n = (proof?["attempts"]?.AsArray().Count ?? 0) + 1;
-        return AiStep.Start(paths, StepSpec.Prove, input, hash, new JsonObject
+        return AiStep.Start(paths, truth is not null ? StepSpec.ProveTruth : StepSpec.Prove, input, hash, new JsonObject
         {
             ["attempt"] = n, ["hint"] = hint, ["targets"] = new JsonArray([.. targets.Select(t => (JsonNode)t.ToJson())]),
             ["related"] = new JsonArray([.. related.Select(r => (JsonNode)r)]),
             ["outside"] = new JsonArray([.. OutsidePart.Of(bundle).Select(o => o.Area).Distinct().Select(a => (JsonNode)a)]),
+            ["truth"] = truth?.DeepClone(), ["verdictOnly"] = verdictOnly,
         });
     }
 
@@ -177,10 +215,10 @@ public static partial class BugProof
         }
     }
 
-    static string Input(StangentRepo repo, JsonObject pulled, JsonObject bundle, List<TestTarget> targets, List<string> related, string? hint, JsonObject? proof)
+    static string Input(StangentRepo repo, JsonObject pulled, JsonObject bundle, List<TestTarget> targets, List<string> related, string? hint, JsonObject? proof, bool truth)
     {
         var paths = new TicketPaths(repo.Root, (string)pulled["key"]!);
-        var sb = AiStep.Header(StepSpec.Prove);
+        var sb = AiStep.Header(truth ? StepSpec.ProveTruth : StepSpec.Prove);
         var bug = pulled["bug"]!;
         sb.Append("# The bug\n\n");
         foreach (var part in TicketPull.BugParts)
@@ -189,8 +227,32 @@ public static partial class BugProof
         foreach (var (where, text) in TicketText.From(pulled).Prose) sb.Append($"## {where}\n\n````text\n{text}\n````\n\n");
         sb.Append("# Where the work starts (the bundle)\n\n").Append(TicketBundle.Markdown(bundle, forProof: true)).Append('\n');
 
+        if (truth)
+            sb.Append("# The truth map and your verdict\n\n")
+                .Append("The bundle's truth map section lists what the PM agreed about this ticket's files and the flows and screens its code is on (T1, T2, …). Before you write a test, ")
+                .Append("decide whether the PM's agreed rules back what the ticket expects, and give `verdict`:\n\n")
+                .Append("- **backed**: an entry that can back a ticket says the ticket's expected result is right (the FSD is right and the code has a bug, ")
+                .Append(targets.Count > 0 ? "or a match the code no longer keeps). Write the test as below, and give the entry and words from it.\n"
+                    : "or a match the code no longer keeps). Give the entry and words from it; there's no test to write (below).\n")
+                .Append("- **contradicted**: an entry says the code is right as it is (ruled \"the code is right\", or the PM's words say what the code does). ")
+                .Append("Write no test: return outcome `stopped` with the entry and words from it.\n")
+                .Append("- **unclear**: no entry settles what the ticket expects, or the ones that would can't back a ticket. Write no test: return outcome `stopped`.\n\n")
+                .Append("An entry ruled \"keep this code\" that has the PM's words keeps the feature, working as the words say: judge the ticket against those words, ")
+                .Append("and if the code doesn't do what they say, the words back the ticket (quote at least four of them).\n\n")
+                .Append("Cite the entry by its id and copy `quote` word for word from it (its FSD sentence, the PM's words, its section's text or the review's note). ")
+                .Append("Code checks both, and makes the verdict unclear when the entry can't back a ticket.\n\n");
         var mtp = UsesMtp(repo.Root);
         var report = paths.Relative(Path.Combine(AiStep.Work(paths, StepSpec.Prove), "your-run"));
+        var budget = repo.Config.Tickets.ProveBudget;
+        if (targets.Count == 0)
+        {
+            // D408: a verdict only.
+            sb.Append("# No test target\n\nCode found no test project for this ticket's code, and no app is set up for Playwright, so no test can be written here. ")
+                .Append("**Give the verdict only and return outcome `stopped`**, whatever the verdict: a backed verdict is recorded without a test, for the developer.\n");
+            sb.Append($"\n# Your limits\n\n- Read the repo; write no file but your answer.\n- At most {budget.Turns} turns and ${budget.Usd:0.##}.\n");
+            if (hint is not null) sb.Append($"\n# A hint from the developer\n\n{hint}\n");
+            return sb.ToString();
+        }
         sb.Append("# Test targets\n\nWrite the test in one of these, in the folder given, as a file matching its patterns.\n\n");
         sb.Append("| target | kind | write in | files | build | run your test |\n|---|---|---|---|---|---|\n");
         foreach (var t in targets)
@@ -212,7 +274,6 @@ public static partial class BugProof
                 sb.Append("No Playwright test opens these screens yet. You have a headless browser on the app (the `mcp__playwright__browser_*` tools): **look at the screen first** (navigate, snapshot, click your way to it), so your test clicks and reads what is really there.\n");
             sb.Append("\n**Test first:** run your spec with the command in the table and hand it in only once it **fails on your assertion**. stangent then runs it itself, three times.\n");
         }
-        var budget = repo.Config.Tickets.ProveBudget;
         sb.Append($"\n# Your limits\n\n- Write and edit files only in the test targets' folders.\n- Run only the build and test commands above.\n");
         sb.Append($"- At most {budget.Turns} turns and ${budget.Usd:0.##}; stopping at the cap counts as not reproduced.\n");
         if (hint is not null) sb.Append($"\n# A hint from the developer\n\n{hint}\n");
@@ -231,8 +292,8 @@ public static partial class BugProof
     public static async Task<RunStep> CheckAsync(StangentRepo repo, string key, JsonNode? claudeResult, ICommandRunner runner, CancellationToken ct = default)
     {
         var paths = new TicketPaths(repo.Root, key);
-        var step = StepSpec.Prove;
-        var state = AiStep.State(paths, step);
+        var state = AiStep.State(paths, StepSpec.Prove);
+        var step = state["truth"] is JsonObject ? StepSpec.ProveTruth : StepSpec.Prove;
         // The cap is per attempt (D81), first call and retry together, so the reproducer's own result is required.
         if (claudeResult is not JsonObject result)
             throw new StangentException("usage", "check --step prove needs --usage <Claude Code's JSON result, with the driver's rounds>: the attempt's turn and cost cap is enforced from it (D81, D104).", ExitCodes.Usage);
@@ -265,6 +326,36 @@ public static partial class BugProof
 
         var (output, errors) = AiStep.Read(paths, step, state, usage);
         if (blocked.Count > 0 && output is null) return SetupBlocked();
+        // Truth map layer 4 (D361, D364): the verdict, checked by code; contradicted and unclear stop with no test run.
+        if (output is not null)
+        {
+            var verdictOnly = (bool?)state["verdictOnly"] == true;
+            var (verdict, verdictErrors) = Verdict(state["truth"] as JsonObject, output, verdictOnly);
+            if (verdictErrors.Count > 0)
+            {
+                if (AiStep.Retry(paths, step, state, verdictErrors) is { } again) return again;
+                return Finish(repo, paths, state, attempt, "failed", string.Join("; ", verdictErrors.Take(3)), null);
+            }
+            if (verdict is not null)
+            {
+                attempt["verdict"] = verdict;
+                if ((string)verdict["verdict"]! != "backed")
+                {
+                    attempt["noProof"] = (string)verdict["verdict"]!;
+                    var cited = verdict["entry"] as JsonObject;
+                    var at = cited is null ? "" : $"{cited["id"]} ({cited["doc"]} item {cited["n"]}) ";
+                    return Finish(repo, paths, state, attempt, "not-provable", (string)verdict["verdict"]! == "contradicted"
+                        ? $"the truth map contradicts the ticket: {at}{(string?)verdict["why"]}"
+                        : (bool)verdict["forced"]! ? $"{at}can't back a ticket ({(string?)cited?["why"]}), so no test was written" : $"the truth map doesn't settle it: {(string?)verdict["why"]}", null);
+                }
+                if (verdictOnly)
+                {
+                    var cited = verdict["entry"] as JsonObject;
+                    return Finish(repo, paths, state, attempt, "not-provable",
+                        $"the truth map backs the ticket ({cited?["id"]}, {cited?["doc"]} item {cited?["n"]}), but no test project covers its code and tickets.app isn't set for Playwright (D76, D408), so no test was written", null);
+                }
+            }
+        }
         // Code found test targets, so "not provable" is the reproducer's judgment, not a fact: it gets the one retry, and
         // if it says so again, it's recorded labelled as its judgment.
         if (output is not null && (string)output["outcome"]! == "not-provable")
@@ -388,6 +479,62 @@ public static partial class BugProof
     }
 
     /// <summary>
+    /// The reproducer's verdict as code settles it (D361, D364, D366 (4)), or null with no truth map in its input. Errors:
+    /// no verdict, an entry not in the input, a quote not in the entry word for word, backed or contradicted with nothing
+    /// cited, backed with no test, stopped with no truth map. Made unclear (forced) when the cited entry can't back a
+    /// ticket.
+    /// </summary>
+    public static (JsonObject? Verdict, List<string> Errors) Verdict(JsonObject? truth, JsonObject output, bool verdictOnly = false)
+    {
+        var errors = new List<string>();
+        var outcome = (string?)output["outcome"];
+        if (truth is null)
+        {
+            if (outcome == "stopped") errors.Add("There's no truth map in your input, so there's nothing to stop for: write the test, or answer not-provable with the reason.");
+            return (null, errors);
+        }
+        if (output["verdict"] is not JsonObject v)
+        {
+            errors.Add("Give `verdict` (backed, contradicted or unclear) with the truth map entry it rests on and words from it, as the input's truth map section says.");
+            return (null, errors);
+        }
+        var said = (string)v["verdict"]!;
+        var id = (string?)v["entry"];
+        var quote = (string?)v["quote"];
+        var entry = id is null ? null : truth["entries"]!.AsArray().OfType<JsonObject>().FirstOrDefault(e => (string)e["id"]! == id);
+        if (id is not null && entry is null) errors.Add($"entry `{id}` isn't one of the truth map entries in the input ({string.Join(", ", truth["entries"]!.AsArray().Select(e => (string)e!["id"]!))}).");
+        if (said is "backed" or "contradicted" && id is null) errors.Add($"A {said} verdict names the truth map entry it rests on, in `entry`.");
+        if (said is "backed" or "contradicted" && quote is null) errors.Add($"A {said} verdict copies words from its entry, in `quote`.");
+        if (entry is not null && quote is not null && !TruthList.Quotable(truth, entry).Any(t => Quotes.InText(quote, t)))
+            errors.Add($"quote \"{Short(quote)}\" isn't in {id} word for word (its FSD sentence, the PM's words, its section's text or the review's note; at least 4 words, or a whole line).");
+        // A ruling that says the code is right can't back a bug, and one that says the code is wrong can't contradict it.
+        // One exception (D411): "keep" on code the FSD never mentions keeps the feature, and the PM's words beside it say how
+        // it should work, so a backed verdict quoting at least four of those words stands. Only that pairing: the other
+        // rulings' names already say which way the PM meant, and code can't tell which way the words point.
+        var ruling = (string?)entry?["ruling"];
+        if (said == "backed" && ruling == "keep" && quote is not null && (string?)entry?["statement"] is { } words
+            && Quotes.Normalize(quote).Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 4 && Quotes.InText(quote, words))
+            ruling = null;
+        if (said == "backed" && ruling is "code-right" or "keep")
+            errors.Add($"{id} is ruled \"{Stangent.Spec.Fsd.TruthMap.RulingWords(ruling!)}\": that says the code is right as it is, so it can't back this bug. Say contradicted, or cite the entry that backs it.");
+        if (said == "contradicted" && ruling is "fsd-right" or "remove" or "not-a-match")
+            errors.Add($"{id} is ruled \"{Stangent.Spec.Fsd.TruthMap.RulingWords(ruling!)}\": that says the code is wrong, so it can't contradict this bug. Say backed, or cite the entry that contradicts it.");
+        if (verdictOnly && outcome != "stopped") errors.Add("There's no test target, so no test can be written: give the verdict and return outcome `stopped` (D408).");
+        else if (said == "backed" && outcome == "stopped" && !verdictOnly) errors.Add("A backed verdict comes with the test: write it, or say contradicted or unclear.");
+        if (said != "backed" && outcome == "test-written") errors.Add($"A {said} verdict writes no test: return outcome `stopped`, or say backed if the entry backs the ticket.");
+        if (errors.Count > 0) return (null, errors);
+        var usable = entry is not null && (bool)entry["usable"]!;
+        var forced = said != "unclear" && !usable;
+        var result = new JsonObject
+        {
+            ["verdict"] = forced ? "unclear" : said, ["forced"] = forced, ["entry"] = entry?.DeepClone(), ["quote"] = quote, ["why"] = (string?)v["why"],
+            ["pmConfirmed"] = entry is not null && (string)entry["standing"]! != "unconfirmed",
+        };
+        if (forced) result["said"] = said;
+        return (result, errors);
+    }
+
+    /// <summary>
     /// Why <paramref name="shows"/> doesn't stand for the failure (D95): missing, not in every run's whole message, or
     /// words the test itself holds (its expected value, its own "because …" text), which say nothing about what the code
     /// did. Colour codes, spacing, case and curly quotes don't count.
@@ -424,19 +571,21 @@ public static partial class BugProof
         attempt["usage"] = state["usage"]!.DeepClone();
         attempt["retries"] = (int?)state["retries"] ?? 0;
         Record(repo, paths, attempt);
-        state["stage"] = "done";
-        AiStep.SaveState(paths, StepSpec.Prove, state);
+        AiStep.Finish(paths, StepSpec.Prove, state, "done", "attempt recorded");
         return outcome == "failed" ? new RunStep("failed", "none", Errors: [reason ?? "failed"]) : new RunStep("recorded", "none");
     }
 
     /// <summary>Appends an attempt; it becomes the current outcome, and any earlier confirmation or verification is cleared.</summary>
     static void Record(StangentRepo repo, TicketPaths paths, JsonObject attempt)
     {
-        var proof = Load(paths) ?? new JsonObject { ["schemaVersion"] = 1, ["key"] = paths.Key, ["attempts"] = new JsonArray() };
+        var proof = Load(paths) ?? new JsonObject { ["schemaVersion"] = 2, ["key"] = paths.Key, ["attempts"] = new JsonArray() };
         var attempts = proof["attempts"]!.AsArray();
         attempt["n"] = attempts.Count + 1;
         attempts.Add(attempt);
-        proof["outcome"] = (string)attempt["outcome"]!;
+        var who = StateActor.Code("stangent ticket prove");
+        StateChanges.Apply(repo.Root, proof, StateKinds.Proof, paths.Key, (string)attempt["outcome"]!, who, $"attempt {attempts.Count}");
+        if (proof["confirmedBy"] is not null)
+            StateChanges.Move(repo.Root, StateKinds.ProofConfirmation, paths.Key, "confirmed", "unconfirmed", who, $"attempt {attempts.Count} replaced the proof");
         proof["confirmedBy"] = null;
         proof["verification"] = null;
         Save(paths, proof);
@@ -444,6 +593,7 @@ public static partial class BugProof
 
     static void Save(TicketPaths paths, JsonObject proof)
     {
+        proof["schemaVersion"] = 2;   // a v1 record is v2 as it stands: v2 only adds a verdict and two reasons for no proof
         var errors = SchemaRegistry.Embedded.Validate(Schema, proof.ToJsonString());
         if (errors.Count > 0) throw new StangentException("invalid_proof", "The proof record broke its contract (a stangent bug).", ExitCodes.Failed, errors);
         Quotes.WriteAtomic(File(paths), CanonicalJson.Serialize(proof));
@@ -460,6 +610,7 @@ public static partial class BugProof
         var proof = Load(paths) ?? throw new StangentException("no_proof", $"{key} has no proof yet. Run `stangent ticket prove {key}`.", ExitCodes.NotFound);
         if ((string)proof["outcome"]! != "reproduced")
             throw new StangentException("not_reproduced", $"{key}'s proof is {(string)proof["outcome"]!}; only a reproduced failure is confirmed.", ExitCodes.Usage);
+        StateChanges.Move(repo.Root, StateKinds.ProofConfirmation, key, proof["confirmedBy"] is null ? null : "confirmed", "confirmed", StateActor.Person(who), "a developer confirmed the reproduced failure");
         proof["confirmedBy"] = who;
         Save(paths, proof);
         return proof;

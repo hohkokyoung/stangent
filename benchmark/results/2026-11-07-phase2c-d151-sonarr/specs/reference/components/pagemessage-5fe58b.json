@@ -1,0 +1,66 @@
+{
+  "codeTitle": "PageMessage",
+  "entry": "ts|frontend/src/Components/Page/PageMessage.tsx#PageMessage",
+  "generated": {
+    "bundleHash": "1a833b756d49d2c624a902705b06e33766f6d63aeb73f23b4e15689265d3d34a",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 6570,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 7
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 4262,
+      "calls": 1,
+      "costUsd": 0.017757,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1983,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3239,
+      "calls": 1,
+      "costUsd": 0.015916,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2423,
+      "outputTokens": 268
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Components/Page/PageMessage.tsx#PageMessage",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [],
+    "rules": [],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Page/PageMessage.tsx#PageMessage"
+        ],
+        "id": "S1",
+        "text": "Displays the content passed to it inside an informational alert box."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Page/PageMessage.tsx#PageMessage"
+        ],
+        "id": "S2",
+        "text": "The alert is rendered with the INFO kind."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Page Message",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -41,6 +41,18 @@ public sealed class SchemaRegistry(Func<string, string?> load)
             .Order(StringComparer.Ordinal)];
     }
 
+    /// <summary>As <see cref="Validate"/>, but an error inside an array item or a choice names the field that failed and why
+    /// ("#/findings[0].note: StringTooShort"), so an AI step's retry is told what to fix.</summary>
+    public IReadOnlyList<string> ValidateDeep(string name, string json)
+    {
+        var schema = Get(name) ?? throw new StangentException("unknown_schema", $"No schema named {name}.");
+        static IEnumerable<NJsonSchema.Validation.ValidationError> Leaves(NJsonSchema.Validation.ValidationError e) =>
+            e is NJsonSchema.Validation.ChildSchemaValidationError child && child.Errors.Count > 0 ? child.Errors.Values.SelectMany(v => v).SelectMany(Leaves) : [e];
+        return [.. schema.Validate(json).SelectMany(Leaves)
+            .Select(e => $"{(string.IsNullOrEmpty(e.Path) ? "#" : e.Path)}: {e.Kind}")
+            .Distinct().Order(StringComparer.Ordinal)];
+    }
+
     JsonSchema? Get(string name) => cache.GetOrAdd(name, n =>
     {
         var json = load(n);

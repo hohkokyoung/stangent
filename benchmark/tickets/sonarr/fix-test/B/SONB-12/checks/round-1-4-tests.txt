@@ -1,0 +1,18 @@
+{
+  "commit": "c3fd9cc1ea74ecc77c10584c3da193cc57322122-dirty",
+  "newFailures": [],
+  "othersChecked": true,
+  "passed": true,
+  "reason": "the test passes here and nothing new fails",
+  "result": "passed",
+  "runs": [
+    {
+      "file": null,
+      "line": null,
+      "message": "",
+      "ms": 3063,
+      "result": "passed"
+    }
+  ],
+  "testChanged": null
+}

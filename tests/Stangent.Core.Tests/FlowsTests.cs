@@ -1,0 +1,486 @@
+using Stangent.Flows;
+using Stangent.Graph;
+using Stangent.Graph.Detectors;
+
+namespace Stangent.Core.Tests;
+
+/// <summary>Rebuild layer 3 (D170–D184): flows laid out from the Shop fixture's graph by code.</summary>
+public class FlowsTests(ShopGraph shop) : IClassFixture<ShopGraph>
+{
+    const string Core = "Shop.Core|M:Shop.Core.";
+
+    [Fact]
+    public void Every_call_the_compiler_resolves_records_the_line_it_is_written_on()
+    {
+        // D184: a call-site fact per call, on the caller, at the line the call starts.
+        var execute = $"{Core}RefreshStockService.Execute(Shop.Core.RefreshStockCommand)";
+        var sites = shop.Graph.AllFacts.Where(f => f.Kind == "call-site" && f.Owner == execute && f["target"] == $"{Core}RefreshStockService.Recount(System.Int32)")
+            .Select(f => f.Line).Order().ToList();
+        Assert.Equal([42, 45, 46], sites);
+        // TypeScript too, a JSX tag as a render.
+        Assert.Contains(shop.Graph.AllFacts, f => f.Kind == "call-site" && f["kind"] == "renders" && f.File!.EndsWith("App.tsx", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_job_is_a_flow_whose_steps_quote_each_call_line_with_its_conditions()
+    {
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        var job = set.Flows.Single(f => f.Kind == "job" && f.Start.Point.Contains("RefreshStockService.Execute", StringComparison.Ordinal));
+        Assert.Equal("system", job.Actor.Who);
+        var recounts = job.Steps.Where(s => s.Point is { } p && p.Contains("Recount", StringComparison.Ordinal)).ToList();
+        Assert.Equal([42, 45, 46], recounts.Select(s => s.At.Line).Order().ToList());
+        Assert.All(recounts, s => Assert.Null(s.From)); // the job's own calls hang from its start
+        // Each step carries the conditions around its call, innermost first (D174).
+        Assert.Equal(["case", "loop"], recounts.Single(s => s.At.Line == 42).Conditions.Select(c => c.Kind).ToList());
+        Assert.Equal("catch", recounts.Single(s => s.At.Line == 46).Conditions[0].Kind);
+        // The same point reached again in one flow isn't walked twice.
+        Assert.Equal(2, recounts.Count(s => s.SameAs is not null));
+    }
+
+    [Fact]
+    public void Two_builds_of_one_graph_write_the_same_bytes_and_the_check_passes_on_what_was_written()
+    {
+        var a = FlowFiles.Render(FlowBuilder.Build(shop.Graph, shop.Root));
+        var b = FlowFiles.Render(FlowBuilder.Build(shop.Graph, shop.Root));
+        Assert.Equal(a, b);
+        FlowFiles.Write(shop.Root, FlowBuilder.Build(shop.Graph, shop.Root));
+        var check = FlowFiles.Check(shop.Root, shop.Graph, new FlowSettings());
+        Assert.True((bool)check["ok"]!, check.ToJsonString());
+        Assert.Contains($"{FlowFiles.Folder}/index.json", a.Keys);
+    }
+
+    [Fact]
+    public void Every_start_is_a_flow_or_a_stated_reason_and_every_guess_says_why()
+    {
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        Assert.All(set.Skipped, s => Assert.False(string.IsNullOrWhiteSpace(s.Reason)));
+        Assert.All(set.Flows.SelectMany(f => f.Guesses), g => Assert.False(string.IsNullOrWhiteSpace(g.Reason)));
+        Assert.All(set.Flows.SelectMany(f => f.Unknowns), u => Assert.False(string.IsNullOrWhiteSpace(u.Why)));
+        // A click whose handler does no server work is screen behaviour, said so (D171).
+        Assert.Contains(set.Skipped, s => s.Kind == "click" && s.Reason.StartsWith("screen behaviour only", StringComparison.Ordinal)
+            || s.Kind == "click" && s.Reason.Contains("handler", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Each_hub_and_depth_stop_a_flow_continues_into_is_a_shared_flow_walked_once()
+    {
+        // D189: low limits so the fixture has hubs and depth stops.
+        var set = FlowBuilder.Build(shop.Graph, shop.Root, new FlowSettings(HubCallers: 2, Depth: 1));
+        var shared = set.Flows.Where(f => f.Kind == "shared").ToList();
+        Assert.NotEmpty(shared);
+        Assert.Equal(shared.Count, shared.Select(f => f.Start.Point).Distinct(StringComparer.Ordinal).Count());
+        var ids = shared.Select(f => f.Id).ToHashSet(StringComparer.Ordinal);
+        var continues = set.Flows.SelectMany(f => f.Links).Where(l => l.Kind == "continues").ToList();
+        Assert.NotEmpty(continues);
+        // Every continues link, the shared flows' own included, names the shared flow that walks on from it.
+        Assert.All(continues, l => Assert.Contains(l.ToFlow ?? "(none)", ids));
+        // D196: a hub that reads or saves a table ends `database` there and still continues into its shared walk.
+        var reading = set.Flows.SelectMany(f => f.Steps.Where(st => st.Kind == "database" && st.Point is not null).Select(st => (Flow: f, Step: st))).ToList();
+        Assert.All(reading, x => Assert.Contains(x.Flow.Links, l => l.Kind == "continues" && l.Step == x.Step.N && l.ToFlow is not null));
+        Assert.All(shared, f => Assert.Equal("the flow that continues here", f.Actor.Who));
+        Assert.Equal(FlowFiles.Render(set), FlowFiles.Render(FlowBuilder.Build(shop.Graph, shop.Root, new FlowSettings(HubCallers: 2, Depth: 1))));
+    }
+
+    [Fact]
+    public void A_field_or_property_holding_a_function_is_code_and_one_holding_a_value_is_not()
+    {
+        // D189: `this.seriesId()` reads a signal, no step; `getPageUrl = (n) => …` is a function, called like a method.
+        var root = Directory.CreateTempSubdirectory("stangent-props-").FullName;
+        try
+        {
+            File.WriteAllLines(Path.Combine(root, "c.ts"), [
+                "export class C {",
+                "  seriesId = input.required<number>();",
+                "  getPageUrl = (pageNum: number, chapterId: number = this.chapterId()) => {",
+                "    return `${pageNum}`;",
+                "  }",
+                "  load = async id => this.http.get(id);",
+                "  total = computed(() => this.seriesId() * 2);",
+                "}",
+            ]);
+            var g = new FlowGraph(shop.Graph, root);
+            Node Prop(int line, int end = 0) => new("ts|c.ts#C.x", NodeKind.Property, "C.x", null, "c.ts", line, end == 0 ? line : end);
+            Assert.False(g.HoldsFunction(Prop(2)));
+            Assert.True(g.HoldsFunction(Prop(3, 5)));
+            Assert.True(g.HoldsFunction(Prop(6)));
+            Assert.False(g.HoldsFunction(Prop(7)));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+}
+
+public class HelperExitTests(ShopGraph shop) : IClassFixture<ShopGraph>
+{
+    [Fact]
+    public void An_apps_own_helper_that_ends_the_request_is_an_exit_where_it_is_returned()
+    {
+        var exits = shop.Graph.AllFacts.Where(f => f.Kind == "exit" && f.Owner.Contains("PageHelpers.Show", StringComparison.Ordinal))
+            .Select(f => $"{f["kind"]} {f["status"]} {f["result"]}").Order(StringComparer.Ordinal).ToList();
+        Assert.Equal(["Forbid  Refuse", "StatusCode 404 Gone"], exits);
+    }
+
+    [Fact]
+    public void A_filter_setting_its_contexts_result_to_a_refusal_is_an_exit()
+    {
+        var exits = shop.Graph.AllFacts.Where(f => f.Kind == "exit" && f.Owner.Contains("OpenStoreFilter.OnAuthorization", StringComparison.Ordinal)).OrderBy(f => f.Line).ToList();
+        Assert.Equal(2, exits.Count);
+        Assert.Equal("Challenge", exits[0]["kind"]);
+        Assert.Contains("IsAuthenticated", exits[0]["conditions"], StringComparison.Ordinal);
+        // D301: any other result set on the context stops the request too, named by its type.
+        Assert.Equal(("Result", "EmptyResult"), (exits[1]["kind"], exits[1]["status"]));
+        Assert.Contains("else", exits[1]["conditions"], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_call_into_a_package_is_a_call_site_with_no_target_and_not_one_into_system()
+    {
+        var packages = shop.Graph.AllFacts.Where(f => f.Kind == "call-site" && f["kind"] == "package").ToList();
+        Assert.All(packages, f => Assert.Equal("", f["target"]));
+        Assert.DoesNotContain(packages, f => f["package"].StartsWith("System", StringComparison.Ordinal));
+        Assert.Contains(packages, f => f["package"].StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_redirect_links_to_the_flow_of_the_screen_it_opens()
+    {
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        var welcome = set.Flows.Single(f => f.Kind == "screen-opens" && f.Start.Point.EndsWith("AccountController.Welcome", StringComparison.Ordinal));
+        var links = set.Flows.SelectMany(f => f.Links).Where(l => l.Kind == "screen" && l.At.Code.Contains("RedirectToAction(nameof(Welcome))", StringComparison.Ordinal)).ToList();
+        Assert.NotEmpty(links);
+        Assert.All(links, l => { Assert.Equal(welcome.Id, l.ToFlow); Assert.False(l.Guessed); Assert.Equal("AccountController.Welcome", l.To); });
+        // Layer 2 keeps where it goes: the action and, by default, the controller it's written in.
+        Assert.Contains(shop.Graph.AllFacts, f => f.Kind == "exit" && f["text"] == "RedirectToAction(nameof(Welcome))" && f["action"] == "Welcome" && f["controller"] == "Account" && f["area"] == "");
+    }
+
+    [Fact]
+    public void An_interface_member_written_in_a_base_class_dispatches_to_it()
+    {
+        // ConsoleRecorder : RecorderBase, IRecorder, with Record written in RecorderBase: a call through IRecorder runs it.
+        Assert.Contains(shop.Graph.AllEdges, e => e.Kind == EdgeKind.DispatchesTo
+            && e.Source.EndsWith("Shop.Core.IRecorder.Record(System.String)", StringComparison.Ordinal)
+            && e.Target.EndsWith("Shop.Core.RecorderBase.Record(System.String)", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void An_onclick_handing_its_url_to_a_script_that_posts_is_matched_by_post()
+    {
+        // W2: `postSelected('@Url.Action("Archive")')`, and postSelected sends its URL by $.ajax({ type: 'POST' }).
+        var match = Assert.Single(shop.Graph.AllFacts, f => f.Kind == "http-match" && f.File!.EndsWith("_Popup.cshtml", StringComparison.Ordinal) && f.Line == 10);
+        Assert.Equal("POST", match["verb"]);
+        Assert.Contains("which sends it by POST", match["reason"], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Every_point_in_a_test_project_is_test_code()
+    {
+        // D238: FakeRecorder carries no test attribute, but sits in a project that declares tests: a flow never walks into it.
+        var fake = Assert.Single(shop.Graph.AllNodes, n => n.Id.EndsWith("Shop.Tests.FakeRecorder.Record(System.String)", StringComparison.Ordinal));
+        Assert.True(fake.IsTest);
+        Assert.DoesNotContain(shop.Graph.AllNodes, n => n.Id.Contains("Shop.Core.", StringComparison.Ordinal) && n.IsTest);
+        Assert.DoesNotContain(new FlowGraph(shop.Graph, shop.Root).Dispatch(shop.Graph.AllNodes.Single(n => n.Id.EndsWith("Shop.Core.IRecorder.Record(System.String)", StringComparison.Ordinal)).Id), t => t.Contains("FakeRecorder", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_base_virtual_a_subclass_does_not_override_is_one_of_the_candidates()
+    {
+        // Fresh check S2: Stamper.Mark only sets a property (no call or save facts), and QuietStamper doesn't override it.
+        var g = new FlowGraph(shop.Graph, shop.Root);
+        var mark = shop.Graph.AllNodes.Single(n => n.Id.EndsWith("Shop.Core.Stamper.Mark(Shop.Core.Stamp)", StringComparison.Ordinal)).Id;
+        var runs = g.Dispatch(mark);
+        Assert.Contains(mark, runs);
+        Assert.Contains(runs, r => r.EndsWith("LoudStamper.Mark(Shop.Core.Stamp)", StringComparison.Ordinal));
+        // An interface member has no body of its own.
+        var record = shop.Graph.AllNodes.Single(n => n.Id.EndsWith("Shop.Core.IRecorder.Record(System.String)", StringComparison.Ordinal)).Id;
+        Assert.DoesNotContain(record, g.Dispatch(record));
+    }
+
+    [Fact]
+    public void A_redirect_written_outside_a_controller_keeps_the_request_area()
+    {
+        // Fresh check S22: a filter's RedirectToActionResult names no area, so the request's own applies: any area fits; a
+        // controller's own redirect keeps its controller's area ("" here).
+        var filter = Assert.Single(shop.Graph.AllFacts, f => f.Kind == "exit" && f["text"].Contains("RedirectToActionResult(\"AccessDenied\"", StringComparison.Ordinal));
+        Assert.False(filter.Data.ContainsKey("area"));
+        Assert.Contains(shop.Graph.AllFacts, f => f.Kind == "exit" && f["text"] == "RedirectToAction(nameof(Welcome))" && f["area"] == "");
+    }
+
+    [Fact]
+    public void A_redirect_to_the_request_own_url_is_the_same_page()
+    {
+        // Fresh check S21: RedirectResult(urls.ThisPage(true)), whose implementation returns Request.Path on another scheme.
+        var exit = Assert.Single(shop.Graph.AllFacts, f => f.Kind == "exit" && f["text"].Contains("urls.ThisPage(true)", StringComparison.Ordinal));
+        Assert.EndsWith("IPageUrls.ThisPage(System.Boolean)", exit["urlFrom"], StringComparison.Ordinal);
+        Assert.Contains(shop.Graph.AllFacts, f => f.Kind == "request-url" && f.Owner.EndsWith("PageUrls.ThisPage(System.Boolean)", StringComparison.Ordinal) && !f.Owner.Contains(".IPageUrls.", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Mutate_taken_from_the_app_own_mutation_hook_starts_it_with_certainty()
+    {
+        // Fresh check S4, S7: `const { mutate } = useApiMutation(…)`, then `mutate(id)`: useApiMutation keeps a mutation's function.
+        var g = new FlowGraph(shop.Graph, shop.Root);
+        var site = Assert.Single(shop.Graph.AllFacts, f => f.Kind == "call-site" && f.File!.EndsWith("useSaveShelf.ts", StringComparison.Ordinal) && f.Line == 13);
+        Assert.Equal("1", site["fromResult"]);
+        var flow = new Flow { Id = "x", Name = "x", Kind = "click", Start = new StartInfo("x", new At("a", 1, ""), "p", []), Actor = new Actor("u", "t", null, false) };
+        Assert.True(new Walker(g, new FlowSettings(), flow).StartsMutation(site),
+            string.Join(" ; ", shop.Graph.AllFacts.Where(f => f.File?.EndsWith("useSaveShelf.ts", StringComparison.Ordinal) == true && f.Kind == "call-site").Select(f => $"{f.Line} {string.Join(",", f.Data.Select(d => d.Key + "=" + d.Value))}")));
+    }
+
+    [Fact]
+    public void A_screen_opening_with_a_mutation_hook_only_declares_its_request_and_the_click_calling_mutate_sends_it()
+    {
+        // D316: ShelfEditor runs useSaveShelf on open, which sets a mutation up; only the Save click (saveShelf → mutate) sends the PUT.
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        static bool Editor(string file) => file.EndsWith("ShelfEditor.tsx", StringComparison.Ordinal);
+        var click = Assert.Single(set.Flows, f => f.Kind == "click" && Editor(f.Start.At.File));
+        Assert.Contains(click.Steps, s => s.Kind == "http" && s.Point is { } p && p.Contains("PUT", StringComparison.Ordinal));
+        var screen = set.Flows.SingleOrDefault(f => f.Kind == "screen-opens" && f.Name.Contains("/shelf/edit", StringComparison.Ordinal));
+        Assert.True(screen is null || screen.Steps.All(s => s.Kind != "http"), screen is null ? "" : string.Join("\n", screen.Steps.Select(s => $"{s.N} {s.Kind} {s.What}")));
+        // Opening it sends nothing: display only, said in the skipped list, not silently missing.
+        if (screen is null) Assert.Contains(set.Skipped, x => x.Kind == "screen-opens" && x.Reason.StartsWith("display only", StringComparison.Ordinal) && x.At.File.EndsWith("App.tsx", StringComparison.Ordinal) && x.At.Code.Contains("/shelf/edit", StringComparison.Ordinal));
+        // Walked by hand, the opening shows the cut: one step leaving useApiMutation's function to the mutation, nothing past it.
+        var g = new FlowGraph(shop.Graph, shop.Root);
+        var page = g.Nodes.Values.Single(n => n.Kind == NodeKind.Page && n.Name.Contains("/shelf/edit", StringComparison.Ordinal));
+        var shows = g.Out(page.Id, EdgeKind.RoutesTo).Concat(g.Out(page.Id, EdgeKind.Renders)).Select(e => e.Target).Distinct(StringComparer.Ordinal).ToList();
+        var opens = new Flow { Id = "s", Name = "s", Kind = "screen-opens", Start = new StartInfo("the screen opens", new At("a", 1, ""), page.Id, []), Actor = new Actor("u", "t", null, false) };
+        var walker = new Walker(g, new FlowSettings(), opens);
+        walker.Root(page.Id, shows);
+        Assert.False(walker.Meaningful);
+        walker.Finish();
+        var left = Assert.Single(opens.Steps, st => st.End?.Kind == "waits");
+        Assert.StartsWith("leaves send to the mutation it sets up", left.What, StringComparison.Ordinal);
+        Assert.DoesNotContain(opens.Steps, st => st.From == left.N);
+        Assert.Equal(5, FlowFiles.Version);
+    }
+
+    [Fact]
+    public void An_instance_made_by_reflection_and_cast_to_an_interface_is_one_of_its_implementations()
+    {
+        // Fresh check S27: `Activator.CreateInstance(type) as IRecorder` is a fact naming IRecorder, not a reflection ❓.
+        var made = Assert.Single(shop.Graph.AllFacts, f => f.Kind == "creates-one-of");
+        Assert.EndsWith("Shop.Core.IRecorder", made["type"], StringComparison.Ordinal);
+        Assert.DoesNotContain(shop.Graph.AllBlindSpots, b => b.File.EndsWith("Recorders.cs", StringComparison.Ordinal));
+        Assert.Contains(new FlowGraph(shop.Graph, shop.Root).Implementers(made["type"]), t => t.EndsWith("Shop.Core.ConsoleRecorder", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Each_guessed_link_carries_its_own_reason()
+    {
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        var guessed = set.Flows.SelectMany(f => f.Links).Where(l => l.Guessed).ToList();
+        Assert.NotEmpty(guessed);
+        Assert.All(guessed, l => Assert.False(string.IsNullOrWhiteSpace(l.Reason)));
+        // Step 6 (D237 item 2): only a queued command's link says it was matched to its job by type.
+        Assert.All(guessed.Where(l => l.Reason!.Contains("queued command", StringComparison.Ordinal)), l => Assert.Equal("runs-later", l.Kind));
+        Assert.DoesNotContain(set.Flows.SelectMany(f => f.Guesses), x => x.Reason == "no reason recorded");
+    }
+
+    [Fact]
+    public void The_guess_report_puts_every_line_in_a_cause_and_a_bucket()
+    {
+        var report = GuessReport.Report(FlowBuilder.Build(shop.Graph, shop.Root));
+        Assert.True((bool)report["ok"]!, report["problems"]!.ToJsonString());
+        Assert.True((int)report["guessed"]!["total"]!["lines"]! > 0);
+        // Counted by code line: a line's occurrences are at least its start flows.
+        Assert.All(report["top"]!.AsArray(), l => Assert.True((int)l!["occurrences"]! >= (int)l["startFlows"]!));
+        // D237, D239: a run-time-only line says what it depends on; an app-specific one asks a person.
+        Assert.All(report["top"]!.AsArray().Where(l => (string?)l!["bucket"] == GuessReport.RunTime), l => Assert.StartsWith("depends on", (string)l!["dependsOn"]!, StringComparison.Ordinal));
+        Assert.All(report["top"]!.AsArray().Where(l => (string?)l!["bucket"] == GuessReport.AppSpecific), l => Assert.Contains("?", (string)l!["question"]!, StringComparison.Ordinal));
+        var buckets = report["guessed"]!["byBucket"]!.AsObject().Sum(b => (int)b.Value!["lines"]!);
+        Assert.Equal((int)report["guessed"]!["total"]!["lines"]!, buckets);
+    }
+
+    [Theory]
+    [InlineData("one of 3: A.Run, B.Run, C.Run; which one runs depends on the IRun the call is made on at run time", "one-of-n")]
+    [InlineData("a queued command matched to its job by type", "queued-command")]
+    [InlineData("no screen in the code matches /Admin/Order/List", "no-screen")]
+    [InlineData("2 endpoints fit (DELETE /a and DELETE /b); the URL is a parameter: one of 3 values its callers pass, this one", "endpoints-fit")]
+    public void A_reason_is_sorted_by_its_first_part(string reason, string cause) => Assert.Equal(cause, GuessReport.Classify(reason, GuessReport.Guessed)?.Id);
+
+    [Theory]
+    [InlineData("deferred", "stream:ref.closed", "only when the stream sends a value (`ref.closed`)")]
+    [InlineData("deferred", "stream:from(…) when filter(confirmed => confirmed)", "only when the stream sends a value (`from(…)`) that passes `filter(confirmed => confirmed)`")]
+    [InlineData("deferred", "timer:setTimeout", "after `setTimeout`'s delay")]
+    [InlineData("deferred", "listener:connection.on", "only when the event comes (`connection.on`)")]
+    [InlineData("deferred", "mutation:useMutation", "only when the mutation is started (`mutate(…)` is called)")]
+    [InlineData("closedBy", "Modal|!isOpen|isOpen=open", "only while `isOpen` (Modal draws nothing otherwise; here isOpen=open)")]
+    public void Code_that_runs_later_reads_as_a_condition_not_a_guess(string key, string value, string text)
+    {
+        // D240: certain code that runs later or only when something happens carries "only when …", not 🟡.
+        var fact = new Fact("d", "call-site", "o", "a.ts", 3, new Dictionary<string, string> { [key] = value });
+        var when = Walker.When(fact, new At("a.ts", 3, ""));
+        Assert.NotNull(when);
+        Assert.Equal(text, FlowFiles.WhenText(when));
+        Assert.Null(Walker.When(new Fact("d", "call-site", "o", "a.ts", 3, new Dictionary<string, string>()), new At("a.ts", 3, "")));
+    }
+
+    [Fact]
+    public void A_queued_command_reason_on_a_screen_link_fails_item_2()
+    {
+        var f = new Flow { Id = "click-x", Name = "x", Kind = "click", Start = new StartInfo("x", new At("a.cs", 1, ""), "p", []), Actor = new Actor("user", "t", null, false) };
+        f.Steps.Add(new Step { N = 1, What = "goes to /x", At = new At("a.cs", 2, "Redirect(\"/x\")"), Kind = "navigate" });
+        f.Guesses.Add(new Guess(1, "Sends the user to /x", "a queued command matched to its job by type"));
+        var report = GuessReport.Report(new FlowSet("c", new FlowSettings(), [f], []));
+        Assert.False((bool)report["ok"]!);
+        Assert.Contains("item 2", report["problems"]![0]!.GetValue<string>(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_navigation_written_as_a_constant_path_fits_the_pages_whose_route_matches()
+    {
+        var g = new FlowGraph(shop.Graph, shop.Root);
+        const string file = "Shop.Web/ClientApp/src/app/order-form.component.ts";
+        var orders = g.PagesAt("'/orders'", file);
+        Assert.Single(orders);
+        Assert.EndsWith("|/orders", orders[0], StringComparison.Ordinal);
+        Assert.Equal(g.PagesAt("'/orders/7'", file), g.PagesAt("['/orders', order.id]", file));
+        Assert.Single(g.PagesAt("`/orders/${id}`", file));
+        Assert.EndsWith("|/orders/:id", g.PagesAt("`/orders/${id}`", file)[0], StringComparison.Ordinal);
+        Assert.Empty(g.PagesAt("returnUrl", file));          // made at runtime
+        Assert.Empty(g.PagesAt("'orders'", file));           // relative to where it is
+        Assert.Empty(g.PagesAt("'/nowhere'", file));
+        // A path joined with `+`; a router path read from the app's root (D204).
+        Assert.EndsWith("|/orders/:id", g.PagesAt("'/orders/' + order.id", file).Single(), StringComparison.Ordinal);
+        Assert.EndsWith("|/orders/:id", g.PagesAt("['orders', order.id]", file, fromRoot: true).Single(), StringComparison.Ordinal);
+        Assert.Empty(g.PagesAt("['orders', order.id]", file));
+        Assert.Empty(g.PagesAt("this.paths(order)", file, fromRoot: true));
+                // Another frontend's pages never fit: the React app's /orders/new isn't the Angular app's.
+        Assert.Single(g.PagesAt("'/orders/new'", "Shop.Web/react-app/src/App.tsx"));
+        Assert.EndsWith("|/orders/:id", g.PagesAt("'/orders/new'", file).Single(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_call_through_a_value_another_function_returned_is_a_guess_that_says_whose_result_it_is()
+    {
+        // D210: `const load = priceLoader('eur')` then `load(n)`: what runs is whatever priceLoader handed back, so priceLoader
+        // stands for it, 🟡 with its reason, never a certain call to priceLoader.
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        var steps = set.Flows.SelectMany(f => f.Steps).Where(s => s.At.File.EndsWith("PriceTag.tsx", StringComparison.Ordinal) && s.At.Line == 11 && s.What.Contains("priceLoader", StringComparison.Ordinal)).ToList();
+        Assert.NotEmpty(steps);
+        Assert.All(steps, s =>
+        {
+            Assert.True(s.Guessed);
+            Assert.Equal("calls a value taken from priceLoader's result; what it runs isn't known, so priceLoader stands for it", s.GuessReason);
+        });
+    }
+
+    [Fact]
+    public void A_call_inside_a_timer_runs_later_a_condition_that_says_so()
+    {
+        // D212, D240: `setInterval(() => refreshPrices(), 60000)` runs refreshPrices after its delay, not when the click runs:
+        // certain, so a condition on the step, not 🟡.
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        var steps = set.Flows.SelectMany(f => f.Steps).Where(s => s.At.File.EndsWith("PriceTag.tsx", StringComparison.Ordinal) && s.At.Line == 12 && s.What.Contains("refreshPrices", StringComparison.Ordinal)).ToList();
+        Assert.NotEmpty(steps);
+        Assert.All(steps, s =>
+        {
+            Assert.False(s.Guessed);
+            Assert.Equal("after `setInterval`'s delay", FlowFiles.WhenText(s.Conditions[0]));
+        });
+    }
+
+    [Fact]
+    public void An_element_inside_a_component_that_draws_nothing_until_a_prop_is_set_has_a_condition_that_says_so()
+    {
+        // D213, D240: Drawer returns null while `!isOpen`, so PriceTag inside it is shown only while it's open.
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        var steps = set.Flows.SelectMany(f => f.Steps).Where(s => s.At.File.EndsWith("PriceModal.tsx", StringComparison.Ordinal) && s.What == "shows PriceTag").ToList();
+        Assert.NotEmpty(steps);
+        Assert.All(steps, s =>
+        {
+            Assert.False(s.Guessed);
+            Assert.Equal("only while `isOpen` (Drawer draws nothing otherwise; here isOpen=open)", FlowFiles.WhenText(s.Conditions[0]));
+        });
+    }
+
+    [Fact]
+    public void A_call_in_a_function_given_to_a_cache_runs_only_when_nothing_is_stored_and_the_cache_call_itself_has_no_such_condition()
+    {
+        // D215: PriceCache.cs — Load inside `cache.Get(…, () => …)` and `seen.GetOrAdd(…, id => …)` runs only on a miss; the
+        // call to cache.Get on the same line doesn't borrow that condition, and Load on its own line has none.
+        var set = FlowBuilder.Build(shop.Graph, shop.Root);
+        var job = set.Flows.Single(f => f.Kind == "job" && f.Start.Point.Contains("PriceCacheTask.ExecuteAsync", StringComparison.Ordinal));
+        string Conds(int line, string what) => string.Join(" ← ", job.Steps.Single(s => s.At.Line == line && s.What.Contains(what, StringComparison.Ordinal)).Conditions.Select(c => $"{c.Kind} {c.Code}"));
+        Assert.Equal("cache-miss cache.Get", Conds(14, "PriceLoader.Load"));
+        Assert.Equal("", Conds(14, "IPriceCache.Get"));
+        Assert.Equal("cache-miss seen.GetOrAdd", Conds(15, "PriceLoader.Load"));
+        Assert.Equal("", Conds(16, "PriceLoader.Load"));
+        // D216: `loader?.Reload(PriceLoader.Load(price))` — both run only when loader is set.
+        Assert.Equal("set loader", Conds(17, "PriceLoader.Reload"));
+        Assert.Equal("set loader", Conds(17, "PriceLoader.Load"));
+        Assert.Contains("only if `loader` is set", FlowFiles.Markdown(job, set), StringComparison.Ordinal);
+        Assert.Contains("only if `cache.Get` finds nothing stored for the key", FlowFiles.Markdown(job, set), StringComparison.Ordinal);
+    }
+}
+
+/// <summary>Step 6 (D236): a repository's save followed into the database library's own call.</summary>
+public class RepositoryProofTests
+{
+    static Fact Site(string owner, int line, params (string, string)[] data) => new("call-sites", "call-site", owner, "r.cs", line, data.ToDictionary(d => d.Item1, d => d.Item2));
+
+    [Fact]
+    public void A_repository_method_reaching_the_database_library_through_its_implementation_is_proved()
+    {
+        // IRepository<T>.InsertAsync → EntityRepository<T>.InsertAsync → BaseDataProvider.InsertEntityAsync → linq2db.
+        var sites = new[]
+        {
+            Site("Repo.InsertAsync", 10, ("kind", "calls"), ("target", "Provider.InsertEntityAsync")),
+            Site("Provider.InsertEntityAsync", 20, ("kind", "package"), ("target", ""), ("package", "linq2db"), ("method", "DataExtensions.InsertWithInt32IdentityAsync")),
+            Site("Repo.GetByIdAsync", 30, ("kind", "package"), ("target", ""), ("package", "linq2db"), ("method", "DataExtensions.InsertAsync")),
+            Site("Repo.Touch", 40, ("kind", "package"), ("target", ""), ("package", "Newtonsoft.Json"), ("method", "JsonConvert.SerializeObject")),
+        }.ToLookup(f => f.Owner, StringComparer.Ordinal);
+        var dispatch = new[] { ("IRepo.InsertAsync", "Repo.InsertAsync"), ("IRepo.GetByIdAsync", "Repo.GetByIdAsync"), ("IRepo.Touch", "Repo.Touch") }.ToLookup(x => x.Item1, x => x.Item2, StringComparer.Ordinal);
+        var none = Array.Empty<Fact>().ToLookup(f => f.Owner, StringComparer.Ordinal);
+
+        var proof = EntityTablesDetector.RepositoryProof("IRepo.InsertAsync", "write", sites, none, dispatch);
+        Assert.Equal("linq2db's DataExtensions.InsertWithInt32IdentityAsync (r.cs:20)", proof);
+        // A library call whose own name says the other mode doesn't prove a read; a call into a library that isn't a database proves nothing.
+        Assert.Null(EntityTablesDetector.RepositoryProof("IRepo.GetByIdAsync", "read", sites, none, dispatch));
+        Assert.Null(EntityTablesDetector.RepositoryProof("IRepo.Touch", "write", sites, none, dispatch));
+    }
+}
+
+/// <summary>Step 6 (D236): the views a plain project's build copies out for a web app to compile at runtime.</summary>
+public class ServedViewsTests
+{
+    [Fact]
+    public void Views_the_build_copies_out_are_served_and_others_are_not()
+    {
+        var dir = Directory.CreateTempSubdirectory("served-views").FullName;
+        try
+        {
+            foreach (var f in new[] { "Views/Configure.cshtml", "Views/_ViewImports.cshtml", "Views/Admin/List.cshtml", "Views/Draft.cshtml", "Areas/Public/Views/Info.cshtml", "obj/Views/Old.cshtml" })
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(dir, f))!);
+                File.WriteAllText(Path.Combine(dir, f), "<p></p>");
+            }
+            File.WriteAllText(Path.Combine(dir, "Plugin.csproj"), """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <ItemGroup>
+                    <Content Include="Views\Configure.cshtml"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
+                    <Content Include="Views\_ViewImports.cshtml"><CopyToOutputDirectory>Always</CopyToOutputDirectory></Content>
+                    <None Update="Views\Admin\**\*.cshtml;Areas\**\*.cshtml" CopyToOutputDirectory="PreserveNewest" />
+                    <Content Include="Views\Draft.cshtml"><CopyToOutputDirectory>Never</CopyToOutputDirectory></Content>
+                  </ItemGroup>
+                </Project>
+                """);
+            Assert.Equal(["Areas/Public/Views/Info.cshtml", "Views/Admin/List.cshtml", "Views/Configure.cshtml", "Views/_ViewImports.cshtml"],
+                Stangent.Graph.Loading.ServedViews.Copied(Path.Combine(dir, "Plugin.csproj")));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+}
+
+/// <summary>X2 (step 6, D238): a URL whose only fixed part is the API root.</summary>
+public class ApiRootTests
+{
+    [Fact]
+    public void A_url_fixed_only_at_the_api_root_is_built_at_runtime()
+    {
+        string[][] endpoints = [["api", "series", "{id}"], ["api", "filter", "{name}"], ["api", "account", "login"], ["login"]];
+        Assert.Equal(["api"], FrontendHttpDetector.ApiRoot(endpoints));
+        Assert.True(FrontendHttpDetector.OnlyRoot("/api/{*}/{*}", ["api"]));
+        Assert.False(FrontendHttpDetector.OnlyRoot("/api/filter/{*}", ["api"]));
+        Assert.False(FrontendHttpDetector.OnlyRoot("{base}/{*}", ["api"]));
+        Assert.False(FrontendHttpDetector.OnlyRoot("/api", ["api"]));
+    }
+}

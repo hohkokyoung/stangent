@@ -1,0 +1,1 @@
+Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.ProcessFile(System.String,System.String,System.String,System.String,NzbDrone.Core.Tv.Series): 1 test(s), the proof's test among them (Sonarr.Api.Test|M:NzbDrone.Api.Test.ManualImportServiceFolderLookupFixture.should_use_series_found_by_folder_name_when_full_relative_path_lookup_fails)

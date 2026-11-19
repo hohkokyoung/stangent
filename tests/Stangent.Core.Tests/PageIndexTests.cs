@@ -154,9 +154,7 @@ public class PageIndexTests
                 ["sideEffects"] = new JsonArray(new JsonObject { ["text"] = "Sends a thank-you note once an order is placed.", ["cites"] = new JsonArray() }) },
         };
         app.Write("specs/reference/backend/receipt.json", page.ToJsonString());
-        app.Write("specs/fsd/shop-fsd/document.json", """
-            {"id":"shop-fsd","sections":[{"id":"2","title":"After the sale","text":"A postcard goes out by courier."}]}
-            """);
+        FsdFixture.Write(app.Root, "shop-fsd", "Shop FSD", ("2", "After the sale", "A postcard goes out by courier."));
         app.Write("specs/trace.yaml", $"""
             version: 1
             entries:

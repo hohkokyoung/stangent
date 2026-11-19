@@ -1,0 +1,162 @@
+version: 4
+entries:
+  - id: "S001"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "2.1"
+      quote: "A Random button on the library screen opens a randomly chosen series from that library."
+    page: null
+    note: "No random-series button exists in the library detail screen."
+  - id: "S002"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.1"
+      quote: "A slideshow mode turns the page automatically after a set number of seconds."
+    page: null
+    note: "No slideshow feature is found in the UI code."
+  - id: "S003"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.1"
+      quote: "Brightness can be set anywhere from 0% to 100%."
+    page: null
+    note: "The brightness (darkness) value is validated with a minimum of 10 and a maximum of 100."
+  - id: "S004"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: "Selected text can be read aloud using the device's text-to-speech voice."
+    page: null
+    note: "No text-to-speech or speechSynthesis usage exists in the UI."
+  - id: "S005"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "The owner can share a reading list through a public link that opens without signing in."
+    page: null
+    note: "No public sharing link for reading lists exists in the code."
+  - id: "S006"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "A new password must be at least 8 characters long."
+    page: null
+    note: "The minimum password length is 6, set in the Identity options and in the DTOs."
+  - id: "S007"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "Changing the password requires the current password and is only open to administrators and users with the Change Password role."
+    page: null
+    note: "The server allows a self password change only for the ChangePassword role or admin, and requires the old password for non-admins."
+  - id: "S008"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB."
+    page: null
+    note: "The download size warning threshold is 100 MB (104,857,600 bytes), not 500 MB."
+  - id: "S009"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: "Prompt for Re-Reads sets after how many days without progress Kavita offers to re-read, and 0 turns the prompt off."
+    page: null
+    note: "A promptForRereadsAfter field exists with minimum 0."
+  - id: "S010"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "A maintenance mode switch blocks all non-admin users from signing in until it is turned off."
+    page: null
+    note: "I found no maintenance mode setting or switch. The only 'maintenance' hit in the server code is a comment about nightly maintenance work."
+  - id: "S011"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Changes on this page are stored only when the administrator presses Save."
+    page: null
+    note: "The General settings page has no Save step: form changes are auto-saved after a 300 ms debounce whenever the form is valid."
+  - id: "S012"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Days of Backups and Days of Logs each accept a value from 1 to 30"
+    page: null
+    note: "Total backups and total logs are validated with min 1 and max 30."
+  - id: "S013"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Cache Size must be at least 50 MB"
+    page: null
+    note: "Cache size has a minimum validator of 50."
+  - id: "S014"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "A Reset to Default button restores these settings after a confirmation."
+    page: null
+    note: "resetToDefaults asks for confirmation and then calls the server reset."
+  - id: "S015"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Days of Backups and Days of Logs each accept a value from 1 to 30 and both default to 30."
+    page: null
+    note: "Both fields are validated min 1 / max 30 and seeded with 30."
+  - id: "S016"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.2"
+      quote: "An invite can be given an expiry date, after which its link stops working."
+    page: null
+    note: "The invite user form has no expiry date field."
+  - id: "S017"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Manage Collections is turned on by default for a new library."
+    page: null
+    note: "The new library form defaults manageCollections to false."
+  - id: "S018"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Include in Dashboard and Include in Search are turned on by default."
+    page: null
+    note: "The new library form defaults both includeInDashboard and includeInSearch to true."
+  - id: "S019"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Each type starts with its own file types:"
+    page: null
+    note: "The default file types per library type are Manga: Archive and Images; Comic and ComicVine: Archive; Book: Pdf and Epub; Images: Images; Light Novel: Epub. This matches the table."
+  - id: "S020"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "a library cannot be saved without at least one folder and at least one file type."
+    page: null
+    note: "Validation checks both folders and file types are non-empty."

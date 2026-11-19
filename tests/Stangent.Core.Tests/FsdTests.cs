@@ -97,6 +97,43 @@ public class FsdTests
         Assert.Contains("# 2023 Roadmap", doc.Markdown);
     }
 
+    static (string[] Ids, List<string> Problems) Headings(params string[] lines)
+    {
+        var doc = DocxConverter.Convert(DocxWriter.Write(string.Join("\n", lines)));
+        return ([.. doc.Sections.Select(s => s.Id)], [.. doc.Problems]);
+    }
+
+    [Fact]
+    public void A_gap_in_typed_chapter_numbers_keeps_the_numbers_and_says_one_is_skipped()
+    {
+        var (ids, problems) = Headings("# 1 Orders", "# 3 Checkout", "## 3.1 Pay", "# 7 Returns");
+        Assert.Equal(["1", "3", "3.1", "7"], ids);
+        Assert.Contains(problems, p => p.Contains("section 3 follows 1"));
+        Assert.DoesNotContain(problems, p => p.Contains("plain heading"));
+        // Chapter 1 taken out: the run that follows says what the first number is.
+        Assert.Equal(["2", "3"], Headings("# 2 Cart", "# 3 Checkout").Ids);
+        // A plain chapter beside them changes nothing (D56), as in Sonarr's FSD.
+        Assert.Equal(["1", "3", "Wanted"], Headings("# 1 Library", "# 3 Activity", "# Wanted").Ids);
+    }
+
+    [Fact]
+    public void A_heading_that_only_starts_with_a_number_stays_a_plain_heading()
+    {
+        Assert.Equal(["3 Ways to pay", "Refunds"], Headings("# 3 Ways to pay", "# Refunds").Ids);     // nothing numbered around it
+        Assert.Equal(["1", "3 ways to pay"], Headings("# 1 Intro", "# 3 ways to pay").Ids);           // a lower-case word next
+        Assert.Equal(["1", "3 Ways to pay", "2", "3"], Headings("# 1 Intro", "# 3 Ways to pay", "# 2 Pricing", "# 3 Checkout").Ids);   // the real chapters come later
+        Assert.Equal(["1", "30 Day Returns"], Headings("# 1 Intro", "# 30 Day Returns").Ids);         // too far on
+        Assert.Equal(["1", "2023 Roadmap"], Headings("# 1 Intro", "# 2023 Roadmap").Ids);
+    }
+
+    [Fact]
+    public void A_chapter_number_and_a_heading_with_the_same_shape_cant_be_told_apart_and_the_skip_is_said()
+    {
+        var (ids, problems) = Headings("# 1 Intro", "# 3 Ways to pay");
+        Assert.Equal(["1", "3"], ids);
+        Assert.Contains(problems, p => p.Contains("section 3 follows 1"));
+    }
+
     [Fact]
     public void Import_archives_the_original_and_the_same_file_always_gives_the_same_bytes()
     {
@@ -108,19 +145,24 @@ public class FsdTests
         File.WriteAllBytes(file, DocxWriter.Write(Outline, archive.Root));
 
         var first = FsdImport.Import(a.Repo, file);
+        Committed.All(a.Repo);
         Assert.Equal(("shop-fsd", "imported", 7), ((string)first["id"]!, (string)first["status"]!, (int)first["sections"]!));
         FsdImport.Import(b.Repo, file);
-        foreach (var name in new[] { "document.md", "document.json" })
-            Assert.Equal(File.ReadAllBytes(Path.Combine(FsdImport.DocDir(a.Root, "shop-fsd"), name)), File.ReadAllBytes(Path.Combine(FsdImport.DocDir(b.Root, "shop-fsd"), name)));
+        Committed.All(b.Repo);
+        Assert.Equal(File.ReadAllBytes(Path.Combine(FsdImport.DocDir(a.Root, "shop-fsd"), "document.json")), File.ReadAllBytes(Path.Combine(FsdImport.DocDir(b.Root, "shop-fsd"), "document.json")));
+        Assert.Equal(Chapters.Files(FsdImport.DocDir(a.Root, "shop-fsd")), Chapters.Files(FsdImport.DocDir(b.Root, "shop-fsd")));
+        Assert.False(File.Exists(Path.Combine(FsdImport.DocDir(a.Root, "shop-fsd"), "document.md")));
 
-        var doc = JsonNode.Parse(File.ReadAllText(Path.Combine(FsdImport.DocDir(a.Root, "shop-fsd"), "document.json")))!;
-        Assert.Empty(SchemaRegistry.Embedded.Validate(FsdImport.Schema, doc.ToJsonString()));
+        var doc = FsdDocument.Load(a.Root, "shop-fsd");
+        Assert.Empty(SchemaRegistry.Embedded.Validate(FsdImport.Schema, FsdDocument.Facts(a.Root, (string)doc["id"]!)!.ToJsonString()));
         Assert.Equal("client-docs", (string)doc["original"]!["archive"]!);
         Assert.True(File.Exists(Path.Combine(archive.Root, (string)doc["original"]!["path"]!)));
         Assert.True(File.Exists(Path.Combine(FsdImport.DocDir(a.Root, "shop-fsd"), (string)doc["images"]![0]!["file"]!)));
 
+        // The same file again, once committed, is compared (D385): nothing differs, and no chapter changes.
         var again = FsdImport.Import(a.Repo, file);
-        Assert.Equal("unchanged", (string)again["status"]!);
+        Assert.Equal(("compared", 0, 0), ((string)again["status"]!, (int)again["counts"]!["file-changed"]!, (int)again["counts"]!["new"]!));
+        Assert.Empty(Stangent.Graph.Git.Run(a.Root, "status --porcelain -- specs")!.Trim());
     }
 
     [Fact]
@@ -134,6 +176,7 @@ public class FsdTests
         var file = Path.Combine(repo.Root, "fsd.docx");
         File.WriteAllBytes(file, DocxWriter.Write("# 1 Series\nText."));
         FsdImport.Import(repo.Repo, file);
+        Committed.All(repo.Repo);
         Assert.Contains("stangent: archive fsd/", Graph.Git.Run(archive.Root, "log --oneline"));
     }
 

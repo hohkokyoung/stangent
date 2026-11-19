@@ -1,0 +1,26 @@
+{
+  "commit": "565c19204c0e6ea8c71aa2ae767bd8912e405b6a",
+  "doc": "sonarr-fsd",
+  "fsdVersion": "1e5ebf4d714c004add742a66a9647892ef78f7a199cd44221434bf628c81bba6",
+  "part": "list",
+  "retryUsed": false,
+  "run": 2,
+  "stage": "checked",
+  "usage": {
+    "cacheReadTokens": 131676,
+    "cacheWriteTokens": 78559,
+    "calls": 1,
+    "costUsd": 0.728911,
+    "inputTokens": 10,
+    "model": "claude-sonnet-5-5",
+    "ms": 200681,
+    "outputTokens": 38832,
+    "settings": {
+      "agent": "stangent-fsd-lister",
+      "claudeVersion": "2.1.292 (Claude Code)",
+      "effort": "medium",
+      "mode": "agentic",
+      "model": "claude-sonnet-5-5"
+    }
+  }
+}

@@ -1,0 +1,121 @@
+{
+"clone": "/Users/hohkokyoung/stangent-bench/kavita",
+"rows": {
+"field": [
+363,
+363,
+333,
+333
+],
+"action": [
+602,
+607,
+446,
+451
+],
+"data-action": [
+88,
+95,
+88,
+95
+]
+},
+"unmatched": [
+{
+"file": "UI/Web/src/app/settings/_components/setting-title/setting-title.component.html",
+"line": 18,
+"kind": "action",
+"tag": "button",
+"snippet": "<button type=\"button\" class=\"btn btn-icon edit-btn btn-sm btn-alignment\" (click)=\"toggleViewMode()\" [disabled]=\"!canEdit()\">",
+"likely_skip": false
+},
+{
+"file": "UI/Web/src/app/registration/user-login/user-login.component.html",
+"line": 31,
+"kind": "action",
+"tag": "button",
+"snippet": "<button class=\"btn btn-outline-primary\" type=\"submit\" [disabled]=\"isSubmitting()\">",
+"likely_skip": false
+},
+{
+"file": "UI/Web/src/app/pdf-reader/_components/pdf-reader/pdf-reader.component.html",
+"line": 93,
+"kind": "action",
+"tag": "button",
+"snippet": "<button (click)=\"toggleBookPageMode()\" class=\"btn-icon toolbarButton\" [ngbTooltip]=\"pageLayoutMode | pdfLayoutMode\" [disabled]=\"scrollMode === ScrollModeType.pa",
+"likely_skip": false
+},
+{
+"file": "UI/Web/src/app/_services/action-factory.service.ts",
+"line": 202,
+"kind": "data-action",
+"tag": "",
+"snippet": "action: Action.CopySettings,",
+"likely_skip": false
+},
+{
+"file": "UI/Web/src/app/_services/action-factory.service.ts",
+"line": 582,
+"kind": "data-action",
+"tag": "",
+"snippet": "action: Action.SendTo,",
+"likely_skip": false
+},
+{
+"file": "UI/Web/src/app/_services/action-factory.service.ts",
+"line": 823,
+"kind": "data-action",
+"tag": "",
+"snippet": "action: Action.SendTo,",
+"likely_skip": false
+},
+{
+"file": "UI/Web/src/app/_services/action-factory.service.ts",
+"line": 974,
+"kind": "data-action",
+"tag": "",
+"snippet": "action: Action.SendTo,",
+"likely_skip": false
+},
+{
+"file": "UI/Web/src/app/_services/action-factory.service.ts",
+"line": 1284,
+"kind": "data-action",
+"tag": "",
+"snippet": "action: Action.Edit,",
+"likely_skip": false
+},
+{
+"file": "UI/Web/src/app/_services/action-factory.service.ts",
+"line": 1297,
+"kind": "data-action",
+"tag": "",
+"snippet": "action: Action.Navigate,",
+"likely_skip": false
+},
+{
+"file": "UI/Web/src/app/_models/actionables/action-item.ts",
+"line": 17,
+"kind": "data-action",
+"tag": "",
+"snippet": "callback: ActionResultCallback<T>;",
+"likely_skip": false
+},
+{
+"file": "UI/Web/src/app/_single-module/publisher-flipper/publisher-flipper.component.html",
+"line": 15,
+"kind": "action",
+"tag": "div",
+"snippet": "<div class=\"position-relative d-inline-block\" (click)=\"openPublisher(currentPublisher()!.id)\">",
+"likely_skip": false
+},
+{
+"file": "UI/Web/src/app/_single-module/publisher-flipper/publisher-flipper.component.html",
+"line": 30,
+"kind": "action",
+"tag": "div",
+"snippet": "<div class=\"position-relative d-inline-block\" (click)=\"openPublisher(nextPublisherValue.id)\">",
+"likely_skip": false
+}
+]
+}

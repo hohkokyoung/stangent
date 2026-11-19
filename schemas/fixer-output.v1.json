@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:fixer-output:v1",
+  "title": "What stangent-fixer returns (Phase 4, D343, D344)",
+  "description": "The fixer's plan, given once its edits are made in the worktree: each change names where (a file and its graph point) and why (exactly one cited reason). Code fills each change's reach from the graph, checks every point and quote, then builds, runs the failing test and the rest of its target, and checks the test reaches a planned point (D350). `gaveUp` instead: no edits, and why.",
+  "type": "object",
+  "required": ["changes"],
+  "additionalProperties": false,
+  "properties": {
+    "changes": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": ["file", "why"],
+        "additionalProperties": false,
+        "properties": {
+          "file": { "description": "The file changed, relative to the repo root (the worktree), forward slashes.", "type": "string", "minLength": 1 },
+          "point": { "description": "The method, property or type changed, as the code graph names it at the base commit: a graph id, or a name like OrderService.Place declared in that file. Leave it out only for a file that is new.", "type": "string", "minLength": 1 },
+          "why": {
+            "description": "Exactly one cited reason (D344): the ticket's words quoted, an FSD section from the bundle with a quote from it, or a failing test's full name.",
+            "type": "object",
+            "required": ["kind"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "enum": ["ticket", "fsd", "test"] },
+              "quote": { "description": "ticket and fsd: the words, copied word for word; at least 4 words or a whole line.", "type": "string", "minLength": 3, "maxLength": 600 },
+              "section": { "description": "fsd: the section id as the bundle gives it.", "type": "string", "minLength": 1 },
+              "test": { "description": "test: the test's full name (Namespace.Class.Method).", "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "gaveUp": { "description": "No fix was made: why, in a sentence or two (e.g. the fix is a colour, or is outside the repo).", "type": "string", "minLength": 3, "maxLength": 1000 },
+    "notes": { "type": "string", "maxLength": 2000 }
+  }
+}

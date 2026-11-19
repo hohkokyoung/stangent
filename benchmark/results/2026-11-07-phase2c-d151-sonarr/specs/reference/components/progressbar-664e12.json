@@ -1,0 +1,131 @@
+{
+  "codeTitle": "ProgressBar",
+  "entry": "ts|frontend/src/Components/ProgressBar.tsx#ProgressBar",
+  "generated": {
+    "bundleHash": "1527333ad508e7872273da2da9e437847bc8ba1a65cc114124de72326aa09199",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 8522,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 16
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 5680,
+      "calls": 1,
+      "costUsd": 0.024869,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2747,
+      "outputTokens": 197
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3977,
+      "calls": 1,
+      "costUsd": 0.025758,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5981,
+      "outputTokens": 957
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Components/ProgressBar.tsx#ProgressBar",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/ProgressBar.tsx#ProgressBar"
+        ],
+        "id": "R1",
+        "text": "The percentage is formatted with 1 decimal place by default, or the given precision."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/ProgressBar.tsx#ProgressBar"
+        ],
+        "id": "R2",
+        "text": "Width defaults to 100% of the container; if a width is given it is used in pixels."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/ProgressBar.tsx#ProgressBar"
+        ],
+        "id": "R3",
+        "text": "Defaults are kind 'primary', size 'medium', and showText off."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/ProgressBar.tsx#ProgressBar",
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "R4",
+        "text": "The accessible label is the given ariaLabel, or otherwise the translated 'ProgressBarProgress' text with progress rounded to a whole number."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "R5",
+        "text": "If a translation key is missing, the key itself is used as the text; tokens like {progress} are replaced, and the appName token is always set to 'Sonarr'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "R6",
+        "text": "A console warning for a missing translation is logged only when not in production."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/ProgressBar.tsx#ProgressBar"
+        ],
+        "id": "S1",
+        "text": "Shows a horizontal bar filled to the given progress percentage."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/ProgressBar.tsx#ProgressBar"
+        ],
+        "id": "S2",
+        "text": "When showText is on, the bar shows text over it: the supplied text, or otherwise the progress percentage."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/ProgressBar.tsx#ProgressBar"
+        ],
+        "id": "S3",
+        "text": "The text in the unfilled background part is shown only when both showText is on and a width is given."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/ProgressBar.tsx#ProgressBar"
+        ],
+        "id": "S4",
+        "text": "Shows the supplied title as a hover tooltip on the container."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/ProgressBar.tsx#ProgressBar"
+        ],
+        "id": "S5",
+        "text": "The bar is exposed as a meter with minimum 0, maximum 100 and current value equal to the progress rounded down."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Progress Bar",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

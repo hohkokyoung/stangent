@@ -1,0 +1,203 @@
+{
+  "codeTitle": "ANY /api/v3/CustomFormat",
+  "entry": "endpoint:Sonarr.Api.V3|ANY /api/v3/CustomFormat",
+  "generated": {
+    "bundleHash": "a848597c7e2bd742a1b753e7ab72df7da8027224a6f1861a209e247117afe4c4",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 30757,
+      "cutOff": 47,
+      "depth": 4,
+      "points": 64
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 18457,
+      "calls": 1,
+      "costUsd": 0.077677,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5044,
+      "outputTokens": 367
+    },
+    "writer": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 16336,
+      "calls": 1,
+      "costUsd": 0.094198,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 15471,
+      "outputTokens": 2885
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|ANY /api/v3/CustomFormat",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.CustomFormats.CustomFormatController.Create(Sonarr.Api.V3.CustomFormats.CustomFormatResource)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/CustomFormat"
+        ],
+        "id": "A1",
+        "text": "Create a custom format by posting a JSON resource; it is converted to a model, its specifications are validated, and it is inserted."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.CustomFormats.CustomFormatController.Update(Sonarr.Api.V3.CustomFormats.CustomFormatResource)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/CustomFormat"
+        ],
+        "id": "A2",
+        "text": "Update a custom format by putting a JSON resource; it is converted, its specifications are validated, and it is saved."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.CustomFormats.CustomFormatController.DeleteFormat(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/CustomFormat"
+        ],
+        "id": "A3",
+        "text": "Delete a custom format by id."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.CustomFormats.CustomFormatResourceMapper.MapSpecification(Sonarr.Api.V3.CustomFormats.CustomFormatSpecificationSchema,System.Collections.Generic.List{NzbDrone.Core.CustomFormats.ICustomFormatSpecification})"
+        ],
+        "id": "R1",
+        "text": "Each specification's implementation name must match exactly one known specification type; otherwise the request fails with \"<implementation> is not a valid specification implementation\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.CustomFormats.CustomFormatResourceMapper.MapSpecification(Sonarr.Api.V3.CustomFormats.CustomFormatSpecificationSchema,System.Collections.Generic.List{NzbDrone.Core.CustomFormats.ICustomFormatSpecification})",
+          "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)"
+        ],
+        "id": "R2",
+        "text": "Each specification takes its name, negate and required values from the request, and its other field values are read from the submitted fields."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.CustomFormats.CustomFormatResourceMapper.ToModel(Sonarr.Api.V3.CustomFormats.CustomFormatResource,System.Collections.Generic.List{NzbDrone.Core.CustomFormats.ICustomFormatSpecification})"
+        ],
+        "id": "R3",
+        "text": "Include-when-renaming defaults to false when not supplied, and specifications default to an empty list."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.CustomFormats.CustomFormatController.Validate(NzbDrone.Core.CustomFormats.CustomFormat)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.CustomFormats.CustomFormatController.VerifyValidationResult(FluentValidation.Results.ValidationResult)"
+        ],
+        "id": "R4",
+        "text": "Every specification is validated before create or update; if any validation error exists, a validation exception with those errors is thrown and nothing is saved."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Validation.NzbDroneValidationResult.#ctor(System.Collections.Generic.IEnumerable{FluentValidation.Results.ValidationFailure})"
+        ],
+        "id": "R5",
+        "text": "Validation failures flagged as warnings are kept separate from errors, and only errors make the result invalid."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R6",
+        "text": "On PUT, if the body resource id is 0 and the route has an id, the route id is used."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R7",
+        "text": "Calls to a deprecated endpoint are logged as a warning and the response gets a \"Deprecation: true\" header."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.CustomFormats.CustomFormatController.Create(Sonarr.Api.V3.CustomFormats.CustomFormatResource)",
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Created(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "Creating a custom format returns the saved custom format resource with a created response pointing to the get-by-id action."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.CustomFormats.CustomFormatController.Update(Sonarr.Api.V3.CustomFormats.CustomFormatResource)",
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Accepted(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "Updating a custom format returns the stored resource with an accepted response pointing to the get-by-id action."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S3",
+        "text": "Getting a custom format by id returns it with 200 OK, or 404 Not Found when no such record exists."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.CustomFormats.CustomFormatService.Insert(NzbDrone.Core.CustomFormats.CustomFormat)",
+          "Sonarr.Core|M:NzbDrone.Core.CustomFormats.Events.CustomFormatAddedEvent.#ctor(NzbDrone.Core.CustomFormats.CustomFormat)"
+        ],
+        "id": "E1",
+        "text": "Creating a custom format inserts it in the repository, clears the custom format cache, and publishes a CustomFormatAddedEvent."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.CustomFormats.CustomFormatService.Update(NzbDrone.Core.CustomFormats.CustomFormat)"
+        ],
+        "id": "E2",
+        "text": "Updating a custom format saves it in the repository and clears the custom format cache."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.CustomFormats.CustomFormatService.Delete(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.CustomFormats.Events.CustomFormatDeletedEvent.#ctor(NzbDrone.Core.CustomFormats.CustomFormat)"
+        ],
+        "id": "E3",
+        "text": "Deleting a custom format loads it, publishes a CustomFormatDeletedEvent before removal, deletes it from the repository and clears the cache."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfileService.Handle(NzbDrone.Core.CustomFormats.Events.CustomFormatAddedEvent)"
+        ],
+        "id": "E4",
+        "text": "The quality profile service handles the added event, so new formats are added to profiles."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfileService.Handle(NzbDrone.Core.CustomFormats.Events.CustomFormatDeletedEvent)"
+        ],
+        "id": "E5",
+        "text": "The quality profile service handles the deleted event, so the format is removed from profiles before deletion."
+      }
+    ]
+  },
+  "title": "Custom Format API (create, update, delete)",
+  "unknowns": [
+    {
+      "file": "src/Sonarr.Http/ClientSchema/SchemaBuilder.cs",
+      "in": "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)",
+      "line": 58,
+      "reason": "reflection: Activator.CreateInstance"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

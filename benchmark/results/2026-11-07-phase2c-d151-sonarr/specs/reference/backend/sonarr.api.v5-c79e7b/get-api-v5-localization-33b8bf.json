@@ -1,0 +1,88 @@
+{
+  "codeTitle": "GET /api/v5/Localization",
+  "entry": "endpoint:Sonarr.Api.V5|GET /api/v5/Localization",
+  "generated": {
+    "bundleHash": "93bfcd3e85d89c2b0b1d6c820dc07b4fc44cdecef76393069567f0f9555add12",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 9085,
+      "cutOff": 3,
+      "depth": 4,
+      "points": 9
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 5802,
+      "calls": 1,
+      "costUsd": 0.023917,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1822,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4429,
+      "calls": 1,
+      "costUsd": 0.024616,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3895,
+      "outputTokens": 662
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|GET /api/v5/Localization",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/Localization",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Localization.LocalizationController.GetLocalization"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/Localization"
+        ],
+        "id": "A1",
+        "text": "A caller sends GET /api/v5/Localization and receives an Ok response with the localization dictionary."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Localization.LocalizationService.GetLocalizationDictionary",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Localization.LocalizationController.GetLocalization"
+        ],
+        "id": "R1",
+        "text": "The dictionary comes from the localization service for the language file name it determines; the request takes no parameters."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Localization.LocalizationController.GetLocalization"
+        ],
+        "id": "R2",
+        "text": "The response content type is application/json."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Localization.LocalizationResourceMapper.ToResource(System.Collections.Generic.Dictionary{System.String,System.String})",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Localization.LocalizationController.GetLocalization"
+        ],
+        "id": "S1",
+        "text": "Returns a JSON localization object whose Strings field holds a dictionary of string keys to translated text."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Get Localization strings",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

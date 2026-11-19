@@ -1,0 +1,386 @@
+{
+  "doc": "kavita-fsd",
+  "note": "Phase 2b (D56, D57): findings in specs/trace.yaml scored against the frozen answer key. 'found' lets a gap be reported as a conflict and back; 'foundAsKind' needs the planted kind.",
+  "found": {
+    "overall": {
+      "found": 22,
+      "of": 30,
+      "share": 0.733,
+      "range95": [
+        0.567,
+        0.867
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 9,
+      "of": 10,
+      "share": 0.9,
+      "range95": [
+        0.7,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 3,
+      "of": 10,
+      "share": 0.3,
+      "range95": [
+        0,
+        0.6
+      ]
+    }
+  },
+  "foundAsKind": {
+    "overall": {
+      "found": 22,
+      "of": 30,
+      "share": 0.733,
+      "range95": [
+        0.567,
+        0.867
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 9,
+      "of": 10,
+      "share": 0.9,
+      "range95": [
+        0.7,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 3,
+      "of": 10,
+      "share": 0.3,
+      "range95": [
+        0,
+        0.6
+      ]
+    }
+  },
+  "noise": {
+    "findings": 23,
+    "unplanted": 1,
+    "worstCaseShare": 0.043,
+    "sample": 1,
+    "handChecked": 0,
+    "realInSample": null
+  },
+  "bars": {
+    "finds": false,
+    "notTooNoisy": true
+  },
+  "finerVerdicts": null,
+  "candidates": {
+    "sections": 0,
+    "byCode": 0,
+    "byAi": 0,
+    "aiFoundNone": 0
+  },
+  "cost": {
+    "finder": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "judge": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "checker": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "disprover": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    }
+  },
+  "items": [
+    {
+      "id": "G1",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S002",
+      "state": "gap"
+    },
+    {
+      "id": "G2",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S003",
+      "state": "gap"
+    },
+    {
+      "id": "G3",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S005",
+      "state": "gap"
+    },
+    {
+      "id": "G4",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S007",
+      "state": "gap"
+    },
+    {
+      "id": "G5",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S008",
+      "state": "gap"
+    },
+    {
+      "id": "G6",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S010",
+      "state": "gap"
+    },
+    {
+      "id": "G7",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S011",
+      "state": "gap"
+    },
+    {
+      "id": "G8",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S017",
+      "state": "gap"
+    },
+    {
+      "id": "G9",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S021",
+      "state": "gap"
+    },
+    {
+      "id": "G10",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S020",
+      "state": "gap"
+    },
+    {
+      "id": "C1",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S001",
+      "state": "conflict"
+    },
+    {
+      "id": "C2",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S004",
+      "state": "conflict"
+    },
+    {
+      "id": "C3",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S006",
+      "state": "conflict"
+    },
+    {
+      "id": "C4",
+      "kind": "conflict",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "C5",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S009",
+      "state": "conflict"
+    },
+    {
+      "id": "C6",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S012",
+      "state": "conflict"
+    },
+    {
+      "id": "C7",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S016",
+      "state": "conflict"
+    },
+    {
+      "id": "C8",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S018",
+      "state": "conflict"
+    },
+    {
+      "id": "C9",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S019",
+      "state": "conflict"
+    },
+    {
+      "id": "C10",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S023",
+      "state": "conflict"
+    },
+    {
+      "id": "U1",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S014",
+      "state": "undocumented"
+    },
+    {
+      "id": "U2",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S015",
+      "state": "undocumented"
+    },
+    {
+      "id": "U3",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U4",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U5",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U6",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U7",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S013",
+      "state": "undocumented"
+    },
+    {
+      "id": "U8",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U9",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U10",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    }
+  ],
+  "handCheckSample": [
+    {
+      "id": "S022",
+      "state": "undocumented",
+      "section": "10.2",
+      "fsdQuote": "",
+      "page": null,
+      "pageQuote": null,
+      "note": "Non-pending users' rows have a change-password button (key icon) in addition to edit and delete."
+    }
+  ]
+}

@@ -1,0 +1,576 @@
+{
+  "doc": "sonarr-fsd",
+  "note": "Phase 2b (D56, D57): findings in specs/trace.yaml scored against the frozen answer key. 'found' lets a gap be reported as a conflict and back; 'foundAsKind' needs the planted kind.",
+  "found": {
+    "overall": {
+      "found": 24,
+      "of": 30,
+      "share": 0.8,
+      "range95": [
+        0.633,
+        0.933
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 4,
+      "of": 10,
+      "share": 0.4,
+      "range95": [
+        0.1,
+        0.7
+      ]
+    }
+  },
+  "foundAsKind": {
+    "overall": {
+      "found": 20,
+      "of": 30,
+      "share": 0.667,
+      "range95": [
+        0.5,
+        0.833
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 6,
+      "of": 10,
+      "share": 0.6,
+      "range95": [
+        0.3,
+        0.9
+      ]
+    },
+    "undocumented": {
+      "found": 4,
+      "of": 10,
+      "share": 0.4,
+      "range95": [
+        0.1,
+        0.7
+      ]
+    }
+  },
+  "noise": {
+    "findings": 90,
+    "unplanted": 66,
+    "worstCaseShare": 0.733,
+    "sample": 20,
+    "handChecked": 20,
+    "realInSample": 8,
+    "falseAlarmShare": 0.44,
+    "falseAlarmRange95": [
+      0.293,
+      0.587
+    ]
+  },
+  "bars": {
+    "finds": false,
+    "notTooNoisy": false
+  },
+  "candidates": {
+    "sections": 16,
+    "byCode": 15,
+    "byAi": 1,
+    "aiFoundNone": 0
+  },
+  "cost": {
+    "finder": {
+      "calls": 2,
+      "sections": 2,
+      "inputTokensPerSection": 12593.5,
+      "outputTokensPerSection": 264.5,
+      "secondsPerSection": 3.3,
+      "costUsd": 0.1
+    },
+    "judge": {
+      "calls": 16,
+      "sections": 16,
+      "inputTokensPerSection": 9301.375,
+      "outputTokensPerSection": 759.4375,
+      "secondsPerSection": 5.3,
+      "costUsd": 0.67
+    },
+    "checker": {
+      "calls": 16,
+      "sections": 16,
+      "inputTokensPerSection": 9425,
+      "outputTokensPerSection": 503.5,
+      "secondsPerSection": 5.4,
+      "costUsd": 0.64
+    }
+  },
+  "requirements": {
+    "features": 21,
+    "requirements": 109,
+    "withAcceptance": 12,
+    "byCheck": {
+      "confirmed": 109,
+      "disputed": 0,
+      "unchecked": 0
+    },
+    "background": 2,
+    "backgroundDisputed": 0,
+    "questions": 10,
+    "plantedCited": {
+      "cited": 20,
+      "of": 20,
+      "missed": []
+    },
+    "findingsWithRequirement": 65,
+    "failedSections": 0,
+    "retries": 0,
+    "fixes": 3,
+    "spentUsd": 0.802
+  },
+  "items": [
+    {
+      "id": "G1",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "Lbc2f90cce6",
+      "state": "gap"
+    },
+    {
+      "id": "G2",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "Lbafc4c8807",
+      "state": "gap"
+    },
+    {
+      "id": "G3",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L1693527b90",
+      "state": "gap"
+    },
+    {
+      "id": "G4",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L967f8005ed",
+      "state": "gap"
+    },
+    {
+      "id": "G5",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L56728293f1",
+      "state": "gap"
+    },
+    {
+      "id": "G6",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L02bd86859c",
+      "state": "gap"
+    },
+    {
+      "id": "G7",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L93a4d25b30",
+      "state": "gap"
+    },
+    {
+      "id": "G8",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L6970c45f74",
+      "state": "gap"
+    },
+    {
+      "id": "G9",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L01c1507ebe",
+      "state": "gap"
+    },
+    {
+      "id": "G10",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L50dd25ed5e",
+      "state": "gap"
+    },
+    {
+      "id": "C1",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "Led3e42ca82",
+      "state": "conflict"
+    },
+    {
+      "id": "C2",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": false,
+      "by": "L2bd66cb951",
+      "state": "gap"
+    },
+    {
+      "id": "C3",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L433ab161d0",
+      "state": "conflict"
+    },
+    {
+      "id": "C4",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L4997f0a469",
+      "state": "conflict"
+    },
+    {
+      "id": "C5",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": false,
+      "by": "L8fbf1c9448",
+      "state": "gap"
+    },
+    {
+      "id": "C6",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L4ad0ca51df",
+      "state": "conflict"
+    },
+    {
+      "id": "C7",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L1a5b6ef501",
+      "state": "conflict"
+    },
+    {
+      "id": "C8",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L098cfc224d",
+      "state": "conflict"
+    },
+    {
+      "id": "C9",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": false,
+      "by": "L382ca47c9f",
+      "state": "gap"
+    },
+    {
+      "id": "C10",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": false,
+      "by": "L627347402e",
+      "state": "gap"
+    },
+    {
+      "id": "U1",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L65a4ce23dd",
+      "state": "undocumented"
+    },
+    {
+      "id": "U2",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "Lcc66338eaa",
+      "state": "undocumented"
+    },
+    {
+      "id": "U3",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L2622b95947",
+      "state": "undocumented"
+    },
+    {
+      "id": "U4",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U5",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U6",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U7",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U8",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U9",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "L5532b9be07",
+      "state": "undocumented"
+    },
+    {
+      "id": "U10",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    }
+  ],
+  "handCheckSample": [
+    {
+      "id": "L8b9d3b8755",
+      "state": "gap",
+      "section": "Settings / Profiles / Delay profiles",
+      "fsdQuote": "Preferred Protocol: Usenet or Torrent.",
+      "page": "endpoint:Sonarr.Api.V3|GET /api/v3/DelayProfile",
+      "pageQuote": null,
+      "note": "Disputed by the second check: The page lists a PreferredProtocol field but not that its value is Usenet or Torrent. The requirement's point, the allowed values, isn't shown."
+    },
+    {
+      "id": "Ld526d74cfb",
+      "state": "gap",
+      "section": "Settings / Profiles / Delay profiles",
+      "fsdQuote": "Usenet Delay and Torrent Delay: in minutes; neither can be negative.",
+      "page": "page:/settings/profiles",
+      "pageQuote": null,
+      "note": "Disputed by the second check: The page says the delay fields are shown in minutes, so the minutes unit is covered. It doesn't show a Usenet Delay and a Torrent Delay as the requirement's two properties, and it says nothing about delays not being negative. This is at best a partial match."
+    },
+    {
+      "id": "L9c796c0564",
+      "state": "gap",
+      "section": "Settings / Profiles / Delay profiles",
+      "fsdQuote": "Tags: a delay profile applies to the series with the same tags.",
+      "page": "page:/settings/profiles",
+      "pageQuote": null,
+      "note": "Disputed by the second check: The row only displays a profile's tags, or 'Any' when it has none. It doesn't say that a profile applies to the series with the same tags."
+    },
+    {
+      "id": "L3b4e14ba3e",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/seasonpass",
+      "pageQuote": null,
+      "note": "no FSD section links to this screen"
+    },
+    {
+      "id": "L7738f7bdc4",
+      "state": "gap",
+      "section": "1.2",
+      "fsdQuote": "The series details screen shows one series: its poster, overview, network, status, path, size on disk and its seasons, with each season's episodes listed underneath.",
+      "page": "page:/series/:titleSlug",
+      "pageQuote": null,
+      "note": "Disputed by the second check: S3 covers only the poster, fanart, title and alternate titles. It doesn't show overview, network, status, path, size on disk or seasons."
+    },
+    {
+      "id": "L5b8e20c169",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/downloadclients",
+      "pageQuote": null,
+      "note": "no FSD section links to this screen"
+    },
+    {
+      "id": "Lc87617cd19",
+      "state": "gap",
+      "section": "3.1",
+      "fsdQuote": "Each queue item has a priority (High, Normal or Low) that the user can change to reorder the downloads.",
+      "page": "ts|frontend/src/Activity/Queue/QueueDetails.tsx#QueueDetails",
+      "pageQuote": null,
+      "note": "No page shows a High/Normal/Low priority on queue items."
+    },
+    {
+      "id": "Lcd18ef7eee",
+      "state": "gap",
+      "section": "Settings / General / Backups",
+      "fsdQuote": "Retention: how long backups are kept, up to 365 days.",
+      "page": "page:/settings/general",
+      "pageQuote": null,
+      "note": "No 365-day maximum for Retention stated on the page."
+    },
+    {
+      "id": "La1cb5f357f",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/system/events",
+      "pageQuote": null,
+      "note": "no FSD section links to this screen"
+    },
+    {
+      "id": "Lf698bcabf4",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/system/logs/files",
+      "pageQuote": null,
+      "note": "no FSD section links to this screen"
+    },
+    {
+      "id": "L48a0bdaca1",
+      "state": "gap",
+      "section": "Settings / General / Logging",
+      "fsdQuote": "The log level can be set to info, debug or trace.",
+      "page": "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)",
+      "pageQuote": null,
+      "note": "Disputed by the second check: The page statement describes when the Trace log file is enabled. It doesn't say that Trace is a selectable log level setting."
+    },
+    {
+      "id": "Laad4cdfb0e",
+      "state": "gap",
+      "section": "Settings / Profiles / Delay profiles",
+      "fsdQuote": "Usenet Delay and Torrent Delay: in minutes; neither can be negative.",
+      "page": "endpoint:Sonarr.Api.V3|ANY /api/v3/DelayProfile",
+      "pageQuote": null,
+      "note": "No page states delays cannot be negative."
+    },
+    {
+      "id": "L0c6d91c33a",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/importlists",
+      "pageQuote": null,
+      "note": "no FSD section links to this screen"
+    },
+    {
+      "id": "L03b08d81c3",
+      "state": "gap",
+      "section": "1.1",
+      "fsdQuote": "| Series Type | Standard, daily or anime; this changes how searches are made. |",
+      "page": "page:/add/new",
+      "pageQuote": null,
+      "note": "Disputed by the second check: S16 says the popover describes Anime, Daily and Standard, but not that the type changes how searches are made."
+    },
+    {
+      "id": "Lc5075fde86",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/add/import",
+      "pageQuote": null,
+      "note": "no FSD section links to this screen"
+    },
+    {
+      "id": "L669384f23d",
+      "state": "gap",
+      "section": "Settings / General / Logging",
+      "fsdQuote": "The log level can be set to info, debug or trace.",
+      "page": "Sonarr.Core|M:NzbDrone.Core.Instrumentation.ReconfigureLogging.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigFileSavedEvent)",
+      "pageQuote": null,
+      "note": "Disputed by the second check: The page statement describes when the Debug log file is enabled. It doesn't say that Debug is a selectable log level setting."
+    },
+    {
+      "id": "L9be2055e2e",
+      "state": "gap",
+      "section": "2",
+      "fsdQuote": "Monitored and unmonitored episodes can be shown or hidden, and episodes already downloaded are marked.",
+      "page": "page:/calendar",
+      "pageQuote": null,
+      "note": "Page shows an unmonitored filter default but no show/hide of monitored episodes."
+    },
+    {
+      "id": "L48708cba00",
+      "state": "gap",
+      "section": "1.1",
+      "fsdQuote": "| Quality Profile | The quality profile used to download the series. |",
+      "page": "page:/add/new",
+      "pageQuote": null,
+      "note": "Disputed by the second check: S15 only lists a Quality Profile field; it doesn't state that it's the profile used to download the series."
+    },
+    {
+      "id": "L1637b1c24c",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/mediamanagement",
+      "pageQuote": null,
+      "note": "no FSD section links to this screen"
+    },
+    {
+      "id": "L27fcdfab08",
+      "state": "gap",
+      "section": "1",
+      "fsdQuote": "The library holds every series the user has added.",
+      "page": null,
+      "pageQuote": null,
+      "note": "Page only describes library clean-up on import list deletion; it does not state that the library holds every added series."
+    }
+  ]
+}

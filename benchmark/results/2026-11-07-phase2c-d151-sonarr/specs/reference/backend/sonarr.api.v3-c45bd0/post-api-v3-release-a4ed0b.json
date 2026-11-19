@@ -1,0 +1,183 @@
+{
+  "codeTitle": "POST /api/v3/Release",
+  "entry": "endpoint:Sonarr.Api.V3|POST /api/v3/Release",
+  "generated": {
+    "bundleHash": "87582692378123cd20a4f14eedd80537ed656d722585a6951e0f4f1ae184e806",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 21356,
+      "cutOff": 12,
+      "depth": 4,
+      "points": 103
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 14176,
+      "calls": 1,
+      "costUsd": 0.059973,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4770,
+      "outputTokens": 309
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 10152,
+      "calls": 1,
+      "costUsd": 0.073928,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 17279,
+      "outputTokens": 3304
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|POST /api/v3/Release",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.DownloadRelease(Sonarr.Api.V3.Indexers.ReleaseResource)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.GetCacheKey(Sonarr.Api.V3.Indexers.ReleaseResource)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.IDownloadService.DownloadReport(NzbDrone.Core.Parser.Model.RemoteEpisode,System.Nullable{System.Int32})"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/Release"
+        ],
+        "id": "A1",
+        "text": "Caller submits a previously searched release (identified by indexer id and guid) to be downloaded, optionally with a download client id."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.GetCacheKey(Sonarr.Api.V3.Indexers.ReleaseResource)",
+          "Sonarr.Common|M:NzbDrone.Common.Cache.ICached`1.Find(System.String)"
+        ],
+        "id": "R1",
+        "text": "The release is looked up in the cache using the key indexerId + \"_\" + guid."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.DownloadRelease(Sonarr.Api.V3.Indexers.ReleaseResource)"
+        ],
+        "id": "R2",
+        "text": "The request body must be JSON."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.DownloadRelease(Sonarr.Api.V3.Indexers.ReleaseResource)",
+          "Sonarr.Common|M:NzbDrone.Common.EnsureThat.EnsureCollectionExtensions.HasItems``1(NzbDrone.Common.EnsureThat.Param{System.Collections.Generic.List{``0}})",
+          "Sonarr.Common|M:NzbDrone.Common.EnsureThat.EnsureNullableValueTypeExtensions.IsNotNull``1(NzbDrone.Common.EnsureThat.Param{System.Nullable{``0}})",
+          "Sonarr.Common|M:NzbDrone.Common.EnsureThat.EnsureObjectExtensions.IsNotNull``1(NzbDrone.Common.EnsureThat.Param{``0})"
+        ],
+        "id": "R3",
+        "text": "When ShouldOverride is true, series id, episode ids (with at least one item), quality and languages are all required, otherwise validation fails."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.DownloadRelease(Sonarr.Api.V3.Indexers.ReleaseResource)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.ObjectExtensions.JsonClone``1(``0)",
+          "Sonarr.Core|M:NzbDrone.Core.Parser.Model.RemoteEpisode.#ctor"
+        ],
+        "id": "R4",
+        "text": "With override, the cached release is copied (parsed info cloned) and its series, episodes, quality and languages are replaced by the values from the request."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.DownloadRelease(Sonarr.Api.V3.Indexers.ReleaseResource)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.IEpisodeService.GetEpisode(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.ISeriesService.GetSeries(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Parser.IParsingService.GetEpisodes(NzbDrone.Core.Parser.Model.ParsedEpisodeInfo,NzbDrone.Core.Tv.Series,System.Boolean,NzbDrone.Core.IndexerSearch.Definitions.SearchCriteriaBase)"
+        ],
+        "id": "R5",
+        "text": "If the cached release has no series, the series and episode come from the request's episode id; otherwise from the series id, with episodes parsed from the release."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.DownloadRelease(Sonarr.Api.V3.Indexers.ReleaseResource)",
+          "Sonarr.Core|M:NzbDrone.Core.Exceptions.NzbDroneClientException.#ctor(System.Net.HttpStatusCode,System.String)"
+        ],
+        "id": "R6",
+        "text": "If the cached release has no series and the request has neither episode id nor series id, it fails with 404 \"Unable to find matching series and episodes, will need to be manually provided\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.DownloadRelease(Sonarr.Api.V3.Indexers.ReleaseResource)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.EnumerableExtensions.Empty``1(System.Collections.Generic.IEnumerable{``0})",
+          "Sonarr.Core|M:NzbDrone.Core.Exceptions.NzbDroneClientException.#ctor(System.Net.HttpStatusCode,System.String)"
+        ],
+        "id": "R7",
+        "text": "If no episodes can be determined, it fails with 404 \"Unable to parse episodes in the release, will need to be manually provided\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.DownloadRelease(Sonarr.Api.V3.Indexers.ReleaseResource)",
+          "Sonarr.Core|M:NzbDrone.Core.Parser.IParsingService.GetEpisodes(NzbDrone.Core.Parser.Model.ParsedEpisodeInfo,NzbDrone.Core.Tv.Series,System.Boolean,NzbDrone.Core.IndexerSearch.Definitions.SearchCriteriaBase)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.IEpisodeService.GetEpisode(System.Int32)"
+        ],
+        "id": "R8",
+        "text": "If the release has a series but no episodes, episodes are parsed from the release, falling back to the request's episode id when none are found."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.DownloadRelease(Sonarr.Api.V3.Indexers.ReleaseResource)",
+          "Sonarr.Core|M:NzbDrone.Core.Exceptions.NzbDroneClientException.#ctor(System.Net.HttpStatusCode,System.String)"
+        ],
+        "id": "R9",
+        "text": "A release download failure is returned as 409 Conflict with \"Getting release from indexer failed: \" plus the reason."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.DownloadRelease(Sonarr.Api.V3.Indexers.ReleaseResource)"
+        ],
+        "id": "S1",
+        "text": "Returns the submitted release object back to the caller after the download has been sent."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.DownloadRelease(Sonarr.Api.V3.Indexers.ReleaseResource)",
+          "Sonarr.Core|M:NzbDrone.Core.Exceptions.NzbDroneClientException.#ctor(System.Net.HttpStatusCode,System.String)"
+        ],
+        "id": "S2",
+        "text": "When the release is not in the cache, it fails with 404 and the message \"Couldn't find requested release in cache, try searching again\"."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.IDownloadService.DownloadReport(NzbDrone.Core.Parser.Model.RemoteEpisode,System.Nullable{System.Int32})",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.DownloadRelease(Sonarr.Api.V3.Indexers.ReleaseResource)"
+        ],
+        "id": "E1",
+        "text": "The release is sent to the download service, optionally to the specified download client."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.DownloadRelease(Sonarr.Api.V3.Indexers.ReleaseResource)"
+        ],
+        "id": "E2",
+        "text": "A missing cache entry is logged at debug level, and a release download failure is logged as an error."
+      },
+      {
+        "cites": [
+          "Sonarr.Common|M:NzbDrone.Common.EnsureThat.ExceptionFactory.CreateForParamValidation(System.String,System.String)",
+          "Sonarr.Common|M:NzbDrone.Common.EnsureThat.ExceptionFactory.CreateForParamNullValidation(System.String,System.String)"
+        ],
+        "id": "E3",
+        "text": "Failed override validation logs a warning with the validation message."
+      }
+    ]
+  },
+  "title": "Download release (POST /api/v3/Release)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

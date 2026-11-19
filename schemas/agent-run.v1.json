@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:agent-run:v1",
+  "title": "One fix loop run (contract agent-run v1, Phase 4, D347, D349)",
+  "description": "One record per `stangent fix` run of a ticket: the branch, the base, the settings, each step's turns and cost, each check's result with its output file, and why it stopped. Written by `stangent fix report` to .stangent/fix/<KEY>/agent-run.json; the run's telemetry event is written from it (D21).",
+  "type": "object",
+  "required": ["schemaVersion", "key", "branch", "baseCommit", "context", "steps", "checks", "stop", "costUsd", "capUsd"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "key": { "type": "string" },
+    "branch": { "description": "stangent/fix-<KEY>; never pushed (D347).", "type": "string" },
+    "base": { "description": "The ref the branch started from, as given.", "type": "string" },
+    "baseCommit": { "type": "string" },
+    "worktree": { "description": "Relative to the repo; null when none was made.", "type": ["string", "null"] },
+    "context": { "description": "What the fixer was given (D345, D357): files = the ticket, the code, the failing test and the finder's files (the default); ticket = without the files; bundle = the whole ticket bundle; null before prepare.", "enum": ["files", "ticket", "bundle", null] },
+    "model": { "type": ["string", "null"] },
+    "effort": { "type": ["string", "null"] },
+    "steps": {
+      "description": "The proof (already paid, counted toward the ticket's cap, D348) and each fixer call.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "turns", "costUsd"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "enum": ["proof", "fixer"] },
+          "call": { "type": "integer", "minimum": 1 },
+          "turns": { "description": "The model's rounds; null for the proof, whose record doesn't keep them.", "type": ["integer", "null"], "minimum": 0 },
+          "costUsd": { "type": "number", "minimum": 0 },
+          "inputTokens": { "type": "integer", "minimum": 0 },
+          "outputTokens": { "type": "integer", "minimum": 0 },
+          "ended": { "description": "Claude Code's result subtype: success, error_max_turns, error_max_budget_usd, …", "type": ["string", "null"] }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["round", "name", "result", "summary"],
+        "additionalProperties": false,
+        "properties": {
+          "round": { "description": "1, or 2 for the one retry (D343).", "type": "integer", "minimum": 1, "maximum": 2 },
+          "name": { "enum": ["plan", "files", "build", "tests", "test-reach"] },
+          "result": { "description": "not-checked: code couldn't tell (a graph that couldn't be rebuilt), never a pass.", "enum": ["passed", "failed", "not-checked", "skipped"] },
+          "summary": { "type": "string" },
+          "output": { "description": "The check's full output, relative to the repo.", "type": ["string", "null"] }
+        }
+      }
+    },
+    "stop": {
+      "type": "object",
+      "required": ["reason", "detail"],
+      "additionalProperties": false,
+      "properties": {
+        "reason": { "enum": ["fixed", "no-failing-test", "gave-up", "cap-hit", "check-failed", "in-progress"] },
+        "detail": { "type": "string" }
+      }
+    },
+    "plan": { "description": "task-plan.json, relative to the repo; null when no plan was checked.", "type": ["string", "null"] },
+    "sameCodeElsewhere": {
+      "description": "After a fixed run: lines the fixer replaced that still appear elsewhere in the repo, unchanged (D360). For the developer to look at; never a failed check.",
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["line", "places"],
+        "properties": { "line": { "type": "string" }, "places": { "type": "array", "items": { "type": "string" } } }
+      }
+    },
+    "outsideReach": { "description": "Edited files in neither the plan's changes nor their reach (D344).", "type": "array", "items": { "type": "string" } },
+    "edited": { "description": "Files the fixer edited on the branch (the proof test left out).", "type": "array", "items": { "type": "string" } },
+    "commits": { "type": "array", "items": { "type": "string" } },
+    "costUsd": { "description": "The ticket's whole cost: the proof's and every fixer call's.", "type": "number", "minimum": 0 },
+    "capUsd": { "type": "number", "minimum": 0 }
+  }
+}

@@ -1,0 +1,3559 @@
+version: 4
+entries:
+  - id: "S001"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB."
+    page: null
+    note: "The code asks for confirmation above 100 MB (SIZE_WARNING = 104857600), not 500 MB."
+  - id: "S002"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "A new password must be at least 8 characters long."
+    page: null
+    note: "The identity setup requires a password of only 6 characters."
+  - id: "S003"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "5"
+      quote: "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it."
+    page: null
+    note: "Removal is done by a cleanup task that removes completed, fully read series from Want to Read, not at the moment reading finishes."
+  - id: "S004"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "2.1"
+      quote: "A Random button on the library screen opens a randomly chosen series from that library."
+    page: null
+    note: "No random-series button exists on the library screen or elsewhere in the UI templates."
+  - id: "S005"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.1"
+      quote: "A slideshow mode turns the page automatically after a set number of seconds."
+    page: null
+    note: "No slideshow mode exists in the image reader."
+  - id: "S006"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: "Selected text can be read aloud using the device's text-to-speech voice."
+    page: null
+    note: "The text selection overlay only offers Copy, Annotate and Bookmark; there is no read-aloud feature."
+  - id: "S007"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "6.2"
+      quote: "The series in a collection can be exported to a CSV file."
+    page: null
+    note: "The collection detail screen has no CSV export action."
+  - id: "S008"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: "The owner can share a reading list through a public link that opens without signing in."
+    page: null
+    note: "No public share link feature exists for reading lists."
+  - id: "S009"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "A maintenance mode switch blocks all non-admin users from signing in until it is turned off."
+    page: null
+    note: "There is no maintenance mode setting on the General page or in the server settings."
+  - id: "S010"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.2"
+      quote: "An invite can be given an expiry date, after which its link stops working."
+    page: null
+    note: "The invite form has no expiry date option."
+  - id: "S011"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/annotations"
+      quote: "The FSD doesn't describe the screen /browse/annotations (\u201cAll Annotations\u201d). All Annotations screen listing annotations under Browse."
+    note: "The FSD doesn't describe the screen /browse/annotations (\u201cAll Annotations\u201d). All Annotations screen listing annotations under Browse."
+  - id: "S012"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/annotations"
+      quote: "The FSD doesn't mention the button \u201cExport\u201d on /browse/annotations. Exports the annotations."
+    note: "The FSD doesn't mention the button \u201cExport\u201d on /browse/annotations. Exports the annotations."
+  - id: "S013"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/genres"
+      quote: "The FSD doesn't describe the screen /browse/genres (\u201cBrowse Genres\u201d). Browse Genres screen listing genres with series counts."
+    note: "The FSD doesn't describe the screen /browse/genres (\u201cBrowse Genres\u201d). Browse Genres screen listing genres with series counts."
+  - id: "S014"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/genres"
+      quote: "The FSD doesn't mention the button \u201c{{num}} Series\u201d on /browse/genres. Button opening All Series filtered by the genre."
+    note: "The FSD doesn't mention the button \u201c{{num}} Series\u201d on /browse/genres. Button opening All Series filtered by the genre."
+  - id: "S015"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button with no label (`handleClick` in the code) on /library/:libraryId/series/:seriesId. Clicking an external (recommended/related outside) series card opens it."
+    note: "The FSD doesn't mention the button with no label (`handleClick` in the code) on /library/:libraryId/series/:seriesId. Clicking an external (recommended/related outside) series card opens it."
+  - id: "S016"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button with no label (`handleClick` in the code) on /library/:libraryId/series/:seriesId. Clicking an external series card opens it."
+    note: "The FSD doesn't mention the button with no label (`handleClick` in the code) on /library/:libraryId/series/:seriesId. Clicking an external series card opens it."
+  - id: "S017"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cAll\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip tab showing all activity."
+    note: "The FSD doesn't mention the button \u201cAll\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip tab showing all activity."
+  - id: "S018"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cMetadata\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip tab for metadata events."
+    note: "The FSD doesn't mention the button \u201cMetadata\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip tab for metadata events."
+  - id: "S019"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cScrobble\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip tab for scrobble events."
+    note: "The FSD doesn't mention the button \u201cScrobble\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip tab for scrobble events."
+  - id: "S020"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cMatch\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip tab for match events."
+    note: "The FSD doesn't mention the button \u201cMatch\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip tab for match events."
+  - id: "S021"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cMy Activity\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip switch to the user's own activity."
+    note: "The FSD doesn't mention the button \u201cMy Activity\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip switch to the user's own activity."
+  - id: "S022"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cAdmin feed\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip switch to the admin feed."
+    note: "The FSD doesn't mention the button \u201cAdmin feed\u201d on /library/:libraryId/series/:seriesId. Kavita+ tooltip switch to the admin feed."
+  - id: "S023"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cThis series has files with problems\u201d on /library/:libraryId/series/:seriesId. Warning button shown when the series has files with problems."
+    note: "The FSD doesn't mention the button \u201cThis series has files with problems\u201d on /library/:libraryId/series/:seriesId. Warning button shown when the series has files with problems."
+  - id: "S024"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201c{{settings.scrobbling}}: {{value}}\u201d on /library/:libraryId/series/:seriesId. Shows the series' scrobbling status/setting."
+    note: "The FSD doesn't mention the button \u201c{{settings.scrobbling}}: {{value}}\u201d on /library/:libraryId/series/:seriesId. Shows the series' scrobbling status/setting."
+  - id: "S025"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button \u201cKavita+ Activity\u201d on /library/:libraryId/series/:seriesId. Opens the Kavita+ activity for the series."
+    note: "The FSD doesn't mention the button \u201cKavita+ Activity\u201d on /library/:libraryId/series/:seriesId. Opens the Kavita+ activity for the series."
+  - id: "S026"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId. Clicking a metadata value opens All Series filtered by it."
+    note: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId. Clicking a metadata value opens All Series filtered by it."
+  - id: "S027"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.1"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId"
+      quote: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId. Clicking a metadata value opens All Series filtered by it."
+    note: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId. Clicking a metadata value opens All Series filtered by it."
+  - id: "S028"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the field with no label (`formGroup.name` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Name field for a new bookmark/annotation entry."
+    note: "The FSD doesn't mention the field with no label (`formGroup.name` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Name field for a new bookmark/annotation entry."
+  - id: "S029"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cSave\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Saves the entered name."
+    note: "The FSD doesn't mention the button \u201cSave\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Saves the entered name."
+  - id: "S030"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cSkip to main content\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Accessibility skip link to main content."
+    note: "The FSD doesn't mention the button \u201cSkip to main content\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Accessibility skip link to main content."
+  - id: "S031"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`movePage` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Moves to the previous page."
+    note: "The FSD doesn't mention the button with no label (`movePage` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Moves to the previous page."
+  - id: "S032"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`movePage` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Moves to the next page."
+    note: "The FSD doesn't mention the button with no label (`movePage` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Moves to the next page."
+  - id: "S033"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`handleReaderClick` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Click handler on the reader area."
+    note: "The FSD doesn't mention the button with no label (`handleReaderClick` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Click handler on the reader area."
+  - id: "S034"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`toggleMenu` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Toggles the top menu."
+    note: "The FSD doesn't mention the button with no label (`toggleMenu` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Toggles the top menu."
+  - id: "S035"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`div` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Clickable area in the reader."
+    note: "The FSD doesn't mention the button with no label (`div` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Clickable area in the reader."
+  - id: "S036"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cIncognito mode is on. Toggle to turn off.\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Turns incognito mode off in the book reader."
+    note: "The FSD doesn't mention the button \u201cIncognito mode is on. Toggle to turn off.\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Turns incognito mode off in the book reader."
+  - id: "S037"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cB\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Keyboard shortcut hint B (bookmark)."
+    note: "The FSD doesn't mention the button \u201cB\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Keyboard shortcut hint B (bookmark)."
+  - id: "S038"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cV\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Keyboard shortcut hint V."
+    note: "The FSD doesn't mention the button \u201cV\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Keyboard shortcut hint V."
+  - id: "S039"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cKeyboard Shortcuts Modal\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Opens the keyboard shortcuts modal."
+    note: "The FSD doesn't mention the button \u201cKeyboard Shortcuts Modal\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Opens the keyboard shortcuts modal."
+  - id: "S040"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`closeReader` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Closes the reader."
+    note: "The FSD doesn't mention the button with no label (`closeReader` in the code) on /library/:libraryId/series/:seriesId/book/:chapterId. Closes the reader."
+  - id: "S041"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cPrevious\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Previous page/chapter button in the footer."
+    note: "The FSD doesn't mention the button \u201cPrevious\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Previous page/chapter button in the footer."
+  - id: "S042"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cGo to page\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Go to a typed page number."
+    note: "The FSD doesn't mention the button \u201cGo to page\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Go to a typed page number."
+  - id: "S043"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "4.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/book/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cNext\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Next page/chapter button in the footer."
+    note: "The FSD doesn't mention the button \u201cNext\u201d on /library/:libraryId/series/:seriesId/book/:chapterId. Next page/chapter button in the footer."
+  - id: "S044"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.3"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/chapter/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`read` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Read button for the chapter."
+    note: "The FSD doesn't mention the button with no label (`read` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Read button for the chapter."
+  - id: "S045"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.3"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/chapter/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`read` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Incognito read option for the chapter."
+    note: "The FSD doesn't mention the button with no label (`read` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Incognito read option for the chapter."
+  - id: "S046"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.3"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/chapter/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cEdit Information\u201d on /library/:libraryId/series/:seriesId/chapter/:chapterId. Opens the chapter edit dialog."
+    note: "The FSD doesn't mention the button \u201cEdit Information\u201d on /library/:libraryId/series/:seriesId/chapter/:chapterId. Opens the chapter edit dialog."
+  - id: "S047"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.3"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/chapter/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Clicking a metadata value opens All Series filtered by it."
+    note: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Clicking a metadata value opens All Series filtered by it."
+  - id: "S048"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.3"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/chapter/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Clicking a metadata value opens All Series filtered by it."
+    note: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/chapter/:chapterId. Clicking a metadata value opens All Series filtered by it."
+  - id: "S049"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "The FSD doesn't describe the screen /library/:libraryId/series/:seriesId/pdf/:chapterId. PDF reader screen."
+    note: "The FSD doesn't describe the screen /library/:libraryId/series/:seriesId/pdf/:chapterId. PDF reader screen."
+  - id: "S050"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cTurn off Incognito Mode\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Turns incognito off in the PDF reader."
+    note: "The FSD doesn't mention the button \u201cTurn off Incognito Mode\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Turns incognito off in the PDF reader."
+  - id: "S051"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cClose Reader\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Closes the PDF reader."
+    note: "The FSD doesn't mention the button \u201cClose Reader\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Closes the PDF reader."
+  - id: "S052"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`toggleScrollMode` in the code) on /library/:libraryId/series/:seriesId/pdf/:chapterId. Toggles PDF scroll mode."
+    note: "The FSD doesn't mention the button with no label (`toggleScrollMode` in the code) on /library/:libraryId/series/:seriesId/pdf/:chapterId. Toggles PDF scroll mode."
+  - id: "S053"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cKeyboard Shortcuts Modal\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Opens keyboard shortcuts modal."
+    note: "The FSD doesn't mention the button \u201cKeyboard Shortcuts Modal\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Opens keyboard shortcuts modal."
+  - id: "S054"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "The FSD doesn't mention the button with no label (`toggleSpreadMode` in the code) on /library/:libraryId/series/:seriesId/pdf/:chapterId. Toggles PDF spread mode."
+    note: "The FSD doesn't mention the button with no label (`toggleSpreadMode` in the code) on /library/:libraryId/series/:seriesId/pdf/:chapterId. Toggles PDF spread mode."
+  - id: "S055"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/pdf/:chapterId"
+      quote: "The FSD doesn't mention the button \u201cLight Theme\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Switches the PDF to a light theme."
+    note: "The FSD doesn't mention the button \u201cLight Theme\u201d on /library/:libraryId/series/:seriesId/pdf/:chapterId. Switches the PDF to a light theme."
+  - id: "S056"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/volume/:volumeId"
+      quote: "The FSD doesn't mention the button with no label (`readVolume` in the code) on /library/:libraryId/series/:seriesId/volume/:volumeId. Incognito read option for the volume."
+    note: "The FSD doesn't mention the button with no label (`readVolume` in the code) on /library/:libraryId/series/:seriesId/volume/:volumeId. Incognito read option for the volume."
+  - id: "S057"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/volume/:volumeId"
+      quote: "The FSD doesn't mention the button \u201cEdit Information\u201d on /library/:libraryId/series/:seriesId/volume/:volumeId. Opens the volume edit dialog."
+    note: "The FSD doesn't mention the button \u201cEdit Information\u201d on /library/:libraryId/series/:seriesId/volume/:volumeId. Opens the volume edit dialog."
+  - id: "S058"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/volume/:volumeId"
+      quote: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/volume/:volumeId. Clicking a metadata value opens All Series filtered by it."
+    note: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/volume/:volumeId. Clicking a metadata value opens All Series filtered by it."
+  - id: "S059"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "3.2"
+      quote: ""
+    page:
+      id: "page:/library/:libraryId/series/:seriesId/volume/:volumeId"
+      quote: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/volume/:volumeId. Clicking a metadata value opens All Series filtered by it."
+    note: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /library/:libraryId/series/:seriesId/volume/:volumeId. Clicking a metadata value opens All Series filtered by it."
+  - id: "S060"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.1"
+      quote: ""
+    page:
+      id: "page:/lists"
+      quote: "The FSD doesn't mention the button with no label (`handleSelection` in the code) on /lists. Selects a reading list card for bulk action."
+    note: "The FSD doesn't mention the button with no label (`handleSelection` in the code) on /lists. Selects a reading list card for bulk action."
+  - id: "S061"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.1"
+      quote: ""
+    page:
+      id: "page:/lists"
+      quote: "The FSD doesn't mention the field \u201cSelect\u201d on /lists. Select checkbox on a reading list card."
+    note: "The FSD doesn't mention the field \u201cSelect\u201d on /lists. Select checkbox on a reading list card."
+  - id: "S062"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: ""
+    page:
+      id: "page:/lists/:readingListId"
+      quote: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /lists/:readingListId. Clicking a metadata value opens All Series filtered by it."
+    note: "The FSD doesn't mention the button with no label (`openFilter` in the code) on /lists/:readingListId. Clicking a metadata value opens All Series filtered by it."
+  - id: "S063"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: ""
+    page:
+      id: "page:/lists/:readingListId"
+      quote: "The FSD doesn't mention the button \u201cRemove Read\u201d on /lists/:readingListId. Removes all read items from the list."
+    note: "The FSD doesn't mention the button \u201cRemove Read\u201d on /lists/:readingListId. Removes all read items from the list."
+  - id: "S064"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: ""
+    page:
+      id: "page:/lists/:readingListId"
+      quote: "The FSD doesn't mention the button \u201cRead\u201d on /lists/:readingListId. Read button on a list item."
+    note: "The FSD doesn't mention the button \u201cRead\u201d on /lists/:readingListId. Read button on a list item."
+  - id: "S065"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "7.2"
+      quote: ""
+    page:
+      id: "page:/lists/:readingListId"
+      quote: "The FSD doesn't mention the button \u201cRead\u201d on /lists/:readingListId. Read button on a list item."
+    note: "The FSD doesn't mention the button \u201cRead\u201d on /lists/:readingListId. Read button on a list item."
+  - id: "S066"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`deviceForm.name` in the code) on /settings. Name field for a client device."
+    note: "The FSD doesn't mention the field with no label (`deviceForm.name` in the code) on /settings. Name field for a client device."
+  - id: "S067"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves the client device name."
+    note: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves the client device name."
+  - id: "S068"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cLoad more\u201d on /settings. Loads more Kavita+ timeline entries."
+    note: "The FSD doesn't mention the button \u201cLoad more\u201d on /settings. Loads more Kavita+ timeline entries."
+  - id: "S069"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`fileFormGroup.files` in the code) on /settings. File picker for importing mappings."
+    note: "The FSD doesn't mention the field with no label (`fileFormGroup.files` in the code) on /settings. File picker for importing mappings."
+  - id: "S070"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cImport mode\u201d on /settings. Import mode choice."
+    note: "The FSD doesn't mention the field \u201cImport mode\u201d on /settings. Import mode choice."
+  - id: "S071"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cConflict resolution\u201d on /settings. Conflict resolution choice for import."
+    note: "The FSD doesn't mention the field \u201cConflict resolution\u201d on /settings. Conflict resolution choice for import."
+  - id: "S072"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cTags whitelist\u201d on /settings. Tags whitelist import option."
+    note: "The FSD doesn't mention the field \u201cTags whitelist\u201d on /settings. Tags whitelist import option."
+  - id: "S073"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cTags blacklist\u201d on /settings. Tags blacklist import option."
+    note: "The FSD doesn't mention the field \u201cTags blacklist\u201d on /settings. Tags blacklist import option."
+  - id: "S074"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cAge rating mappings\u201d on /settings. Age rating mappings import option."
+    note: "The FSD doesn't mention the field \u201cAge rating mappings\u201d on /settings. Age rating mappings import option."
+  - id: "S075"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cField mappings\u201d on /settings. Field mappings import option."
+    note: "The FSD doesn't mention the field \u201cField mappings\u201d on /settings. Field mappings import option."
+  - id: "S076"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`conflictField` in the code) on /settings. Conflict field resolution."
+    note: "The FSD doesn't mention the field with no label (`conflictField` in the code) on /settings. Conflict field resolution."
+  - id: "S077"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cPrev\u201d on /settings. Previous step in import wizard."
+    note: "The FSD doesn't mention the button \u201cPrev\u201d on /settings. Previous step in import wizard."
+  - id: "S078"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`nextStep` in the code) on /settings. Next step in import wizard."
+    note: "The FSD doesn't mention the button with no label (`nextStep` in the code) on /settings. Next step in import wizard."
+  - id: "S079"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cLicense Key\u201d on /settings. Kavita+ license key field."
+    note: "The FSD doesn't mention the field \u201cLicense Key\u201d on /settings. Kavita+ license key field."
+  - id: "S080"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cEmail\u201d on /settings. Kavita+ license email field."
+    note: "The FSD doesn't mention the field \u201cEmail\u201d on /settings. Kavita+ license email field."
+  - id: "S081"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSkip to dashboard\u201d on /settings. Skips Kavita+ provider setup to dashboard."
+    note: "The FSD doesn't mention the button \u201cSkip to dashboard\u201d on /settings. Skips Kavita+ provider setup to dashboard."
+  - id: "S082"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSkip for now\u201d on /settings. Skips provider connection for now."
+    note: "The FSD doesn't mention the button \u201cSkip for now\u201d on /settings. Skips provider connection for now."
+  - id: "S083"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cGo to dashboard\u201d on /settings. Goes to dashboard after provider setup."
+    note: "The FSD doesn't mention the button \u201cGo to dashboard\u201d on /settings. Goes to dashboard after provider setup."
+  - id: "S084"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRemove Scrobble Error\u201d on /settings. Removes a scrobble error."
+    note: "The FSD doesn't mention the button \u201cRemove Scrobble Error\u201d on /settings. Removes a scrobble error."
+  - id: "S085"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRetry\u201d on /settings. Retries a failed Kavita+ event."
+    note: "The FSD doesn't mention the button \u201cRetry\u201d on /settings. Retries a failed Kavita+ event."
+  - id: "S086"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cMatch\u201d on /settings. Fixes a series match."
+    note: "The FSD doesn't mention the button \u201cMatch\u201d on /settings. Fixes a series match."
+  - id: "S087"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`collapsed` in the code) on /settings. Collapses an audit entry."
+    note: "The FSD doesn't mention the button with no label (`collapsed` in the code) on /settings. Collapses an audit entry."
+  - id: "S088"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cLast 30 days\u201d on /settings. API stats for last 30 days."
+    note: "The FSD doesn't mention the button \u201cLast 30 days\u201d on /settings. API stats for last 30 days."
+  - id: "S089"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cLifetime\u201d on /settings. API stats lifetime."
+    note: "The FSD doesn't mention the button \u201cLifetime\u201d on /settings. API stats lifetime."
+  - id: "S090"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cManage\u201d on /settings. Manage Kavita+ subscription."
+    note: "The FSD doesn't mention the button \u201cManage\u201d on /settings. Manage Kavita+ subscription."
+  - id: "S091"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cEdit license\u201d on /settings. Edits the license."
+    note: "The FSD doesn't mention the button \u201cEdit license\u201d on /settings. Edits the license."
+  - id: "S092"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cCheck\u201d on /settings. Checks the license."
+    note: "The FSD doesn't mention the button \u201cCheck\u201d on /settings. Checks the license."
+  - id: "S093"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAll\u201d on /settings. Activity filter: All."
+    note: "The FSD doesn't mention the button \u201cAll\u201d on /settings. Activity filter: All."
+  - id: "S094"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cMatch\u201d on /settings. Activity filter: Match."
+    note: "The FSD doesn't mention the button \u201cMatch\u201d on /settings. Activity filter: Match."
+  - id: "S095"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cMetadata\u201d on /settings. Activity filter: Metadata."
+    note: "The FSD doesn't mention the button \u201cMetadata\u201d on /settings. Activity filter: Metadata."
+  - id: "S096"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cScrobble\u201d on /settings. Activity filter: Scrobble."
+    note: "The FSD doesn't mention the button \u201cScrobble\u201d on /settings. Activity filter: Scrobble."
+  - id: "S097"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSync\u201d on /settings. Activity filter: Sync."
+    note: "The FSD doesn't mention the button \u201cSync\u201d on /settings. Activity filter: Sync."
+  - id: "S098"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSystem\u201d on /settings. Activity filter: System."
+    note: "The FSD doesn't mention the button \u201cSystem\u201d on /settings. Activity filter: System."
+  - id: "S099"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cScrobble provider\u201d on /settings. Scrobble provider filter."
+    note: "The FSD doesn't mention the field \u201cScrobble provider\u201d on /settings. Scrobble provider filter."
+  - id: "S100"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cStatus filter\u201d on /settings. Status filter."
+    note: "The FSD doesn't mention the field \u201cStatus filter\u201d on /settings. Status filter."
+  - id: "S101"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSubject\u201d on /settings. Subject filter."
+    note: "The FSD doesn't mention the field \u201cSubject\u201d on /settings. Subject filter."
+  - id: "S102"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cUser\u201d on /settings. User filter."
+    note: "The FSD doesn't mention the field \u201cUser\u201d on /settings. User filter."
+  - id: "S103"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cTime Frame\u201d on /settings. Time frame filter."
+    note: "The FSD doesn't mention the field \u201cTime Frame\u201d on /settings. Time frame filter."
+  - id: "S104"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSearch events\u201d on /settings. Search events field."
+    note: "The FSD doesn't mention the field \u201cSearch events\u201d on /settings. Search events field."
+  - id: "S105"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cMatch State\u201d on /settings. Match state filter."
+    note: "The FSD doesn't mention the field \u201cMatch State\u201d on /settings. Match state filter."
+  - id: "S106"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cMatch {{seriesName}}\u201d on /settings. Matches a series."
+    note: "The FSD doesn't mention the button \u201cMatch {{seriesName}}\u201d on /settings. Matches a series."
+  - id: "S107"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cMatch {{seriesName}}\u201d on /settings. Matches a series."
+    note: "The FSD doesn't mention the button \u201cMatch {{seriesName}}\u201d on /settings. Matches a series."
+  - id: "S108"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filter scrobble errors."
+    note: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filter scrobble errors."
+  - id: "S109"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cClear Errors\u201d on /settings. Clears all scrobble errors."
+    note: "The FSD doesn't mention the button \u201cClear Errors\u201d on /settings. Clears all scrobble errors."
+  - id: "S110"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`fixMatch` in the code) on /settings. Fixes a match for an error."
+    note: "The FSD doesn't mention the button with no label (`fixMatch` in the code) on /settings. Fixes a match for an error."
+  - id: "S111"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`fixMatch` in the code) on /settings. Fixes a match for an error."
+    note: "The FSD doesn't mention the button with no label (`fixMatch` in the code) on /settings. Fixes a match for an error."
+  - id: "S112"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cActivate License\u201d on /settings. Activates the Kavita+ license."
+    note: "The FSD doesn't mention the button \u201cActivate License\u201d on /settings. Activates the Kavita+ license."
+  - id: "S113"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRefresh provider health\u201d on /settings. Refreshes provider health."
+    note: "The FSD doesn't mention the button \u201cRefresh provider health\u201d on /settings. Refreshes provider health."
+  - id: "S114"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cTest\u201d on /settings. Sends a test email."
+    note: "The FSD doesn't mention the button \u201cTest\u201d on /settings. Sends a test email."
+  - id: "S115"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSender Address\u201d on /settings. Email sender address."
+    note: "The FSD doesn't mention the field \u201cSender Address\u201d on /settings. Email sender address."
+  - id: "S116"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cDisplay Name\u201d on /settings. Email display name."
+    note: "The FSD doesn't mention the field \u201cDisplay Name\u201d on /settings. Email display name."
+  - id: "S117"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cHost\u201d on /settings. SMTP host."
+    note: "The FSD doesn't mention the field \u201cHost\u201d on /settings. SMTP host."
+  - id: "S118"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cGmail\u201d on /settings. Fills in Gmail SMTP settings."
+    note: "The FSD doesn't mention the button \u201cGmail\u201d on /settings. Fills in Gmail SMTP settings."
+  - id: "S119"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cOutlook\u201d on /settings. Fills in Outlook SMTP settings."
+    note: "The FSD doesn't mention the button \u201cOutlook\u201d on /settings. Fills in Outlook SMTP settings."
+  - id: "S120"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cPort\u201d on /settings. SMTP port."
+    note: "The FSD doesn't mention the field \u201cPort\u201d on /settings. SMTP port."
+  - id: "S121"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cUse SSL on Email Server\u201d on /settings. Use SSL on email server."
+    note: "The FSD doesn't mention the field \u201cUse SSL on Email Server\u201d on /settings. Use SSL on email server."
+  - id: "S122"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cUsername\u201d on /settings. SMTP username."
+    note: "The FSD doesn't mention the field \u201cUsername\u201d on /settings. SMTP username."
+  - id: "S123"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cPassword\u201d on /settings. SMTP password."
+    note: "The FSD doesn't mention the field \u201cPassword\u201d on /settings. SMTP password."
+  - id: "S124"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSize Limit\u201d on /settings. Email attachment size limit."
+    note: "The FSD doesn't mention the field \u201cSize Limit\u201d on /settings. Email attachment size limit."
+  - id: "S125"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCustomized Templates\u201d on /settings. Customized email templates switch."
+    note: "The FSD doesn't mention the field \u201cCustomized Templates\u201d on /settings. Customized email templates switch."
+  - id: "S126"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cInclude copying Library type\u201d on /settings. Option to copy library type in bulk action."
+    note: "The FSD doesn't mention the field \u201cInclude copying Library type\u201d on /settings. Option to copy library type in bulk action."
+  - id: "S127"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cApply\u201d on /settings. Applies bulk library action."
+    note: "The FSD doesn't mention the button \u201cApply\u201d on /settings. Applies bulk library action."
+  - id: "S128"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`libraryTracker.isSelected(library)` in the code) on /settings. Selects a library row."
+    note: "The FSD doesn't mention the field with no label (`libraryTracker.isSelected(library)` in the code) on /settings. Selects a library row."
+  - id: "S129"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`libraryTracker.isSelected(library)` in the code) on /settings. Selects a library row."
+    note: "The FSD doesn't mention the field with no label (`libraryTracker.isSelected(library)` in the code) on /settings. Selects a library row."
+  - id: "S130"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cClear all\u201d on /settings. Clears all media issues."
+    note: "The FSD doesn't mention the button \u201cClear all\u201d on /settings. Clears all media issues."
+  - id: "S131"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters media issues."
+    note: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters media issues."
+  - id: "S132"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cLibrary\u201d on /settings. Library filter for media issues."
+    note: "The FSD doesn't mention the field \u201cLibrary\u201d on /settings. Library filter for media issues."
+  - id: "S133"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSeries\u201d on /settings. Series filter for media issues."
+    note: "The FSD doesn't mention the field \u201cSeries\u201d on /settings. Series filter for media issues."
+  - id: "S134"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cReason\u201d on /settings. Reason filter for media issues."
+    note: "The FSD doesn't mention the field \u201cReason\u201d on /settings. Reason filter for media issues."
+  - id: "S135"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRestore selected ({{count}})\u201d on /settings. Restores selected issues."
+    note: "The FSD doesn't mention the button \u201cRestore selected ({{count}})\u201d on /settings. Restores selected issues."
+  - id: "S136"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSelect {{file}}\u201d on /settings. Selects a media issue file."
+    note: "The FSD doesn't mention the field \u201cSelect {{file}}\u201d on /settings. Selects a media issue file."
+  - id: "S137"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cHide details\u201d on /settings. Hides issue details."
+    note: "The FSD doesn't mention the button \u201cHide details\u201d on /settings. Hides issue details."
+  - id: "S138"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRestore\u201d on /settings. Restores one issue."
+    note: "The FSD doesn't mention the button \u201cRestore\u201d on /settings. Restores one issue."
+  - id: "S139"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSave Media As\u201d on /settings. Image format for saved media."
+    note: "The FSD doesn't mention the field \u201cSave Media As\u201d on /settings. Image format for saved media."
+  - id: "S140"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cPDF Render Resolution\u201d on /settings. PDF render resolution."
+    note: "The FSD doesn't mention the field \u201cPDF Render Resolution\u201d on /settings. PDF render resolution."
+  - id: "S141"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCover Image Size\u201d on /settings. Cover image size."
+    note: "The FSD doesn't mention the field \u201cCover Image Size\u201d on /settings. Cover image size."
+  - id: "S142"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cBookmarks Directory\u201d on /settings. Bookmarks directory."
+    note: "The FSD doesn't mention the field \u201cBookmarks Directory\u201d on /settings. Bookmarks directory."
+  - id: "S143"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cChange\u201d on /settings. Changes bookmarks directory."
+    note: "The FSD doesn't mention the button \u201cChange\u201d on /settings. Changes bookmarks directory."
+  - id: "S144"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cGenres\u201d on /settings. Genre metadata mappings."
+    note: "The FSD doesn't mention the field \u201cGenres\u201d on /settings. Genre metadata mappings."
+  - id: "S145"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cTags\u201d on /settings. Tag metadata mappings."
+    note: "The FSD doesn't mention the field \u201cTags\u201d on /settings. Tag metadata mappings."
+  - id: "S146"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cBlacklist Genres/Tags\u201d on /settings. Blacklist genres/tags."
+    note: "The FSD doesn't mention the field \u201cBlacklist Genres/Tags\u201d on /settings. Blacklist genres/tags."
+  - id: "S147"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cWhitelist Tags\u201d on /settings. Whitelist tags."
+    note: "The FSD doesn't mention the field \u201cWhitelist Tags\u201d on /settings. Whitelist tags."
+  - id: "S148"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter Tags above weight (Mangabaka only)\u201d on /settings. Tag weight filter."
+    note: "The FSD doesn't mention the field \u201cFilter Tags above weight (Mangabaka only)\u201d on /settings. Tag weight filter."
+  - id: "S149"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.sourceType` in the code) on /settings. Mapping source type."
+    note: "The FSD doesn't mention the field with no label (`mapping.sourceType` in the code) on /settings. Mapping source type."
+  - id: "S150"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.sourceValue` in the code) on /settings. Mapping source value."
+    note: "The FSD doesn't mention the field with no label (`mapping.sourceValue` in the code) on /settings. Mapping source value."
+  - id: "S151"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.destinationType` in the code) on /settings. Mapping destination type."
+    note: "The FSD doesn't mention the field with no label (`mapping.destinationType` in the code) on /settings. Mapping destination type."
+  - id: "S152"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.destinationValue` in the code) on /settings. Mapping destination value."
+    note: "The FSD doesn't mention the field with no label (`mapping.destinationValue` in the code) on /settings. Mapping destination value."
+  - id: "S153"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.excludeFromSource` in the code) on /settings. Exclude from source."
+    note: "The FSD doesn't mention the field with no label (`mapping.excludeFromSource` in the code) on /settings. Exclude from source."
+  - id: "S154"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRemove field mapping\u201d on /settings. Removes a field mapping."
+    note: "The FSD doesn't mention the button \u201cRemove field mapping\u201d on /settings. Removes a field mapping."
+  - id: "S155"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd Field Mapping\u201d on /settings. Adds a field mapping."
+    note: "The FSD doesn't mention the button \u201cAdd Field Mapping\u201d on /settings. Adds a field mapping."
+  - id: "S156"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd Field Mapping\u201d on /settings. Adds a field mapping."
+    note: "The FSD doesn't mention the button \u201cAdd Field Mapping\u201d on /settings. Adds a field mapping."
+  - id: "S157"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cEnable Metadata Download\u201d on /settings. Enables metadata download."
+    note: "The FSD doesn't mention the field \u201cEnable Metadata Download\u201d on /settings. Enables metadata download."
+  - id: "S158"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cExtended metadata processing\u201d on /settings. Extended metadata processing."
+    note: "The FSD doesn't mention the field \u201cExtended metadata processing\u201d on /settings. Extended metadata processing."
+  - id: "S159"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cExport\u201d on /settings. Exports metadata settings."
+    note: "The FSD doesn't mention the button \u201cExport\u201d on /settings. Exports metadata settings."
+  - id: "S160"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRun Metadata Mappings\u201d on /settings. Runs metadata mappings."
+    note: "The FSD doesn't mention the button \u201cRun Metadata Mappings\u201d on /settings. Runs metadata mappings."
+  - id: "S161"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`field` in the code) on /settings. Metadata field toggle."
+    note: "The FSD doesn't mention the field with no label (`field` in the code) on /settings. Metadata field toggle."
+  - id: "S162"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a library override."
+    note: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a library override."
+  - id: "S163"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cLibrary\u201d on /settings. Library for override."
+    note: "The FSD doesn't mention the field \u201cLibrary\u201d on /settings. Library for override."
+  - id: "S164"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRemove override\u201d on /settings. Removes override."
+    note: "The FSD doesn't mention the button \u201cRemove override\u201d on /settings. Removes override."
+  - id: "S165"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSeries Name\u201d on /settings. Series name field setting."
+    note: "The FSD doesn't mention the field \u201cSeries Name\u201d on /settings. Series name field setting."
+  - id: "S166"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cLocalized Series Name\u201d on /settings. Localized series name setting."
+    note: "The FSD doesn't mention the field \u201cLocalized Series Name\u201d on /settings. Localized series name setting."
+  - id: "S167"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSummary\u201d on /settings. Summary setting."
+    note: "The FSD doesn't mention the field \u201cSummary\u201d on /settings. Summary setting."
+  - id: "S168"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cRelationships\u201d on /settings. Relationships setting."
+    note: "The FSD doesn't mention the field \u201cRelationships\u201d on /settings. Relationships setting."
+  - id: "S169"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cStart Date\u201d on /settings. Start date setting."
+    note: "The FSD doesn't mention the field \u201cStart Date\u201d on /settings. Start date setting."
+  - id: "S170"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cTitle\u201d on /settings. Chapter title setting."
+    note: "The FSD doesn't mention the field \u201cTitle\u201d on /settings. Chapter title setting."
+  - id: "S171"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSummary\u201d on /settings. Chapter summary setting."
+    note: "The FSD doesn't mention the field \u201cSummary\u201d on /settings. Chapter summary setting."
+  - id: "S172"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cPublisher\u201d on /settings. Publisher setting."
+    note: "The FSD doesn't mention the field \u201cPublisher\u201d on /settings. Publisher setting."
+  - id: "S173"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cChapter Cover\u201d on /settings. Chapter cover setting."
+    note: "The FSD doesn't mention the field \u201cChapter Cover\u201d on /settings. Chapter cover setting."
+  - id: "S174"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cVolume Cover\u201d on /settings. Volume cover setting."
+    note: "The FSD doesn't mention the field \u201cVolume Cover\u201d on /settings. Volume cover setting."
+  - id: "S175"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cPeople\u201d on /settings. People setting."
+    note: "The FSD doesn't mention the field \u201cPeople\u201d on /settings. People setting."
+  - id: "S176"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFirst Last Naming\u201d on /settings. First-last naming."
+    note: "The FSD doesn't mention the field \u201cFirst Last Naming\u201d on /settings. First-last naming."
+  - id: "S177"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`formGroup.personRoles[role]` in the code) on /settings. Per-role person setting."
+    note: "The FSD doesn't mention the field with no label (`formGroup.personRoles[role]` in the code) on /settings. Per-role person setting."
+  - id: "S178"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`formGroup.overrides[field]` in the code) on /settings. Per-field override."
+    note: "The FSD doesn't mention the field with no label (`formGroup.overrides[field]` in the code) on /settings. Per-field override."
+  - id: "S179"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cAuthority\u201d on /settings. OIDC authority."
+    note: "The FSD doesn't mention the field \u201cAuthority\u201d on /settings. OIDC authority."
+  - id: "S180"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cClient ID\u201d on /settings. OIDC client ID."
+    note: "The FSD doesn't mention the field \u201cClient ID\u201d on /settings. OIDC client ID."
+  - id: "S181"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cClient secret\u201d on /settings. OIDC client secret."
+    note: "The FSD doesn't mention the field \u201cClient secret\u201d on /settings. OIDC client secret."
+  - id: "S182"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cReset external ids from all users, use this to reset links between users in Kavita and your identity provider\u201d on /settings. Resets OIDC external IDs for all users."
+    note: "The FSD doesn't mention the button \u201cReset external ids from all users, use this to reset links between users in Kavita and your identity provider\u201d on /settings. Resets OIDC external IDs for all users."
+  - id: "S183"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves OIDC settings."
+    note: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves OIDC settings."
+  - id: "S184"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cProvider name\u201d on /settings. OIDC provider name."
+    note: "The FSD doesn't mention the field \u201cProvider name\u201d on /settings. OIDC provider name."
+  - id: "S185"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cProvision accounts\u201d on /settings. Provision accounts."
+    note: "The FSD doesn't mention the field \u201cProvision accounts\u201d on /settings. Provision accounts."
+  - id: "S186"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cRequire verified emails\u201d on /settings. Require verified emails."
+    note: "The FSD doesn't mention the field \u201cRequire verified emails\u201d on /settings. Require verified emails."
+  - id: "S187"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSync user settings with OIDC roles\u201d on /settings. Sync settings with OIDC roles."
+    note: "The FSD doesn't mention the field \u201cSync user settings with OIDC roles\u201d on /settings. Sync settings with OIDC roles."
+  - id: "S188"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cAuto login\u201d on /settings. Auto login."
+    note: "The FSD doesn't mention the field \u201cAuto login\u201d on /settings. Auto login."
+  - id: "S189"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cDisable password authentication\u201d on /settings. Disable password authentication."
+    note: "The FSD doesn't mention the field \u201cDisable password authentication\u201d on /settings. Disable password authentication."
+  - id: "S190"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cInclude unknowns\u201d on /settings. Include unknowns for default age restriction."
+    note: "The FSD doesn't mention the field \u201cInclude unknowns\u201d on /settings. Include unknowns for default age restriction."
+  - id: "S191"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cLibraries\u201d on /settings. Default libraries for OIDC users."
+    note: "The FSD doesn't mention the field \u201cLibraries\u201d on /settings. Default libraries for OIDC users."
+  - id: "S192"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`formGroup.defaultRoles` in the code) on /settings. Default roles for OIDC users."
+    note: "The FSD doesn't mention the field with no label (`formGroup.defaultRoles` in the code) on /settings. Default roles for OIDC users."
+  - id: "S193"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cRoles prefix\u201d on /settings. Roles prefix."
+    note: "The FSD doesn't mention the field \u201cRoles prefix\u201d on /settings. Roles prefix."
+  - id: "S194"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cRoles claim\u201d on /settings. Roles claim."
+    note: "The FSD doesn't mention the field \u201cRoles claim\u201d on /settings. Roles claim."
+  - id: "S195"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCustom scopes\u201d on /settings. Custom scopes."
+    note: "The FSD doesn't mention the field \u201cCustom scopes\u201d on /settings. Custom scopes."
+  - id: "S196"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cExtended metadata processing\u201d on /settings. Extended metadata processing."
+    note: "The FSD doesn't mention the field \u201cExtended metadata processing\u201d on /settings. Extended metadata processing."
+  - id: "S197"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cExport\u201d on /settings. Exports public metadata settings."
+    note: "The FSD doesn't mention the button \u201cExport\u201d on /settings. Exports public metadata settings."
+  - id: "S198"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRun Metadata Mappings\u201d on /settings. Runs metadata mappings."
+    note: "The FSD doesn't mention the button \u201cRun Metadata Mappings\u201d on /settings. Runs metadata mappings."
+  - id: "S199"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cLogging Level\u201d on /settings. Logging level choice."
+    note: "The FSD doesn't mention the field \u201cLogging Level\u201d on /settings. Logging level choice."
+  - id: "S200"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the menu entry with no label (`kavitareader.com` in the code) on /settings. Link to kavitareader.com."
+    note: "The FSD doesn't mention the menu entry with no label (`kavitareader.com` in the code) on /settings. Link to kavitareader.com."
+  - id: "S201"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the menu entry with no label (`wiki.kavitareader.com` in the code) on /settings. Link to the wiki."
+    note: "The FSD doesn't mention the menu entry with no label (`wiki.kavitareader.com` in the code) on /settings. Link to the wiki."
+  - id: "S202"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the menu entry \u201cdiscord.gg/b52wT37kt7\u201d on /settings. Link to Discord."
+    note: "The FSD doesn't mention the menu entry \u201cdiscord.gg/b52wT37kt7\u201d on /settings. Link to Discord."
+  - id: "S203"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the menu entry \u201copencollective.com/kavita\u201d on /settings. Link to Open Collective."
+    note: "The FSD doesn't mention the menu entry \u201copencollective.com/kavita\u201d on /settings. Link to Open Collective."
+  - id: "S204"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the menu entry \u201cgithub.com/Kareadita/Kavita\u201d on /settings. Link to GitHub."
+    note: "The FSD doesn't mention the menu entry \u201cgithub.com/Kareadita/Kavita\u201d on /settings. Link to GitHub."
+  - id: "S205"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the menu entry \u201cWeblate\u201d on /settings. Link to Weblate."
+    note: "The FSD doesn't mention the menu entry \u201cWeblate\u201d on /settings. Link to Weblate."
+  - id: "S206"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the menu entry \u201chttps://github.com/Kareadita/Kavita/discussions/\u201d on /settings. Link to GitHub discussions."
+    note: "The FSD doesn't mention the menu entry \u201chttps://github.com/Kareadita/Kavita/discussions/\u201d on /settings. Link to GitHub discussions."
+  - id: "S207"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`runAdhoc` in the code) on /settings. Runs a task ad hoc."
+    note: "The FSD doesn't mention the button with no label (`runAdhoc` in the code) on /settings. Runs a task ad hoc."
+  - id: "S208"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "6.2"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cTrack\u201d on /settings. Tracks a MAL collection import."
+    note: "The FSD doesn't mention the button \u201cTrack\u201d on /settings. Tracks a MAL collection import."
+  - id: "S209"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`select` in the code) on /settings. Task schedule choice."
+    note: "The FSD doesn't mention the field with no label (`select` in the code) on /settings. Task schedule choice."
+  - id: "S210"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCustom Schedule (Cron Notation)\u201d on /settings. Custom cron schedule."
+    note: "The FSD doesn't mention the field \u201cCustom Schedule (Cron Notation)\u201d on /settings. Custom cron schedule."
+  - id: "S211"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cKeybind {{index}} for {{target}} has been used for an other target as well\u201d on /settings. Warns of duplicate key bind."
+    note: "The FSD doesn't mention the button \u201cKeybind {{index}} for {{target}} has been used for an other target as well\u201d on /settings. Warns of duplicate key bind."
+  - id: "S212"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`allSelected()` in the code) on /settings. Select all checkbox."
+    note: "The FSD doesn't mention the field with no label (`allSelected()` in the code) on /settings. Select all checkbox."
+  - id: "S213"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`onContainerClick` in the code) on /settings. Multi checkbox container."
+    note: "The FSD doesn't mention the button with no label (`onContainerClick` in the code) on /settings. Multi checkbox container."
+  - id: "S214"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`isChecked(opt)` in the code) on /settings. Option checkbox."
+    note: "The FSD doesn't mention the field with no label (`isChecked(opt)` in the code) on /settings. Option checkbox."
+  - id: "S215"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`textFieldValue()` in the code) on /settings. Multi text field."
+    note: "The FSD doesn't mention the field with no label (`textFieldValue()` in the code) on /settings. Multi text field."
+  - id: "S216"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.str` in the code) on /settings. Age rating mapping string."
+    note: "The FSD doesn't mention the field with no label (`mapping.str` in the code) on /settings. Age rating mapping string."
+  - id: "S217"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.str` in the code) on /settings. Age rating mapping string."
+    note: "The FSD doesn't mention the field with no label (`mapping.str` in the code) on /settings. Age rating mapping string."
+  - id: "S218"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`mapping.rating` in the code) on /settings. Age rating mapping rating."
+    note: "The FSD doesn't mention the field with no label (`mapping.rating` in the code) on /settings. Age rating mapping rating."
+  - id: "S219"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`removeRow` in the code) on /settings. Removes a mapping row."
+    note: "The FSD doesn't mention the button with no label (`removeRow` in the code) on /settings. Removes a mapping row."
+  - id: "S220"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`addRow` in the code) on /settings. Adds a mapping row."
+    note: "The FSD doesn't mention the button with no label (`addRow` in the code) on /settings. Adds a mapping row."
+  - id: "S221"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`addRow` in the code) on /settings. Adds a mapping row."
+    note: "The FSD doesn't mention the button with no label (`addRow` in the code) on /settings. Adds a mapping row."
+  - id: "S222"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`clear` in the code) on /settings. Clears search input."
+    note: "The FSD doesn't mention the button with no label (`clear` in the code) on /settings. Clears search input."
+  - id: "S223"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filter side nav streams."
+    note: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filter side nav streams."
+  - id: "S224"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cBulk Mode\u201d on /settings. Bulk mode for side nav."
+    note: "The FSD doesn't mention the field \u201cBulk Mode\u201d on /settings. Bulk mode for side nav."
+  - id: "S225"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filter side nav streams."
+    note: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filter side nav streams."
+  - id: "S226"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds side nav item."
+    note: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds side nav item."
+  - id: "S227"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filter streams."
+    note: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filter streams."
+  - id: "S228"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds stream."
+    note: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds stream."
+  - id: "S229"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "1"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a custom dashboard stream."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a custom dashboard stream."
+  - id: "S230"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits an external source."
+    note: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits an external source."
+  - id: "S231"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes an external source."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes an external source."
+  - id: "S232"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cName\u201d on /settings. External source name."
+    note: "The FSD doesn't mention the field \u201cName\u201d on /settings. External source name."
+  - id: "S233"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cHost\u201d on /settings. External source host."
+    note: "The FSD doesn't mention the field \u201cHost\u201d on /settings. External source host."
+  - id: "S234"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cAPI Key\u201d on /settings. External source API key."
+    note: "The FSD doesn't mention the field \u201cAPI Key\u201d on /settings. External source API key."
+  - id: "S235"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves external source."
+    note: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves external source."
+  - id: "S236"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters external sources."
+    note: "The FSD doesn't mention the field \u201cFilter\u201d on /settings. Filters external sources."
+  - id: "S237"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds external source."
+    note: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds external source."
+  - id: "S238"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRemove\u201d on /settings. Removes a side nav stream."
+    note: "The FSD doesn't mention the button \u201cRemove\u201d on /settings. Removes a side nav stream."
+  - id: "S239"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a side nav stream."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a side nav stream."
+  - id: "S240"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDownload files Report for {{extension}}\u201d on /settings. Downloads file report per extension."
+    note: "The FSD doesn't mention the button \u201cDownload files Report for {{extension}}\u201d on /settings. Downloads file report per extension."
+  - id: "S241"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDownload files Report for {{extension}}\u201d on /settings. Downloads file report per extension."
+    note: "The FSD doesn't mention the button \u201cDownload files Report for {{extension}}\u201d on /settings. Downloads file report per extension."
+  - id: "S242"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSelect user to filter\u201d on /settings. Selects user for reading activity stats."
+    note: "The FSD doesn't mention the field \u201cSelect user to filter\u201d on /settings. Selects user for reading activity stats."
+  - id: "S243"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`onItemClick` in the code) on /settings. Stat list item click."
+    note: "The FSD doesn't mention the button with no label (`onItemClick` in the code) on /settings. Stat list item click."
+  - id: "S244"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`onItemClick` in the code) on /settings. Stat list item click."
+    note: "The FSD doesn't mention the button with no label (`onItemClick` in the code) on /settings. Stat list item click."
+  - id: "S245"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRemove OIDC link\u201d on /settings. Removes the OIDC link from the account."
+    note: "The FSD doesn't mention the button \u201cRemove OIDC link\u201d on /settings. Removes the OIDC link from the account."
+  - id: "S246"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`value()` in the code) on /settings. Displays API key."
+    note: "The FSD doesn't mention the field with no label (`value()` in the code) on /settings. Displays API key."
+  - id: "S247"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cCopy\u201d on /settings. Copies API key."
+    note: "The FSD doesn't mention the button \u201cCopy\u201d on /settings. Copies API key."
+  - id: "S248"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a CBL import."
+    note: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a CBL import."
+  - id: "S249"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cBrowse CBLs\u201d on /settings. Browses CBLs."
+    note: "The FSD doesn't mention the button \u201cBrowse CBLs\u201d on /settings. Browses CBLs."
+  - id: "S250"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSearch reading lists...\u201d on /settings. Searches reading lists."
+    note: "The FSD doesn't mention the field \u201cSearch reading lists...\u201d on /settings. Searches reading lists."
+  - id: "S251"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cHas update\u201d on /settings. Filter by has update."
+    note: "The FSD doesn't mention the field \u201cHas update\u201d on /settings. Filter by has update."
+  - id: "S252"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAll\u201d on /settings. CBL source filter: All."
+    note: "The FSD doesn't mention the button \u201cAll\u201d on /settings. CBL source filter: All."
+  - id: "S253"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cLocal\u201d on /settings. CBL source filter: Local."
+    note: "The FSD doesn't mention the button \u201cLocal\u201d on /settings. CBL source filter: Local."
+  - id: "S254"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cFile\u201d on /settings. CBL source filter: File."
+    note: "The FSD doesn't mention the button \u201cFile\u201d on /settings. CBL source filter: File."
+  - id: "S255"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cURL\u201d on /settings. CBL source filter: URL."
+    note: "The FSD doesn't mention the button \u201cURL\u201d on /settings. CBL source filter: URL."
+  - id: "S256"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a CBL."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a CBL."
+  - id: "S257"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSync\u201d on /settings. Syncs a CBL."
+    note: "The FSD doesn't mention the button \u201cSync\u201d on /settings. Syncs a CBL."
+  - id: "S258"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSync (Manual)\u201d on /settings. Manual CBL sync."
+    note: "The FSD doesn't mention the button \u201cSync (Manual)\u201d on /settings. Manual CBL sync."
+  - id: "S259"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201c{{num}} missing\u201d on /settings. Shows missing items of a CBL."
+    note: "The FSD doesn't mention the button \u201c{{num}} missing\u201d on /settings. Shows missing items of a CBL."
+  - id: "S260"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`keyBindControl` in the code) on /settings. Custom key bind input."
+    note: "The FSD doesn't mention the field with no label (`keyBindControl` in the code) on /settings. Custom key bind input."
+  - id: "S261"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd alternative key\u201d on /settings. Adds alternative key."
+    note: "The FSD doesn't mention the button \u201cAdd alternative key\u201d on /settings. Adds alternative key."
+  - id: "S262"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cReset {{target}}\u201d on /settings. Resets a key bind."
+    note: "The FSD doesn't mention the button \u201cReset {{target}}\u201d on /settings. Resets a key bind."
+  - id: "S263"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd font\u201d on /settings. Adds a custom font."
+    note: "The FSD doesn't mention the button \u201cAdd font\u201d on /settings. Adds a custom font."
+  - id: "S264"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCustom only\u201d on /settings. Shows only custom fonts."
+    note: "The FSD doesn't mention the field \u201cCustom only\u201d on /settings. Shows only custom fonts."
+  - id: "S265"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cVariable\u201d on /settings. Variable font marker."
+    note: "The FSD doesn't mention the button \u201cVariable\u201d on /settings. Variable font marker."
+  - id: "S266"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a font."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a font."
+  - id: "S267"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cWeight axis\u201d on /settings. Weight axis for fonts."
+    note: "The FSD doesn't mention the field \u201cWeight axis\u201d on /settings. Weight axis for fonts."
+  - id: "S268"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cfile\u201d on /settings. Font file chooser."
+    note: "The FSD doesn't mention the button \u201cfile\u201d on /settings. Font file chooser."
+  - id: "S269"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cFilter activity\u201d on /settings. Filters Kavita+ activity."
+    note: "The FSD doesn't mention the field \u201cFilter activity\u201d on /settings. Filters Kavita+ activity."
+  - id: "S270"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`opdsAuthKeyForm` in the code) on /settings. OPDS auth key form."
+    note: "The FSD doesn't mention the field with no label (`opdsAuthKeyForm` in the code) on /settings. OPDS auth key form."
+  - id: "S271"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cNew\u201d on /settings. Creates a new auth key."
+    note: "The FSD doesn't mention the button \u201cNew\u201d on /settings. Creates a new auth key."
+  - id: "S272"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`copy` in the code) on /settings. Copies auth key."
+    note: "The FSD doesn't mention the button with no label (`copy` in the code) on /settings. Copies auth key."
+  - id: "S273"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRotate\u201d on /settings. Rotates auth key."
+    note: "The FSD doesn't mention the button \u201cRotate\u201d on /settings. Rotates auth key."
+  - id: "S274"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes auth key."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes auth key."
+  - id: "S275"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`copy` in the code) on /settings. Copies auth key."
+    note: "The FSD doesn't mention the button with no label (`copy` in the code) on /settings. Copies auth key."
+  - id: "S276"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRotate\u201d on /settings. Rotates auth key."
+    note: "The FSD doesn't mention the button \u201cRotate\u201d on /settings. Rotates auth key."
+  - id: "S277"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes auth key."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes auth key."
+  - id: "S278"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a device."
+    note: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a device."
+  - id: "S279"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a device."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a device."
+  - id: "S280"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits a device."
+    note: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits a device."
+  - id: "S281"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits a client device."
+    note: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits a client device."
+  - id: "S282"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a client device."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a client device."
+  - id: "S283"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cYour new profile will be saved after making a change to it\u201d on /settings. Notice for a new unsaved reading profile."
+    note: "The FSD doesn't mention the button \u201cYour new profile will be saved after making a change to it\u201d on /settings. Notice for a new unsaved reading profile."
+  - id: "S284"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`formGroup.name` in the code) on /settings. Reading profile name."
+    note: "The FSD doesn't mention the field with no label (`formGroup.name` in the code) on /settings. Reading profile name."
+  - id: "S285"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSet Devices\u201d on /settings. Sets devices for profile."
+    note: "The FSD doesn't mention the button \u201cSet Devices\u201d on /settings. Sets devices for profile."
+  - id: "S286"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a reading profile."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a reading profile."
+  - id: "S287"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`a` in the code) on /settings. Profile section link."
+    note: "The FSD doesn't mention the button with no label (`a` in the code) on /settings. Profile section link."
+  - id: "S288"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cScaling Options\u201d on /settings. Image scaling option."
+    note: "The FSD doesn't mention the field \u201cScaling Options\u201d on /settings. Image scaling option."
+  - id: "S289"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cPage Splitting\u201d on /settings. Page splitting option."
+    note: "The FSD doesn't mention the field \u201cPage Splitting\u201d on /settings. Page splitting option."
+  - id: "S290"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cLayout Mode\u201d on /settings. Layout mode option."
+    note: "The FSD doesn't mention the field \u201cLayout Mode\u201d on /settings. Layout mode option."
+  - id: "S291"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cAuto Close Menu\u201d on /settings. Auto close menu."
+    note: "The FSD doesn't mention the field \u201cAuto Close Menu\u201d on /settings. Auto close menu."
+  - id: "S292"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cShow Screen Hints\u201d on /settings. Show screen hints."
+    note: "The FSD doesn't mention the field \u201cShow Screen Hints\u201d on /settings. Show screen hints."
+  - id: "S293"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cEmulate comic book\u201d on /settings. Emulate comic book."
+    note: "The FSD doesn't mention the field \u201cEmulate comic book\u201d on /settings. Emulate comic book."
+  - id: "S294"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSwipe to Paginate\u201d on /settings. Swipe to paginate."
+    note: "The FSD doesn't mention the field \u201cSwipe to Paginate\u201d on /settings. Swipe to paginate."
+  - id: "S295"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cAutomatic Webtoon Reader Mode\u201d on /settings. Automatic webtoon mode."
+    note: "The FSD doesn't mention the field \u201cAutomatic Webtoon Reader Mode\u201d on /settings. Automatic webtoon mode."
+  - id: "S296"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets section."
+    note: "The FSD doesn't mention the button \u201cReset\u201d on /settings. Resets section."
+  - id: "S297"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cWidth Override\u201d on /settings. Width override."
+    note: "The FSD doesn't mention the field \u201cWidth Override\u201d on /settings. Width override."
+  - id: "S298"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cDisable width override\u201d on /settings. Disables width override."
+    note: "The FSD doesn't mention the field \u201cDisable width override\u201d on /settings. Disables width override."
+  - id: "S299"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`a` in the code) on /settings. Profile section link."
+    note: "The FSD doesn't mention the button with no label (`a` in the code) on /settings. Profile section link."
+  - id: "S300"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cTap to Paginate\u201d on /settings. Tap to paginate."
+    note: "The FSD doesn't mention the field \u201cTap to Paginate\u201d on /settings. Tap to paginate."
+  - id: "S301"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cMargin\u201d on /settings. Book margin."
+    note: "The FSD doesn't mention the field \u201cMargin\u201d on /settings. Book margin."
+  - id: "S302"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cDisable Bookmark Icon\u201d on /settings. Disable bookmark icon."
+    note: "The FSD doesn't mention the field \u201cDisable Bookmark Icon\u201d on /settings. Disable bookmark icon."
+  - id: "S303"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`a` in the code) on /settings. Profile section link."
+    note: "The FSD doesn't mention the button with no label (`a` in the code) on /settings. Profile section link."
+  - id: "S304"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSpread Mode\u201d on /settings. PDF spread mode."
+    note: "The FSD doesn't mention the field \u201cSpread Mode\u201d on /settings. PDF spread mode."
+  - id: "S305"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cTheme\u201d on /settings. PDF theme."
+    note: "The FSD doesn't mention the field \u201cTheme\u201d on /settings. PDF theme."
+  - id: "S306"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cScroll Mode\u201d on /settings. PDF scroll mode."
+    note: "The FSD doesn't mention the field \u201cScroll Mode\u201d on /settings. PDF scroll mode."
+  - id: "S307"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDefault\u201d on /settings. Default profile marker."
+    note: "The FSD doesn't mention the button \u201cDefault\u201d on /settings. Default profile marker."
+  - id: "S308"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCBL Series Name\u201d on /settings. CBL series name remap field."
+    note: "The FSD doesn't mention the field \u201cCBL Series Name\u201d on /settings. CBL series name remap field."
+  - id: "S309"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCBL Volume\u201d on /settings. CBL volume remap field."
+    note: "The FSD doesn't mention the field \u201cCBL Volume\u201d on /settings. CBL volume remap field."
+  - id: "S310"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCBL Issue #\u201d on /settings. CBL issue remap field."
+    note: "The FSD doesn't mention the field \u201cCBL Issue #\u201d on /settings. CBL issue remap field."
+  - id: "S311"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves remap rule."
+    note: "The FSD doesn't mention the button \u201cSave\u201d on /settings. Saves remap rule."
+  - id: "S312"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cCreate Rule\u201d on /settings. Creates remap rule."
+    note: "The FSD doesn't mention the button \u201cCreate Rule\u201d on /settings. Creates remap rule."
+  - id: "S313"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits remap rule."
+    note: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits remap rule."
+  - id: "S314"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes remap rule."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes remap rule."
+  - id: "S315"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cPromote to global rule\u201d on /settings. Promotes rule to global."
+    note: "The FSD doesn't mention the button \u201cPromote to global rule\u201d on /settings. Promotes rule to global."
+  - id: "S316"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits remap rule."
+    note: "The FSD doesn't mention the button \u201cEdit\u201d on /settings. Edits remap rule."
+  - id: "S317"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`deleteRule` in the code) on /settings. Deletes remap rule."
+    note: "The FSD doesn't mention the button with no label (`deleteRule` in the code) on /settings. Deletes remap rule."
+  - id: "S318"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`promoteRule` in the code) on /settings. Promotes remap rule."
+    note: "The FSD doesn't mention the button with no label (`promoteRule` in the code) on /settings. Promotes remap rule."
+  - id: "S319"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDemote to user rule\u201d on /settings. Demotes rule to user."
+    note: "The FSD doesn't mention the button \u201cDemote to user rule\u201d on /settings. Demotes rule to user."
+  - id: "S320"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDemote\u201d on /settings. Demotes rule."
+    note: "The FSD doesn't mention the button \u201cDemote\u201d on /settings. Demotes rule."
+  - id: "S321"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cPromote to global rule\u201d on /settings. Promotes rule to global."
+    note: "The FSD doesn't mention the button \u201cPromote to global rule\u201d on /settings. Promotes rule to global."
+  - id: "S322"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`promoteRule` in the code) on /settings. Promotes rule."
+    note: "The FSD doesn't mention the button with no label (`promoteRule` in the code) on /settings. Promotes rule."
+  - id: "S323"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cBackfill Events\u201d on /settings. Backfills scrobble events."
+    note: "The FSD doesn't mention the button \u201cBackfill Events\u201d on /settings. Backfills scrobble events."
+  - id: "S324"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRegenerate\u201d on /settings. Regenerates provider token."
+    note: "The FSD doesn't mention the button \u201cRegenerate\u201d on /settings. Regenerates provider token."
+  - id: "S325"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDisconnect\u201d on /settings. Disconnects scrobble provider."
+    note: "The FSD doesn't mention the button \u201cDisconnect\u201d on /settings. Disconnects scrobble provider."
+  - id: "S326"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cConnect\u201d on /settings. Connects scrobble provider."
+    note: "The FSD doesn't mention the button \u201cConnect\u201d on /settings. Connects scrobble provider."
+  - id: "S327"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSync Progress\u201d on /settings. Sync progress."
+    note: "The FSD doesn't mention the field \u201cSync Progress\u201d on /settings. Sync progress."
+  - id: "S328"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSync Ratings\u201d on /settings. Sync ratings."
+    note: "The FSD doesn't mention the field \u201cSync Ratings\u201d on /settings. Sync ratings."
+  - id: "S329"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSync Want To Read list\u201d on /settings. Sync Want to Read."
+    note: "The FSD doesn't mention the field \u201cSync Want To Read list\u201d on /settings. Sync Want to Read."
+  - id: "S330"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cSync reviews\u201d on /settings. Sync reviews."
+    note: "The FSD doesn't mention the field \u201cSync reviews\u201d on /settings. Sync reviews."
+  - id: "S331"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cReview target\u201d on /settings. Review target."
+    note: "The FSD doesn't mention the field \u201cReview target\u201d on /settings. Review target."
+  - id: "S332"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cAll libraries\u201d on /settings. All libraries toggle."
+    note: "The FSD doesn't mention the field \u201cAll libraries\u201d on /settings. All libraries toggle."
+  - id: "S333"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cHighest age ratings\u201d on /settings. Highest age ratings."
+    note: "The FSD doesn't mention the field \u201cHighest age ratings\u201d on /settings. Highest age ratings."
+  - id: "S334"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cInactive series threshold in days\u201d on /settings. Inactive series threshold."
+    note: "The FSD doesn't mention the field \u201cInactive series threshold in days\u201d on /settings. Inactive series threshold."
+  - id: "S335"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`inactiveSeriesRule.transitionStatus` in the code) on /settings. Inactive transition status."
+    note: "The FSD doesn't mention the field with no label (`inactiveSeriesRule.transitionStatus` in the code) on /settings. Inactive transition status."
+  - id: "S336"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cExcluded publication statuses for inactive series rule\u201d on /settings. Excluded statuses for inactive rule."
+    note: "The FSD doesn't mention the field \u201cExcluded publication statuses for inactive series rule\u201d on /settings. Excluded statuses for inactive rule."
+  - id: "S337"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cInactive series rule\u201d on /settings. Inactive series rule."
+    note: "The FSD doesn't mention the field \u201cInactive series rule\u201d on /settings. Inactive series rule."
+  - id: "S338"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cDropped series threshold in days\u201d on /settings. Dropped series threshold."
+    note: "The FSD doesn't mention the field \u201cDropped series threshold in days\u201d on /settings. Dropped series threshold."
+  - id: "S339"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field with no label (`droppedSeriesRule.transitionStatus` in the code) on /settings. Dropped transition status."
+    note: "The FSD doesn't mention the field with no label (`droppedSeriesRule.transitionStatus` in the code) on /settings. Dropped transition status."
+  - id: "S340"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cExcluded publication statuses for dropped series rule\u201d on /settings. Excluded statuses for dropped rule."
+    note: "The FSD doesn't mention the field \u201cExcluded publication statuses for dropped series rule\u201d on /settings. Excluded statuses for dropped rule."
+  - id: "S341"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cDropped series rule\u201d on /settings. Dropped series rule."
+    note: "The FSD doesn't mention the field \u201cDropped series rule\u201d on /settings. Dropped series rule."
+  - id: "S342"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cBlur Unread Summaries\u201d on /settings. Blurs summaries of unread items."
+    note: "The FSD doesn't mention the field \u201cBlur Unread Summaries\u201d on /settings. Blurs summaries of unread items."
+  - id: "S343"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cCollapse Series Relationships\u201d on /settings. Collapses series relationships."
+    note: "The FSD doesn't mention the field \u201cCollapse Series Relationships\u201d on /settings. Collapses series relationships."
+  - id: "S344"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cOn Deck Last Progress (days)\u201d on /settings. On Deck last progress days."
+    note: "The FSD doesn't mention the field \u201cOn Deck Last Progress (days)\u201d on /settings. On Deck last progress days."
+  - id: "S345"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cOn Deck Last Chapter Add (days)\u201d on /settings. On Deck last chapter add days."
+    note: "The FSD doesn't mention the field \u201cOn Deck Last Chapter Add (days)\u201d on /settings. On Deck last chapter add days."
+  - id: "S346"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cShare Profile\u201d on /settings. Shares user profile."
+    note: "The FSD doesn't mention the field \u201cShare Profile\u201d on /settings. Shares user profile."
+  - id: "S347"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cEmbed Progress Indicator\u201d on /settings. Embed progress indicator in OPDS."
+    note: "The FSD doesn't mention the field \u201cEmbed Progress Indicator\u201d on /settings. Embed progress indicator in OPDS."
+  - id: "S348"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cInclude Continue From Entry\u201d on /settings. Include continue-from entry in OPDS."
+    note: "The FSD doesn't mention the field \u201cInclude Continue From Entry\u201d on /settings. Include continue-from entry in OPDS."
+  - id: "S349"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the field \u201cInclude Unknowns\u201d on /settings. Include unknowns in age restriction."
+    note: "The FSD doesn't mention the field \u201cInclude Unknowns\u201d on /settings. Include unknowns in age restriction."
+  - id: "S350"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSettings\u201d on /settings. Opens scrobble account settings."
+    note: "The FSD doesn't mention the button \u201cSettings\u201d on /settings. Opens scrobble account settings."
+  - id: "S351"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cConnect\u201d on /settings. Connects scrobble account."
+    note: "The FSD doesn't mention the button \u201cConnect\u201d on /settings. Connects scrobble account."
+  - id: "S352"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a theme."
+    note: "The FSD doesn't mention the button \u201cAdd\u201d on /settings. Adds a theme."
+  - id: "S353"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a theme."
+    note: "The FSD doesn't mention the button \u201cDelete\u201d on /settings. Deletes a theme."
+  - id: "S354"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cSet Default\u201d on /settings. Sets default theme."
+    note: "The FSD doesn't mention the button \u201cSet Default\u201d on /settings. Sets default theme."
+  - id: "S355"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cApply\u201d on /settings. Applies a theme."
+    note: "The FSD doesn't mention the button \u201cApply\u201d on /settings. Applies a theme."
+  - id: "S356"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cDownload\u201d on /settings. Downloads a theme."
+    note: "The FSD doesn't mention the button \u201cDownload\u201d on /settings. Downloads a theme."
+  - id: "S357"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`previewImage` in the code) on /settings. Previews theme image."
+    note: "The FSD doesn't mention the button with no label (`previewImage` in the code) on /settings. Previews theme image."
+  - id: "S358"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button with no label (`previewImage` in the code) on /settings. Previews theme image."
+    note: "The FSD doesn't mention the button with no label (`previewImage` in the code) on /settings. Previews theme image."
+  - id: "S359"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cActive\u201d on /settings. Marks active theme."
+    note: "The FSD doesn't mention the button \u201cActive\u201d on /settings. Marks active theme."
+  - id: "S360"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRemove\u201d on /settings. Removes a scrobbling hold."
+    note: "The FSD doesn't mention the button \u201cRemove\u201d on /settings. Removes a scrobbling hold."
+  - id: "S361"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9"
+      quote: ""
+    page:
+      id: "page:/settings"
+      quote: "The FSD doesn't mention the button \u201cRemove\u201d on /settings. Removes a scrobbling hold."
+    note: "The FSD doesn't mention the button \u201cRemove\u201d on /settings. Removes a scrobbling hold."

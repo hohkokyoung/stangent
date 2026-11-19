@@ -1,0 +1,530 @@
+{
+  "doc": "kavita-fsd",
+  "note": "Phase 2b (D56, D57): findings in specs/trace.yaml scored against the frozen answer key. 'found' lets a gap be reported as a conflict and back; 'foundAsKind' needs the planted kind.",
+  "found": {
+    "overall": {
+      "found": 20,
+      "of": 30,
+      "share": 0.667,
+      "range95": [
+        0.5,
+        0.833
+      ]
+    },
+    "gap": {
+      "found": 8,
+      "of": 10,
+      "share": 0.8,
+      "range95": [
+        0.5,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 2,
+      "of": 10,
+      "share": 0.2,
+      "range95": [
+        0,
+        0.5
+      ]
+    }
+  },
+  "foundAsKind": {
+    "overall": {
+      "found": 20,
+      "of": 30,
+      "share": 0.667,
+      "range95": [
+        0.5,
+        0.833
+      ]
+    },
+    "gap": {
+      "found": 8,
+      "of": 10,
+      "share": 0.8,
+      "range95": [
+        0.5,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 2,
+      "of": 10,
+      "share": 0.2,
+      "range95": [
+        0,
+        0.5
+      ]
+    }
+  },
+  "noise": {
+    "findings": 37,
+    "unplanted": 17,
+    "worstCaseShare": 0.459,
+    "sample": 17,
+    "handChecked": 0,
+    "realInSample": null
+  },
+  "bars": {
+    "finds": false,
+    "notTooNoisy": null
+  },
+  "finerVerdicts": null,
+  "candidates": {
+    "sections": 0,
+    "byCode": 0,
+    "byAi": 0,
+    "aiFoundNone": 0
+  },
+  "cost": {
+    "finder": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "judge": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "checker": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "disprover": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    }
+  },
+  "items": [
+    {
+      "id": "G1",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S001",
+      "state": "gap"
+    },
+    {
+      "id": "G2",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S002",
+      "state": "gap"
+    },
+    {
+      "id": "G3",
+      "kind": "gap",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "G4",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S034",
+      "state": "gap"
+    },
+    {
+      "id": "G5",
+      "kind": "gap",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "G6",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S007",
+      "state": "gap"
+    },
+    {
+      "id": "G7",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S009",
+      "state": "gap"
+    },
+    {
+      "id": "G8",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S026",
+      "state": "gap"
+    },
+    {
+      "id": "G9",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S016",
+      "state": "gap"
+    },
+    {
+      "id": "G10",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S015",
+      "state": "gap"
+    },
+    {
+      "id": "C1",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S018",
+      "state": "conflict"
+    },
+    {
+      "id": "C2",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S003",
+      "state": "conflict"
+    },
+    {
+      "id": "C3",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S004",
+      "state": "conflict"
+    },
+    {
+      "id": "C4",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S005",
+      "state": "conflict"
+    },
+    {
+      "id": "C5",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S006",
+      "state": "conflict"
+    },
+    {
+      "id": "C6",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S008",
+      "state": "conflict"
+    },
+    {
+      "id": "C7",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S012",
+      "state": "conflict"
+    },
+    {
+      "id": "C8",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S013",
+      "state": "conflict"
+    },
+    {
+      "id": "C9",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S014",
+      "state": "conflict"
+    },
+    {
+      "id": "C10",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S017",
+      "state": "conflict"
+    },
+    {
+      "id": "U1",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S010",
+      "state": "undocumented"
+    },
+    {
+      "id": "U2",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S011",
+      "state": "undocumented"
+    },
+    {
+      "id": "U3",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U4",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U5",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U6",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U7",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U8",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U9",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U10",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    }
+  ],
+  "handCheckSample": [
+    {
+      "id": "S021",
+      "state": "gap",
+      "section": "5",
+      "fsdQuote": "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it.",
+      "page": null,
+      "pageQuote": null,
+      "note": "No code removes a series from Want to Read when it is finished; removal is only manual or via scrobble sync."
+    },
+    {
+      "id": "S020",
+      "state": "gap",
+      "section": "2.1",
+      "fsdQuote": "A Random button on the library screen opens a randomly chosen series from that library.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The library screen has no Random button or action; random is only used to pick the dashboard genre."
+    },
+    {
+      "id": "S023",
+      "state": "conflict",
+      "section": "7.2",
+      "fsdQuote": "A filter box for finding items appears once a list has more than 25 items.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The filter box appears when the list has more than 10 items."
+    },
+    {
+      "id": "S028",
+      "state": "conflict",
+      "section": "10.1",
+      "fsdQuote": "Changes on this page are stored only when the administrator presses Save.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The page autosaves: valid form changes are sent to the server after a 300ms debounce, with no Save button."
+    },
+    {
+      "id": "S030",
+      "state": "gap",
+      "section": "10.2",
+      "fsdQuote": "An invite can be given an expiry date, after which its link stops working.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The invite form has no expiry option."
+    },
+    {
+      "id": "S031",
+      "state": "undocumented",
+      "section": "10.2",
+      "fsdQuote": "",
+      "page": null,
+      "pageQuote": null,
+      "note": "Non-pending users' rows have a change-password button for admins, not mentioned in the FSD."
+    },
+    {
+      "id": "S036",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/browse/annotations",
+      "pageQuote": "An All Annotations browse screen exists but the FSD does not describe it.",
+      "note": "An All Annotations browse screen exists but the FSD does not describe it."
+    },
+    {
+      "id": "S024",
+      "state": "gap",
+      "section": "7.2",
+      "fsdQuote": "The owner can share a reading list through a public link that opens without signing in.",
+      "page": null,
+      "pageQuote": null,
+      "note": "No public share link feature exists on the reading list detail screen."
+    },
+    {
+      "id": "S033",
+      "state": "conflict",
+      "section": "4.1",
+      "fsdQuote": "Brightness can be set anywhere from 0% to 100%.",
+      "page": null,
+      "pageQuote": null,
+      "note": "Brightness (darkness) is validated between 10 and 100."
+    },
+    {
+      "id": "S035",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/browse/genres",
+      "pageQuote": "A Browse Genres screen exists but the FSD does not describe it.",
+      "note": "A Browse Genres screen exists but the FSD does not describe it."
+    },
+    {
+      "id": "S032",
+      "state": "conflict",
+      "section": "10.3",
+      "fsdQuote": "Manage Collections is turned on by default for a new library.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The new-library default for manageCollections is false."
+    },
+    {
+      "id": "S027",
+      "state": "conflict",
+      "section": "9.2",
+      "fsdQuote": "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The size warning threshold is 100 MB (104857600 bytes)."
+    },
+    {
+      "id": "S037",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/all-filters",
+      "pageQuote": "A smart filters listing screen exists outside the FSD's described screens.",
+      "note": "A smart filters listing screen exists outside the FSD's described screens."
+    },
+    {
+      "id": "S022",
+      "state": "gap",
+      "section": "6.2",
+      "fsdQuote": "The series in a collection can be exported to a CSV file.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The collection detail screen has no export/CSV feature."
+    },
+    {
+      "id": "S019",
+      "state": "gap",
+      "section": "1",
+      "fsdQuote": "Each row on the Home screen can be collapsed, and Kavita remembers the choice on the next visit.",
+      "page": null,
+      "pageQuote": null,
+      "note": "No collapse feature exists for dashboard rows (no collapse logic in dashboard or card carousel components)."
+    },
+    {
+      "id": "S025",
+      "state": "conflict",
+      "section": "9.1",
+      "fsdQuote": "A new password must be at least 8 characters long.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The server requires a minimum password length of 6."
+    },
+    {
+      "id": "S029",
+      "state": "gap",
+      "section": "10.1",
+      "fsdQuote": "A maintenance mode switch blocks all non-admin users from signing in until it is turned off.",
+      "page": null,
+      "pageQuote": null,
+      "note": "No maintenance mode setting exists in the code."
+    }
+  ]
+}

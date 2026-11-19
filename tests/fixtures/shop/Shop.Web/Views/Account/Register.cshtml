@@ -1,0 +1,27 @@
+@model RegisterModel
+@inject Shop.Web.Localizer T
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+<h1>@T("Account.Register.Title")</h1>
+<form asp-route="@RouteNames.Register" method="post">
+    <input asp-for="Email" />
+    <partial name="_Consent" />
+    @await Component.InvokeAsync("Newsletter")
+    <section class="buttons">
+        <button type="submit" id="register-button">@T("Account.Register.Button")</button>
+    </section>
+</form>
+<form asp-action="Close" method="post">
+    <input type="submit" value="Close account" />
+</form>
+@using (Html.BeginForm("Register", "Account"))
+{
+    <button>Register again</button>
+}
+<button type="button" id="check-email">@Localizer["Account.CheckEmail"]</button>
+<script>
+    $(document).on('click', '#register-button', function () {
+        $.post('/api/legacy/place');
+        // don't post twice
+        $.post('@Url.Action("Close")');
+    });
+</script>

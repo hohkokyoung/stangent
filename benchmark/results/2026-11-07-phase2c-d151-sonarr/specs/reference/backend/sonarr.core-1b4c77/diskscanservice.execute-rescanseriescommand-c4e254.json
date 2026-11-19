@@ -1,0 +1,148 @@
+{
+  "codeTitle": "DiskScanService.Execute(RescanSeriesCommand)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DiskScanService.Execute(NzbDrone.Core.MediaFiles.Commands.RescanSeriesCommand)",
+  "generated": {
+    "bundleHash": "1c2ed64be0f9bdcff58191e0940ed2dd01922052c36398e83671d179f0e511d2",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 13014,
+      "cutOff": 2,
+      "depth": 4,
+      "points": 33
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 8361,
+      "calls": 1,
+      "costUsd": 0.036423,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4853,
+      "outputTokens": 280
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 5936,
+      "calls": 1,
+      "costUsd": 0.040444,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 9481,
+      "outputTokens": 1642
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DiskScanService.Execute(NzbDrone.Core.MediaFiles.Commands.RescanSeriesCommand)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DiskScanService.Execute(NzbDrone.Core.MediaFiles.Commands.RescanSeriesCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.ISeriesService.GetSeries(System.Int32)"
+        ],
+        "id": "A1",
+        "text": "Rescans a single series when the command carries a series id."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DiskScanService.Execute(NzbDrone.Core.MediaFiles.Commands.RescanSeriesCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.ISeriesService.GetAllSeries"
+        ],
+        "id": "A2",
+        "text": "Rescans every series, one after another, when the command has no series id."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DiskScanService.Scan(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R1",
+        "text": "If the series folder is missing and its root folder does not exist, the scan is skipped with reason RootFolderDoesNotExist and a warning is logged."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DiskScanService.Scan(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R2",
+        "text": "If the series folder is missing and the root folder is empty, the scan is skipped with reason RootFolderIsEmpty and a warning is logged."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DiskScanService.Scan(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R3",
+        "text": "A missing series folder is created only when the create-empty-series-folders setting is on and the delete-empty-folders setting is off."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DiskScanService.Scan(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R4",
+        "text": "When the series folder is missing (and not skipped), media files are cleaned against an empty file list and scanning is completed with no extra files."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DiskScanService.Scan(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R5",
+        "text": "Only video files not already mapped to the series are sent for import decisions."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DiskScanService.Scan(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R6",
+        "text": "Existing episode files whose size on disk differs from the stored size get the new size; media info is updated, and files where that update does not occur are saved."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DiskScanService.Scan(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesScannedHandler.Handle(NzbDrone.Core.MediaFiles.Events.SeriesScanSkippedEvent)"
+        ],
+        "id": "E1",
+        "text": "Publishes a SeriesScanSkippedEvent when a scan is skipped; a handler in the series scanned handler reacts to it."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DiskScanService.Scan(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "E2",
+        "text": "Approved import decisions are imported as episode files."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DiskScanService.Scan(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "E3",
+        "text": "May create the missing series folder and set its permissions."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DiskScanService.Scan(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "E4",
+        "text": "Updates stored size and media info of episode files whose size changed."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.DiskScanService.Scan(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "E5",
+        "text": "Removes the series folder if empty, then collects non-video files as possible extra files when the folder still exists."
+      }
+    ]
+  },
+  "title": "Rescan Series (disk scan)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

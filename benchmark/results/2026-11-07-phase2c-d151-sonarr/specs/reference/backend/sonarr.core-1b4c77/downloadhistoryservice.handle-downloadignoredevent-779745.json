@@ -1,0 +1,91 @@
+{
+  "codeTitle": "DownloadHistoryService.Handle(DownloadIgnoredEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Download.History.DownloadHistoryService.Handle(NzbDrone.Core.Download.DownloadIgnoredEvent)",
+  "generated": {
+    "bundleHash": "d3ce17afa3db0dcf4d006b413f87f165beb1142650cfcb204e886cf84c3553f3",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 8085,
+      "cutOff": 0,
+      "depth": 4,
+      "points": 27
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 5494,
+      "calls": 1,
+      "costUsd": 0.022685,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1722,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3946,
+      "calls": 1,
+      "costUsd": 0.023704,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4916,
+      "outputTokens": 764
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Download.History.DownloadHistoryService.Handle(NzbDrone.Core.Download.DownloadIgnoredEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.History.DownloadHistoryService.Handle(NzbDrone.Core.Download.DownloadIgnoredEvent)"
+        ],
+        "id": "A1",
+        "text": "On a download-ignored event, creates a download history entry of type DownloadIgnored and saves it."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.History.DownloadHistoryService.Handle(NzbDrone.Core.Download.DownloadIgnoredEvent)"
+        ],
+        "id": "R1",
+        "text": "The entry copies series id, download id and source title from the event, and takes protocol and download client id from the event's download client info."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.History.DownloadHistoryService.Handle(NzbDrone.Core.Download.DownloadIgnoredEvent)"
+        ],
+        "id": "R2",
+        "text": "The entry date is the current UTC time."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.History.DownloadHistoryService.Handle(NzbDrone.Core.Download.DownloadIgnoredEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.History.DownloadHistory.#ctor"
+        ],
+        "id": "R3",
+        "text": "The entry's data holds two values: DownloadClient (the client type) and DownloadClientName (the client name)."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.History.DownloadHistoryService.Handle(NzbDrone.Core.Download.DownloadIgnoredEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Insert(`0)"
+        ],
+        "id": "E1",
+        "text": "Inserts a new download history record into the repository for each ignored download."
+      }
+    ]
+  },
+  "title": "Download history: record ignored download",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

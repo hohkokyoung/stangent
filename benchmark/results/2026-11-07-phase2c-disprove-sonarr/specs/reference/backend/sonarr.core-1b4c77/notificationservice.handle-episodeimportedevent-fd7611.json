@@ -1,0 +1,219 @@
+{
+  "codeTitle": "NotificationService.Handle(EpisodeImportedEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)",
+  "generated": {
+    "bundleHash": "d4e0c3986b921d2252f6b4739c5b2363b1ccbb4313ce5c3b20e6e15491c78dce",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 102873,
+      "cutOff": 199,
+      "depth": 4,
+      "points": 309
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 52373,
+      "calls": 1,
+      "costUsd": 0.213841,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5109,
+      "outputTokens": 417
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 99915,
+      "calls": 2,
+      "costUsd": 0.47165,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 35836,
+      "outputTokens": 7143
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationFactory.OnDownloadEnabled(System.Boolean)"
+        ],
+        "id": "A1",
+        "text": "On an episode imported event, sends the download message to each enabled On Download notification connection that passes the tag and upgrade checks."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)"
+        ],
+        "id": "R1",
+        "text": "Nothing is sent unless the import is a new download."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationFactory.OnDownloadEnabled(System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationFactory.FilterBlockedNotifications(System.Collections.Generic.IEnumerable{NzbDrone.Core.Notifications.INotification})"
+        ],
+        "id": "R2",
+        "text": "Only notifications with On Download enabled are used, and those temporarily blocked because of recent failures are skipped."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.ShouldHandleSeries(NzbDrone.Core.ThingiProvider.ProviderDefinition,NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R3",
+        "text": "A notification with no tags handles every series. With tags, it requires a known series sharing at least one tag; otherwise it is not sent."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)"
+        ],
+        "id": "R4",
+        "text": "When the import replaced old files, the notification is sent only if its On Upgrade option is enabled; with no old files it is always sent."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)"
+        ],
+        "id": "R5",
+        "text": "A failure in one notification is logged as a warning and does not stop the others."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)"
+        ],
+        "id": "S1",
+        "text": "Builds a download message containing a summary text, the series, episode info, imported episode file, old files, source path, download client info, download id and release."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.GetMessage(NzbDrone.Core.Tv.Series,System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},NzbDrone.Core.Qualities.QualityModel)"
+        ],
+        "id": "S2",
+        "text": "The summary text is \"Series - [quality]\" when there are no episodes."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.GetMessage(NzbDrone.Core.Tv.Series,System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},NzbDrone.Core.Qualities.QualityModel)"
+        ],
+        "id": "S3",
+        "text": "For daily series the summary text is \"Series - air date - episode title [quality]\" using the first episode."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.GetMessage(NzbDrone.Core.Tv.Series,System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},NzbDrone.Core.Qualities.QualityModel)"
+        ],
+        "id": "S4",
+        "text": "For other series the summary text is \"Series - season + xNN episode numbers - titles joined by ' + ' [quality]\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.GetQualityString(NzbDrone.Core.Tv.Series,NzbDrone.Core.Qualities.QualityModel)"
+        ],
+        "id": "S5",
+        "text": "The quality string is the quality name; when the revision version is above 1 it appends \" v<version>\" for anime series and \" Proper\" for others."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.MediaFiles.Events.EpisodeImportedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.Status.IProviderStatusServiceBase`1.RecordSuccess(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.Status.IProviderStatusServiceBase`1.RecordFailure(System.Int32,System.TimeSpan)"
+        ],
+        "id": "E1",
+        "text": "Records a success for the notification after a send, and records a failure when sending throws."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Webhook.Webhook.OnDownload(NzbDrone.Core.Notifications.DownloadMessage)"
+        ],
+        "id": "E2",
+        "text": "The Webhook notification sends a download webhook payload."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Email.Email.OnDownload(NzbDrone.Core.Notifications.DownloadMessage)"
+        ],
+        "id": "E3",
+        "text": "The Email notification sends an email with the message followed by \"Downloaded and sorted.\""
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.CustomScript.CustomScript.OnDownload(NzbDrone.Core.Notifications.DownloadMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.CustomScript.CustomScript.ExecuteScript(System.Collections.Specialized.StringDictionary)"
+        ],
+        "id": "E4",
+        "text": "The Custom Script notification runs the configured script with Sonarr_* environment variables describing the series, episode file, release and deleted files."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Discord.Discord.OnDownload(NzbDrone.Core.Notifications.DownloadMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Discord.Discord.GetTitle(NzbDrone.Core.Tv.Series,System.Collections.Generic.List{NzbDrone.Core.Tv.Episode})"
+        ],
+        "id": "E5",
+        "text": "The Discord notification posts an embed whose description is \"Episode Imported\" or \"Episode Upgraded\" and whose title is built from the series and episode titles, with the selected import fields."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Synology.SynologyIndexer.OnDownload(NzbDrone.Core.Notifications.DownloadMessage)"
+        ],
+        "id": "E6",
+        "text": "The Synology Indexer, when Update Library is on, deletes old file paths and adds the new file path."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Plex.Server.PlexServer.UpdateIfEnabled(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Emby.MediaBrowser.UpdateIfEnabled(NzbDrone.Core.Tv.Series,System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Xbmc.Xbmc.UpdateAndClean(NzbDrone.Core.Tv.Series,System.Boolean)"
+        ],
+        "id": "E7",
+        "text": "Plex Server, Emby and Kodi notifications schedule a library update when their update options are enabled."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Trakt.Trakt.OnDownload(NzbDrone.Core.Notifications.DownloadMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Trakt.Trakt.AddEpisodeToCollection(NzbDrone.Core.Notifications.Trakt.TraktSettings,NzbDrone.Core.Tv.Series,NzbDrone.Core.MediaFiles.EpisodeFile)"
+        ],
+        "id": "E8",
+        "text": "The Trakt notification refreshes its token if needed and adds the imported episodes to the Trakt collection."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Apprise.Apprise.OnDownload(NzbDrone.Core.Notifications.DownloadMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Gotify.Gotify.OnDownload(NzbDrone.Core.Notifications.DownloadMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Slack.Slack.OnDownload(NzbDrone.Core.Notifications.DownloadMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Telegram.Telegram.OnDownload(NzbDrone.Core.Notifications.DownloadMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Twitter.Twitter.OnDownload(NzbDrone.Core.Notifications.DownloadMessage)"
+        ],
+        "id": "E9",
+        "text": "Other connections (Apprise, Gotify, Join, Mailgun, Notifiarr, Ntfy, Prowl, PushBullet, Pushcut, Pushover, SendGrid, Signal, Simplepush, Slack, Telegram, Twitter) send the message to their service."
+      }
+    ]
+  },
+  "title": "Episode imported: send \"On Download\" notifications",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "\"Episode Imported\"/\"Episode Upgraded\" is the embed description. The embed title comes from GetTitle (series and episode title).",
+        "id": "F1",
+        "kind": "contradicted",
+        "outcome": "fixed",
+        "quote": "Description = isUpgrade ? \"Episode Upgraded\" : \"Episode Imported\",",
+        "reason": "Reworded: \"Episode Imported\"/\"Episode Upgraded\" is the embed description; the title comes from GetTitle (series and episode titles). Added GetTitle citation.",
+        "statement": "E5",
+        "statementText": "The Discord notification posts an embed titled \"Episode Imported\" or \"Episode Upgraded\" with the selected import fields."
+      }
+    ]
+  }
+}

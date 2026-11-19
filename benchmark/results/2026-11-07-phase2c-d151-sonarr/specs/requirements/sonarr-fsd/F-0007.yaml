@@ -1,0 +1,200 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0007"
+doc: "sonarr-fsd"
+section: "1.1"
+title: "Adding a series"
+parent: "F-0001"
+children: []
+textHash: "63a18da68ef8eb6cab3bfc7eb7fd3a84ff99abf9c77e621522286a3b1932982b"
+requirements:
+  - id: "R-0042"
+    title: "Search for a series by name"
+    kind: "flow"
+    statement: "The Add New screen lets the user search for a series by name."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.1"
+        text: "The Add New screen lets the user search for a series by name and add it to the library."
+        hash: "def63be0fbb613c7775aae01d466a74873f0b03d074e32994891b18c31746a5f"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "2e66dec6644b103e60334625b60bc14a22ccd9804fd42ab62858acdb1b112ba9"
+  - id: "R-0043"
+    title: "Add a series to the library"
+    kind: "flow"
+    statement: "The Add New screen lets the user add a found series to the library."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.1"
+        text: "The Add New screen lets the user search for a series by name and add it to the library."
+        hash: "def63be0fbb613c7775aae01d466a74873f0b03d074e32994891b18c31746a5f"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "8ec2a4091c9053034f44988a85722c64267bfd764a1a423213f5b7cf89491068"
+  - id: "R-0044"
+    title: "Pick options before adding"
+    kind: "flow"
+    statement: "For each search result the user picks the options before adding it."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.1"
+        text: "For each search result the user picks the options below before adding it."
+        hash: "86e14c979f5024ba897f0c7aef791300b73e89c999d621ff228032fa425f92d9"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "96f0ed9cdc31f46765118fe95819fd8118c856b64f019ff8a052bfa1c777ff0a"
+  - id: "R-0045"
+    title: "Root Folder option"
+    kind: "data"
+    statement: "Root Folder is the library folder the series is stored in."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.1"
+        text: "| Root Folder | The library folder the series is stored in. |"
+        hash: "673134cac7c83624290460977e3daedc7f96d4b1ba8beb1d6d82257b4ce0ba8b"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "e620de74c3b9135311236a0d31d04441c5e0bb7e23fe94e886f971f0b3319662"
+  - id: "R-0046"
+    title: "Monitor option"
+    kind: "data"
+    statement: "Monitor sets which episodes are monitored at first: all, future, missing, existing, recent, pilot, first season, last season, specials, or none."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.1"
+        text: "| Monitor | Which episodes are monitored at first: all, future, missing, existing, recent, pilot, first season, last season, specials, or none. |"
+        hash: "8666ad72c8a485dad2fa1ee6ddd86b71d05132021a954e7317c078ee634dfeb2"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "c4d5f43ba633ee7b7bdbf898ff2d6835a98ee135294d1949b33e08bbc01eb297"
+  - id: "R-0047"
+    title: "Quality Profile option"
+    kind: "data"
+    statement: "Quality Profile is the quality profile used to download the series."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.1"
+        text: "| Quality Profile | The quality profile used to download the series. |"
+        hash: "1a8547f4871d7119ded7743ed7e6c88c36739eec5cadb4707331a4793b50c877"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "01f742d4d2f7357200bea4d4a2d0d014222b3e9eb005b5996c2c1271b41593c9"
+  - id: "R-0048"
+    title: "Series Type option"
+    kind: "data"
+    statement: "Series Type is Standard, daily or anime, and changes how searches are made."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.1"
+        text: "| Series Type | Standard, daily or anime; this changes how searches are made. |"
+        hash: "7a86aa2eb37179af53e3d12bdd5bcd88ac07213bcb97262ea67851148eb2761c"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "03ad0ba5c6279b2b6dc119ef3999daa767eebcb036f70397937035b7c36885f4"
+  - id: "R-0049"
+    title: "Tags option"
+    kind: "data"
+    statement: "Tags link the series to delay profiles, release profiles and indexers."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.1"
+        text: "| Tags | Tags link the series to delay profiles, release profiles and indexers. |"
+        hash: "40e56607ce6aafb465746fdd3c45d8a24edf53d69d25b640f6913b525e00693f"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "816e2c587c47a3b9e63840522c6c81523c33e372066efd54bac0849cc9830e42"
+  - id: "R-0050"
+    title: "Search for missing episodes after adding"
+    kind: "rule"
+    statement: "When Start search for missing episodes is ticked, the new series' missing monitored episodes are searched for straight after adding."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.1"
+        text: "Start search for missing episodes: when ticked, the new series' missing monitored episodes are searched for straight after adding."
+        hash: "f4066269318d8704ea6e460c6040569f72fa38d499e638de5f7f0e5d3c5f1208"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "49fc256f2cac2b9c148becdbbf62a9af4b9eb44bec96fca874e36071b21b6689"
+  - id: "R-0051"
+    title: "Add up to 10 series together"
+    kind: "rule"
+    statement: "Up to 10 series can be selected from the search results and added together in one step."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.1"
+        text: "Up to 10 series can be selected from the search results and added together in one step."
+        hash: "6e0a78cdc2f62083146d71489b6d63837e25c450265fc89520037de0a9754ca6"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "52232acb231de97878f4a0dbd1e61adaf1c66a8edce996c57e4a0601392dd778"
+  - id: "R-0052"
+    title: "Existing series marked in results"
+    kind: "rule"
+    statement: "A series already in the library is marked as such in the search results."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.1"
+        text: "A series that is already in the library is marked as such in the search results and can't be added a second time."
+        hash: "b566fc9a01138ba7f443c09d41e697e8705fb617e9430acfd62710df22ca7c2a"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "ee166e7ca58d69526ced7ede8deeeefa037e9df4f5b6f68bd6db0e4d116383d6"
+  - id: "R-0053"
+    title: "Can't add a series twice"
+    kind: "rule"
+    statement: "A series already in the library can't be added a second time."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.1"
+        text: "A series that is already in the library is marked as such in the search results and can't be added a second time."
+        hash: "b566fc9a01138ba7f443c09d41e697e8705fb617e9430acfd62710df22ca7c2a"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "50bad44575435a464b4822c4c95e684d94775165ec2c8c473de4898828ce7184"
+definitions: []
+journeys: []
+background:
+  - text: "Option | Meaning"
+    check: "confirmed"
+    note: null
+  - text: "The Add New screen, as sketched with the client"
+    check: "confirmed"
+    note: null
+retired: []

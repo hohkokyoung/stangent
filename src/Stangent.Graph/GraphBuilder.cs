@@ -14,7 +14,30 @@ public sealed record BuildOptions(bool Restore = true, bool Full = false, TextWr
 public sealed record BuildStats(
     string Commit, int Projects, int Frontends, int Extracted, int Reused, int Nodes, int Edges, int BlindSpots,
     IReadOnlyList<string> LoadErrors, IReadOnlyList<string> LoadWarnings, IReadOnlyList<string> Detectors, long LoadMs, long ExtractMs, long LinkMs, long TotalMs,
-    int HistoryLines = 0, string HistoryStatus = "", long HistoryMs = 0);
+    int HistoryLines = 0, string HistoryStatus = "", long HistoryMs = 0, int DirtyFiles = 0,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] PythonStats? Python = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] RootScreenStats? RootScreens = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] RouteRenderStats? RouteRender = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] CrossCheckStats? CrossCheck = null);
+
+/// <summary>Screens with no route on the map, and the ❓ the rule couldn't settle. Only with <c>root-screens</c> on.</summary>
+public sealed record RootScreenStats(int Screens, int Unresolved)
+{
+    public const string Detector = "root-screens";
+    public const string NamePrefix = "(no route) ";
+    public static RootScreenStats From(CodeGraph graph) => new(
+        graph.AllNodes.Count(n => n.Kind == NodeKind.Page && n.Name.StartsWith(NamePrefix, StringComparison.Ordinal)),
+        graph.AllBlindSpots.Count(b => b.Detector == Detector));
+}
+
+/// <summary>Routes written with <c>render</c> or <c>children</c> that name a component, and the ❓ that don't. Only with <c>route-render</c> on.</summary>
+public sealed record RouteRenderStats(int Routes, int Unresolved)
+{
+    public const string Detector = "route-render";
+    public static RouteRenderStats From(CodeGraph graph) => new(
+        graph.AllEdges.Where(e => e.Kind == EdgeKind.RoutesTo && e.Detector == Detector).Select(e => e.Source).Distinct(StringComparer.Ordinal).Count(),
+        graph.AllBlindSpots.Count(b => b.Detector == Detector));
+}
 
 /// <summary>
 /// Builds the graph (D25): scan projects, re-extract only those whose fingerprint changed, then
@@ -34,7 +57,10 @@ public static class GraphBuilder
         var salt = Salt(repo.Config, detectors);
         var fingerprints = ProjectScanner.Fingerprints(repo.Root, projects)
             .ToDictionary(kv => kv.Key, kv => CanonicalJson.Hash(kv.Value + "\n" + salt), StringComparer.Ordinal);
-        var previous = options.Full ? null : GraphStore.Load(GraphStore.PathFor(repo));
+        // Enums (C.2) are read only with table-facts on. Turned on with none on file, a project nothing changed in still has to be read for them.
+        var enumsOn = true;
+        var enumsBefore = enumsOn ? CodeEnums.Load(repo.Root) : null;
+        var previous = options.Full || enumsOn && enumsBefore is null ? null : GraphStore.Load(GraphStore.PathFor(repo));
 
         var changed = projects.Where(p => previous?.Fragments.GetValueOrDefault(p.Id)?.Fingerprint != fingerprints[p.Id]).ToList();
         var graph = new CodeGraph { Commit = Git.Head(repo.Root) };
@@ -68,12 +94,18 @@ public static class GraphBuilder
             warnings.AddRange(workspace.Diagnostics.Select(d => ErrorFor(repo.Root, changed, d.Message)).Distinct().Order(StringComparer.Ordinal));
 
             extract.Start();
+            // Step 6 (D236): views a plain project ships for a web app to compile at runtime, compiled here by the Razor compiler.
+            var solution = ServedViews.Add(workspace.CurrentSolution,
+                changed.Select(p => (Project: workspace.CurrentSolution.Projects.Where(x => x.FilePath == p.FullPath).OrderBy(x => x.Name, StringComparer.Ordinal).FirstOrDefault(), p))
+                    .Where(x => x.Project is not null).Select(x => (x.Project!.Id, x.p.Directory, ServedViews.Copied(x.p.FullPath))).Where(x => x.Item3.Count > 0).ToList(),
+                warnings);
+            var projectDirs = projects.Select(x => x.Directory).ToHashSet(StringComparer.Ordinal);
             var fragments = new ProjectFragment[changed.Count];
             await Parallel.ForEachAsync(Enumerable.Range(0, changed.Count), ct, async (i, token) =>
             {
                 var p = changed[i];
                 var fragment = new ProjectFragment { ProjectId = p.Id, Fingerprint = fingerprints[p.Id] };
-                var project = workspace.CurrentSolution.Projects
+                var project = solution.Projects
                     .Where(x => x.FilePath == p.FullPath).OrderBy(x => x.Name, StringComparer.Ordinal).FirstOrDefault();
                 if (project is not null && await project.GetCompilationAsync(token) is { } compilation)
                 {
@@ -85,7 +117,29 @@ public static class GraphBuilder
                         .Select(t => new SourceFile(t, compilation.GetSemanticModel(t), ProjectScanner.Rel(repo.Root, t.FilePath)))
                         .OrderBy(f => f.RelativePath, StringComparer.Ordinal)
                         .ToList();
-                    var ctx = new ExtractContext(repo.Root, p.Id, p.Directory, compilation, files, fragment, new Dictionary<string, List<string>>());
+                    // N1: the Razor compiler's own output for each view, found by the generator's folder; the view's path is the file.
+                    var razor = new List<SourceFile>();
+                    foreach (var doc in await project.GetSourceGeneratedDocumentsAsync(token))
+                    {
+                        if (doc.FilePath is not { } path || !doc.HintName.EndsWith("_cshtml.g.cs", StringComparison.Ordinal)
+                            || !path.Contains("RazorSourceGenerator", StringComparison.Ordinal)) continue;
+                        if (compilation.SyntaxTrees.FirstOrDefault(t => t.FilePath == path) is not { } tree) continue;
+                        if (RazorViewsDetector.ViewPath(tree) is not { } view) continue;
+                        razor.Add(new SourceFile(tree, compilation.GetSemanticModel(tree), ProjectScanner.Rel(repo.Root, Path.Combine(p.Directory, view.TrimStart('/')))));
+                    }
+                    if (project.AnalyzerConfigDocuments.Any(d => d.Name == "stangent-served-views.globalconfig"))
+                    {
+                        log.WriteLine($"stangent: {p.RelativePath}: {razor.Count} served views compiled");
+                    }
+                    var viewFiles = ProjectScanner.OwnFiles(p, projectDirs).Where(f => f.EndsWith(".cshtml", StringComparison.OrdinalIgnoreCase)).ToList();
+                    // A project with views the Razor compiler made nothing for loses every view: say why, never an empty map (D111).
+                    if (razor.Count == 0 && viewFiles.Count > 0 && RazorMissing(project) is { } why)
+                        lock (graph.LoadErrors) graph.LoadErrors.Add($"{p.RelativePath}: {viewFiles.Count} Razor view(s) not compiled ({why}); they are blind spots");
+                    var ctx = new ExtractContext(repo.Root, p.Id, p.Directory, compilation, files, fragment, new Dictionary<string, List<string>>())
+                    {
+                        RazorFiles = [.. razor.OrderBy(f => f.RelativePath, StringComparer.Ordinal)],
+                        ViewFiles = [.. viewFiles],
+                    };
                     CSharpExtractor.Extract(ctx);
                     foreach (var detector in detectors)
                     {
@@ -108,9 +162,16 @@ public static class GraphBuilder
         var loadMs = load.ElapsedMilliseconds - extract.ElapsedMilliseconds;
 
         // Frontends (D30): fingerprinted and re-extracted the same way, by the bundled Node extractor.
-        var frontends = FrontendScanner.Find(repo.Root);
-        var frontendSalt = salt + "\n" + FrontendScanner.ExtractorHash();
+        // Python (D127) first: a repo with Python also has its plain React apps read, a repo without keeps the map it had.
+        // A switch for React routes asks for React to be read, so it reads a plain app in a repo with no Python too.
+        var rootScreensOn = true;
+        var routeRenderOn = true;
+        var pythonProjects = PythonScanner.Find(repo.Root);
+        var frontends = FrontendScanner.Find(repo.Root, plainReact: pythonProjects.Count > 0 || rootScreensOn || routeRenderOn);
+        // Screens with no route (root-screens) and render routes (route-render) change what's extracted, so turning one on or off re-reads each frontend.
+        var frontendSalt = salt + "\n" + FrontendScanner.ExtractorHash() + (rootScreensOn ? "\nroot-screens" : "") + (routeRenderOn ? "\nroute-render" : "");
         var frontendDirs = frontends.Select(f => f.Directory).ToList();
+        frontends.AddRange(FrontendScanner.Scripts(repo.Root, projects, frontends, graph));   // N5: plain scripts and views' inline ones
         var frontendPrints = frontends.ToDictionary(f => f.Id,
             f => CanonicalJson.Hash(FrontendScanner.Fingerprint(repo.Root, f, frontendDirs) + "\n" + frontendSalt), StringComparer.Ordinal);
         var frontendChanged = frontends.Where(f => previous?.Fragments.GetValueOrDefault(f.Id)?.Fingerprint != frontendPrints[f.Id]).ToList();
@@ -129,13 +190,13 @@ public static class GraphBuilder
             {
                 if (options.Restore)
                     foreach (var f in frontendChanged)
-                        if (FrontendScanner.Restore(f, log) is { } problem) warnings.Add(problem);
+                        if (f.Files is null && FrontendScanner.Restore(f, log) is { } problem) warnings.Add(problem);
                 var results = new (ProjectFragment, List<string>, string?)[frontendChanged.Count];
                 await Parallel.ForEachAsync(Enumerable.Range(0, frontendChanged.Count), new ParallelOptions { MaxDegreeOfParallelism = 2, CancellationToken = ct }, (i, _) =>
                 {
                     var f = frontendChanged[i];
                     log.WriteLine($"stangent: extracting {f.RelativeTsConfig}");
-                    results[i] = FrontendScanner.Extract(repo.Root, f, frontendPrints[f.Id], repo.Config.DetectorSettings);
+                    results[i] = FrontendScanner.Extract(repo.Root, f, frontendPrints[f.Id], repo.Config.DetectorSettings, enums: enumsOn, rootScreens: rootScreensOn, routeRender: routeRenderOn);
                     return ValueTask.CompletedTask;
                 });
                 foreach (var (fragment, frontWarnings, error) in results)
@@ -153,8 +214,51 @@ public static class GraphBuilder
             extract.Stop();
         }
 
+        // Python (D127): parsed, never imported or run, by the bundled extractor.
+        var pythonChanged = new List<PythonProject>();
+        if (pythonProjects.Count > 0)
+        {
+            extract.Start();
+            var flask = detectors.Any(d => d.Name == FlaskRoutesDetector.DetectorName);
+            var interpreter = PythonScanner.Interpreter();
+            var pythonSalt = $"{salt}\n{PythonScanner.ExtractorHash()}\n{interpreter?.Version}";
+            foreach (var p in pythonProjects)
+            {
+                var print = CanonicalJson.Hash(PythonScanner.Fingerprint(repo.Root, p) + "\n" + pythonSalt);
+                if (previous?.Fragments.GetValueOrDefault(p.Id) is { } kept && kept.Fingerprint == print)
+                {
+                    graph.Fragments[p.Id] = kept;
+                    graph.LoadErrors.AddRange(previous.LoadErrors.Where(e => e.StartsWith(p.Label + ":")));
+                    continue;
+                }
+                pythonChanged.Add(p);
+                if (interpreter is null)
+                {
+                    graph.LoadErrors.Add($"{p.Label}: python_missing: Python 3 isn't installed (python3 or python), so this project isn't on the map");
+                    continue;
+                }
+                log.WriteLine($"stangent: reading {p.Label}");
+                var (fragment, pythonWarnings, error) = PythonScanner.Extract(repo.Root, p, print, interpreter.Value.Command, flask);
+                warnings.AddRange(pythonWarnings);
+                if (error is not null)
+                {
+                    graph.LoadErrors.Add(error);
+                    fragment.Nodes.Add(new Node(p.Id, NodeKind.Project, p.Name, p.Id));
+                    fragment.BlindSpots.Add(new BlindSpot(p.Id, p.Label, 0, "Python project could not be read", PythonScanner.Detector));
+                }
+                graph.Fragments[p.Id] = fragment;
+            }
+            extract.Stop();
+        }
+
+        CodeEnums.Save(repo.Root, enumsOn, graph, previous, enumsBefore);
+        // Written on every build since D381; a repo set up before then has no ignore line for it, so it would show as a change.
+        if (Git.Run(repo.Root, "rev-parse --is-inside-work-tree") is not null && File.Exists(CodeEnums.PathFor(repo.Root))
+            && Git.Run(repo.Root, "check-ignore -q .stangent/graph-enums.json") is null)
+            warnings.Add("graph_enums_not_ignored: git doesn't ignore .stangent/graph-enums.json, which every graph build writes since D381; run `stangent init` to add the line to .gitignore");
+
         var link = Stopwatch.StartNew();
-        var linkCtx = new LinkContext(graph, new Dictionary<string, List<string>>());
+        var linkCtx = new LinkContext(graph, new Dictionary<string, List<string>>()) { Root = repo.Root };
         foreach (var detector in detectors)
         {
             linkCtx.Settings = DetectorRegistry.Settings(repo.Config, detector.Name);
@@ -167,14 +271,27 @@ public static class GraphBuilder
         HistoryStep.Apply(repo, graph, previous, () => GraphStore.Load(GraphStore.PathFor(repo)), warnings);
         history.Stop();
 
+        // After reading everything, so an edit made during the build counts. Only files the graph holds lines for: elsewhere (a
+        // README, or the lock file this build's own restore wrote) nothing it says can be wrong.
+        var onMap = graph.AllNodes.Select(n => n.File).Concat(graph.AllBlindSpots.Select(b => b.File)).Concat(graph.ScreenTests.Select(t => t.Spec)).OfType<string>().Select(f => f.Normalize()).ToHashSet(StringComparer.Ordinal);
+        graph.DirtyFiles = Git.ChangedFiles(repo.Root)?.Where(onMap.Contains).ToList();
+        graph.NotInCommit = Git.FilesAt(repo.Root, graph.Commit) is { } committed ? [.. onMap.Where(f => f.Length > 0 && !committed.Contains(f)).Order(StringComparer.Ordinal)] : null;
+        if (graph.DirtyFiles is { Count: > 0 } dirty)
+            log.WriteLine($"stangent: {dirty.Count} file(s) differ from {graph.Commit}; `graph where` won't cite their lines.");
+
         GraphStore.Save(graph, GraphStore.PathFor(repo));
+        var crossCheck = CrossCheck.Run(repo.Root, graph); // D164: against OpenAPI files and EF's snapshot, reported only
         total.Stop();
-        var stats = new BuildStats(graph.Commit, projects.Count, frontends.Count, changed.Count + frontendChanged.Count,
-            projects.Count + frontends.Count - changed.Count - frontendChanged.Count,
+        var stats = new BuildStats(graph.Commit, projects.Count, frontends.Count, changed.Count + frontendChanged.Count + pythonChanged.Count,
+            projects.Count + frontends.Count + pythonProjects.Count - changed.Count - frontendChanged.Count - pythonChanged.Count,
             graph.AllNodes.Count(), graph.AllEdges.Count(), graph.AllBlindSpots.Count(),
             [.. graph.LoadErrors.Distinct().Order(StringComparer.Ordinal)], warnings, [.. detectors.Select(d => d.Name)],
             loadMs, extract.ElapsedMilliseconds, link.ElapsedMilliseconds, total.ElapsedMilliseconds,
-            graph.HistoryLines.Count, graph.History?.Status ?? "", history.ElapsedMilliseconds);
+            graph.HistoryLines.Count, graph.History?.Status ?? "", history.ElapsedMilliseconds, graph.DirtyFiles?.Count ?? 0,
+            pythonProjects.Count > 0 ? PythonStats.From(graph, pythonProjects.Count) : null,
+            rootScreensOn ? RootScreenStats.From(graph) : null,
+            routeRenderOn ? RouteRenderStats.From(graph) : null,
+            crossCheck);
         return (graph, stats);
     }
 
@@ -185,6 +302,56 @@ public static class GraphBuilder
                 .Select(kv => kv.Key + ":" + string.Join(",", kv.Value)))));
         // The module version id changes whenever the extractor's code does (builds are deterministic).
         return $"{typeof(GraphBuilder).Assembly.ManifestModule.ModuleVersionId}\n{GraphStore.SchemaVersion}\n{settings}";
+    }
+
+    /// <summary>Why the Razor compiler made nothing for a project with views: it didn't load, or has no generator. Null when
+    /// it isn't stangent's to say: a project with no Razor compiler (a class library shipping views to compile at runtime),
+    /// or one whose compiler ran and made none.</summary>
+    static string? RazorMissing(Project project)
+    {
+        var razor = project.AnalyzerReferences.OfType<Microsoft.CodeAnalysis.Diagnostics.AnalyzerFileReference>()
+            .Where(r => Path.GetFileName(r.FullPath).Contains("Razor", StringComparison.OrdinalIgnoreCase)).ToList();
+        if (razor.Count == 0) return null;
+        var failures = new List<string>();
+        void Failed(object? sender, Microsoft.CodeAnalysis.Diagnostics.AnalyzerLoadFailureEventArgs e) =>
+            failures.Add($"{Path.GetFileName((sender as Microsoft.CodeAnalysis.Diagnostics.AnalyzerFileReference)?.FullPath)}: {e.ErrorCode} {e.Message}");
+        var generators = 0;
+        foreach (var r in razor)
+        {
+            r.AnalyzerLoadFailed += Failed;
+            try { generators += r.GetGenerators(LanguageNames.CSharp).Length; }
+            catch (Exception e) { failures.Add($"{Path.GetFileName(r.FullPath)}: {e.GetType().Name} {e.Message}"); }
+            finally { r.AnalyzerLoadFailed -= Failed; }
+        }
+        return failures.Count > 0 ? $"the Razor compiler didn't load: {string.Join("; ", failures.Distinct()).Split('\n')[0]}"
+            : generators == 0 ? NewerCompiler(razor.Select(r => r.FullPath)) is { } wants
+                ? $"the SDK's Razor compiler needs compiler {wants}, stangent has {typeof(Compilation).Assembly.GetName().Version}; pin an older SDK with global.json"
+                : "the Razor compiler has no generator stangent can run"
+            : null;   // it ran and made none: views compiled at runtime, the project's own choice
+    }
+
+    /// <summary>The newest Microsoft.CodeAnalysis version these assemblies were built against, when newer than stangent's own:
+    /// a failed load is cached, so a second look gets no event and this is how the cause is told.</summary>
+    static Version? NewerCompiler(IEnumerable<string> paths)
+    {
+        var ours = typeof(Compilation).Assembly.GetName().Version!;
+        Version? newest = null;
+        foreach (var path in paths)
+            try
+            {
+                using var stream = File.OpenRead(path);
+                using var pe = new System.Reflection.PortableExecutable.PEReader(stream);
+                if (!pe.HasMetadata) continue;
+                var md = System.Reflection.Metadata.PEReaderExtensions.GetMetadataReader(pe);
+                foreach (var h in md.AssemblyReferences)
+                {
+                    var a = md.GetAssemblyReference(h);
+                    if (md.GetString(a.Name) == "Microsoft.CodeAnalysis" && a.Version > ours && (newest is null || a.Version > newest))
+                        newest = a.Version;
+                }
+            }
+            catch (Exception e) when (e is IOException or BadImageFormatException or UnauthorizedAccessException) { }
+        return newest;
     }
 
     /// <summary>An MSBuild workspace set up the way stangent loads projects (also used by the benchmark).</summary>
@@ -235,6 +402,25 @@ public static class Git
 {
     public static string Head(string root) => Run(root, "rev-parse HEAD")?.Trim() ?? "";
 
+    /// <summary>
+    /// Files under <paramref name="root"/> that differ from HEAD, tracked or untracked, relative to it and in NFC. Null when git can't say.
+    /// </summary>
+    public static IReadOnlyList<string>? ChangedFiles(string root)
+    {
+        if (Run(root, "status --porcelain=v1 -z --no-renames --untracked-files=all -- .") is not { } status) return null;
+        var prefix = Run(root, "rev-parse --show-prefix")?.Trim() ?? "";
+        return [.. status.Split('\0', StringSplitOptions.RemoveEmptyEntries).Select(e => e[3..])
+            .Where(path => path.StartsWith(prefix, StringComparison.Ordinal))
+            .Select(path => path[prefix.Length..].Normalize()).Order(StringComparer.Ordinal)];
+    }
+
+    /// <summary>The files a commit contains under <paramref name="root"/>, relative to it and in NFC. Null when git can't say.</summary>
+    public static IReadOnlySet<string>? FilesAt(string root, string commit)
+    {
+        if (commit.Length == 0 || Run(root, $"ls-tree -r -z --name-only {commit}") is not { } tree) return null;
+        return tree.Split('\0', StringSplitOptions.RemoveEmptyEntries).Select(path => path.Normalize()).ToHashSet(StringComparer.Ordinal);
+    }
+
     public static string? Run(string root, string args)
     {
         try
@@ -254,3 +440,4 @@ public static class Git
         }
     }
 }
+

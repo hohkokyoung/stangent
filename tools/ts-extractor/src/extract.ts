@@ -1,10 +1,17 @@
+import { deferredOf } from "./deferred.ts";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import ts from "typescript";
-import { Output, type Options } from "./model.ts";
+import { Output, type InlineScript, type Options } from "./model.ts";
 import { angularTemplates, collectAngular, type AngularIndex } from "./angular.ts";
+import { constantValues, domEvents, reactEvents, signalrListeners } from "./ui.ts";
 import { httpFacts } from "./http.ts";
 import { pages } from "./routes.ts";
+import { rootScreens } from "./rootScreens.ts";
+import { conditionFacts, effectName, onLoadFacts } from "./flow.ts";
+import { signalFormRules } from "./forms.ts";
+import { menuFacts } from "./menu.ts";
+import { collectWrappers, fieldFacts, titleFacts } from "./fields.ts";
 
 /**
  * The compiler's part of the frontend map (D31): points for declarations, ✅ lines for what the
@@ -32,47 +39,89 @@ export interface Context {
 
 export function extract(o: Options): Output {
   const out = new Output();
-  const tsconfig = resolveProjectConfig(o.tsconfig, out);
-  const cfg = ts.readConfigFile(tsconfig, ts.sys.readFile);
-  if (cfg.error) out.warning(`tsconfig: ${ts.flattenDiagnosticMessageText(cfg.error.messageText, " ")}`);
-  const json = cfg.config ?? {};
-  // .js/.jsx files are part of the map even when the project doesn't type-check them.
-  json.compilerOptions = { ...(json.compilerOptions ?? {}), allowJs: true, noEmit: true };
-  const parsed = ts.parseJsonConfigFileContent(json, ts.sys, path.dirname(tsconfig), undefined, tsconfig);
-  const program = ts.createProgram({
-    rootNames: parsed.fileNames,
-    options: { ...parsed.options, noEmit: true, allowJs: true, skipLibCheck: true, checkJs: false },
-  });
-  const checker = program.getTypeChecker();
   const root = path.resolve(o.root);
-  const projectDir = path.dirname(path.resolve(o.tsconfig));
+  // N5: plain browser scripts (no tsconfig), and views' inline scripts as files of their own that belong to the view.
+  const scripts = o.files !== undefined;
+  const inline = new Map<string, InlineScript>();
+  (o.inline ?? []).forEach((s, i) => inline.set(path.join(root, `${s.file}.script${i + 1}.js`), s));
+  let program: ts.Program;
+  if (scripts) {
+    const options: ts.CompilerOptions = { allowJs: true, checkJs: false, noEmit: true, skipLibCheck: true, target: ts.ScriptTarget.ES2020, lib: ["lib.es2020.d.ts", "lib.dom.d.ts"] };
+    const host = ts.createCompilerHost(options);
+    const { getSourceFile, fileExists, readFile } = host;
+    host.getSourceFile = (f, v, onError, create) => (inline.has(path.resolve(f)) ? ts.createSourceFile(f, inline.get(path.resolve(f))!.text, v, true, ts.ScriptKind.JS) : getSourceFile.call(host, f, v, onError, create));
+    host.fileExists = (f) => inline.has(path.resolve(f)) || fileExists.call(host, f);
+    host.readFile = (f) => (inline.has(path.resolve(f)) ? inline.get(path.resolve(f))!.text : readFile.call(host, f));
+    program = ts.createProgram({ rootNames: [...o.files!, ...inline.keys()], options, host });
+  } else {
+    // A plain React project has only a package.json (D127): its settings are the ones its toolchain assumes.
+    const plain = path.basename(o.tsconfig) === "package.json";
+    const tsconfig = plain ? o.tsconfig : resolveProjectConfig(o.tsconfig, out);
+    const cfg = plain ? { config: plainReactConfig() } : ts.readConfigFile(tsconfig, ts.sys.readFile);
+    if ("error" in cfg && cfg.error) out.warning(`tsconfig: ${ts.flattenDiagnosticMessageText(cfg.error.messageText, " ")}`);
+    const json = cfg.config ?? {};
+    // .js/.jsx files are part of the map even when the project doesn't type-check them.
+    json.compilerOptions = { ...(json.compilerOptions ?? {}), allowJs: true, noEmit: true };
+    const parsed = ts.parseJsonConfigFileContent(json, ts.sys, path.dirname(tsconfig), undefined, tsconfig);
+    program = ts.createProgram({
+      rootNames: parsed.fileNames,
+      options: { ...parsed.options, noEmit: true, allowJs: true, skipLibCheck: true, checkJs: false },
+    });
+  }
+  const checker = program.getTypeChecker();
+  const projectDir = scripts ? path.resolve(o.tsconfig) : path.dirname(path.resolve(o.tsconfig));
   const typed = fs.existsSync(path.join(projectDir, "node_modules")) || fs.existsSync(path.join(root, "node_modules"));
-  if (!typed) out.warning("node_modules is missing: library types don't resolve, so calls are matched by name (🟡)");
+  if (!typed && !scripts) out.warning("node_modules is missing: library types don't resolve, so calls are matched by name (🟡)");
 
-  const rel = (f: string) => path.relative(root, path.resolve(f)).split(path.sep).join("/");
+  const ownRel = (f: string) => path.relative(root, path.resolve(f)).split(path.sep).join("/");
+  // An inline script's file is its view; its code belongs to the view, and its lines are the view's.
+  const rel = (f: string) => inline.get(path.resolve(f))?.file ?? ownRel(f);
+  const isInline = (sf: ts.SourceFile) => inline.has(path.resolve(sf.fileName));
   const isOwn = (sf: ts.SourceFile) => {
     const f = path.resolve(sf.fileName);
-    return f.startsWith(root + path.sep) && !f.includes(`${path.sep}node_modules${path.sep}`) && !sf.isDeclarationFile;
+    return f.startsWith(root + path.sep) && !f.includes(`${path.sep}node_modules${path.sep}`) && !sf.isDeclarationFile && !isInline(sf);
   };
   const files = program.getSourceFiles().filter(isOwn).sort((a, b) => cmp(rel(a.fileName), rel(b.fileName)));
+  const inlineFiles = program.getSourceFiles().filter(isInline).sort((a, b) => cmp(ownRel(a.fileName), ownRel(b.fileName)));
 
   const ctx: Context = {
     o, out, program, checker, rel, isOwn, typed,
     declId: (d) => declId(d, rel),
     symbolId: (s) => symbolId(s, checker, isOwn, rel),
-    ownerId: (n) => ownerId(n, rel),
-    line: (n) => n.getSourceFile().getLineAndCharacterOfPosition(n.getStart()).line + 1,
+    ownerId: (n) => inline.get(path.resolve(n.getSourceFile().fileName))?.owner ?? ownerId(n, rel),
+    line: (n) => n.getSourceFile().getLineAndCharacterOfPosition(n.getStart()).line + (inline.get(path.resolve(n.getSourceFile().fileName))?.line ?? 1),
     angular: { components: new Map(), selectors: new Map(), pipes: new Map() },
   };
 
   out.node({ id: o.projectId, kind: "project", name: projectName(projectDir), project: o.projectId, file: null, line: 0, endLine: 0, isTest: false });
   for (const sf of files) declare(ctx, sf);
   for (const sf of files) collectAngular(ctx, sf);
-  for (const sf of files) references(ctx, sf);
+  for (const sf of [...files, ...inlineFiles]) references(ctx, sf);
   for (const sf of files) angularTemplates(ctx, sf);
+  for (const sf of files) reactEvents(ctx, sf);
+  for (const sf of files) { signalrListeners(ctx, sf); constantValues(ctx, sf); }
   for (const sf of files) pages(ctx, sf);
-  for (const sf of files) httpFacts(ctx, sf);
+  if (o.rootScreens) rootScreens(ctx, files);
+  for (const sf of [...files, ...inlineFiles]) httpFacts(ctx, sf);
+  for (const sf of files) onLoadFacts(ctx, sf); // D171, D176
+  for (const sf of [...files, ...inlineFiles]) conditionFacts(ctx, sf); // D174
+  for (const sf of files) signalFormRules(ctx, sf); // D209
+  for (const sf of files) menuFacts(ctx, sf); // D221
+  collectWrappers(ctx, files); // D329
+  for (const sf of files) fieldFacts(ctx, sf); // D329
+  for (const sf of files) titleFacts(ctx, sf); // D333
+  if (scripts) for (const sf of [...files, ...inlineFiles]) domEvents(ctx, sf);
+  if (o.enums) for (const sf of files) enums(ctx, sf);
   return out;
+}
+
+/** What a tsconfig would say for a React app written in plain .js. Generated output and packages stay out. */
+function plainReactConfig() {
+  return {
+    include: ["**/*"],
+    exclude: ["node_modules", "build", "dist", "coverage", "public"],
+    compilerOptions: { jsx: "preserve", target: "esnext", module: "esnext", moduleResolution: "bundler", esModuleInterop: true, allowSyntheticDefaultImports: true },
+  };
 }
 
 /** A solution-style tsconfig (only "references") points at the app config that has the files. */
@@ -121,6 +170,10 @@ export function qualifiedName(decl: ts.Node): string | null {
       && (ts.isSourceFile(parent.parent.parent) || ts.isModuleBlock(parent.parent.parent))) {
     return decl.name.text;
   }
+  const handler = componentHandler(decl);
+  if (handler) return handler;
+  const effect = effectName(decl);
+  if (effect) return effect;
   if ((ts.isMethodDeclaration(decl) || ts.isPropertyDeclaration(decl) || ts.isGetAccessorDeclaration(decl)
       || ts.isSetAccessorDeclaration(decl) || ts.isConstructorDeclaration(decl)) && ts.isClassLike(parent)) {
     const owner = qualifiedName(parent);
@@ -133,12 +186,55 @@ export function qualifiedName(decl: ts.Node): string | null {
     const name = text(nameOf(decl));
     return owner && name ? `${owner}.${name}` : null;
   }
+  // D191: a function written as a property of a top-level object (`var AjaxCart = { send_ajax: function () {…} }`), the way
+  // plain scripts group their code: a point of its own, `AjaxCart.send_ajax`.
+  if (((ts.isPropertyAssignment(decl) && isFunctionLike(decl.initializer)) || ts.isMethodDeclaration(decl))
+      && ts.isObjectLiteralExpression(parent) && ts.isVariableDeclaration(parent.parent) && parent.parent.initializer === parent) {
+    const owner = qualifiedName(parent.parent);
+    const name = text(decl.name);
+    return owner && name ? `${owner}.${name}` : null;
+  }
   if (ts.isEnumMember(decl)) {
     const owner = qualifiedName(parent);
     const name = text(decl.name);
     return owner && name ? `${owner}.${name}` : null;
   }
   return null;
+}
+
+/**
+ * G5: a function a React component declares in its body (`const handleAddSeriesPress = useCallback(() => …)`,
+ * `const onSave = () => …`, `function onClick() {}`) is a point of its own, `Component.handler`, so a button
+ * can say which handler it runs. Only directly in a capitalised component's body.
+ */
+function componentHandler(decl: ts.Node): string | null {
+  let name: string | null = null;
+  let statement: ts.Node | undefined;
+  if (ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && isHandlerInit(decl.initializer)
+      && ts.isVariableDeclarationList(decl.parent) && ts.isVariableStatement(decl.parent.parent)) {
+    name = decl.name.text;
+    statement = decl.parent.parent;
+  } else if (ts.isFunctionDeclaration(decl) && decl.name && decl.body) {
+    name = decl.name.text;
+    statement = decl;
+  }
+  const block = statement?.parent;
+  if (!name || !block || !ts.isBlock(block)) return null;
+  const fn = block.parent;
+  const owner = ts.isFunctionDeclaration(fn) ? qualifiedName(fn)
+    : (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) && ts.isVariableDeclaration(fn.parent) ? qualifiedName(fn.parent) : null;
+  // D184: a hook's own functions too (`useProviderSettings.saveProvider`), so a value a handler takes from the hook's result
+  // can lead to the function it is, not to everything the hook does on render.
+  return owner && (/^[A-Z]/.test(owner) || /^use[A-Z0-9]/.test(owner)) && !owner.includes(".") ? `${owner}.${name}` : null;
+}
+
+function isHandlerInit(e: ts.Expression | undefined): boolean {
+  if (!e) return false;
+  if (ts.isArrowFunction(e) || ts.isFunctionExpression(e)) return true;
+  if (!ts.isCallExpression(e)) return false;
+  const callee = ts.isPropertyAccessExpression(e.expression) ? e.expression.name.text : ts.isIdentifier(e.expression) ? e.expression.text : "";
+  const first = e.arguments[0];
+  return callee === "useCallback" && !!first && (ts.isArrowFunction(first) || ts.isFunctionExpression(first));
 }
 
 function declId(decl: ts.Node, rel: (f: string) => string): string | null {
@@ -171,6 +267,8 @@ function kindOf(decl: ts.Node): string {
       || ts.isGetAccessorDeclaration(decl) || ts.isSetAccessorDeclaration(decl) || ts.isMethodSignature(decl)) {
     return isReactComponent(decl) ? "component" : "method";
   }
+  if (componentHandler(decl) || effectName(decl)) return "method";
+  if (ts.isPropertyAssignment(decl) && isFunctionLike(decl.initializer)) return "method";
   if (ts.isVariableDeclaration(decl)) {
     if (isFunctionLike(decl.initializer) || isWrappedComponent(decl.initializer)) return isReactComponent(decl) ? "component" : "method";
     return "field";
@@ -189,7 +287,7 @@ function isWrappedComponent(init: ts.Expression | undefined): boolean {
 }
 
 /** A React function component: a capitalised function whose body contains JSX. */
-function isReactComponent(decl: ts.Node): boolean {
+export function isReactComponent(decl: ts.Node): boolean {
   const name = qualifiedName(decl);
   if (!name || name.includes(".") || !/^[A-Z]/.test(name)) return false;
   let found = false;
@@ -200,6 +298,26 @@ function isReactComponent(decl: ts.Node): boolean {
   };
   visit(decl);
   return found;
+}
+
+/** Each enum's members and values (C.2), apart from the walked lines. A value the compiler can't work out is null, never a guess. */
+function enums(ctx: Context, sf: ts.SourceFile) {
+  const file = ctx.rel(sf.fileName);
+  const lineOf = (pos: number) => sf.getLineAndCharacterOfPosition(pos).line + 1;
+  const visit = (n: ts.Node) => {
+    if (ts.isEnumDeclaration(n)) {
+      const id = ctx.declId(n);
+      if (id) {
+        const members = n.members.map((m) => {
+          const value = ctx.checker.getConstantValue(m);
+          return { name: m.name.getText(sf).replace(/^["']|["']$/g, ""), value: value === undefined ? null : String(value), line: lineOf(m.getStart(sf)) };
+        });
+        ctx.out.enumDecl({ id, name: n.name.text, file, line: lineOf(n.getStart(sf)), endLine: lineOf(n.getEnd()), members });
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
 }
 
 function declare(ctx: Context, sf: ts.SourceFile) {
@@ -218,6 +336,7 @@ function declare(ctx: Context, sf: ts.SourceFile) {
       ctx.out.edge(container, id, "contains");
       // A component renders as a unit: a change to any of its members changes what its page shows.
       if (ts.isClassDeclaration(n.parent) && isAngularComponent(n.parent)) ctx.out.edge(container, id, "uses");
+      if (container && (componentHandler(n) || effectName(n))) ctx.out.edge(container, id, "uses"); // same for a React component's handlers and effects
     }
     const test = testName(n);
     if (test) {
@@ -289,8 +408,23 @@ function references(ctx: Context, sf: ts.SourceFile) {
       if (symbol) contextualCache.set(n, { symbol });
     }
     if (ts.isIdentifier(n) && !isDeclarationName(n)) {
-      const target = ctx.symbolId(checker.getSymbolAtLocation(n));
-      if (target) out.edge(ctx.ownerId(n), target, edgeKind(n));
+      const symbol = checker.getSymbolAtLocation(n);
+      const target = ctx.symbolId(symbol);
+      // T2: a plain script's global declared in several files (admin.common.js and public.common.js) could be either: 🟡 to each.
+      const several = target ? declaredIn(ctx, symbol!) : [];
+      if (several.length > 1) for (const id of several) out.edge(ctx.ownerId(n), id, edgeKind(n), 1);
+      else if (target) out.edge(ctx.ownerId(n), target, edgeKind(n));
+      else {
+        // `const { addSeries } = useAddSeries()` then `addSeries(…)` in a handler: the handler calls the hook (G5).
+        // D210: when the returns don't say which function is handed back, the value is whatever `from` returned, not `from`
+        // itself: the call site says so (`fromResult`), and a flow shows it as a guess.
+        const result = resultOf(ctx, symbol);
+        const from = result?.id;
+        if (from && from !== ctx.ownerId(n)) out.edge(ctx.ownerId(n), from, "calls");
+        if (from && from !== ctx.ownerId(n) && edgeKind(n) === "calls") callSite(ctx, sf, n, from, 0, result!.byValue);
+      }
+      if (edgeKind(n) === "calls" || (edgeKind(n) === "renders" && !ts.isJsxClosingElement(n.parent)))
+        for (const id of several.length > 1 ? several : target ? [target] : []) callSite(ctx, sf, n, id, several.length > 1 ? 1 : 0);
     } else if (contextualProperty(n)) {
       // `{ roles: [...] }` where an UpdateUserRequest is expected, `<Cell errorMessage={…} />`, and
       // `const { roles } = req`: the name refers to the interface's field through the expected type.
@@ -307,6 +441,13 @@ function references(ctx: Context, sf: ts.SourceFile) {
     ts.forEachChild(n, visit);
   };
   visit(sf);
+}
+
+/** Every own declaration of a symbol, when they sit in more than one file. */
+function declaredIn(ctx: Context, symbol: ts.Symbol): string[] {
+  const decls = (symbol.declarations ?? []).filter((d) => ctx.isOwn(d.getSourceFile()));
+  if (new Set(decls.map((d) => d.getSourceFile().fileName)).size < 2) return [];
+  return [...new Set(decls.map((d) => ctx.declId(d)).filter((id): id is string => !!id))];
 }
 
 function contextualProperty(n: ts.Node): { symbol: ts.Symbol | undefined } | null {
@@ -340,6 +481,165 @@ function isDeclarationName(id: ts.Identifier): boolean {
   return (p as { name?: ts.Node }).name === id && (ts.isDeclarationStatement(p) || ts.isClassElement(p)
     || ts.isTypeElement(p) || ts.isVariableDeclaration(p) || ts.isParameter(p) || ts.isEnumMember(p)
     || ts.isBindingElement(p) || ts.isPropertyAssignment(p) || ts.isImportSpecifier(p) || ts.isExportSpecifier(p));
+}
+
+/**
+ * For a local bound from a call's result (`const x = f()`, `const { a } = f()`): the function handed back under that name when f's
+ * returns say (`byValue` false), else f itself standing for the value it returned (`byValue` true, D210).
+ */
+function resultOf(ctx: Context, symbol: ts.Symbol | undefined): { id: string; byValue: boolean } | null {
+  const d = symbol?.declarations?.length === 1 ? symbol.declarations[0] : null;
+  if (!d) return null;
+  let v: ts.Node = d;
+  while (ts.isBindingElement(v) || ts.isObjectBindingPattern(v) || ts.isArrayBindingPattern(v)) v = v.parent;
+  if (!ts.isVariableDeclaration(v) || !v.initializer) return null;
+  const init = ts.isAwaitExpression(v.initializer) ? v.initializer.expression : v.initializer;
+  if (!ts.isCallExpression(init)) return null;
+  const callee = ts.isPropertyAccessExpression(init.expression) ? init.expression.name : init.expression;
+  const called = ctx.symbolId(ctx.checker.getSymbolAtLocation(callee));
+  // D184: `const { saveProvider } = useManageIndexer()`: the function the hook hands back under that name, when its returns say.
+  if (d && ts.isBindingElement(d) && ts.isObjectBindingPattern(d.parent) && !d.dotDotDotToken) {
+    const prop = d.propertyName && ts.isIdentifier(d.propertyName) ? d.propertyName.text : ts.isIdentifier(d.name) ? d.name.text : null;
+    const returned = prop ? returnedPoint(ctx, ctx.checker.getSymbolAtLocation(callee), prop, 0) : null;
+    if (returned) return { id: returned, byValue: false };
+  }
+  return called ? { id: called, byValue: true } : null;
+}
+
+/**
+ * D184: the point a function returns under a property name: `return { saveProvider }` (a function declared in its body, which is a
+ * point of its own), `return { ...useOther() }` or `return useOther()` (followed into that function), up to four calls deep. Null when
+ * the returns don't say, so the caller keeps its line to the function itself.
+ */
+function returnedPoint(ctx: Context, symbol: ts.Symbol | undefined, prop: string, depth: number): string | null {
+  if (!symbol || depth > 4) return null;
+  if (symbol.flags & ts.SymbolFlags.Alias) {
+    try { symbol = ctx.checker.getAliasedSymbol(symbol); } catch { return null; }
+  }
+  const decl = symbol.declarations?.find((x) => ctx.isOwn(x.getSourceFile()));
+  const fn = decl && ts.isVariableDeclaration(decl) ? decl.initializer : decl;
+  if (!fn || !(ts.isFunctionDeclaration(fn) || ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) || !fn.body) return null;
+  const results: ts.Expression[] = [];
+  if (ts.isBlock(fn.body)) {
+    const visit = (n: ts.Node) => {
+      if (ts.isReturnStatement(n) && n.expression) results.push(n.expression);
+      if (!ts.isFunctionLike(n)) ts.forEachChild(n, visit);
+    };
+    ts.forEachChild(fn.body, visit);
+  } else results.push(fn.body);
+  const found = new Set<string>();
+  for (const e of results) {
+    const r = pointIn(ctx, e, prop, depth);
+    if (r) found.add(r);
+  }
+  return found.size === 1 ? [...found][0] : null;
+}
+
+/** The point an expression gives under a property name: a call (followed), an object literal, or a local holding one. */
+function pointIn(ctx: Context, e: ts.Expression, prop: string, depth: number): string | null {
+  for (let hops = 0; hops < 4; hops++) {
+    while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isSatisfiesExpression(e)) e = e.expression;
+    if (!ts.isIdentifier(e)) break;
+    const d = ctx.checker.getSymbolAtLocation(e)?.declarations?.[0];
+    if (!d || !ts.isVariableDeclaration(d) || !d.initializer || d.getSourceFile() !== e.getSourceFile()) return null;
+    e = d.initializer;
+  }
+  if (ts.isCallExpression(e))
+    return returnedPoint(ctx, ctx.checker.getSymbolAtLocation(ts.isPropertyAccessExpression(e.expression) ? e.expression.name : e.expression), prop, depth + 1);
+  if (!ts.isObjectLiteralExpression(e)) return null;
+  for (const p of [...e.properties].reverse()) {
+    if ((ts.isShorthandPropertyAssignment(p) || ts.isPropertyAssignment(p)) && ts.isIdentifier(p.name) && p.name.text === prop) {
+      const value = ts.isShorthandPropertyAssignment(p) ? ctx.checker.getShorthandAssignmentValueSymbol(p)
+        : ts.isIdentifier(p.initializer) ? ctx.checker.getSymbolAtLocation(p.initializer) : undefined;
+      const d = value?.declarations?.[0];
+      return d ? ctx.declId(d) : null;
+    }
+    if (ts.isSpreadAssignment(p)) {
+      const r = pointIn(ctx, p.expression, prop, depth + 1);
+      if (r) return r;
+    }
+  }
+  return null;
+}
+
+/**
+ * D184: where a call is written, so a flow can quote its line: one `call-site` fact per call, on the calling point, at the line the
+ * call expression starts (a chain's first line, `this.a.b().c(`), or a JSX element's tag; `kind` says which. A fact, not a line:
+ * impact never reads it.
+ */
+function callSite(ctx: Context, sf: ts.SourceFile, id: ts.Identifier, target: string, label: 0 | 1, fromResult = false) {
+  let n: ts.Node = id;
+  if (ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) n = n.parent;
+  const owner = ctx.ownerId(id);
+  if (owner === target) return;
+  const deferred = deferredOf(ctx, n);
+  const closed = edgeKind(id) === "renders" ? closedBy(ctx, n.parent) : null;
+  ctx.out.fact("call-sites", "call-site", owner, ctx.rel(sf.fileName), ctx.line(n.parent), { target, label: String(label), kind: edgeKind(id), ...(fromResult ? { fromResult: "1" } : {}), ...(deferred ? { deferred } : {}), ...(closed ? { closedBy: closed } : {}) });
+}
+
+/**
+ * D213: a JSX element written inside one of the repo's components that draws nothing while one of its props is unset
+ * (`<Modal isOpen={open}><Content /></Modal>`, where Modal begins `if (!isOpen) { return null; }` and draws its `children`)
+ * is shown only when that component draws it. Returns the component, its guard and what this element's parent passes for
+ * the props in it (`Modal|!isOpen|isOpen={open}`), from the nearest such parent; else null.
+ */
+function closedBy(ctx: Context, tag: ts.Node): string | null {
+  let el: ts.Node = ts.isJsxOpeningElement(tag) ? tag.parent : tag;
+  for (let p = el.parent; p && (ts.isJsxElement(p) || ts.isJsxExpression(p) || ts.isJsxFragment(p) || ts.isParenthesizedExpression(p)
+       || ts.isConditionalExpression(p) || ts.isBinaryExpression(p)); el = p, p = p.parent) {
+    if (!ts.isJsxElement(p) || !p.children.includes(el as ts.JsxChild)) continue;
+    const guard = drawGuard(ctx, p.openingElement.tagName);
+    if (!guard) continue;
+    const passed = guard.props.map((prop) => {
+      const attr = p.openingElement.attributes.properties.find((a) => ts.isJsxAttribute(a) && a.name.getText() === prop) as ts.JsxAttribute | undefined;
+      const value = !attr ? "not passed" : !attr.initializer ? "true"
+        : ts.isJsxExpression(attr.initializer) && attr.initializer.expression ? attr.initializer.expression.getText() : attr.initializer.getText();
+      return `${prop}=${value.replace(/\s+/g, " ").slice(0, 60)}`;
+    });
+    return `${p.openingElement.tagName.getText()}|${guard.cond}|${passed.join(", ")}`;
+  }
+  return null;
+}
+
+/** D213: a component of the repo's own that begins by returning nothing while a condition on its props holds, and draws its children. */
+function drawGuard(ctx: Context, tagName: ts.JsxTagNameExpression): { cond: string; props: string[] } | null {
+  let symbol = ctx.checker.getSymbolAtLocation(tagName);
+  if (symbol && symbol.flags & ts.SymbolFlags.Alias) {
+    try { symbol = ctx.checker.getAliasedSymbol(symbol); } catch { return null; }
+  }
+  const decl = symbol?.declarations?.find((d) => ctx.isOwn(d.getSourceFile()));
+  const fn = decl && ts.isVariableDeclaration(decl) ? decl.initializer : decl;
+  if (!fn || !(ts.isFunctionDeclaration(fn) || ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) || !fn.body || !ts.isBlock(fn.body)) return null;
+  const param = fn.parameters[0];
+  if (!param) return null;
+  // The props by the names the body reads them under: `{ isOpen, children }` or `props.isOpen`.
+  const locals = new Map<string, string>();
+  if (ts.isObjectBindingPattern(param.name))
+    for (const b of param.name.elements) {
+      const prop = b.propertyName && ts.isIdentifier(b.propertyName) ? b.propertyName.text : ts.isIdentifier(b.name) ? b.name.text : null;
+      if (prop && ts.isIdentifier(b.name)) locals.set(b.name.text, prop);
+    }
+  const propsName = ts.isIdentifier(param.name) ? param.name.text : null;
+  const propOf = (n: ts.Node): string | null =>
+    ts.isIdentifier(n) && locals.has(n.text) && !ts.isPropertyAccessExpression(n.parent) ? locals.get(n.text)!
+      : propsName && ts.isPropertyAccessExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === propsName ? n.name.text : null;
+  let drawsChildren = false;
+  const visit = (n: ts.Node) => { if (propOf(n) === "children") drawsChildren = true; else ts.forEachChild(n, visit); };
+  visit(fn.body);
+  if (!drawsChildren) return null;
+  const empty = (e: ts.Expression | undefined) => !e || e.kind === ts.SyntaxKind.NullKeyword || e.kind === ts.SyntaxKind.FalseKeyword
+    || (ts.isIdentifier(e) && e.text === "undefined");
+  for (const st of fn.body.statements) {
+    if (ts.isReturnStatement(st)) return null;   // the body's own return comes first: no guard before it
+    if (!ts.isIfStatement(st) || st.elseStatement) continue;
+    const then = ts.isBlock(st.thenStatement) && st.thenStatement.statements.length === 1 ? st.thenStatement.statements[0] : st.thenStatement;
+    if (!ts.isReturnStatement(then) || !empty(then.expression)) continue;
+    const props = new Set<string>();
+    const read = (n: ts.Node) => { const p = propOf(n); if (p) props.add(p); else ts.forEachChild(n, read); };
+    read(st.expression);
+    if (props.size > 0) return { cond: st.expression.getText().replace(/\s+/g, " "), props: [...props].sort() };
+  }
+  return null;
 }
 
 function edgeKind(id: ts.Identifier): string {

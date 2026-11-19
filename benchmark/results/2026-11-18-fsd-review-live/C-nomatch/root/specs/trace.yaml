@@ -1,0 +1,56 @@
+version: 4
+entries:
+  - id: "S001"
+    state: "gap"
+    fsd:
+      doc: "kavita-fsd"
+      section: "2.1"
+      quote: "A Random button on the library screen opens a randomly chosen series from that library."
+    page: null
+    note: "The library detail template has no Random button or random-series action."
+  - id: "S002"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "A new password must be at least 8 characters long."
+    page: null
+    note: "The minimum password length is 6 characters, set both on the server and in the client forms."
+  - id: "S003"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.2"
+      quote: "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB."
+    page: null
+    note: "The download confirmation threshold is 100 MB (SIZE_WARNING = 104,857,600 bytes), not 500 MB."
+  - id: "S004"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Days of Backups and Days of Logs each accept a value from 1 to 30 and both default to 30."
+    page: null
+    note: "Backups and logs are validated to a range of 1 to 30. I did not check the default of 30."
+  - id: "S005"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Cache Size must be at least 50 MB"
+    page: null
+    note: "Cache size has a minimum of 50."
+  - id: "S006"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/genres"
+      quote: "A Browse Genres screen exists. The FSD describes only People and Tags under Browse."
+    note: "A Browse Genres screen exists. The FSD describes only People and Tags under Browse."
+  - id: "S007"
+    state: "undocumented"
+    fsd: null
+    page:
+      id: "page:/browse/annotations"
+      quote: "A Browse Annotations screen (all annotations) exists. The FSD doesn't mention it."
+    note: "A Browse Annotations screen (all annotations) exists. The FSD doesn't mention it."

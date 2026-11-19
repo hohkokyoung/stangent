@@ -14,7 +14,6 @@ public sealed class StangentConfig
     /// Code-graph link detectors to run (D17). Empty means every built-in detector; list names to
     /// run only those; <c>[none]</c> runs none.
     /// </summary>
-    public List<string> Detectors { get; set; } = [];
     /// <summary>Per-detector settings, e.g. <c>publish-handle: { handlerInterfaces: [...] }</c>.</summary>
     public Dictionary<string, Dictionary<string, List<string>>> DetectorSettings { get; set; } = [];
     public AdaptersConfig Adapters { get; set; } = new();
@@ -26,6 +25,26 @@ public sealed class StangentConfig
     public FsdConfig Fsd { get; set; } = new();
     /// <summary>Jira tickets (Phase 3, D69–D82).</summary>
     public TicketsConfig Tickets { get; set; } = new();
+    /// <summary>The fix loop (Phase 4, D343, D348): each fixer call's cap and the ticket's whole cap.</summary>
+    public FixConfig Fix { get; set; } = new();
+    /// <summary>Layer 4's developer page (D281, D282): what it shows. Always written (D381).</summary>
+    public PagesConfig Pages { get; set; } = new();
+    public FlowsConfig Flows { get; set; } = new();
+    /// <summary>Settings from before D381 that a stangent.yaml still holds (<c>components:</c>, <c>detectors:</c>, <c>history.enabled</c>, …): read, ignored
+    /// and named in a warning, since every feature is now on. Never written.</summary>
+    [YamlIgnore] public List<string> RemovedSettings { get; } = [];
+
+    public sealed class FixConfig
+    {
+        /// <summary>Each fixer call's cap (D348): 30 turns and $1, and never more than what's left of <see cref="TicketUsd"/>.</summary>
+        public ProveBudgetConfig CallBudget { get; set; } = new();
+        /// <summary>The ticket's whole cap (D348), the bug proof's cost included.</summary>
+        public double TicketUsd { get; set; } = 3.0;
+        /// <summary>Files a build needs that the repo doesn't commit, such as an SDK pin a benchmark writes over
+        /// <c>global.json</c> (D351): changed in the checkout without making it dirty, copied into the worktree as they
+        /// are, left out of every check, and never the fixer's to edit. Relative to the repo.</summary>
+        public List<string> LocalFiles { get; set; } = [];
+    }
 
     public sealed class StoreConfig
     {
@@ -36,6 +55,18 @@ public sealed class StangentConfig
     {
         /// <summary>False turns off every AI step; only code-only parts run (D24).</summary>
         public bool Enabled { get; set; } = true;
+        /// <summary>The model every AI step runs on, unless <see cref="Steps"/> names another (D161). Unset with no run flag: a run refuses.</summary>
+        public string? Model { get; set; }
+        /// <summary>Claude Code's effort level for every AI step: low, medium, high, xhigh or max (D161).</summary>
+        public string? Effort { get; set; }
+        /// <summary>Per-step settings by agent name (<c>stangent-fsd-reviewer</c>); either field may be left to the global one.</summary>
+        public Dictionary<string, AiStepConfig> Steps { get; set; } = [];
+    }
+
+    public sealed class AiStepConfig
+    {
+        public string? Model { get; set; }
+        public string? Effort { get; set; }
     }
 
     /// <summary>
@@ -45,7 +76,6 @@ public sealed class StangentConfig
     public sealed class HistoryConfig
     {
         // Tuned on nopCommerce and Sonarr, then frozen before judging (D43; benchmark/results/2026-10-19-phase1c-tuning.json).
-        public bool Enabled { get; set; } = true;
         public int Window { get; set; } = 10;
         public int MinShared { get; set; } = 3;
         public double MinShare { get; set; } = 0.2;
@@ -73,15 +103,48 @@ public sealed class StangentConfig
         public int MaxBundleChars { get; set; } = 260_000;
     }
 
+    /// <summary>
+    /// Layer 4's developer page (D281, D282). Both are judgements fitted to three repos, not measured limits, hence settings.
+    /// </summary>
+    public sealed class PagesConfig
+    {
+        /// <summary>D281: a change more than this percent of the app's start flows pass through (and at least 10 flows) is a framework
+        /// change: listed under "Changes made in shared code", not drawn, and it doesn't make a click a changing one. 1–100.</summary>
+        public int FrameworkShare { get; set; } = 10;
+        /// <summary>D282, D286: a click's chart with more nodes than this isn't drawn; the page says how many it would have had. At least 1.</summary>
+        public int ChartCap { get; set; } = 60;
+    }
+
+    /// <summary>Layer 3's flows (D302).</summary>
+    public sealed class FlowsConfig
+    {
+        /// <summary>D302: namespaces of outside services' client libraries beyond the defaults (a name and everything under it, or a
+        /// namespace and type such as <c>Acme.Billing.Client</c>): a call into one is an outside call, not a package call.</summary>
+        public List<string> OutsideLibraries { get; set; } = [];
+    }
+
     public sealed class FsdConfig
     {
         public ArchiveConfig? Archive { get; set; }
         /// <summary>The areas the FSD covers: routes or route prefixes (<c>/settings</c> covers <c>/settings/tags</c>).
         /// Empty: every screen. Screens outside it are never listed as undocumented.</summary>
         public List<string> Scope { get; set; } = [];
-        /// <summary>Discrepancy findings (gap, conflict, undocumented) in <c>specs/trace.yaml</c>. Off by default: Phase
-        /// 2b's "not too noisy" bar failed on Sonarr (D57, D68), so only links are recorded until a project turns them on.</summary>
-        public bool Findings { get; set; }
+        /// <summary><c>fsd export</c>: a chapter longer than this many lines is cut at its next heading level (D122). <c>--max-lines</c> overrides it.</summary>
+        public int ExportMaxLines { get; set; } = 1500;
+        /// <summary><c>fsd review</c>'s cap per run (D341): turns and dollars, its one retry inside it. D321 used 105K tokens, Kavita 205–242K.</summary>
+        public ReviewBudgetConfig ReviewBudget { get; set; } = new();
+        /// <summary>How many review runs <c>fsd review-merge</c> unions (D341, D324: two merged found 28–29 of 30).</summary>
+        public int ReviewRuns { get; set; } = 2;
+        /// <summary>An attachment holding more text than this is marked "not checked" in the import report and its record (D123). A stated setting, not a measured one.</summary>
+        public int AttachmentChars { get; set; } = 40000;
+        public ExcelConfig Excel { get; set; } = new();
+    }
+
+    /// <summary>When a workbook is flagged as very large in the import report (D123). It's still imported; these only say when to look. Stated settings, not measured ones.</summary>
+    public sealed class ExcelConfig
+    {
+        public int LargeSheets { get; set; } = 50;
+        public int LargeRows { get; set; } = 100000;
     }
 
     /// <summary>
@@ -119,9 +182,6 @@ public sealed class StangentConfig
         public int BundleChars { get; set; } = 40_000;
         /// <summary>How much of one text attachment goes into the bundle (D72); the rest is a pointer to the file.</summary>
         public int AttachmentChars { get; set; } = 8_000;
-        /// <summary>The file finder (D101): an agent searches the repo for the ticket's files. Off (or <c>ai.enabled</c>
-        /// false): code's own signals (D70) are the starting points instead.</summary>
-        public bool AiPoints { get; set; } = true;
         /// <summary>A folder of saved MCP results (<c>&lt;KEY&gt;/raw</c>, <c>&lt;KEY&gt;/attachments</c>): tickets are read from it
         /// instead of Jira, so a score replays exactly what was read (D77). Relative to the repo.</summary>
         public string? Replay { get; set; }
@@ -170,6 +230,13 @@ public sealed class StangentConfig
         public double? LengthNorm { get; set; }
     }
 
+    /// <summary><c>fsd.reviewBudget</c> (D341): its own defaults, so setting only one value keeps the other's.</summary>
+    public sealed class ReviewBudgetConfig
+    {
+        public double Usd { get; set; } = 3.0;
+        public int Turns { get; set; } = 60;
+    }
+
     public sealed class ProveBudgetConfig
     {
         public double Usd { get; set; } = 1.0;
@@ -192,7 +259,7 @@ public sealed class StangentRepo
     public const string ConfigFile = "stangent.yaml";
 
     /// <summary>Lines <c>stangent init</c> adds to the repo's .gitignore: derived and run data, never committed (D7, D21; AI run files, D52).</summary>
-    public static readonly string[] GitIgnoreLines = [".stangent/index.sqlite*", ".stangent/telemetry/", ".stangent/spec/", ".stangent/tickets/"];
+    public static readonly string[] GitIgnoreLines = [".stangent/index.sqlite*", ".stangent/graph.sqlite*", ".stangent/graph-crosscheck.json", ".stangent/graph-enums.json", ".stangent/telemetry/", ".stangent/spec/", ".stangent/fsd/", ".stangent/fsd-disprove/", ".stangent/req/", ".stangent/tickets/", ".stangent/fix/"];
 
     static readonly IDeserializer Reader = new DeserializerBuilder()
         .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -256,16 +323,60 @@ public sealed class StangentRepo
     {
         try
         {
-            var config = Reader.Deserialize<StangentConfig?>(File.ReadAllText(path)) ?? new StangentConfig();
+            var (text, removed) = RemovedSettingsOf(File.ReadAllText(path));
+            var config = Reader.Deserialize<StangentConfig?>(text) ?? new StangentConfig();
+            config.RemovedSettings.AddRange(removed);
+            if (config.Pages.FrameworkShare is < 1 or > 100)
+                throw new StangentException("invalid_config", $"{path}: pages.frameworkShare is {config.Pages.FrameworkShare}; it is a percent of the app's flows, 1 to 100.");
+            if (config.Pages.ChartCap < 1)
+                throw new StangentException("invalid_config", $"{path}: pages.chartCap is {config.Pages.ChartCap}; it is a number of chart nodes, at least 1.");
+            foreach (var lib in config.Flows.OutsideLibraries)
+                if (string.IsNullOrWhiteSpace(lib) || !System.Text.RegularExpressions.Regex.IsMatch(lib, @"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$"))
+                    throw new StangentException("invalid_config", $"{path}: flows.outsideLibraries has '{lib}'; each entry is a namespace (or namespace and type), such as Acme.Billing.");
             if (config.Version != 1)
                 throw new StangentException("unsupported_config", $"{path}: version {config.Version} is not supported (expected 1).");
             return config;
         }
         catch (YamlException e)
         {
-            throw new StangentException("invalid_config", $"{path}: {e.Message}");
+            // A setting cut with the old link route (D342) says so, rather than only that YAML didn't know it.
+            var cut = CutKeys.FirstOrDefault(k => e.Message.Contains($"Property '{k}' not found", StringComparison.Ordinal));
+            throw new StangentException("invalid_config", cut is null ? $"{path}: {e.Message}" : $"{path}: {e.Message} `{cut}` was cut with the old link route (D342); take it out of stangent.yaml.");
         }
     }
+
+    /// <summary>Switches removed by D381 (D388): a key path, top level or one level down. <c>ai.enabled</c> stays: it is a client's
+    /// "no external AI" rule (D24), not a component switch.</summary>
+    public static readonly string[] RemovedKeys =
+        ["components", "detectors", "history.enabled", "fsd.findings", "fsd.attachmentHome", "fsd.compareTables", "tickets.aiPoints"];
+
+    /// <summary>Takes the removed keys out of the YAML, so a stangent.yaml written before D381 still loads, and names those it held.</summary>
+    internal static (string Text, List<string> Removed) RemovedSettingsOf(string text)
+    {
+        var stream = new YamlDotNet.RepresentationModel.YamlStream();
+        try { stream.Load(new StringReader(text)); }
+        catch (YamlException) { return (text, []); } // the deserializer reports it with its line
+        if (stream.Documents.Count == 0 || stream.Documents[0].RootNode is not YamlDotNet.RepresentationModel.YamlMappingNode root) return (text, []);
+        var removed = new List<string>();
+        foreach (var key in RemovedKeys)
+        {
+            var parts = key.Split('.');
+            var map = root;
+            if (parts.Length == 2)
+            {
+                if (!map.Children.TryGetValue(new YamlDotNet.RepresentationModel.YamlScalarNode(parts[0]), out var inner) || inner is not YamlDotNet.RepresentationModel.YamlMappingNode m) continue;
+                map = m;
+            }
+            if (map.Children.Remove(new YamlDotNet.RepresentationModel.YamlScalarNode(parts[^1]))) removed.Add(key);
+        }
+        if (removed.Count == 0) return (text, removed);
+        var w = new StringWriter();
+        stream.Save(w, assignAnchors: false);
+        return (w.ToString(), removed);
+    }
+
+    /// <summary>The <c>fsd:</c> and <c>spec:</c> settings D342 cut, named in the error a stangent.yaml still holding one gets.</summary>
+    static readonly string[] CutKeys = ["disprove", "skipApproval", "attachmentsInChecks", "judgeFinerVerdicts", "groupSections", "groupMaxChars", "ask", "askMaxPages"];
 
     static void AddGitIgnoreLines(string path)
     {

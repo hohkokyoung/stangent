@@ -1,0 +1,161 @@
+{
+  "repo": "kavita",
+  "commit": "2d225367f0310ac7354423b772a4c6a7caf63fd2",
+  "id": "scan-libraries-job",
+  "name": "Scan libraries job",
+  "kind": "job",
+  "start": {
+    "what": "the recurring job registration for ScanLibrariesTaskId with the TaskScan cron",
+    "at": "Kavita.Services/TaskScheduler.cs:175",
+    "code": "RecurringJob.AddOrUpdate(ScanLibrariesTaskId, () => EnqueueScanLibraries(false),"
+  },
+  "actor": {
+    "who": "the system (Hangfire recurring job), on the cron from the TaskScan setting; daily when the setting is invalid",
+    "why": "registered by ScheduleTasks from the TaskScan server setting; no user starts it",
+    "at": "Kavita.Services/TaskScheduler.cs:164",
+    "code": "var setting = (await _unitOfWork.SettingsRepository.GetSettingAsync(ServerSettingKey.TaskScan, cancellationToken)).Value;"
+  },
+  "checks": [],
+  "steps": [
+    {
+      "n": 1,
+      "from": null,
+      "what": "the job body: EnqueueScanLibraries(false) decides whether to queue the scan now or later",
+      "at": "Kavita.Services/TaskScheduler.cs:522",
+      "code": "public async Task EnqueueScanLibraries(bool force = false)"
+    },
+    {
+      "n": 2,
+      "from": 1,
+      "what": "reads the scan jobs Hangfire holds (enqueued, scheduled, processing)",
+      "at": "Kavita.Services/TaskScheduler.cs:529",
+      "code": "var jobs = ScanJobQueue.Read().Jobs;",
+      "end": {
+        "kind": "database",
+        "detail": "Hangfire job storage (ScanJobQueue.Read: monitoring API reads of enqueued, scheduled and processing jobs)"
+      }
+    },
+    {
+      "n": 3,
+      "from": 1,
+      "what": "queues ScannerService.ScanLibraries(force) on the scan queue",
+      "at": "Kavita.Services/TaskScheduler.cs:538",
+      "code": "ScanJobQueue.Enqueue(() => _scannerService.ScanLibraries(force));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Services/TaskScheduler.cs:536",
+          "code": "if (!jobs.IsScannerBusy())"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/TaskScheduler.cs:530",
+          "code": "if (jobs.FindWaiting(ScanTarget.AllLibraries, force) is { } waiting)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Hangfire job storage (BackgroundJob.Enqueue through ScanJobQueue.Enqueue)"
+      }
+    },
+    {
+      "n": 4,
+      "from": 1,
+      "what": "when the scanner is busy, schedules EnqueueScanLibraries(force) again 3 hours later",
+      "at": "Kavita.Services/TaskScheduler.cs:542",
+      "code": "delayedJobId = ScanJobQueue.Schedule(() => EnqueueScanLibraries(force), runAt);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/TaskScheduler.cs:536",
+          "code": "if (!jobs.IsScannerBusy())"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/TaskScheduler.cs:530",
+          "code": "if (jobs.FindWaiting(ScanTarget.AllLibraries, force) is { } waiting)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Hangfire job storage (BackgroundJob.Schedule through ScanJobQueue.Schedule)"
+      }
+    },
+    {
+      "n": 5,
+      "from": 1,
+      "what": "tells admins in the UI that the scan was delayed",
+      "at": "Kavita.Services/TaskScheduler.cs:547",
+      "code": "await _eventHub.SendMessageAsync(MessageFactory.Info, MessageFactory.ScanLibrariesDelayedEvent(runAt.UtcDateTime));",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/TaskScheduler.cs:536",
+          "code": "if (!jobs.IsScannerBusy())"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/TaskScheduler.cs:530",
+          "code": "if (jobs.FindWaiting(ScanTarget.AllLibraries, force) is { } waiting)"
+        }
+      ],
+      "end": {
+        "kind": "message",
+        "detail": "SignalR 'Info' message with code scan-libraries-delayed (EventHub.SendMessageAsync, admins only)"
+      }
+    }
+  ],
+  "exits": [],
+  "links": [
+    {
+      "kind": "runs-later",
+      "to": "ScannerService.ScanLibraries (scans every library, forced=false)",
+      "at": "Kavita.Services/TaskScheduler.cs:538",
+      "code": "ScanJobQueue.Enqueue(() => _scannerService.ScanLibraries(force));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Services/TaskScheduler.cs:536",
+          "code": "if (!jobs.IsScannerBusy())"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/TaskScheduler.cs:530",
+          "code": "if (jobs.FindWaiting(ScanTarget.AllLibraries, force) is { } waiting)"
+        }
+      ]
+    },
+    {
+      "kind": "runs-later",
+      "to": "EnqueueScanLibraries again in 3 hours (this job body)",
+      "at": "Kavita.Services/TaskScheduler.cs:542",
+      "code": "delayedJobId = ScanJobQueue.Schedule(() => EnqueueScanLibraries(force), runAt);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/TaskScheduler.cs:536",
+          "code": "if (!jobs.IsScannerBusy())"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/TaskScheduler.cs:530",
+          "code": "if (jobs.FindWaiting(ScanTarget.AllLibraries, force) is { } waiting)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "ActivityStoreService.ingest handles the Info event and adds an activity entry",
+      "at": "UI/Web/src/app/_services/activity-store.service.ts:137",
+      "code": "case EVENTS.Info:"
+    }
+  ],
+  "notes": [
+    "Registered in TaskScheduler.ScheduleTasks (line 159), called at startup (StartupTasksHostedService.cs:20) and again after the scan schedule setting changes (SettingsService.cs:494). Line 168 registers the same job with Cron.Daily when the TaskScan setting is not a valid cron; line 175 registers it with the converted cron of the setting.",
+    "The registered method is EnqueueScanLibraries(false) (line 522); it does not scan itself. The scan is a separate Hangfire job, ScannerService.ScanLibraries (ScannerService.cs:564, queue 'scan'), so it is a runs-later link and its body is not walked here.",
+    "In-memory guards not made steps: jobs.FindWaiting(ScanTarget.AllLibraries, force) (line 530, returns early with a log line when a scan of every library is already waiting) and jobs.IsScannerBusy() (line 536); both are extensions in ScanJobExtensions.cs over the snapshot read at 529. Both early returns are plain 'return;', not exits.",
+    "The code between lines 527 and 543 runs inside lock (ScanRequestLock) so two requests cannot both see an empty queue.",
+    "The job has no HTTP exits, checks or request validation; actor is the system on the cron schedule from the TaskScan server setting.",
+    "ScanJobQueue.Enqueue/Schedule/Read only wrap Hangfire's BackgroundJob and monitoring API (ScanJobQueue.cs:32, 38, 72), so they are not walked further."
+  ]
+}

@@ -1,0 +1,62 @@
+version: 4
+entries:
+  - id: "S001"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "8"
+      quote: ""
+    page:
+      id: "page:/browse/genres"
+      quote: "A Browse Genres screen exists, but the FSD describes only People and Tags under Browse."
+    note: "A Browse Genres screen exists, but the FSD describes only People and Tags under Browse."
+  - id: "S002"
+    state: "undocumented"
+    fsd:
+      doc: "kavita-fsd"
+      section: "8"
+      quote: ""
+    page:
+      id: "page:/browse/annotations"
+      quote: "An All Annotations screen exists under Browse, but the FSD does not describe it."
+    note: "An All Annotations screen exists under Browse, but the FSD does not describe it."
+  - id: "S003"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "8.1"
+      quote: "The People screen lists people with the number of series and issues each appears in, along with a filter panel and a jump bar, and clicking a person opens that person's page."
+    page: null
+    note: "A People browse route renders BrowsePeopleComponent. This match is based on the route only. I did not read the component for the counts, filter panel or jump bar."
+  - id: "S004"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "9.1"
+      quote: "A new password must be at least 8 characters long."
+    page: null
+    note: "The server requires a minimum password length of 6, not 8."
+  - id: "S005"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.1"
+      quote: "Days of Backups and Days of Logs each accept a value from 1 to 30 and both default to 30."
+    page: null
+    note: "The server rejects Days of Backups and Days of Logs values above 30 or below 1. I did not read the default of 30, so only the range is confirmed."
+  - id: "S006"
+    state: "conflict"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Manage Collections is turned on by default for a new library."
+    page: null
+    note: "The new-library form defaults manageCollections to false."
+  - id: "S007"
+    state: "match"
+    fsd:
+      doc: "kavita-fsd"
+      section: "10.3"
+      quote: "Include in Dashboard and Include in Search are turned on by default."
+    page: null
+    note: "Both includeInDashboard and includeInSearch default to true."

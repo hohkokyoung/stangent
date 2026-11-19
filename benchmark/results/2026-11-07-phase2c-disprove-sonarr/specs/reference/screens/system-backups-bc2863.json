@@ -1,0 +1,287 @@
+{
+  "codeTitle": "/system/backups · Backups",
+  "entry": "page:tsconfig.json|/system/backups",
+  "generated": {
+    "bundleHash": "33b7d2e1ead04dbe0afb3efed39d22fbb0d4a8f06950c6db1454c19bb06d80fc",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 42279,
+      "cutOff": 6,
+      "depth": 6,
+      "points": 175
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 23448,
+      "calls": 1,
+      "costUsd": 0.098451,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5722,
+      "outputTokens": 448
+    },
+    "writer": {
+      "cacheReadTokens": 23052,
+      "cacheWriteTokens": 23140,
+      "calls": 1,
+      "costUsd": 0.150958,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 28686,
+      "outputTokens": 5378
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/system/backups",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/Backups.tsx#Backups",
+          "ts|frontend/src/Commands/useCommands.ts#useCommandExecuting",
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "A1",
+        "text": "\"Backup Now\" toolbar button runs the backup command and spins while it is queued or started."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/Backups.tsx#Backups"
+        ],
+        "id": "A2",
+        "text": "\"Restore Backup\" toolbar button opens the restore dialog for uploading a backup file."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/useBackups.ts#useBackups"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/system/backup",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/system/backup"
+        ],
+        "id": "A3",
+        "text": "The page loads the backup list from the system backup endpoint."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/BackupRow.tsx#BackupRow",
+          "ts|frontend/src/System/Backup/useBackups.ts#useRestoreBackup"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/system/backup/restore/{id:int}",
+          "endpoint:Sonarr.Api.V5|POST /api/v5/system/backup/restore/{id:int}"
+        ],
+        "id": "A4",
+        "text": "A row's restore button opens the restore dialog for that backup; Restore posts to the restore endpoint for its id."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/RestoreBackupModalContent.tsx#RestoreBackupModalContent",
+          "ts|frontend/src/System/Backup/useBackups.ts#useRestoreBackupUpload"
+        ],
+        "id": "A5",
+        "text": "With a chosen file and no backup id, Restore uploads the file as form field \"restore\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/BackupRow.tsx#BackupRow",
+          "ts|frontend/src/System/Backup/useBackups.ts#useDeleteBackup"
+        ],
+        "id": "A6",
+        "text": "A row's delete button opens a danger confirmation \"DeleteBackup\"; confirming deletes the backup and closes the dialog on success."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/RestoreBackupModalContent.tsx#RestoreBackupModalContent"
+        ],
+        "id": "A7",
+        "text": "Cancel closes the restore dialog."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R1",
+        "text": "The same backup command cannot be run again within 5 seconds; the repeat is ignored with a console warning."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/useBackups.ts#useBackups"
+        ],
+        "id": "R2",
+        "text": "The backup list is treated as fresh for 30 seconds."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/RestoreBackupModalContent.tsx#RestoreBackupModalContent"
+        ],
+        "id": "R3",
+        "text": "The Restore button is disabled when there is no backup id and no file chosen, or while restoring, restarting or reloading."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/RestoreBackupModalContent.tsx#getErrorMessage"
+        ],
+        "id": "R4",
+        "text": "The restore error message is the server's message, or \"ErrorRestoringBackup\" when none is given."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/Backups.tsx#Backups"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Backups\" with the heading scope \"System\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/Backups.tsx#Backups"
+        ],
+        "id": "S2",
+        "text": "A loading indicator is shown while backups are being fetched."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/Backups.tsx#Backups"
+        ],
+        "id": "S3",
+        "text": "If loading fails, a danger alert shows the \"BackupsLoadError\" message."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/Backups.tsx#Backups"
+        ],
+        "id": "S4",
+        "text": "If there are no backups and no error after loading, an info alert shows \"NoBackupsAreAvailable\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/Backups.tsx#Backups",
+          "ts|frontend/src/System/Backup/BackupRow.tsx#BackupRow"
+        ],
+        "id": "S5",
+        "text": "When backups exist, a table lists each one as a row with an icon, name link, size, relative date and action buttons."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/BackupRow.tsx#BackupRow"
+        ],
+        "id": "S6",
+        "text": "The row icon and tooltip depend on backup type: manual shows \"Manual\", update shows \"BeforeUpdate\", anything else shows \"Scheduled\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/BackupRow.tsx#BackupRow"
+        ],
+        "id": "S7",
+        "text": "The backup name links to the backup file path under the app's URL base."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/Number/formatBytes.ts#formatBytes",
+          "ts|frontend/src/System/Backup/BackupRow.tsx#BackupRow"
+        ],
+        "id": "S8",
+        "text": "Backup size is shown in human-readable binary units rounded to 1 decimal; a non-numeric size shows blank."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/RestoreBackupModalContent.tsx#RestoreBackupModalContent",
+          "ts|frontend/src/System/Backup/RestoreBackupModalContent.tsx#getStepIconProps"
+        ],
+        "id": "S9",
+        "text": "The restore dialog shows three steps: Restore, Restart and Reload, each with a pending, spinning, success or error icon."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/RestoreBackupModalContent.tsx#RestoreBackupModalContent"
+        ],
+        "id": "S10",
+        "text": "For a specific backup the restore dialog asks \"WouldYouLikeToRestoreBackup\" with the backup name; otherwise it shows a file input."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/Backups.tsx#Backups"
+        ],
+        "id": "E1",
+        "text": "When the backup command finishes, the backup list is reloaded."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/useBackups.ts#useRestoreBackup",
+          "ts|frontend/src/System/Backup/useBackups.ts#useRestoreBackupUpload",
+          "ts|frontend/src/System/Backup/useBackups.ts#useDeleteBackup"
+        ],
+        "id": "E2",
+        "text": "Successful restore, upload or delete invalidates the cached backup list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/RestoreBackupModalContent.tsx#RestoreBackupModalContent",
+          "ts|frontend/src/System/useSystem.ts#useRestart"
+        ],
+        "id": "E3",
+        "text": "After a successful restore the app posts a restart request, marks the app as restarting and starts pinging the server."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Backup/RestoreBackupModalContent.tsx#RestoreBackupModalContent"
+        ],
+        "id": "E4",
+        "text": "When the restart ends, the browser page is reloaded."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/App/appStore.ts#pingServerAfterTimeout"
+        ],
+        "id": "E5",
+        "text": "While restarting, the server status is polled every 5 seconds until it responds or returns 401."
+      }
+    ]
+  },
+  "title": "Backups",
+  "unknowns": [
+    {
+      "file": "frontend/src/App/appStore.ts",
+      "in": "ts|frontend/src/App/appStore.ts#pingServerAfterTimeout",
+      "line": 122,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/System/Backup/useBackups.ts",
+      "in": "ts|frontend/src/System/Backup/useBackups.ts#useDeleteBackup",
+      "line": 26,
+      "reason": "HTTP DELETE {base}system/backup/{*} matched no backend endpoint"
+    },
+    {
+      "file": "frontend/src/System/Backup/useBackups.ts",
+      "in": "ts|frontend/src/System/Backup/useBackups.ts#useRestoreBackupUpload",
+      "line": 79,
+      "reason": "HTTP POST to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

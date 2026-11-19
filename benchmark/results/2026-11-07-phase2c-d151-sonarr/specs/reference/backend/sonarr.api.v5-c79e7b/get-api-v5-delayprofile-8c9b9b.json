@@ -1,0 +1,110 @@
+{
+  "codeTitle": "GET /api/v5/DelayProfile",
+  "entry": "endpoint:Sonarr.Api.V5|GET /api/v5/DelayProfile",
+  "generated": {
+    "bundleHash": "8cf02866c8442c34e659492943d9440a75b276873b051bfa4f4469445fa4bd26",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 9805,
+      "cutOff": 6,
+      "depth": 4,
+      "points": 32
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6883,
+      "calls": 1,
+      "costUsd": 0.028241,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1961,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 5159,
+      "calls": 1,
+      "costUsd": 0.031076,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6026,
+      "outputTokens": 1016
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|GET /api/v5/DelayProfile",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Delay.DelayProfileController.GetAll",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/DelayProfile"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/DelayProfile"
+        ],
+        "id": "A1",
+        "text": "A caller sends GET to retrieve every stored delay profile, with no parameters."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Delay.DelayProfileService.All",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Delay.DelayProfileController.GetAll"
+        ],
+        "id": "R1",
+        "text": "No filtering or paging is applied; all profiles from the repository are returned."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Delay.DelayProfileController.GetAll"
+        ],
+        "id": "R2",
+        "text": "The response is application/json with an Ok result."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Delay.DelayProfileController.GetAll"
+        ],
+        "id": "S1",
+        "text": "Returns a JSON list of all delay profiles."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Delay.DelayProfileResourceMapper.ToResource(NzbDrone.Core.Profiles.Delay.DelayProfile)"
+        ],
+        "id": "S2",
+        "text": "Each profile shows Id, EnableUsenet, EnableTorrent, PreferredProtocol, UsenetDelay, TorrentDelay, BypassIfHighestQuality, BypassIfAboveCustomFormatScore, MinimumCustomFormatScore, Order and Tags."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Profiles.Delay.DelayProfileResourceMapper.ToResource(NzbDrone.Core.Profiles.Delay.DelayProfile)"
+        ],
+        "id": "S3",
+        "text": "Tags is returned as a set of integer tag ids."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Delay.DelayProfileService.All",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.All"
+        ],
+        "id": "E1",
+        "text": "Read-only: it loads all delay profiles from the data store through the repository and changes nothing."
+      }
+    ]
+  },
+  "title": "List delay profiles (GET /api/v5/DelayProfile)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

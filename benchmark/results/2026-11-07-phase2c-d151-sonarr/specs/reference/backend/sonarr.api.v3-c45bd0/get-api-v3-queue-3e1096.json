@@ -1,0 +1,177 @@
+{
+  "codeTitle": "GET /api/v3/Queue",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/Queue",
+  "generated": {
+    "bundleHash": "6fd22bcca40fbb29b48af6881288a039a46ac9f8d864fc4846971e1614b4a752",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 34136,
+      "cutOff": 158,
+      "depth": 4,
+      "points": 142
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 19458,
+      "calls": 1,
+      "costUsd": 0.084361,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5844,
+      "outputTokens": 635
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 34124,
+      "calls": 2,
+      "costUsd": 0.209636,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 35847,
+      "outputTokens": 7258
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/Queue",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Queue.QueueController.GetQueue(Sonarr.Http.PagingRequestResource,System.Boolean,System.Boolean,System.Boolean,System.Int32[],System.Nullable{NzbDrone.Core.Indexers.DownloadProtocol},System.Int32[],System.Int32[],NzbDrone.Core.Queue.QueueStatus[])"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Queue"
+        ],
+        "id": "A1",
+        "text": "A caller requests the queue with optional paging, includeUnknownSeriesItems, includeSeries, includeEpisode, seriesIds, protocol, languages, quality and status parameters."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.PagingResource`1.#ctor(Sonarr.Http.PagingRequestResource)"
+        ],
+        "id": "R1",
+        "text": "Defaults: page 1, page size 10, sort direction descending when none is given."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Queue.QueueController.GetQueue(Sonarr.Http.PagingRequestResource,System.Boolean,System.Boolean,System.Boolean,System.Int32[],System.Nullable{NzbDrone.Core.Indexers.DownloadProtocol},System.Int32[],System.Int32[],NzbDrone.Core.Queue.QueueStatus[])"
+        ],
+        "id": "R2",
+        "text": "Allowed sort keys are added, downloadClient, episode, episode.airDateUtc, episode.title, episodes.airDateUtc, episodes.title, estimatedCompletionTime, indexer, language, languages, progress, protocol, quality, series.sortTitle, size, status, timeleft and title (case-insensitive)."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Queue.QueueController.GetQueue(Sonarr.Http.PagingRequestResource,System.Boolean,System.Boolean,System.Boolean,System.Int32[],System.Nullable{NzbDrone.Core.Indexers.DownloadProtocol},System.Int32[],System.Int32[],NzbDrone.Core.Queue.QueueStatus[])",
+          "Sonarr.Http|M:Sonarr.Http.PagingResourceMapper.MapToPagingSpec``2(Sonarr.Http.PagingResource{``0},System.Collections.Generic.HashSet{System.String},System.String,NzbDrone.Core.Datastore.SortDirection)"
+        ],
+        "id": "R3",
+        "text": "If the sort key is missing or not allowed, it defaults to timeleft; a default sort direction becomes ascending."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Queue.QueueController.GetQueue(NzbDrone.Core.Datastore.PagingSpec{NzbDrone.Core.Queue.Queue},System.Collections.Generic.HashSet{System.Int32},System.Nullable{NzbDrone.Core.Indexers.DownloadProtocol},System.Collections.Generic.HashSet{System.Int32},System.Collections.Generic.HashSet{System.Int32},System.Collections.Generic.HashSet{NzbDrone.Core.Queue.QueueStatus},System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Queue.QueueController.GetQueue(Sonarr.Http.PagingRequestResource,System.Boolean,System.Boolean,System.Boolean,System.Int32[],System.Nullable{NzbDrone.Core.Indexers.DownloadProtocol},System.Int32[],System.Int32[],NzbDrone.Core.Queue.QueueStatus[])"
+        ],
+        "id": "R4",
+        "text": "Queue items without a series are excluded unless includeUnknownSeriesItems is true; includeUnknownSeriesItems, includeSeries and includeEpisode default to false."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Queue.QueueController.GetQueue(NzbDrone.Core.Datastore.PagingSpec{NzbDrone.Core.Queue.Queue},System.Collections.Generic.HashSet{System.Int32},System.Nullable{NzbDrone.Core.Indexers.DownloadProtocol},System.Collections.Generic.HashSet{System.Int32},System.Collections.Generic.HashSet{System.Int32},System.Collections.Generic.HashSet{NzbDrone.Core.Queue.QueueStatus},System.Boolean)"
+        ],
+        "id": "R5",
+        "text": "Items can be filtered by series ids, protocol, languages (any match), quality id and status; all given filters must match."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Queue.QueueController.GetQueue(NzbDrone.Core.Datastore.PagingSpec{NzbDrone.Core.Queue.Queue},System.Collections.Generic.HashSet{System.Int32},System.Nullable{NzbDrone.Core.Indexers.DownloadProtocol},System.Collections.Generic.HashSet{System.Int32},System.Collections.Generic.HashSet{System.Int32},System.Collections.Generic.HashSet{NzbDrone.Core.Queue.QueueStatus},System.Boolean)"
+        ],
+        "id": "R6",
+        "text": "Ties in sorting are broken by download progress, highest first."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Queue.QueueController.GetQueue(NzbDrone.Core.Datastore.PagingSpec{NzbDrone.Core.Queue.Queue},System.Collections.Generic.HashSet{System.Int32},System.Nullable{NzbDrone.Core.Indexers.DownloadProtocol},System.Collections.Generic.HashSet{System.Int32},System.Collections.Generic.HashSet{System.Int32},System.Collections.Generic.HashSet{NzbDrone.Core.Queue.QueueStatus},System.Boolean)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.EnumerableExtensions.Empty``1(System.Collections.Generic.IEnumerable{``0})"
+        ],
+        "id": "R7",
+        "text": "If the requested page is empty and greater than 1, the page is reset to the last page (minimum 1) and records are re-read."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.Pending.PendingReleaseService.GetPendingQueueObsolete"
+        ],
+        "id": "R8",
+        "text": "Pending releases other than fallback ones are listed per episode, and only the best quality release per episode is kept. Pending releases with no matching episode are dropped from the result."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Extensions.RequestExtensions.ApplyToPage``2(NzbDrone.Core.Datastore.PagingSpec{``1},System.Func{NzbDrone.Core.Datastore.PagingSpec{``1},NzbDrone.Core.Datastore.PagingSpec{``1}},System.Converter{``1,``0})"
+        ],
+        "id": "S1",
+        "text": "Returns a paged list of queue items with page, page size, sort key, sort direction, total records and the records."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Queue.QueueResourceMapper.ToResource(NzbDrone.Core.Queue.Queue,System.Boolean,System.Boolean)"
+        ],
+        "id": "S2",
+        "text": "Each queue record shows ids (queue item, series, episode), season number, languages, quality, custom formats, custom format score, size, title, estimated completion time, added time, status, tracked download status and state, status messages, error message, download id, protocol, download client, indexer, output path and whether the episode has a file."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Queue.QueueResourceMapper.ToResource(NzbDrone.Core.Queue.Queue,System.Boolean,System.Boolean)"
+        ],
+        "id": "S3",
+        "text": "Each record also carries the obsolete sizeleft and timeleft values."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Queue.QueueResourceMapper.ToResource(NzbDrone.Core.Queue.Queue,System.Boolean,System.Boolean)"
+        ],
+        "id": "S4",
+        "text": "Series details are included in a record only when includeSeries is true and the item has a series; episode details only when includeEpisode is true and the item has an episode."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Queue.QueueResourceMapper.ToResource(NzbDrone.Core.Queue.Queue,System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfile.CalculateCustomFormatScore(System.Collections.Generic.List{NzbDrone.Core.CustomFormats.CustomFormat})"
+        ],
+        "id": "S5",
+        "text": "The custom format score is the sum of profile scores for the item's custom formats, or 0 if there is no series quality profile."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Queue.QueueController.GetQueue(NzbDrone.Core.Datastore.PagingSpec{NzbDrone.Core.Queue.Queue},System.Collections.Generic.HashSet{System.Int32},System.Nullable{NzbDrone.Core.Indexers.DownloadProtocol},System.Collections.Generic.HashSet{System.Int32},System.Collections.Generic.HashSet{System.Int32},System.Collections.Generic.HashSet{NzbDrone.Core.Queue.QueueStatus},System.Boolean)"
+        ],
+        "id": "S6",
+        "text": "The list combines the current download queue with pending releases."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Get download queue (GET /api/v3/Queue)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "Pending releases without matching episodes get the error message but have a null episode. They are then dropped by the dedupe step, so they never appear in the returned list.",
+        "id": "F1",
+        "kind": "contradicted",
+        "outcome": "fixed",
+        "quote": "var deduped = queued.Where(q => q.Episode != null).GroupBy(q => q.Episode.Id).Select(g =>",
+        "reason": "Removed the error message claim; the statement now says pending releases without a matching episode are dropped by the dedupe step.",
+        "statement": "R8",
+        "statementText": "Pending releases (excluding fallback ones) are listed per episode; one without matching episodes gets the error message \"Unable to find matching episode(s)\". Only the best quality release per episode is kept."
+      }
+    ]
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "codeTitle": "GET /api/v3/Release",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/Release",
+  "generated": {
+    "bundleHash": "5558d3ca084ab71a52b746c19fdc51071d0a701a4bc11dd2bb42494f12c79eb9",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 20169,
+      "cutOff": 34,
+      "depth": 4,
+      "points": 26
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 13097,
+      "calls": 1,
+      "costUsd": 0.055067,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3197,
+      "outputTokens": 250
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 9879,
+      "calls": 1,
+      "costUsd": 0.065556,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 14484,
+      "outputTokens": 2576
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/Release",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.GetReleases(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.GetEpisodeReleases(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Release"
+        ],
+        "id": "A1",
+        "text": "With an episodeId, searches indexers for that episode and returns the prioritized releases."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.GetReleases(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.GetSeasonReleases(System.Int32,System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Release"
+        ],
+        "id": "A2",
+        "text": "With both seriesId and seasonNumber (and no episodeId), searches for that season and returns the prioritized releases."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.GetRss",
+          "Sonarr.Core|M:NzbDrone.Core.Indexers.FetchAndParseRssService.Fetch",
+          "Sonarr.Core|M:NzbDrone.Core.DecisionEngine.DownloadDecisionMaker.GetRssDecision(System.Collections.Generic.List{NzbDrone.Core.Parser.Model.ReleaseInfo},System.Boolean)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Release"
+        ],
+        "id": "A3",
+        "text": "With none of the parameters, fetches the latest releases from RSS-enabled indexers, makes decisions on them and returns them prioritized."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.GetReleases(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})",
+          "Sonarr.Core|M:NzbDrone.Core.Exceptions.NzbDroneClientException.#ctor(System.Net.HttpStatusCode,System.String)"
+        ],
+        "id": "R1",
+        "text": "If only one of seriesId or seasonNumber is given (without episodeId), the request fails with 400 Bad Request: \"seriesId and seasonNumber must be provided together\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.GetReleases(System.Nullable{System.Int32},System.Nullable{System.Int32},System.Nullable{System.Int32})"
+        ],
+        "id": "R2",
+        "text": "If episodeId is given it takes precedence over seriesId and seasonNumber."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.GetEpisodeReleases(System.Int32)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.GetSeasonReleases(System.Int32,System.Int32)"
+        ],
+        "id": "R3",
+        "text": "A search failure in episode or season search returns 400 Bad Request with the failure message; any other error returns 500 Internal Server Error with the error message."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.GetEpisodeReleases(System.Int32)"
+        ],
+        "id": "R4",
+        "text": "Episode search is run as user-invoked and interactive."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.GetSeasonReleases(System.Int32,System.Int32)"
+        ],
+        "id": "R5",
+        "text": "Season search is run with missingOnly false, monitoredOnly false, user-invoked and interactive."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseControllerBase.MapDecisions(System.Collections.Generic.IEnumerable{NzbDrone.Core.DecisionEngine.DownloadDecision})",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseControllerBase.MapDecision(NzbDrone.Core.DecisionEngine.DownloadDecision,System.Int32)"
+        ],
+        "id": "R6",
+        "text": "Each release's release weight is its position in the prioritized list."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseControllerBase.MapDecision(NzbDrone.Core.DecisionEngine.DownloadDecision,System.Int32)"
+        ],
+        "id": "R7",
+        "text": "Quality weight is the quality's index in the quality profile ×100, plus the revision's Real ×10, plus the revision Version."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.SeasonSearch(System.Int32,System.Int32,System.Boolean,System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "R8",
+        "text": "A season search returns no releases when there are no episodes in the season (after the missing-only filter, if used)."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Indexers.FetchAndParseRssService.Fetch"
+        ],
+        "id": "R9",
+        "text": "The RSS fetch returns an empty list and logs a warning when no indexers are RSS-enabled."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseControllerBase.MapDecisions(System.Collections.Generic.IEnumerable{NzbDrone.Core.DecisionEngine.DownloadDecision})",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseControllerBase.MapDecision(NzbDrone.Core.DecisionEngine.DownloadDecision,System.Int32)"
+        ],
+        "id": "S1",
+        "text": "Returns a list of releases, each mapped from a download decision, with a release weight and a quality weight."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Indexers.FetchAndParseRssService.Fetch"
+        ],
+        "id": "E1",
+        "text": "Queries all RSS-enabled indexers in parallel when no filter is given."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.GetEpisodeReleases(System.Int32)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Indexers.ReleaseController.GetSeasonReleases(System.Int32,System.Int32)"
+        ],
+        "id": "E2",
+        "text": "Unexpected errors in episode or season search are logged."
+      }
+    ]
+  },
+  "title": "Get releases (interactive search / RSS)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

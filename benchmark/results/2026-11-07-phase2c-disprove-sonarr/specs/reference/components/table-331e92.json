@@ -1,0 +1,176 @@
+{
+  "codeTitle": "Table",
+  "entry": "ts|frontend/src/Components/Table/Table.tsx#Table",
+  "generated": {
+    "bundleHash": "73fdae2bf349aba831ad5187ef3530f70b655206265badbb19c35f402c257f0c",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 17316,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 91
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 10352,
+      "calls": 1,
+      "costUsd": 0.044887,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4189,
+      "outputTokens": 330
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 8014,
+      "calls": 1,
+      "costUsd": 0.048436,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 9958,
+      "outputTokens": 1610
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Components/Table/Table.tsx#Table",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/TableHeaderCell.tsx#TableHeaderCell"
+        ],
+        "id": "A1",
+        "text": "Pressing a sortable header cell calls the sort handler with the column name, plus the column's fixed sort direction if it has one."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/TableOptions/TableOptionsModalWrapper.tsx#TableOptionsModalWrapper"
+        ],
+        "id": "A2",
+        "text": "Pressing the table options button opens the table options modal; closing the modal hides it."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/TableSelectAllHeaderCell.tsx#TableSelectAllHeaderCell"
+        ],
+        "id": "A3",
+        "text": "Changing the select-all checkbox calls the select-all change handler."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/Table.tsx#Table"
+        ],
+        "id": "R1",
+        "text": "Horizontal scrolling is on by default; when off, the container does not scroll horizontally."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/Table.tsx#Table"
+        ],
+        "id": "R2",
+        "text": "Select-all is off by default and the select-all cell appears only when select-all is true and an onSelectAllChange handler is provided."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/Table.tsx#Table"
+        ],
+        "id": "R3",
+        "text": "The options column header cell is never sortable."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/TableHeaderCell.tsx#TableHeaderCell"
+        ],
+        "id": "R4",
+        "text": "A header cell is sortable only if the column is marked sortable (default false); non-sortable columns render a plain header cell."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/TableHeaderCell.tsx#TableHeaderCell"
+        ],
+        "id": "R5",
+        "text": "A sortable header's aria-sort is 'none' when not the sorted column, otherwise 'ascending' or 'descending'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/TableHeaderCell.tsx#TableHeaderCell"
+        ],
+        "id": "R6",
+        "text": "A column is treated as the sorted column when it is sortable and its name equals the sort key."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "R7",
+        "text": "Translation falls back to the key when no translation exists, and substitutes {tokens} in the text; the appName token is always 'Sonarr'."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/Table.tsx#Table",
+          "ts|frontend/src/Components/Table/TableHeader.tsx#TableHeader"
+        ],
+        "id": "S1",
+        "text": "Renders an HTML table with a header row followed by whatever rows are passed in as children, inside a scroll container."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/Table.tsx#Table"
+        ],
+        "id": "S2",
+        "text": "Shows one header cell per column that is visible; columns that are not visible are omitted."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/Table.tsx#Table"
+        ],
+        "id": "S3",
+        "text": "Each normal header cell shows the column label, calling it first if the label is a function."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/TableHeaderCell.tsx#TableHeaderCell"
+        ],
+        "id": "S4",
+        "text": "A sortable header cell that is the current sort column shows an ascending or descending sort icon according to the sort direction."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/Table.tsx#Table",
+          "ts|frontend/src/Components/Table/TableSelectAllHeaderCell.tsx#TableSelectAllHeaderCell"
+        ],
+        "id": "S5",
+        "text": "When select-all is on and a select-all handler is given, a first header cell with a checkbox labelled 'SelectAll' (translated) is shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/TableSelectAllHeaderCell.tsx#TableSelectAllHeaderCell"
+        ],
+        "id": "S6",
+        "text": "The select-all checkbox is checked when all are selected, unchecked when all are unselected, and in an indeterminate (null) state otherwise."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Table/Table.tsx#Table",
+          "ts|frontend/src/Components/Table/TableOptions/TableOptionsButton.tsx#TableOptionsButton"
+        ],
+        "id": "S7",
+        "text": "For the 'actions' or 'details' column, when a table option change handler is given, the header shows a table options icon button titled 'TableOptions' (translated) instead of a label."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Table component",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

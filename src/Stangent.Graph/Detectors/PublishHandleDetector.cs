@@ -48,12 +48,47 @@ public sealed class PublishHandleDetector : IDetector
                         ctx.AddFact(Name, "handle", handlerId, decl, ("event", eventId), ("interface", name), ("bus", buses.Contains(name) ? "true" : "false"));
                     }
                 }
+                AttributeHandlers(ctx, type);
+            }
+    }
+
+    /// <summary>
+    /// D206: a class registered as a handler by an attribute naming the event's type (<c>[CheckOn(typeof(SeriesUpdatedEvent))]</c>):
+    /// a candidate here, a handler once <see cref="Link"/> finds the type is an event the message system carries. What runs is the
+    /// one method the class overrides from an abstract one, else its one public method; a class with several says nothing.
+    /// </summary>
+    void AttributeHandlers(ExtractContext ctx, INamedTypeSymbol type)
+    {
+        var attributes = type.GetAttributes().Where(a => a.ConstructorArguments.Any(c => c.Kind == TypedConstantKind.Type && c.Value is INamedTypeSymbol)).ToList();
+        if (attributes.Count == 0) return;
+        var methods = type.GetMembers().OfType<IMethodSymbol>().Where(m => m.MethodKind == MethodKind.Ordinary && !m.IsStatic && m.DeclaredAccessibility == Accessibility.Public).ToList();
+        var runs = methods.Where(m => m.OverriddenMethod is { IsAbstract: true }).ToList() is [var only] ? only : methods is [var one] ? one : null;
+        if (runs is null || ctx.NodeId(runs) is not { } handlerId) return;
+        foreach (var a in attributes)
+            foreach (var evt in a.ConstructorArguments.Where(c => c.Kind == TypedConstantKind.Type).Select(c => c.Value).OfType<INamedTypeSymbol>())
+            {
+                if (ctx.NodeId(evt) is not { } eventId || a.ApplicationSyntaxReference?.GetSyntax() is not { } at) continue;
+                var bases = new List<INamedTypeSymbol>();
+                for (var b = evt.BaseType; b is not null; b = b.BaseType) bases.Add(b);
+                var kinds = bases.Concat(evt.AllInterfaces).Select(b => ctx.NodeId(b)).OfType<string>().Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal);
+                ctx.AddFact(Name, "handle-attribute", handlerId, at, ("event", eventId), ("bases", string.Join(" ", kinds)),
+                    ("attribute", a.AttributeClass?.Name ?? ""), ("args", string.Join(", ", evt.TypeArguments.Select(t => t.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)))));
             }
     }
 
     public void Link(LinkContext ctx)
     {
         var handles = ctx.Facts(Name).Where(f => f.Kind == "handle").ToList();
+        // D206: an attribute-registered handler counts when its type is an event: one a handler takes, or a kind of one (an event
+        // implementing the IEvent a catch-all handler takes).
+        var events = handles.Select(f => f["event"]).ToHashSet(StringComparer.Ordinal);
+        foreach (var c in ctx.Facts(Name).Where(f => f.Kind == "handle-attribute").ToList())
+            if (events.Contains(c["event"]) || c["bases"].Split(' ').Any(events.Contains))
+            {
+                var data = new[] { ("event", c["event"]), ("interface", ""), ("bus", "false"), ("attribute", c["attribute"]), ("args", c["args"]) };
+                ctx.AddFact(Name, "handle", c.Owner, c.File, c.Line, data);
+                handles.Add(new Fact(Name, "handle", c.Owner, c.File, c.Line, data.ToDictionary(d => d.Item1, d => d.Item2, StringComparer.Ordinal)));
+            }
         if (handles.Count == 0) return;
         var byEvent = handles.GroupBy(f => f["event"]).ToDictionary(g => g.Key, g => g.Select(f => f.Owner).Distinct().Order(StringComparer.Ordinal).ToList());
         // On a message bus, services often declare their own copy of an integration event and the bus routes by type

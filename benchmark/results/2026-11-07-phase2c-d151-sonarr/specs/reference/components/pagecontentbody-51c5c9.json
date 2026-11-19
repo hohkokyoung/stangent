@@ -1,0 +1,108 @@
+{
+  "codeTitle": "PageContentBody",
+  "entry": "ts|frontend/src/Components/Page/PageContentBody.tsx#PageContentBody",
+  "generated": {
+    "bundleHash": "d8d63926aae4d4e9b8e0cbba562663b60ecee6819a890baacf71303e684e73e3",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 8924,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 19
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 5899,
+      "calls": 1,
+      "costUsd": 0.025855,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3145,
+      "outputTokens": 208
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4289,
+      "calls": 1,
+      "costUsd": 0.026016,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5319,
+      "outputTokens": 858
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Components/Page/PageContentBody.tsx#PageContentBody",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Page/PageContentBody.tsx#PageContentBody",
+          "ts|frontend/src/Helpers/Hooks/useScrollPosition.ts#useScrollPosition",
+          "ts|frontend/src/Utilities/scrollLock.ts#isLocked"
+        ],
+        "id": "A1",
+        "text": "When the user scrolls the content, the scroll position is recorded under the page's scroll position key and the optional onScroll callback is called, unless scrolling is locked."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Page/PageContentBody.tsx#PageContentBody",
+          "ts|frontend/src/Utilities/scrollLock.ts#isLocked"
+        ],
+        "id": "R1",
+        "text": "Scroll events are ignored (not stored and not passed on) while the scroll lock is active."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/useScrollPosition.ts#useScrollPosition"
+        ],
+        "id": "R2",
+        "text": "The initial scroll position is restored from the saved value for the key only when navigating back (POP) and a key is given; otherwise it starts at 0."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/useScrollPosition.ts#useScrollPosition"
+        ],
+        "id": "R3",
+        "text": "Scroll positions are only saved when a scroll position key is provided."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/useScrollPosition.ts#useScrollPosition"
+        ],
+        "id": "R4",
+        "text": "On navigation that is not a back navigation (PUSH or REPLACE), the window scrolls to the top (0, 0) when the path changes."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Page/PageContentBody.tsx#PageContentBody",
+          "ts|frontend/src/Components/Scroller/Scroller.tsx#Scroller"
+        ],
+        "id": "S1",
+        "text": "Shows its child content inside a vertically scrolling container."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/useScrollPosition.ts#useScrollPosition"
+        ],
+        "id": "E1",
+        "text": "The latest scroll position is stored in memory per scroll position key so it can be restored on back navigation."
+      }
+    ]
+  },
+  "title": "Page Content Body (scrolling container)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

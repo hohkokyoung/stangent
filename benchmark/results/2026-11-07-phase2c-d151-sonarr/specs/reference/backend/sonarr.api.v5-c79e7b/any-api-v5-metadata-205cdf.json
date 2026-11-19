@@ -1,0 +1,210 @@
+{
+  "codeTitle": "ANY /api/v5/Metadata",
+  "entry": "endpoint:Sonarr.Api.V5|ANY /api/v5/Metadata",
+  "generated": {
+    "bundleHash": "ee9e498ec6fddd943a426fc20e20877f226909d84a56dbfb3a762a2d6a88609d",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 54647,
+      "cutOff": 154,
+      "depth": 4,
+      "points": 109
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 30633,
+      "calls": 1,
+      "costUsd": 0.126071,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4906,
+      "outputTokens": 336
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 27437,
+      "calls": 1,
+      "costUsd": 0.134618,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 14602,
+      "outputTokens": 2459
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|ANY /api/v5/Metadata",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.CreateProvider(`0,System.Boolean,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "A1",
+        "text": "Create a metadata provider from a JSON body; optional query flags skipTesting and skipValidation."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "A2",
+        "text": "Update a metadata provider by id from a JSON body; optional query flags skipTesting and skipValidation."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.DeleteProvider(System.Int32)"
+        ],
+        "id": "A3",
+        "text": "Delete a metadata provider by id."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "A4",
+        "text": "Fetch a metadata provider by id."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.CreateProvider(`0,System.Boolean,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R1",
+        "text": "On create, the definition is tested only when it is enabled and skipTesting is false. skipTesting defaults to false and skipValidation defaults to None."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R2",
+        "text": "On update, the definition is tested only if it is enabled, skipTesting is false and the definition or its settings changed. It is saved only if it changed."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.GetDefinition(`0,`3,Sonarr.Api.V5.Provider.SkipValidation,System.Boolean)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.Validate(`3,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R3",
+        "text": "Settings are validated when skipValidation is not All and the definition is enabled."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.VerifyValidationResult(FluentValidation.Results.ValidationResult,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "R4",
+        "text": "With skipValidation None, any error or warning fails; with Warnings, only errors fail."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)"
+        ],
+        "id": "R5",
+        "text": "Masked password or API key field values keep the existing stored value."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R6",
+        "text": "For PUT, a body id of 0 is filled from the route id."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Metadata.MetadataResourceMapper.ToModel(Sonarr.Api.V5.Metadata.MetadataResource,NzbDrone.Core.Extras.Metadata.MetadataDefinition)"
+        ],
+        "id": "R7",
+        "text": "A metadata resource's Enable flag is mapped to its definition."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.CreateProvider(`0,System.Boolean,Sonarr.Api.V5.Provider.SkipValidation)",
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.TypedCreated(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "Create returns the newly created metadata resource with a Created result, or NotFound if it cannot be loaded."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.UpdateProvider(System.Int32,`0,System.Boolean,Sonarr.Api.V5.Provider.SkipValidation)",
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.TypedAccepted(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "Update returns the updated resource with an Accepted result, or NotFound when no definition exists for the id."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S3",
+        "text": "Get by id returns the resource as Ok, or NotFound when the model is not found."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.DeleteProvider(System.Int32)"
+        ],
+        "id": "S4",
+        "text": "Delete returns NoContent."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Provider.ProviderControllerBase`4.VerifyValidationResult(FluentValidation.Results.ValidationResult,Sonarr.Api.V5.Provider.SkipValidation)"
+        ],
+        "id": "S5",
+        "text": "Validation failures are returned as a validation exception containing the failures, including warnings unless warnings are skipped."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Create(`1)"
+        ],
+        "id": "E1",
+        "text": "Create inserts the definition and publishes a ProviderAddedEvent."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Update(`1)"
+        ],
+        "id": "E2",
+        "text": "Update saves the definition and publishes a ProviderUpdatedEvent."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.Delete(System.Int32)"
+        ],
+        "id": "E3",
+        "text": "Delete removes the definition and publishes a ProviderDeletedEvent."
+      }
+    ]
+  },
+  "title": "Metadata provider API (v5)",
+  "unknowns": [
+    {
+      "file": "src/NzbDrone.Common/Reflection/ReflectionExtensions.cs",
+      "in": "Sonarr.Common|F:NzbDrone.Common.Reflection.ReflectionExtensions.CoreAssembly",
+      "line": 10,
+      "reason": "reflection: Assembly.Load"
+    },
+    {
+      "file": "src/NzbDrone.Common/Reflection/ReflectionExtensions.cs",
+      "in": "Sonarr.Common|M:NzbDrone.Common.Reflection.ReflectionExtensions.FindTypeByName(System.Reflection.Assembly,System.String)",
+      "line": 72,
+      "reason": "reflection: Assembly.GetExportedTypes"
+    },
+    {
+      "file": "src/Sonarr.Http/ClientSchema/SchemaBuilder.cs",
+      "in": "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ReadFromSchema(System.Collections.Generic.List{Sonarr.Http.ClientSchema.Field},System.Type,System.Object)",
+      "line": 58,
+      "reason": "reflection: Activator.CreateInstance"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

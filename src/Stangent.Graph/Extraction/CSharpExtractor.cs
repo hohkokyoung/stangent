@@ -80,10 +80,15 @@ public static class CSharpExtractor
             IPropertySymbol or IEventSymbol => NodeKind.Property,
             _ => NodeKind.Field,
         };
-        var isTest = symbol is IMethodSymbol method && method.GetAttributes().Any(a =>
+        var isTest = ctx.IsTestProject || symbol is IMethodSymbol method && method.GetAttributes().Any(a =>
             a.AttributeClass is { } c && (TestAttributes.Contains(c.Name) || TestAttributes.Contains(c.Name.Replace("Attribute", ""))));
         declared[id] = new Node(id, kind, DisplayName(symbol), ctx.ProjectId, file.RelativePath,
             span.StartLinePosition.Line + 1, span.EndLinePosition.Line + 1, isTest);
+
+        if (symbol is INamedTypeSymbol { TypeKind: TypeKind.Enum } declaredEnum)
+            ctx.Fragment.Enums.Add(new CodeEnum(id, declaredEnum.Name, ctx.ProjectId, file.RelativePath, span.StartLinePosition.Line + 1, span.EndLinePosition.Line + 1,
+                [.. declaredEnum.GetMembers().OfType<IFieldSymbol>().Where(m => m.HasConstantValue).Select(m => new CodeEnumMember(m.Name,
+                    Convert.ToString(m.ConstantValue, System.Globalization.CultureInfo.InvariantCulture), m.Locations[0].GetLineSpan().StartLinePosition.Line + 1))]));
 
         // Structure: file → type, type → member.
         if (symbol is INamedTypeSymbol type)
@@ -112,7 +117,10 @@ public static class CSharpExtractor
             foreach (var member in iface.GetMembers().Where(m => m is IMethodSymbol or IPropertySymbol or IEventSymbol))
             {
                 if (type.FindImplementationForInterfaceMember(member) is not { } impl) continue;
-                if (!SymbolEqualityComparer.Default.Equals(impl.ContainingType?.OriginalDefinition, type.OriginalDefinition)) continue;
+                // Written in this type, or in a base class that doesn't implement the interface itself (`MsSqlDataProvider :
+                // BaseDataProvider, INopDataProvider` with the member in BaseDataProvider): no other type adds that line.
+                if (!SymbolEqualityComparer.Default.Equals(impl.ContainingType?.OriginalDefinition, type.OriginalDefinition)
+                    && (impl.ContainingType is null || impl.ContainingType.AllInterfaces.Contains(iface, SymbolEqualityComparer.Default))) continue;
                 var implId = ctx.NodeId(impl);
                 var ifaceId = ctx.NodeId(member);
                 ctx.AddEdge(implId, ifaceId, EdgeKind.Implements, Label.Certain);
@@ -141,6 +149,7 @@ public static class CSharpExtractor
                 if (created is not null)
                 {
                     ctx.AddEdge(owner, ctx.NodeId(created), EdgeKind.Calls, Label.Certain);
+                    CallSite(ctx, owner, ctx.NodeId(created), creation, Label.Certain);
                     ctx.AddEdge(owner, ctx.NodeId(created.ContainingType), EdgeKind.Uses, Label.Certain);
                 }
                 else if (file.Model.GetTypeInfo(creation).Type is { TypeKind: not TypeKind.Error } t)
@@ -165,8 +174,19 @@ public static class CSharpExtractor
         {
             var target = ExtractContext.Normalize(method)!;
             ctx.AddEdge(owner, ctx.NodeId(target), EdgeKind.Calls, Label.Certain);
+            CallSite(ctx, owner, ctx.NodeId(target), invocation, Label.Certain,
+                // D201: `base.M()` runs that very method, never an override: no dispatch.
+                invocation.Expression is MemberAccessExpressionSyntax { Expression: BaseExpressionSyntax }, OnThis(invocation, method));
+            if (ctx.NodeId(target) is null) PackageCall(ctx, owner, method, invocation);
             var name = $"{ExtractContext.FullName(target.ContainingType)}.{target.Name}";
-            if (Reflection.TryGetValue(name, out var reason)) ctx.AddBlindSpot(owner, invocation, reason);
+            if (Reflection.TryGetValue(name, out var reason))
+            {
+                // Step 6 (fresh check S27): an instance made by reflection and cast to an in-repo type (`… as IConverter`,
+                // `(IConverter)…`) is one of that type's implementations: a fact for the walk, not a blind spot.
+                if (name == "System.Activator.CreateInstance" && CastTo(invocation, file.Model) is { } cast && ctx.NodeId(cast) is { } castId && owner is not null)
+                    ctx.AddFact("call-sites", "creates-one-of", owner, invocation, ("type", castId));
+                else ctx.AddBlindSpot(owner, invocation, reason);
+            }
             return;
         }
         if (file.Model.GetTypeInfo(invocation.Expression).Type is IDynamicTypeSymbol
@@ -180,9 +200,61 @@ public static class CSharpExtractor
         // in-repo candidate becomes a guessed call; with none, it's a blind spot.
         var inRepo = info.CandidateSymbols.Select(ctx.NodeId).OfType<string>().ToList();
         foreach (var candidate in inRepo) ctx.AddEdge(owner, candidate, EdgeKind.Calls, Label.Guessed);
+        foreach (var candidate in inRepo) CallSite(ctx, owner, candidate, invocation, Label.Guessed);
         // Candidates that are all framework or package methods lose nothing on the map; only a
         // call the compiler can't place at all is a blind spot.
         if (info.CandidateSymbols.Length == 0) ctx.AddBlindSpot(owner, invocation, $"unresolved call: {Short(invocation.Expression)}");
+    }
+
+    /// <summary>
+    /// D184: where a call is written, so a flow can quote its line: a <c>call-site</c> fact on the caller, at the line the call
+    /// expression starts (a chain's first line). A fact, not a line, so impact and the graph's lines are unchanged.
+    /// </summary>
+    static void CallSite(ExtractContext ctx, string? owner, string? target, SyntaxNode at, Label label, bool onBase = false, bool onThis = false)
+    {
+        // D199: a method calling itself is a call site too; a flow shows it going back (D176), the graph draws no line for it.
+        if (owner is null || target is null) return;
+        ctx.AddFact("call-sites", "call-site", owner, at, [("target", target), ("label", ((int)label).ToString(System.Globalization.CultureInfo.InvariantCulture)), ("kind", "calls"),
+            .. (onBase ? [("base", "1")] : Array.Empty<(string, string)>()), .. (onThis ? [("self", "1")] : Array.Empty<(string, string)>())]);
+    }
+
+    /// <summary>
+    /// D310: a call of the object's own instance method, written <c>M()</c> or <c>this.M()</c>: it runs on the same object, so a flow
+    /// that knows the object's class (a controller's action) narrows a virtual call to that class's override.
+    /// </summary>
+    static bool OnThis(InvocationExpressionSyntax invocation, IMethodSymbol method) =>
+        !method.IsStatic && method.MethodKind == MethodKind.Ordinary && method.ContainingType?.TypeKind == TypeKind.Class
+        && invocation.Expression is IdentifierNameSyntax or GenericNameSyntax or MemberAccessExpressionSyntax { Expression: ThisExpressionSyntax };
+
+    /// <summary>
+    /// D188 (ruling R6): a call into a package (ASP.NET Identity, MailKit…) is a <c>call-site</c> with no target and the package's
+    /// method, so a flow shows it as a step it doesn't walk. Not .NET's own <c>System.*</c>, not EF Core (its reads and saves are
+    /// already <c>access</c> facts), not logging (a log line isn't behaviour a flow shows).
+    /// </summary>
+    static void PackageCall(ExtractContext ctx, string? owner, IMethodSymbol method, SyntaxNode at)
+    {
+        if (owner is null) return;
+        var ns = method.ContainingNamespace?.ToDisplayString() ?? "";
+        if (ns == "" || ns == "System" || ns.StartsWith("System.", StringComparison.Ordinal) || ns.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal)
+            || ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal) || ns == "NLog" || ns.StartsWith("NLog.", StringComparison.Ordinal)
+            || ns == "Serilog" || ns.StartsWith("Serilog.", StringComparison.Ordinal)) return;
+        var type = method.ContainingType is { } t ? t.Name : "";
+        ctx.AddFact("call-sites", "call-site", owner, at, ("target", ""), ("label", "0"), ("kind", "package"),
+            ("package", method.ContainingAssembly?.Name ?? ""), ("method", $"{type}.{method.Name}"), ("ns", ns));
+    }
+
+    /// <summary>The in-repo type a call's result is cast to right away: <c>x as T</c> or <c>(T)x</c>.</summary>
+    static INamedTypeSymbol? CastTo(InvocationExpressionSyntax call, SemanticModel model)
+    {
+        SyntaxNode at = call;
+        while (at.Parent is ParenthesizedExpressionSyntax) at = at.Parent;
+        var type = at.Parent switch
+        {
+            BinaryExpressionSyntax b when b.IsKind(SyntaxKind.AsExpression) && b.Left == at => model.GetTypeInfo(b.Right).Type,
+            CastExpressionSyntax c => model.GetTypeInfo(c.Type).Type,
+            _ => null,
+        };
+        return type as INamedTypeSymbol is { DeclaringSyntaxReferences.Length: > 0 } named ? named : null;
     }
 
     static string Short(SyntaxNode expr)

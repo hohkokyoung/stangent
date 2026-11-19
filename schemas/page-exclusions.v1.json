@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "page-exclusions.v1.json",
+  "title": "Pages a person said aren't pages, each with a reason (T.3, D131)",
+  "type": "object",
+  "required": ["schemaVersion", "excluded"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "excluded": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["page", "why", "by"],
+        "additionalProperties": false,
+        "properties": {
+          "page": { "type": "string" },
+          "why": { "type": "string", "minLength": 1 },
+          "by": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

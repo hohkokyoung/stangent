@@ -1,0 +1,139 @@
+{
+  "codeTitle": "GET /api/v3/ImportList",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/ImportList",
+  "generated": {
+    "bundleHash": "4702a2f5e8f2e802dd9e348bc9d58ed20df73cde29c266eb276c2df9760e9780",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 22604,
+      "cutOff": 27,
+      "depth": 4,
+      "points": 168
+    },
+    "verifier": {
+      "cacheReadTokens": 14550,
+      "cacheWriteTokens": 13032,
+      "calls": 1,
+      "costUsd": 0.05754,
+      "inputTokens": 6,
+      "model": "claude-sonnet-5-5",
+      "ms": 6282,
+      "outputTokens": 249
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 10627,
+      "calls": 1,
+      "costUsd": 0.057448,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8476,
+      "outputTokens": 1466
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/ImportList",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.GetAll"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/ImportList"
+        ],
+        "id": "A1",
+        "text": "A caller requests all import lists with no parameters and receives the full list."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.GetAll"
+        ],
+        "id": "R1",
+        "text": "Definitions are processed in order of implementation name, and the final result is sorted by name."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ToSchema(System.Object)"
+        ],
+        "id": "R2",
+        "text": "Field values with API key or password privacy are replaced by a placeholder value when they are not null or empty."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ToSchema(System.Object)",
+          "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.GetFieldMappings(System.Type)"
+        ],
+        "id": "R3",
+        "text": "Fields are returned ordered by their order, renumbered sequentially from 0 because nested settings can have duplicate orders."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ToSchema(System.Object)",
+          "Sonarr.Common|M:NzbDrone.Common.EnsureThat.EnsureObjectExtensions.IsNotNull``1(NzbDrone.Common.EnsureThat.Param{``0})"
+        ],
+        "id": "R4",
+        "text": "A null settings model is rejected with a not-null validation error."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderControllerBase`4.GetAll"
+        ],
+        "id": "S1",
+        "text": "Returns a list of all configured import list definitions as resources."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderResourceMapper`2.ToResource(`1)"
+        ],
+        "id": "S2",
+        "text": "Each item shows id, name, implementation name, implementation, config contract, message, tags and an info link built from the lowercased implementation name."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ProviderResourceMapper`2.ToResource(`1)",
+          "Sonarr.Http|M:Sonarr.Http.ClientSchema.SchemaBuilder.ToSchema(System.Object)"
+        ],
+        "id": "S3",
+        "text": "Each item includes a list of settings fields built from the definition's settings, each with its current value."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ImportLists.ImportListResourceMapper.ToResource(NzbDrone.Core.ImportLists.ImportListDefinition)"
+        ],
+        "id": "S4",
+        "text": "Each import list also shows: automatic add, search for missing episodes, should monitor, monitor new items, root folder path, quality profile id, series type, language, season folder, list type, list order, minimum refresh interval and tag existing."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ImportLists.ImportListResourceMapper.ToResource(NzbDrone.Core.ImportLists.ImportListDefinition)"
+        ],
+        "id": "S5",
+        "text": "The list order of an item is the numeric value of its list type."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.SetProviderCharacteristics(`1)",
+          "Sonarr.Core|M:NzbDrone.Core.ThingiProvider.ProviderFactory`2.GetInstance(`1)"
+        ],
+        "id": "E1",
+        "text": "For each definition, provider characteristics are set by creating the provider instance and assigning its definition."
+      }
+    ]
+  },
+  "title": "List import lists (GET /api/v3/ImportList)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

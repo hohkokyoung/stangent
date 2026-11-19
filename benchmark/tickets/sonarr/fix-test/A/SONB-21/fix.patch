@@ -1,0 +1,15 @@
+diff --git a/src/NzbDrone.Common/Disk/DiskTransferService.cs b/src/NzbDrone.Common/Disk/DiskTransferService.cs
+index f89c31b212..6eb863b659 100644
+--- a/src/NzbDrone.Common/Disk/DiskTransferService.cs
++++ b/src/NzbDrone.Common/Disk/DiskTransferService.cs
+@@ -36,7 +36,9 @@ private string ResolveRealParentPath(string path)
+ 
+             var realParentPath = parentPath.GetActualCasing();
+ 
+-            var partialChildPath = path.Substring(parentPath.Length);
++            // GetParentPath may normalize the path (e.g. repeated slashes), so its length can't be used as an offset into path.
++            var trimmedPath = path.TrimEnd('/', '\\');
++            var partialChildPath = path.Substring(trimmedPath.LastIndexOfAny(new[] { '/', '\\' }));
+ 
+             return realParentPath + partialChildPath;
+         }

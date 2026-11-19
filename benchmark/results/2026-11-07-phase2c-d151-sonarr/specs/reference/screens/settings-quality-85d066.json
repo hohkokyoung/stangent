@@ -1,0 +1,203 @@
+{
+  "codeTitle": "/settings/quality · Quality",
+  "entry": "page:tsconfig.json|/settings/quality",
+  "generated": {
+    "bundleHash": "63531ba247e907a633e18a60fa568490c4086a262c18df2febd575ccecb90242",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 30204,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 107
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 16755,
+      "calls": 1,
+      "costUsd": 0.070679,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4242,
+      "outputTokens": 348
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 14246,
+      "calls": 1,
+      "costUsd": 0.076584,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 10828,
+      "outputTokens": 1932
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/settings/quality",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Quality/Definition/QualityDefinition.tsx#QualityDefinition",
+          "ts|frontend/src/Settings/Quality/Definition/useQualityDefinitions.ts#useManageQualityDefinitions"
+        ],
+        "id": "A1",
+        "text": "Editing a title in a row records a pending change for that definition."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Quality/Quality.tsx#Quality",
+          "ts|frontend/src/Settings/Quality/Definition/useQualityDefinitions.ts#useManageQualityDefinitions",
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/QualityDefinition",
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/QualityDefinition"
+        ],
+        "id": "A2",
+        "text": "Pressing save sends only the definitions with pending changes to the quality definition endpoint with a PUT."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Quality/Quality.tsx#Quality"
+        ],
+        "id": "A3",
+        "text": "Pressing 'Reset Definitions' opens a danger confirmation titled 'ResetQualityDefinitions' with a 'Reset' button. Cancelling closes it."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Quality/Quality.tsx#Quality",
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "A4",
+        "text": "Confirming the reset runs the ResetQualityDefinitions command with resetTitles set to true and closes the dialog."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Quality/Definition/useQualityDefinitions.ts#useQualityDefinitions"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/QualityDefinition",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/QualityDefinition"
+        ],
+        "id": "A5",
+        "text": "The page loads quality definitions from the quality definition endpoint."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R1",
+        "text": "The same command with the same body run within 5 seconds of the previous one is ignored, with a console warning."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/usePendingItemsStore.ts#usePendingItemsStore",
+          "ts|frontend/src/Settings/Quality/Definition/useQualityDefinitions.ts#useManageQualityDefinitions"
+        ],
+        "id": "R2",
+        "text": "If an edited value equals the original, the pending change is removed. The page has pending changes while any definition differs."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Quality/Quality.tsx#Quality",
+          "ts|frontend/src/Settings/Quality/Definition/QualityDefinitions.tsx#QualityDefinitions"
+        ],
+        "id": "R3",
+        "text": "The save state and the pending-changes state are passed to the settings page."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Quality/Quality.tsx#Quality"
+        ],
+        "id": "S1",
+        "text": "The page is titled 'QualitySettings' in the settings layout, with a heading 'Quality' under the scope 'Settings'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Quality/Definition/QualityDefinitions.tsx#QualityDefinitions"
+        ],
+        "id": "S2",
+        "text": "A 'Quality Definitions' section shows a caption and an info notice about quality definition sizes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Quality/Definition/QualityDefinitions.tsx#QualityDefinitions",
+          "ts|frontend/src/Settings/Quality/Definition/QualityDefinition.tsx#QualityDefinition"
+        ],
+        "id": "S3",
+        "text": "The list has column headers 'Quality' and 'Title'. Each row shows the quality name and an editable text input holding the title."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Quality/Definition/QualityDefinitions.tsx#QualityDefinitions"
+        ],
+        "id": "S4",
+        "text": "The definitions area shows loading and error states, with the error message 'QualityDefinitionsLoadError' when loading fails."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Quality/Quality.tsx#Quality",
+          "ts|frontend/src/Commands/useCommands.ts#useCommandExecuting"
+        ],
+        "id": "S5",
+        "text": "The toolbar has a 'Reset Definitions' button that spins and is disabled while a reset command is queued or started."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+          "ts|frontend/src/Settings/Quality/Definition/useQualityDefinitions.ts#useManageQualityDefinitions"
+        ],
+        "id": "E1",
+        "text": "A successful save replaces the cached definitions with the server response and clears all pending changes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "E2",
+        "text": "Confirming a reset posts a command to /command and adds the returned command to the cached command list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/Quality/Definition/QualityDefinitions.tsx#QualityDefinitions"
+        ],
+        "id": "E3",
+        "text": "When a reset finishes, the cached quality definitions are invalidated and reloaded."
+      }
+    ]
+  },
+  "title": "Quality Settings",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+      "line": 29,
+      "reason": "HTTP PUT to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,92 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0021"
+doc: "sonarr-fsd"
+section: "Settings / General / Logging"
+title: "Logging"
+parent: "F-0016"
+children: []
+textHash: "107aceac0eab09ef84869d1dcf87a5da6a2e601ddbba4ca162a206d095f9dfb1"
+requirements:
+  - id: "R-0106"
+    title: "Log level can be info"
+    kind: "rule"
+    statement: "The log level can be set to info."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / General / Logging"
+        text: "The log level can be set to info, debug or trace."
+        hash: "bed40dccfce917dce7f059fb9238fa6cac26d46f8bb5fc608b076264edff462d"
+    acceptance:
+      - text: "Setting the log level to info is accepted."
+        quotes:
+          - doc: "sonarr-fsd"
+            section: "Settings / General / Logging"
+            text: "The log level can be set to info, debug or trace."
+            hash: "bed40dccfce917dce7f059fb9238fa6cac26d46f8bb5fc608b076264edff462d"
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "fe007e01f61e3c5add9fc8debeddc02adeb94d59845ceb830de72fe1a7d2f4fa"
+  - id: "R-0107"
+    title: "Log level can be debug"
+    kind: "rule"
+    statement: "The log level can be set to debug."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / General / Logging"
+        text: "The log level can be set to info, debug or trace."
+        hash: "bed40dccfce917dce7f059fb9238fa6cac26d46f8bb5fc608b076264edff462d"
+    acceptance:
+      - text: "Setting the log level to debug is accepted."
+        quotes:
+          - doc: "sonarr-fsd"
+            section: "Settings / General / Logging"
+            text: "The log level can be set to info, debug or trace."
+            hash: "bed40dccfce917dce7f059fb9238fa6cac26d46f8bb5fc608b076264edff462d"
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "281fbfd7f3df587bad3e68e1e1b0a9ea2271398b1d12a36f4f2c2225e2324a7d"
+  - id: "R-0108"
+    title: "Log level can be trace"
+    kind: "rule"
+    statement: "The log level can be set to trace."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / General / Logging"
+        text: "The log level can be set to info, debug or trace."
+        hash: "bed40dccfce917dce7f059fb9238fa6cac26d46f8bb5fc608b076264edff462d"
+    acceptance:
+      - text: "Setting the log level to trace is accepted."
+        quotes:
+          - doc: "sonarr-fsd"
+            section: "Settings / General / Logging"
+            text: "The log level can be set to info, debug or trace."
+            hash: "bed40dccfce917dce7f059fb9238fa6cac26d46f8bb5fc608b076264edff462d"
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "c5754359f1831523baba00436fb3f948a0c2b12a3df080e56f65dc0447fc291a"
+  - id: "R-0109"
+    title: "Log file size limit 50 MB"
+    kind: "rule"
+    statement: "Each log file can grow up to 50 megabytes before a new one is started."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / General / Logging"
+        text: "Each log file can grow up to 50 megabytes before a new one is started."
+        hash: "83bb1ca2ba2badd992d4e4b0afea3f0c84088a3438a4df3630bb1bf240f5ee19"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "46005c52186a1b311dbca5000907d9b8d8f6877a0431c1f1d19fe23d3f8cf62a"
+definitions: []
+journeys: []
+background: []
+retired: []

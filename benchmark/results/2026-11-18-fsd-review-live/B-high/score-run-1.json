@@ -1,0 +1,557 @@
+{
+  "doc": "kavita-fsd",
+  "note": "Phase 2b (D56, D57): findings in specs/trace.yaml scored against the frozen answer key. 'found' lets a gap be reported as a conflict and back; 'foundAsKind' needs the planted kind.",
+  "found": {
+    "overall": {
+      "found": 17,
+      "of": 30,
+      "share": 0.567,
+      "range95": [
+        0.4,
+        0.733
+      ]
+    },
+    "gap": {
+      "found": 7,
+      "of": 10,
+      "share": 0.7,
+      "range95": [
+        0.4,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 8,
+      "of": 10,
+      "share": 0.8,
+      "range95": [
+        0.5,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 2,
+      "of": 10,
+      "share": 0.2,
+      "range95": [
+        0,
+        0.5
+      ]
+    }
+  },
+  "foundAsKind": {
+    "overall": {
+      "found": 17,
+      "of": 30,
+      "share": 0.567,
+      "range95": [
+        0.4,
+        0.733
+      ]
+    },
+    "gap": {
+      "found": 7,
+      "of": 10,
+      "share": 0.7,
+      "range95": [
+        0.4,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 8,
+      "of": 10,
+      "share": 0.8,
+      "range95": [
+        0.5,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 2,
+      "of": 10,
+      "share": 0.2,
+      "range95": [
+        0,
+        0.5
+      ]
+    }
+  },
+  "noise": {
+    "findings": 49,
+    "unplanted": 32,
+    "worstCaseShare": 0.653,
+    "sample": 20,
+    "handChecked": 0,
+    "realInSample": null
+  },
+  "bars": {
+    "finds": false,
+    "notTooNoisy": null
+  },
+  "finerVerdicts": null,
+  "candidates": {
+    "sections": 0,
+    "byCode": 0,
+    "byAi": 0,
+    "aiFoundNone": 0
+  },
+  "cost": {
+    "finder": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "judge": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "checker": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "disprover": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    }
+  },
+  "items": [
+    {
+      "id": "G1",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S002",
+      "state": "gap"
+    },
+    {
+      "id": "G2",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S008",
+      "state": "gap"
+    },
+    {
+      "id": "G3",
+      "kind": "gap",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "G4",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S020",
+      "state": "gap"
+    },
+    {
+      "id": "G5",
+      "kind": "gap",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "G6",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S027",
+      "state": "gap"
+    },
+    {
+      "id": "G7",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S035",
+      "state": "gap"
+    },
+    {
+      "id": "G8",
+      "kind": "gap",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "G9",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S049",
+      "state": "gap"
+    },
+    {
+      "id": "G10",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S046",
+      "state": "gap"
+    },
+    {
+      "id": "C1",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S001",
+      "state": "conflict"
+    },
+    {
+      "id": "C2",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S016",
+      "state": "conflict"
+    },
+    {
+      "id": "C3",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S019",
+      "state": "conflict"
+    },
+    {
+      "id": "C4",
+      "kind": "conflict",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "C5",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S021",
+      "state": "conflict"
+    },
+    {
+      "id": "C6",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S032",
+      "state": "conflict"
+    },
+    {
+      "id": "C7",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S038",
+      "state": "conflict"
+    },
+    {
+      "id": "C8",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S039",
+      "state": "conflict"
+    },
+    {
+      "id": "C9",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S045",
+      "state": "conflict"
+    },
+    {
+      "id": "C10",
+      "kind": "conflict",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U1",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S036",
+      "state": "undocumented"
+    },
+    {
+      "id": "U2",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S037",
+      "state": "undocumented"
+    },
+    {
+      "id": "U3",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U4",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U5",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U6",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U7",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U8",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U9",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U10",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    }
+  ],
+  "handCheckSample": [
+    {
+      "id": "S025",
+      "state": "match",
+      "section": "6.2",
+      "fsdQuote": "A collection's screen shows its title, number of series and actions menu, and a collection synced from an outside service also shows how many of the source's series are on this server and when it last synced.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The header shows title, actions menu and series count; for externally sourced collections a sync progress (collected / total) and last-sync tooltip appear."
+    },
+    {
+      "id": "S041",
+      "state": "match",
+      "section": "10.1",
+      "fsdQuote": "Cache Size must be at least 50 MB",
+      "page": null,
+      "pageQuote": null,
+      "note": "Cache size is validated with a minimum of 50."
+    },
+    {
+      "id": "S031",
+      "state": "match",
+      "section": "7.2",
+      "fsdQuote": "In reorder mode each item gets a remove button, and an Order Numbers switch adds a box to each item for typing its new position.",
+      "page": null,
+      "pageQuote": null,
+      "note": "In edit mode the list shows remove buttons and an Order Numbers switch that enables accessibility mode."
+    },
+    {
+      "id": "S005",
+      "state": "match",
+      "section": "1",
+      "fsdQuote": "Users without the Read Only role can choose which rows appear, and in what order, from the Customize page in their settings.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The Customize settings tab is hidden from users with the Read Only role."
+    },
+    {
+      "id": "S004",
+      "state": "match",
+      "section": "1",
+      "fsdQuote": "Clicking the title of one of these rows opens All Series with a matching filter and sort order.",
+      "page": null,
+      "pageQuote": null,
+      "note": "Each row's title click builds a filter and sort (last chapter added, read progress, created, or genre) and navigates to all-series."
+    },
+    {
+      "id": "S043",
+      "state": "match",
+      "section": "10.1",
+      "fsdQuote": "A Reset to Default button restores these settings after a confirmation.",
+      "page": null,
+      "pageQuote": null,
+      "note": "Reset to Default asks for confirmation, then calls the reset API and reloads the form."
+    },
+    {
+      "id": "S030",
+      "state": "match",
+      "section": "7.2",
+      "fsdQuote": "The list's owner sees an Edit button and, on larger screens, a Reorder button.",
+      "page": null,
+      "pageQuote": null,
+      "note": "Edit and Reorder (hidden below md) buttons are shown only when the list is owned by the user."
+    },
+    {
+      "id": "S007",
+      "state": "match",
+      "section": "2.1",
+      "fsdQuote": "Series appear as cards with a jump bar for skipping to a starting letter, and several series can be selected at once for a bulk action.",
+      "page": null,
+      "pageQuote": null,
+      "note": "Series are shown as cards in a layout with jump bar keys and bulk operations, with selection allowed."
+    },
+    {
+      "id": "S012",
+      "state": "match",
+      "section": "3.1",
+      "fsdQuote": "The arrow beside the Read button offers the same action in incognito mode, which does not save progress.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The split dropdown beside Read has one item that reads in incognito mode (glasses icon)."
+    },
+    {
+      "id": "S014",
+      "state": "match",
+      "section": "3.1",
+      "fsdQuote": "The Edit button is shown only to administrators, and the Download button only to administrators and users with the Download role.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The Edit button is wrapped in an admin check, and the download button is only rendered when canDownload() is true."
+    },
+    {
+      "id": "S015",
+      "state": "match",
+      "section": "3.1",
+      "fsdQuote": "in book and light novel libraries the Volumes tab is called Books.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The Volumes tab title switches to Books when the book logic applies."
+    },
+    {
+      "id": "S023",
+      "state": "match",
+      "section": "6.1",
+      "fsdQuote": "It has a jump bar but no filter panel.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The collections screen passes jump bar keys and disables filtering."
+    },
+    {
+      "id": "S009",
+      "state": "match",
+      "section": "2.2",
+      "fsdQuote": "The filter panel builds rules on fields such as genre, tag, people, read progress, rating and publication status, and the rules can match all or any of them.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The metadata builder offers an And/Or combination selector over the filter statements."
+    },
+    {
+      "id": "S018",
+      "state": "match",
+      "section": "3.3",
+      "fsdQuote": "has a Related tab listing the reading lists that contain the chapter when there are any.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The chapter's Related tab is shown only when the chapter's readingLists list is non-empty."
+    },
+    {
+      "id": "S022",
+      "state": "match",
+      "section": "5",
+      "fsdQuote": "The Want to Read screen lists the series the user has starred, with a count and the same filter panel and bulk selection as a library screen.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The screen shows a series count, filter panel, and bulk operations over series cards."
+    },
+    {
+      "id": "S029",
+      "state": "match",
+      "section": "7.2",
+      "fsdQuote": "with a Read button whose menu also offers incognito reading.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The Read/Continue button has a dropdown with incognito (glasses) read and continue items."
+    },
+    {
+      "id": "S017",
+      "state": "match",
+      "section": "3.2",
+      "fsdQuote": "The Reviews tab appears on a volume only when the volume holds a single chapter.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The volume's Reviews tab is wrapped in a check that the volume has exactly one chapter."
+    },
+    {
+      "id": "S011",
+      "state": "match",
+      "section": "2.3",
+      "fsdQuote": "All Series lists the series from every library the user can access, with the same filter panel and bulk selection as a library screen.",
+      "page": null,
+      "pageQuote": null,
+      "note": "All Series uses the same card layout with a filter panel and bulk operations."
+    },
+    {
+      "id": "S048",
+      "state": "match",
+      "section": "10.2",
+      "fsdQuote": "If the invite email cannot be sent, the form shows the invite link so the administrator can pass it on.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The invite response's emailLink is stored in a signal that is shown and disables further sending."
+    },
+    {
+      "id": "S024",
+      "state": "match",
+      "section": "6.1",
+      "fsdQuote": "The Collections screen shows every collection the user can see, with the name of the user who created it and a mark on promoted collections.",
+      "page": null,
+      "pageQuote": null,
+      "note": "Each collection card shows an owner component as subtitle and a promoted icon beside the title."
+    }
+  ]
+}

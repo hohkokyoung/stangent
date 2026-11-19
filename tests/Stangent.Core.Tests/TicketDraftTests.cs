@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Core.State;
 using Stangent.Spec.Fsd;
 using Stangent.Spec.Pages;
+using Stangent.Spec.Trace;
 using Stangent.Tickets;
 using Stangent.Tickets.Secrets;
 
@@ -37,14 +39,8 @@ public class TicketDraftTests
             App = new SpecApp($"version: 1\ntickets:\n  site: acme.atlassian.net\n  replay: replay\n  aiPoints: false\n{extra}");
             Page(App, Orders, ("shows", "The orders screen shows a Place order button.", [SpecApp.OrdersPage]));
             Page(App, SpecApp.Post, ("rules", "An order over 100 is refused until it is approved.", [SpecApp.Create]));
-            var dir = Path.Combine(Root, "specs", "fsd", "shop");
-            Directory.CreateDirectory(dir);
-            File.WriteAllText(Path.Combine(dir, "document.json"), new JsonObject
-            {
-                ["schemaVersion"] = 1, ["id"] = "shop", ["title"] = "Shop FSD",
-                ["sections"] = new JsonArray(new JsonObject { ["id"] = "4.1", ["title"] = "Placing an order", ["text"] = "Orders over 100 need approval from a manager.", ["parent"] = null }),
-            }.ToJsonString());
-            LinkRun.ApplyEntries(Root, "shop", "4.1", [LinkRun.Entry("agree", "shop", new JsonObject { ["id"] = "4.1", ["title"] = "Placing an order", ["text"] = "" },
+            FsdFixture.Write(Root, "shop", "Shop FSD", ("4.1", "Placing an order", "Orders over 100 need approval from a manager."));
+            TraceStore.ApplyEntries(Root, "shop", "4.1", [TraceStore.Entry("agree", "shop", new JsonObject { ["id"] = "4.1", ["title"] = "Placing an order", ["text"] = "" },
                 "Orders over 100 need approval from a manager.", Orders, "S1", "The orders screen shows a Place order button.", "judge", "confirmed", null)]);
             TicketFixtures.Make(Path.Combine(Root, "replay"), Key, "Bug", "Big orders skip approval", Description);
             var tracker = Trackers.Open(App.Repo, new MemorySecretStore(), TextWriter.Null, null);
@@ -153,6 +149,27 @@ public class TicketDraftTests
         Assert.Contains("**Kept with no claim (questions, requests, greetings, headings: not checked, read them)**\n\n- Thanks for the report.\n",
             File.ReadAllText(Path.ChangeExtension(TicketDrafts.JsonPath(new TicketPaths(d.Root, Key), "questions", "internal"), ".md")));
         Assert.Equal("current", d.Prepare().Status); // unchanged: no AI call
+    }
+
+    [Fact]
+    public void A_link_on_a_removed_section_stays_out_of_a_draft_and_does_not_stop_it()
+    {
+        using var d = new Draft();
+        var trace = TraceFile.Load(d.Root);
+        foreach (var page in new[] { Orders, SpecApp.Post })
+            trace["entries"]!.AsArray().Add(TraceStore.Entry("agree", "shop", new JsonObject { ["id"] = "(removed S-0009) 9", ["title"] = "Gone", ["text"] = "" },
+                "A rule from a removed section.", page, null, null, "judge", "confirmed", null));
+        TraceFile.Save(d.Root, trace);
+        Git(d.Root, "init -q -b main");
+        Git(d.Root, "-c user.name=t -c user.email=t@t add -A");
+        Git(d.Root, "-c user.name=t -c user.email=t@t commit -q -m base");
+        var file = Path.Combine(d.Root, "Core", "OrderService.cs");
+        File.WriteAllText(file, File.ReadAllText(file).Replace("total > 100", "total > 50"));
+        Git(d.Root, "-c user.name=t -c user.email=t@t commit -q -am fix");
+
+        Assert.Equal(StepSpec.SummaryWriter, d.Prepare("resolution", pr: "HEAD~1..HEAD").Agent);
+
+        Assert.DoesNotContain("## shop §(removed", File.ReadAllText(Path.Combine(d.Root, ".stangent", "tickets", Key, "resolution", "input.md")));
     }
 
     [Fact]
@@ -494,6 +511,21 @@ public class TicketDraftTests
         var record = await TicketDrafts.PostAsync(d.App.Repo, tracker, Key, "questions", "Pat", false, time, TestContext.Current.CancellationToken, stale: true);
         Assert.Single(tracker.Posted);
         Assert.NotNull(record["posted"]);
+    }
+
+    [Fact]
+    public async Task Posting_a_draft_is_a_person_s_move_in_the_history()
+    {
+        using var d = new Draft();
+        d.Prepare();
+        d.Check(GoodQuestions);
+        var tracker = new RecordingTracker();
+        var id = $"{Key}/questions-internal";
+        await TicketDrafts.PostAsync(d.App.Repo, tracker, Key, "questions", "Pat", false, TimeProvider.System, TestContext.Current.CancellationToken);
+        await TicketDrafts.PostAsync(d.App.Repo, tracker, Key, "questions", "Lee", true, TimeProvider.System, TestContext.Current.CancellationToken);
+        Assert.Equal([("unposted", "posted", "Pat"), ("posted", "posted", "Lee")],
+            StateChanges.History(d.Root, StateKinds.DraftPosted, id).Select(m => (m.From, m.To, m.Who.Name)));
+        Assert.Equal("done", StateChanges.History(d.Root, StateKinds.TicketStep, $"{Key}/{StepSpec.Questions.Name}").Last().To);
     }
 
     [Fact]

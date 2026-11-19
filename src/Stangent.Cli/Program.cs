@@ -2,6 +2,8 @@ using System.CommandLine;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Core.State;
+using Stangent.Core.DataCheck;
 using Stangent.Core.Phases;
 using Stangent.Core.Store;
 using Stangent.Core.Telemetry;
@@ -28,6 +30,7 @@ init.SetAction(pr => Cli.Run(pr, "init", ctx =>
 }));
 root.Subcommands.Add(init);
 
+
 var status = new Command("status", "What's in the store, whether AI is on, and where telemetry goes.");
 status.SetAction(pr => Cli.Run(pr, "status", ctx =>
 {
@@ -40,9 +43,8 @@ status.SetAction(pr => Cli.Run(pr, "status", ctx =>
     {
         ["root"] = ctx.Repo.Root,
         ["version"] = TelemetryWriter.ServiceVersion,
-        ["ai"] = new JsonObject { ["enabled"] = ctx.Repo.Config.Ai.Enabled },
+        ["ai"] = new JsonObject { ["enabled"] = ctx.Repo.Config.Ai.Enabled, ["model"] = ctx.Repo.Config.Ai.Model, ["effort"] = ctx.Repo.Config.Ai.Effort },
         ["artifacts"] = new JsonObject { ["total"] = entries.Count, ["byType"] = byType },
-        ["detectors"] = new JsonArray([.. ctx.Repo.Config.Detectors.Select(d => (JsonNode)d)]),
         ["telemetryDir"] = ctx.Telemetry.Dir,
     };
 }));
@@ -96,6 +98,35 @@ batch.SetAction(pr => Cli.Run(pr, "store batch", ctx =>
 }));
 store.Subcommands.Add(batch);
 
+var cost = new Command("cost", "What AI steps have cost in this repo: read from telemetry, no AI.");
+root.Subcommands.Add(cost);
+var costStepOption = new Option<string>("--step") { Description = "The command that records the calls, e.g. \"spec check\".", Required = true };
+var costCallsOption = new Option<int>("--calls") { Description = "How many calls the run is expected to make, at least.", Required = true };
+var costEstimate = new Command("estimate", "calls × this step's average cost so far. No earlier call means no estimate, and it says so.") { costStepOption, costCallsOption };
+costEstimate.SetAction(pr => Cli.Run(pr, "cost estimate", ctx => CostHistory.Estimate(ctx.Repo.Root, pr.GetValue(costStepOption)!, pr.GetValue(costCallsOption))));
+cost.Subcommands.Add(costEstimate);
+
+var runCheck = new Command("run-check", "Did a run change the app's files? By git, before and after; stangent's own folders are left out (T.5).");
+root.Subcommands.Add(runCheck);
+var snapshotOption = new Option<string>("--snapshot") { Description = "The file holding the 'before' state.", Required = true };
+var runBefore = new Command("before", "Write what git says now.") { snapshotOption };
+runBefore.SetAction(pr => Cli.Run(pr, "run-check before", ctx =>
+{
+    var snapshot = Stangent.Spec.Checks.AppFiles.Snapshot(ctx.Repo.Root);
+    File.WriteAllText(pr.GetValue(snapshotOption)!, snapshot.ToJsonString());
+    return new JsonObject { ["checked"] = (bool)snapshot["checked"]! };
+}));
+runCheck.Subcommands.Add(runBefore);
+var runAfter = new Command("after", "Compare with what `before` wrote. Exit 1 when anything changed.") { snapshotOption };
+runAfter.SetAction(pr => Cli.Run(pr, "run-check after", ctx =>
+{
+    var report = Stangent.Spec.Checks.AppFiles.Compare(ctx.Repo.Root, Cli.ReadJson(pr.GetValue(snapshotOption)!) as JsonObject
+        ?? throw new StangentException("invalid_json", "Expected the JSON object `run-check before` wrote.", ExitCodes.Usage));
+    if ((bool)report["ok"]! == false) throw new CheckFailed("app_files_changed", "The run changed the app's files.", report);
+    return report;
+}));
+runCheck.Subcommands.Add(runAfter);
+
 var index = new Command("index", "The SQLite index derived from the store files.");
 root.Subcommands.Add(index);
 var rebuild = new Command("rebuild", "Rebuild the index from the store files (validates every file).");
@@ -124,6 +155,31 @@ check.SetAction(pr => Cli.Run(pr, "phases check", ctx =>
     throw new CheckFailed("phases_need_attention", "Some phases need attention; see result.problems.", report);
 }));
 phases.Subcommands.Add(check);
+
+var data = new Command("data", "Client data in the repo (D56, D113).");
+root.Subcommands.Add(data);
+var termsOption = new Option<string?>("--terms") { Description = $"Terms file outside the repo (default: ${ClientDataCheck.TermsVariable}, then ~/.config/stangent/client-terms.txt)." };
+var dataCheck = new Command("check", "Flag tracked documents and lines holding a client term. Never prints a term.") { termsOption };
+dataCheck.SetAction(pr => Cli.Run(pr, "data check", _ =>
+{
+    var report = ClientDataCheck.Run(pr.GetValue(repoOption) ?? Directory.GetCurrentDirectory(), pr.GetValue(termsOption),
+        Environment.GetEnvironmentVariable(ClientDataCheck.TermsVariable), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+    if (report["ok"]!.GetValue<bool>()) return report;
+    throw new CheckFailed("client_data_found", "Client data found; see result.findings.", report);
+}));
+data.Subcommands.Add(dataCheck);
+
+var state = new Command("state", "Lifecycles: what moved, when and who moved it (D114).");
+root.Subcommands.Add(state);
+var stateKindArg = new Argument<string>("kind") { Description = "The lifecycle: " + string.Join(", ", StateKinds.All.Select(k => k.Name)) + "." };
+var stateIdArg = new Argument<string>("id") { Description = "The item's id." };
+var stateHistory = new Command("history", "One item's moves, oldest first.") { stateKindArg, stateIdArg };
+stateHistory.SetAction(pr => Cli.Run(pr, "state history", ctx => new JsonObject
+{
+    ["kind"] = pr.GetValue(stateKindArg)!, ["id"] = pr.GetValue(stateIdArg)!,
+    ["moves"] = new JsonArray([.. StateChanges.History(ctx.Repo.Root, pr.GetValue(stateKindArg)!, Stangent.Spec.Trace.TraceFindings.EntryOf(ctx.Repo.Root, pr.GetValue(stateIdArg)!) ?? pr.GetValue(stateIdArg)!).Select(m => (JsonNode)m.ToJson())]),
+}));
+state.Subcommands.Add(stateHistory);
 
 var graph = new Command("graph", "The code graph (D25–D27): build it, then ask what a change affects.");
 root.Subcommands.Add(graph);
@@ -169,6 +225,37 @@ var show = new Command("show", "A point and the lines in and out of it.") { idAr
 show.SetAction(pr => Cli.Run(pr, "graph show", ctx => Cli.Show(ctx, pr.GetValue(idArg)!)));
 graph.Subcommands.Add(show);
 
+var whereArg = new Argument<string>("symbol") { Description = "A graph id, or a name like OrderProcessingService.PlaceOrderAsync." };
+var where = new Command("where", "A symbol's file and lines at the commit the graph was built from, ready to cite.") { whereArg };
+where.SetAction(pr => Cli.Run(pr, "graph where", ctx =>
+{
+    var g = Cli.LoadGraph(ctx);
+    var symbol = pr.GetValue(whereArg)!;
+    var matches = SymbolLines.Where(g, symbol);
+    if (matches.Count == 0) throw new StangentException("not_found", $"Nothing in the graph matches '{symbol}'.", ExitCodes.NotFound);
+    ctx.Span.Attributes["stangent.artifact.count"] = matches.Count;
+    var repoName = SymbolLines.RepoName(ctx.Repo.Root);
+    return new JsonObject
+    {
+        ["symbol"] = symbol, ["commit"] = SymbolLines.CommitOf(g), ["head"] = Cli.Head(ctx), ["repo"] = repoName,
+        ["dirty"] = g.DirtyFiles is null ? null : g.DirtyFiles.Count > 0,
+        ["dirtyFiles"] = new JsonArray([.. (g.DirtyFiles ?? []).Select(f => (JsonNode)f)]),
+        ["ambiguous"] = matches.Count > 1,
+        ["matches"] = new JsonArray([.. matches.Select(m => (JsonNode)m.ToJson(repoName))]),
+    };
+}));
+graph.Subcommands.Add(where);
+
+var screenOption = new Option<string?>("--screen") { Description = "Only this screen: a route like /orders/:id, or a page id." };
+var screenTests = new Command("screen-tests", "Existing Playwright specs that open a screen, and the goto calls the code couldn't resolve (D115).") { screenOption };
+screenTests.SetAction(pr => Cli.Run(pr, "graph screen-tests", ctx =>
+{
+    var answer = PlaywrightLinks.Answer(Cli.LoadGraph(ctx), SymbolLines.RepoName(ctx.Repo.Root), pr.GetValue(screenOption));
+    ctx.Span.Attributes["stangent.artifact.count"] = answer["links"]!.AsArray().Count;
+    return answer;
+}));
+graph.Subcommands.Add(screenTests);
+
 var exportArg = new Argument<string>("path") { Description = "File to write (gzip'd JSON lines)." };
 var export = new Command("export", "Write the graph to one file, the unit CI shares (D25).") { exportArg };
 export.SetAction(pr => Cli.Run(pr, "graph export", ctx =>
@@ -190,13 +277,19 @@ graph.Subcommands.Add(import);
 
 SpecCommands.Add(root);
 FsdCommands.Add(root);
+AiCommands.Add(root);
 JiraCommands.Add(root);
 TicketCommands.Add(root);
+FixCommands.Add(root);
+FlowCommands.Add(root);
+InventoryCommands.Add(root);
+AreaCommands.Add(root);
+PageCommands.Add(root);
 
 return Cli.Execute(root, args, prettyOption);
 
 /// <summary>A check that ran and found problems: exit 1, with the report as the result.</summary>
-sealed class CheckFailed(string code, string message, JsonNode result) : StangentException(code, message)
+sealed class CheckFailed(string code, string message, JsonNode result, int exitCode = ExitCodes.Failed, IReadOnlyList<string>? details = null) : StangentException(code, message, exitCode, details)
 {
     public JsonNode Result { get; } = result;
 }
@@ -209,6 +302,7 @@ sealed class CliContext(string? repoPath, TelemetryWriter telemetry, Span span)
     public TelemetryWriter Telemetry { get; private set; } = telemetry;
     public Span Span { get; } = span;
     public StangentRepo Repo => repo ??= UseRepo(StangentRepo.Discover(repoPath ?? Directory.GetCurrentDirectory()));
+    public bool HasRepo => repo is not null;
     public FileArtifactStore Store => store ??= new FileArtifactStore(Repo, SchemaRegistry.Embedded);
 
     public StangentRepo UseRepo(StangentRepo r)
@@ -218,6 +312,8 @@ sealed class CliContext(string? repoPath, TelemetryWriter telemetry, Span span)
             Telemetry = new TelemetryWriter(r.TelemetryDir, SchemaRegistry.Embedded, TimeProvider.System, Console.Error);
         Span.Attributes["stangent.repo.id"] = r.Id;
         Span.Attributes["stangent.ai.enabled"] = r.Config.Ai.Enabled;
+        if (r.Config.RemovedSettings.Count > 0)
+            Console.Error.WriteLine($"warning: stangent.yaml still has {string.Join(", ", r.Config.RemovedSettings)}, which no longer do anything: every feature is on (D381). Take them out.");
         return r;
     }
 }
@@ -278,7 +374,7 @@ static class Cli
     public static int Run(ParseResult pr, string command, Func<CliContext, JsonNode?> body, Func<JsonNode?, string>? render)
     {
         var repoPath = pr.GetValue<string?>("--repo");
-        var span = DefaultTelemetry().Start("stangent." + command.Replace(' ', '.'));
+        var span = DefaultTelemetry().Start(TelemetryWriter.SpanName(command));
         span.Attributes["stangent.command"] = command;
         var ctx = new CliContext(repoPath, DefaultTelemetry(), span);
         int exit;

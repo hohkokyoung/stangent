@@ -1,0 +1,79 @@
+{
+  "codeTitle": "GET /api/v3/QualityDefinition/limits",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/QualityDefinition/limits",
+  "generated": {
+    "bundleHash": "e1ba4b99f2ef7126427da87a6e81ce177555de581feca22038058465078b59d7",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 6895,
+      "cutOff": 0,
+      "depth": 4,
+      "points": 6
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 4635,
+      "calls": 1,
+      "costUsd": 0.019249,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2326,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3402,
+      "calls": 1,
+      "costUsd": 0.019108,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3676,
+      "outputTokens": 522
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/QualityDefinition/limits",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/QualityDefinition/limits",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Qualities.QualityDefinitionController.GetLimits"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/QualityDefinition/limits"
+        ],
+        "id": "A1",
+        "text": "A caller sends GET /api/v3/QualityDefinition/limits and receives the minimum and maximum quality definition limits with an OK response."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Qualities.QualityDefinitionController.GetLimits"
+        ],
+        "id": "R1",
+        "text": "The returned minimum and maximum come from the fixed QualityDefinitionLimits Min and Max values, not from request input."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Qualities.QualityDefinitionController.GetLimits"
+        ],
+        "id": "S1",
+        "text": "Returns a limits object holding a minimum and a maximum value for quality definitions."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Quality Definition Limits",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

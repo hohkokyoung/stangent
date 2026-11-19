@@ -1,0 +1,63 @@
+{
+  "baseCommit": "2ae9bc0946596b1eb873b62de69ab09338da3a3f",
+  "changes": [
+    {
+      "file": "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs",
+      "point": "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.ProcessFile(System.String,System.String,System.String,System.String,NzbDrone.Core.Tv.Series)",
+      "reach": [
+        "frontend/src/Activity/Queue/Queue.tsx",
+        "frontend/src/Activity/Queue/QueueRow.tsx",
+        "frontend/src/App/App.tsx",
+        "frontend/src/App/AppRoutes.tsx",
+        "frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx",
+        "frontend/src/InteractiveImport/InteractiveImportModal.tsx",
+        "frontend/src/InteractiveImport/useInteractiveImport.ts",
+        "frontend/src/Series/Details/SeriesDetails.tsx",
+        "frontend/src/Series/Details/SeriesDetailsPage.tsx",
+        "frontend/src/Series/Details/SeriesDetailsSeason.tsx",
+        "frontend/src/Wanted/Missing/Missing.tsx",
+        "frontend/src/bootstrap.tsx",
+        "frontend/src/index.ts",
+        "src/NzbDrone.Core/Authentication/UserService.cs",
+        "src/NzbDrone.Core/Configuration/ConfigFileProvider.cs",
+        "src/NzbDrone.Core/Download/DownloadEventHub.cs",
+        "src/NzbDrone.Core/Download/History/DownloadHistoryService.cs",
+        "src/NzbDrone.Core/Download/Pending/PendingReleaseService.cs",
+        "src/NzbDrone.Core/HealthCheck/Checks/AllowedHostsCheck.cs",
+        "src/NzbDrone.Core/HealthCheck/Checks/ApiKeyValidationCheck.cs",
+        "src/NzbDrone.Core/HealthCheck/HealthCheckService.cs",
+        "src/NzbDrone.Core/Instrumentation/ReconfigureSentry.cs",
+        "src/NzbDrone.Core/Jobs/Scheduler.cs",
+        "src/NzbDrone.Core/Jobs/TaskManager.cs",
+        "src/NzbDrone.Core/Messaging/Commands/CommandExecutor.cs",
+        "src/NzbDrone.Core/Messaging/Commands/CommandQueueManager.cs",
+        "src/NzbDrone.Core/Messaging/Commands/IExecute.cs",
+        "src/NzbDrone.Core/Notifications/NotificationService.cs",
+        "src/NzbDrone.Core/Profiles/Qualities/QualityProfileService.cs",
+        "src/NzbDrone.Core/ProgressMessaging/ProgressMessageTarget.cs",
+        "src/NzbDrone.Core/Qualities/QualityDefinitionService.cs",
+        "src/NzbDrone.Core/ThingiProvider/ProviderFactory.cs",
+        "src/NzbDrone.Core/Update/ConfigureUpdateMechanism.cs",
+        "src/NzbDrone.Core/Update/History/UpdateHistoryService.cs",
+        "src/Sonarr.Api.V3/ManualImport/ManualImportController.cs",
+        "src/Sonarr.Api.V3/Qualities/QualityDefinitionController.cs",
+        "src/Sonarr.Api.V3/System/Tasks/TaskController.cs",
+        "src/Sonarr.Api.V5/ManualImport/ManualImportController.cs",
+        "src/Sonarr.Api.V5/Qualities/QualityDefinitionController.cs",
+        "src/Sonarr.Api.V5/System/Tasks/TaskController.cs"
+      ],
+      "why": {
+        "kind": "test",
+        "test": "NzbDrone.Api.Test.ManualImportServiceFolderLookupFixture.should_use_series_found_by_folder_name_when_full_relative_path_lookup_fails"
+      }
+    }
+  ],
+  "gaveUp": null,
+  "key": "SONB-12",
+  "schemaVersion": 1,
+  "test": {
+    "failedBefore": "  Assert.That(items.SelectMany(i => i.Rejections).Select(r => r.Reason), Does.Not.Contain(ImportRejectionReason.UnknownSeries))\n  Expected: not some item equal to UnknownSeries\n  But was:  < UnknownSeries >\n",
+    "file": "src/NzbDrone.Api.Test/ManualImportServiceFolderLookupFixture.cs",
+    "name": "NzbDrone.Api.Test.ManualImportServiceFolderLookupFixture.should_use_series_found_by_folder_name_when_full_relative_path_lookup_fails"
+  }
+}

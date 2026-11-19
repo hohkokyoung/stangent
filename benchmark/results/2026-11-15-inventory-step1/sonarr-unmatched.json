@@ -1,0 +1,111 @@
+{
+"clone": "/Users/hohkokyoung/stangent-bench/sonarr",
+"rows": {
+"field": [
+366,
+373,
+359,
+366
+],
+"action": [
+517,
+520,
+390,
+393
+],
+"server-field": [
+471,
+471,
+469,
+469
+],
+"server-choice": [
+47,
+47,
+47,
+47
+]
+},
+"unmatched": [
+{
+"file": "frontend/src/login.html",
+"line": 336,
+"kind": "field",
+"tag": "input",
+"snippet": "<input type=\"email\" name=\"username\" class=\"form-input\" placeholder=\"Username\" autocomplete=\"off\" pattern=\".{1,}\" required title=\"User name is required\" autofocu",
+"likely_skip": false
+},
+{
+"file": "frontend/src/login.html",
+"line": 351,
+"kind": "field",
+"tag": "input",
+"snippet": "<input type=\"password\" name=\"password\" class=\"form-input\" placeholder=\"Password\" required />",
+"likely_skip": false
+},
+{
+"file": "frontend/src/login.html",
+"line": 362,
+"kind": "field",
+"tag": "input",
+"snippet": "<input type=\"checkbox\" name=\"rememberMe\" id=\"rememberMe\" checked=\"checked\" />",
+"likely_skip": false
+},
+{
+"file": "frontend/src/login.html",
+"line": 375,
+"kind": "action",
+"tag": "button",
+"snippet": "<button type=\"submit\" class=\"button\">",
+"likely_skip": false
+},
+{
+"file": "frontend/src/login.html",
+"line": 412,
+"kind": "action",
+"tag": "button",
+"snippet": "<button type=\"submit\" class=\"button\">",
+"likely_skip": false
+},
+{
+"file": "frontend/src/login.html",
+"line": 436,
+"kind": "field",
+"tag": "input",
+"snippet": "<input type=\"text\" name=\"token\" class=\"form-input\" placeholder=\"Reset token\" autocomplete=\"off\" autocapitalize=\"false\" required autofocus=\"true\" />",
+"likely_skip": false
+},
+{
+"file": "frontend/src/login.html",
+"line": 449,
+"kind": "field",
+"tag": "input",
+"snippet": "<input type=\"text\" name=\"username\" class=\"form-input\" placeholder=\"Username\" autocomplete=\"off\" autocapitalize=\"false\" required />",
+"likely_skip": false
+},
+{
+"file": "frontend/src/login.html",
+"line": 461,
+"kind": "field",
+"tag": "input",
+"snippet": "<input type=\"password\" name=\"password\" class=\"form-input\" placeholder=\"New password\" required />",
+"likely_skip": false
+},
+{
+"file": "frontend/src/login.html",
+"line": 471,
+"kind": "field",
+"tag": "input",
+"snippet": "<input type=\"password\" name=\"passwordConfirmation\" class=\"form-input\" placeholder=\"Confirm new password\" required />",
+"likely_skip": false
+},
+{
+"file": "frontend/src/login.html",
+"line": 480,
+"kind": "action",
+"tag": "button",
+"snippet": "<button type=\"submit\" class=\"button\">",
+"likely_skip": false
+}
+]
+}

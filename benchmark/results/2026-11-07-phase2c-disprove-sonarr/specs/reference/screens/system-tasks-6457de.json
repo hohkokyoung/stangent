@@ -1,0 +1,238 @@
+{
+  "codeTitle": "/system/tasks · Tasks",
+  "entry": "page:tsconfig.json|/system/tasks",
+  "generated": {
+    "bundleHash": "704d1daee656d3d4f134cef234a9565042991619d8f2782ed862f54fa5c4c67e",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 43052,
+      "cutOff": 8,
+      "depth": 6,
+      "points": 169
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 24153,
+      "calls": 1,
+      "costUsd": 0.099961,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5651,
+      "outputTokens": 317
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 21182,
+      "calls": 1,
+      "costUsd": 0.108518,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 15915,
+      "outputTokens": 2351
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/system/tasks",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Scheduled/ScheduledTaskRow.tsx#ScheduledTaskRow",
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Command",
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/Command"
+        ],
+        "id": "A1",
+        "text": "Pressing Run on a scheduled task executes the command named by that task."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Queued/QueuedTaskRow.tsx#QueuedTaskRow",
+          "ts|frontend/src/Commands/useCommands.ts#useCancelCommand"
+        ],
+        "id": "A2",
+        "text": "For a queued command, a remove button opens a confirmation (\"Cancel\" / \"YesCancel\" / \"NoLeaveIt\"); confirming cancels the command."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Queued/QueuedTaskRow.tsx#QueuedTaskRow"
+        ],
+        "id": "R1",
+        "text": "The remove button appears only when the command status is queued."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R2",
+        "text": "Running the same command again within 5 seconds is ignored with a console warning."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useCommands"
+        ],
+        "id": "R3",
+        "text": "The command list is refetched at a regular interval."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Tasks.tsx#Tasks"
+        ],
+        "id": "S1",
+        "text": "The page is titled Tasks with the scope System and shows two sections: Scheduled, then Queue."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Scheduled/ScheduledTasks.tsx#ScheduledTasks"
+        ],
+        "id": "S2",
+        "text": "The Scheduled section shows a loading indicator while tasks load, and an error message \"Error loading tasks: <message>\" if loading fails."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Scheduled/ScheduledTasks.tsx#ScheduledTasks"
+        ],
+        "id": "S3",
+        "text": "When no scheduled tasks exist and loading has finished, the Scheduled section shows \"No scheduled tasks found.\""
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Scheduled/ScheduledTaskRow.tsx#ScheduledTaskRow"
+        ],
+        "id": "S4",
+        "text": "Each scheduled task row shows name, interval, last execution, last duration, next execution and a Run button."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Scheduled/ScheduledTaskRow.tsx#ScheduledTaskRow"
+        ],
+        "id": "S5",
+        "text": "A scheduled task with interval 0 shows \"disabled\" as its interval and \"-\" as next execution."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Scheduled/ScheduledTaskRow.tsx#ScheduledTaskRow"
+        ],
+        "id": "S6",
+        "text": "Next execution shows \"queued\" if the next execution time has passed and the command is queued, \"now\" if passed and not queued, otherwise the next execution time."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Scheduled/ScheduledTaskRow.tsx#ScheduledTaskRow"
+        ],
+        "id": "S7",
+        "text": "Last duration shows \"-\" unless the last start time is after 2010-01-01."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Scheduled/ScheduledTaskRow.tsx#ScheduledTaskRow",
+          "ts|frontend/src/Utilities/Command/isCommandExecuting.ts#isCommandExecuting"
+        ],
+        "id": "S8",
+        "text": "The Run button spins while the task's command is queued or started."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Queued/QueuedTasks.tsx#QueuedTasks"
+        ],
+        "id": "S9",
+        "text": "The Queue section shows a loading indicator while loading, and \"Error loading commands\" on error; otherwise a table of queued commands."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Queued/QueuedTaskRow.tsx#QueuedTaskRow",
+          "ts|frontend/src/System/Tasks/Queued/QueuedTaskRow.tsx#getFormattedDates"
+        ],
+        "id": "S10",
+        "text": "Each queue row shows a trigger icon (manual, scheduled or default), a status icon, the command name, and queued, started and ended times (\"-\" if missing), duration and actions."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Queued/QueuedTaskRow.tsx#getStatusIconProps"
+        ],
+        "id": "S11",
+        "text": "The status icon differs for queued, started (spinning), completed (success, with message), failed (danger, with message) and unknown statuses."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Queued/QueuedTaskRowNameCell.tsx#QueuedTaskRowNameCell"
+        ],
+        "id": "S12",
+        "text": "The command name cell lists the related series titles sorted by sort title, shows the season number if present, and shows \"From: <user agent>\" when a client user agent exists."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Queued/QueuedTaskRowNameCell.tsx#formatTitles"
+        ],
+        "id": "S13",
+        "text": "When more than 11 series titles apply, the first 10 are listed followed by \"N more\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/Queued/QueuedTaskRow.tsx#QueuedTaskRow",
+          "ts|frontend/src/System/Tasks/Queued/QueuedTaskRow.tsx#getFormattedDates"
+        ],
+        "id": "S14",
+        "text": "Times display as relative or formatted dates according to the UI settings, and refresh after 30 seconds."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "E1",
+        "text": "Running a task sends a POST to the command endpoint and adds or updates the returned command in the cached command list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useCancelCommand"
+        ],
+        "id": "E2",
+        "text": "Cancelling sends a DELETE for the command id and removes it from the cached command list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/System/Tasks/useTasks.ts#useTasks",
+          "ts|frontend/src/Commands/useCommands.ts#useCommands"
+        ],
+        "id": "E3",
+        "text": "The page loads scheduled tasks from the system task endpoint and commands from the command endpoint."
+      }
+    ]
+  },
+  "title": "System Tasks",
+  "unknowns": [
+    {
+      "file": "frontend/src/Commands/useCommands.ts",
+      "in": "ts|frontend/src/Commands/useCommands.ts#useCancelCommand",
+      "line": 101,
+      "reason": "HTTP DELETE {base}command/{*} matched no backend endpoint"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

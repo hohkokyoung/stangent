@@ -1,0 +1,94 @@
+{
+  "codeTitle": "GET /api/v5/Health",
+  "entry": "endpoint:Sonarr.Api.V5|GET /api/v5/Health",
+  "generated": {
+    "bundleHash": "9b2579ea68665b08b4ac665ac04d911fa4e2b88695e0542a6ac9fefcfd09b593",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 8873,
+      "cutOff": 8,
+      "depth": 4,
+      "points": 23
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 5864,
+      "calls": 1,
+      "costUsd": 0.024165,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2068,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4472,
+      "calls": 1,
+      "costUsd": 0.024958,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4533,
+      "outputTokens": 679
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|GET /api/v5/Health",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/Health",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Health.HealthController.GetHealth"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/Health"
+        ],
+        "id": "A1",
+        "text": "A caller sends GET /api/v5/Health to retrieve all current health check results."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckService.Results",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Health.HealthController.GetHealth"
+        ],
+        "id": "R1",
+        "text": "The endpoint returns the stored results as they are and runs no new checks itself."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Health.HealthController.GetHealth"
+        ],
+        "id": "S1",
+        "text": "Returns a JSON list of the current health check results, each as a health item."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Health.HealthResourceMapper.ToResource(NzbDrone.Core.HealthCheck.HealthCheck)"
+        ],
+        "id": "S2",
+        "text": "Each item contains Id, Source (the source's name), Type, Reason, Message and WikiUrl (the full URI)."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckService.Results"
+        ],
+        "id": "S3",
+        "text": "The list holds the values of the stored health check results, so it is empty when there are none."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Health checks list (API v5)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

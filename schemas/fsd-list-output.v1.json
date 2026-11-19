@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:fsd-list-output:v1",
+  "title": "What stangent-fsd-lister returns (layer 5, D403, D404)",
+  "description": "One answer per checklist item code didn't tick off: covered (the section and the FSD sentence that describes it, word for word, checked) or left-out (an undocumented finding code writes, at the item's own line). Code reads the answers one by one, so an odd one is not checked rather than a failed run.",
+  "type": "object",
+  "required": [
+    "checklist"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "checklist": {
+      "description": "D403: one answer per checklist item code didn't tick off.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "answer"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "description": "The item's id, exactly as in the checklist (S03 or S03.012).",
+            "type": "string",
+            "maxLength": 40
+          },
+          "answer": {
+            "enum": [
+              "covered",
+              "left-out"
+            ]
+          },
+          "section": {
+            "description": "For covered: the FSD section that describes it, as in its heading's brackets. For left-out: the section of the screen it belongs to, or null.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300
+          },
+          "fsdQuote": {
+            "description": "For covered: the FSD sentence that describes it, copied word for word from that section. For left-out: null.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "note": {
+            "description": "For left-out: one sentence on what it is or does. Optional.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 600
+          },
+          "evidence": {
+            "description": "For left-out: more code that backs it (path:line); for a whole screen, the line that defines its route.",
+            "type": [
+              "array",
+              "null"
+            ],
+            "maxItems": 12,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400
+            }
+          }
+        }
+      }
+    }
+  }
+}

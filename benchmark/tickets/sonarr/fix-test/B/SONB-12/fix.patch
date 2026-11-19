@@ -1,0 +1,13 @@
+diff --git a/src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs b/src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs
+index 89b447e5a9..27178a524d 100644
+--- a/src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs
++++ b/src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs
+@@ -307,7 +307,7 @@ private ManualImportItem ProcessFile(string rootFolder, string baseFolder, strin
+ 
+                 if (series == null)
+                 {
+-                    _parsingService.GetSeries(relativeFile.Split('\\', '/')[0]);
++                    series = _parsingService.GetSeries(relativeFile.Split('\\', '/')[0]);
+                 }
+ 
+                 if (series == null)

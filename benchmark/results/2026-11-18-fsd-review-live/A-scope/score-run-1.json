@@ -1,0 +1,485 @@
+{
+  "doc": "kavita-fsd",
+  "note": "Phase 2b (D56, D57): findings in specs/trace.yaml scored against the frozen answer key. 'found' lets a gap be reported as a conflict and back; 'foundAsKind' needs the planted kind.",
+  "found": {
+    "overall": {
+      "found": 13,
+      "of": 30,
+      "share": 0.433,
+      "range95": [
+        0.267,
+        0.6
+      ]
+    },
+    "gap": {
+      "found": 5,
+      "of": 10,
+      "share": 0.5,
+      "range95": [
+        0.2,
+        0.8
+      ]
+    },
+    "conflict": {
+      "found": 6,
+      "of": 10,
+      "share": 0.6,
+      "range95": [
+        0.3,
+        0.9
+      ]
+    },
+    "undocumented": {
+      "found": 2,
+      "of": 10,
+      "share": 0.2,
+      "range95": [
+        0,
+        0.5
+      ]
+    }
+  },
+  "foundAsKind": {
+    "overall": {
+      "found": 13,
+      "of": 30,
+      "share": 0.433,
+      "range95": [
+        0.267,
+        0.6
+      ]
+    },
+    "gap": {
+      "found": 5,
+      "of": 10,
+      "share": 0.5,
+      "range95": [
+        0.2,
+        0.8
+      ]
+    },
+    "conflict": {
+      "found": 6,
+      "of": 10,
+      "share": 0.6,
+      "range95": [
+        0.3,
+        0.9
+      ]
+    },
+    "undocumented": {
+      "found": 2,
+      "of": 10,
+      "share": 0.2,
+      "range95": [
+        0,
+        0.5
+      ]
+    }
+  },
+  "noise": {
+    "findings": 25,
+    "unplanted": 12,
+    "worstCaseShare": 0.48,
+    "sample": 12,
+    "handChecked": 0,
+    "realInSample": null
+  },
+  "bars": {
+    "finds": false,
+    "notTooNoisy": null
+  },
+  "finerVerdicts": null,
+  "candidates": {
+    "sections": 0,
+    "byCode": 0,
+    "byAi": 0,
+    "aiFoundNone": 0
+  },
+  "cost": {
+    "finder": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "judge": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "checker": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "disprover": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    }
+  },
+  "items": [
+    {
+      "id": "G1",
+      "kind": "gap",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "G2",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S002",
+      "state": "gap"
+    },
+    {
+      "id": "G3",
+      "kind": "gap",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "G4",
+      "kind": "gap",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "G5",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S004",
+      "state": "gap"
+    },
+    {
+      "id": "G6",
+      "kind": "gap",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "G7",
+      "kind": "gap",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "G8",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S008",
+      "state": "gap"
+    },
+    {
+      "id": "G9",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S018",
+      "state": "gap"
+    },
+    {
+      "id": "G10",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S012",
+      "state": "gap"
+    },
+    {
+      "id": "C1",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S001",
+      "state": "conflict"
+    },
+    {
+      "id": "C2",
+      "kind": "conflict",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "C3",
+      "kind": "conflict",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "C4",
+      "kind": "conflict",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "C5",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S005",
+      "state": "conflict"
+    },
+    {
+      "id": "C6",
+      "kind": "conflict",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "C7",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S009",
+      "state": "conflict"
+    },
+    {
+      "id": "C8",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S010",
+      "state": "conflict"
+    },
+    {
+      "id": "C9",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S013",
+      "state": "conflict"
+    },
+    {
+      "id": "C10",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S019",
+      "state": "conflict"
+    },
+    {
+      "id": "U1",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S024",
+      "state": "undocumented"
+    },
+    {
+      "id": "U2",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S025",
+      "state": "undocumented"
+    },
+    {
+      "id": "U3",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U4",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U5",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U6",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U7",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U8",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U9",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U10",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    }
+  ],
+  "handCheckSample": [
+    {
+      "id": "S007",
+      "state": "match",
+      "section": "8.3",
+      "fsdQuote": "The Tags screen lists every tag with the number of series and issues that carry it",
+      "page": null,
+      "pageQuote": null,
+      "note": "A Tags browse route renders the BrowseTagsComponent."
+    },
+    {
+      "id": "S006",
+      "state": "match",
+      "section": "8.1",
+      "fsdQuote": "The People screen lists people with the number of series and issues each appears in, along with a filter panel and a jump bar, and clicking a person opens that person's page.",
+      "page": null,
+      "pageQuote": null,
+      "note": "A People browse route renders BrowsePeopleComponent. This match is based on the route only. I did not read the component for the counts, filter panel or jump bar."
+    },
+    {
+      "id": "S014",
+      "state": "match",
+      "section": "10.1",
+      "fsdQuote": "Days of Backups and Days of Logs each accept a value from 1 to 30",
+      "page": null,
+      "pageQuote": null,
+      "note": "Form validators enforce min 1 and max 30 on both total backups and total logs."
+    },
+    {
+      "id": "S020",
+      "state": "match",
+      "section": "10.3",
+      "fsdQuote": "Include in Dashboard and Include in Search are turned on by default.",
+      "page": null,
+      "pageQuote": null,
+      "note": "Both includeInDashboard and includeInSearch default to true."
+    },
+    {
+      "id": "S022",
+      "state": "match",
+      "section": "10.3",
+      "fsdQuote": "| Book | Pdf, Epub |",
+      "page": null,
+      "pageQuote": null,
+      "note": "Book defaults to the Pdf and Epub file groups."
+    },
+    {
+      "id": "S023",
+      "state": "match",
+      "section": "10.3",
+      "fsdQuote": "| Light Novel | Epub |",
+      "page": null,
+      "pageQuote": null,
+      "note": "Light Novel defaults to the Epub file group."
+    },
+    {
+      "id": "S015",
+      "state": "match",
+      "section": "10.1",
+      "fsdQuote": "Cache Size must be at least 50 MB",
+      "page": null,
+      "pageQuote": null,
+      "note": "A minimum of 50 is enforced on cache size."
+    },
+    {
+      "id": "S017",
+      "state": "match",
+      "section": "10.1",
+      "fsdQuote": "A Reset to Default button restores these settings after a confirmation.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The Reset to Default button asks for confirmation, then resets the server settings."
+    },
+    {
+      "id": "S011",
+      "state": "match",
+      "section": "9.2",
+      "fsdQuote": "Prompt for Re-Reads sets after how many days without progress Kavita offers to re-read, and 0 turns the prompt off.",
+      "page": null,
+      "pageQuote": null,
+      "note": "A promptForRereadsAfter number setting exists with a minimum of 0."
+    },
+    {
+      "id": "S003",
+      "state": "match",
+      "section": "3.1",
+      "fsdQuote": "The Edit button is shown only to administrators, and the Download button only to administrators and users with the Download role.",
+      "page": null,
+      "pageQuote": null,
+      "note": "The Edit button sits inside an isAdmin check."
+    },
+    {
+      "id": "S016",
+      "state": "match",
+      "section": "10.1",
+      "fsdQuote": "the base URL must start and end with a slash",
+      "page": null,
+      "pageQuote": null,
+      "note": "The base URL pattern requires a leading and trailing slash."
+    },
+    {
+      "id": "S021",
+      "state": "match",
+      "section": "10.3",
+      "fsdQuote": "| Manga | Archive, Image |",
+      "page": null,
+      "pageQuote": null,
+      "note": "Manga defaults to the Archive and Images file groups."
+    }
+  ]
+}

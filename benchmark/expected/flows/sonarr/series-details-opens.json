@@ -1,0 +1,394 @@
+{
+  "repo": "sonarr",
+  "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+  "id": "series-details-opens",
+  "name": "Series details opens",
+  "kind": "screen-opens",
+  "start": {
+    "what": "the /series/:titleSlug route renders SeriesDetailsPage",
+    "at": "frontend/src/App/AppRoutes.tsx:70",
+    "code": "<Route path=\"/series/:titleSlug\" element={<SeriesDetailsPage />} />"
+  },
+  "actor": {
+    "who": "signed-in user (API fallback policy requires an authenticated user)",
+    "why": "no [AllowAnonymous] on the controllers; fallback policy requires auth",
+    "at": "src/NzbDrone.Host/Startup.cs:232",
+    "code": "options.FallbackPolicy = new AuthorizationPolicyBuilder(\"API\")\n.RequireAuthenticatedUser()\n.Build();"
+  },
+  "checks": [],
+  "steps": [
+    {
+      "n": 1,
+      "from": null,
+      "what": "SeriesDetailsPage calls useSeries() to load the series list (to resolve the titleSlug)",
+      "at": "frontend/src/Series/Details/SeriesDetailsPage.tsx:10",
+      "code": "const { data: allSeries } = useSeries();"
+    },
+    {
+      "n": 2,
+      "from": 1,
+      "what": "useSeries queries GET /series (react-query, staleTime 5 minutes, so it may be served from cache)",
+      "at": "frontend/src/Series/useSeries.ts:612",
+      "code": "const { data, ...result } = useApiQuery<Series[]>({\npath: '/series',\nqueryOptions: {\nstaleTime: 5 * 60 * 1000,\ngcTime: Infinity,\n},\n});"
+    },
+    {
+      "n": 3,
+      "from": 2,
+      "what": "controller AllSeries lists all series (no tvdbId given)",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:120",
+      "code": "public Ok<List<SeriesResource>> AllSeries(int? tvdbId, [FromQuery] SeriesSubresource[]? includeSubresources = null)"
+    },
+    {
+      "n": 4,
+      "from": 3,
+      "what": "loads series statistics",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:122",
+      "code": "var seriesStats = _seriesStatisticsService.SeriesStatistics();"
+    },
+    {
+      "n": 5,
+      "from": 4,
+      "what": "statistics query over Episodes and EpisodeFiles",
+      "at": "src/NzbDrone.Core/SeriesStats/SeriesStatisticsService.cs:32",
+      "code": "var seasonStatistics = _seriesStatisticsRepository.SeriesStatistics();",
+      "end": {
+        "kind": "database",
+        "detail": "Episodes and EpisodeFiles tables (aggregate statistics query)"
+      }
+    },
+    {
+      "n": 6,
+      "from": 3,
+      "what": "reads all series",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:132",
+      "code": "seriesResources.AddRange(_seriesService.GetAllSeries().Select(s => s.ToResource(includeSeasonImages)));",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:126",
+          "code": "if (tvdbId.HasValue)"
+        }
+      ]
+    },
+    {
+      "n": 7,
+      "from": 6,
+      "what": "loads every series row",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:181",
+      "code": "return _seriesRepository.All().ToList();",
+      "end": {
+        "kind": "database",
+        "detail": "Series table"
+      }
+    },
+    {
+      "n": 8,
+      "from": 3,
+      "what": "populates translations",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:138",
+      "code": "PopulateTranslations(seriesResources);"
+    },
+    {
+      "n": 9,
+      "from": 8,
+      "what": "reads all series translations",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:312",
+      "code": "var translations = _seriesTranslationService.GetTranslations()",
+      "end": {
+        "kind": "database",
+        "detail": "SeriesTranslations table"
+      }
+    },
+    {
+      "n": 10,
+      "from": null,
+      "what": "SeriesDetailsPage renders SeriesDetails for the found series",
+      "at": "frontend/src/Series/Details/SeriesDetailsPage.tsx:50",
+      "code": "return <SeriesDetails seriesId={series.id} />;",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "frontend/src/Series/Details/SeriesDetailsPage.tsx:46",
+          "code": "if (!series) {"
+        }
+      ]
+    },
+    {
+      "n": 11,
+      "from": 10,
+      "what": "SeriesDetails asks for the episodes of the series",
+      "at": "frontend/src/Series/Details/SeriesDetails.tsx:118",
+      "code": "} = useEpisodes({ seriesId });"
+    },
+    {
+      "n": 12,
+      "from": 11,
+      "what": "useEpisodes queries GET /episode?seriesId=",
+      "at": "frontend/src/Episode/useEpisodes.ts:37",
+      "code": "const { isPlaceholderData, queryKey, ...result } = useApiQuery<Episode[]>({\npath: '/episode',"
+    },
+    {
+      "n": 13,
+      "from": 12,
+      "what": "controller GetEpisodes",
+      "at": "src/Sonarr.Api.V5/Episodes/EpisodeController.cs:28",
+      "code": "public Results<Ok<List<EpisodeResource>>, BadRequest> GetEpisodes(int? seriesId, int? seasonNumber, [FromQuery]List<int> episodeIds, int? episodeFileId, [FromQuery] EpisodeSubresource[]? includeSubresources = null)"
+    },
+    {
+      "n": 14,
+      "from": 13,
+      "what": "gets the episodes of the series",
+      "at": "src/Sonarr.Api.V5/Episodes/EpisodeController.cs:41",
+      "code": "return TypedResults.Ok(MapToResource(_episodeService.GetEpisodeBySeries(seriesId.Value), includeSeries, includeEpisodeFile, includeImages));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Api.V5/Episodes/EpisodeController.cs:34",
+          "code": "if (seriesId.HasValue)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Sonarr.Api.V5/Episodes/EpisodeController.cs:36",
+          "code": "if (seasonNumber.HasValue)"
+        }
+      ]
+    },
+    {
+      "n": 15,
+      "from": 14,
+      "what": "reads the episodes",
+      "at": "src/NzbDrone.Core/Tv/EpisodeService.cs:101",
+      "code": "return _episodeRepository.GetEpisodes(seriesId).ToList();",
+      "end": {
+        "kind": "database",
+        "detail": "Episodes table (EpisodeRepository.GetEpisodes by SeriesId)"
+      }
+    },
+    {
+      "n": 16,
+      "from": 10,
+      "what": "SeriesDetails asks for the episode files of the series",
+      "at": "frontend/src/Series/Details/SeriesDetails.tsx:133",
+      "code": "} = useEpisodeFiles({ seriesId });"
+    },
+    {
+      "n": 17,
+      "from": 16,
+      "what": "useEpisodeFiles queries GET /episodeFile?seriesId=",
+      "at": "frontend/src/EpisodeFile/useEpisodeFiles.ts:20",
+      "code": "const result = useApiQuery<EpisodeFile[]>({\npath: '/episodeFile',\nqueryParams: { ...params },\nqueryOptions: {\nenabled:\n('seriesId' in params && params.seriesId !== undefined) ||\n('episodeFileIds' in params && params.episodeFileIds?.length > 0),\n},\n});"
+    },
+    {
+      "n": 18,
+      "from": 17,
+      "what": "controller GetEpisodeFiles",
+      "at": "src/Sonarr.Api.V5/EpisodeFiles/EpisodeFileController.cs:62",
+      "code": "public Results<Ok<List<EpisodeFileResource>>, BadRequest> GetEpisodeFiles(int? seriesId, [FromQuery] List<int>? episodeFileIds)"
+    },
+    {
+      "n": 19,
+      "from": 18,
+      "what": "loads the series",
+      "at": "src/Sonarr.Api.V5/EpisodeFiles/EpisodeFileController.cs:71",
+      "code": "var series = _seriesService.GetSeries(seriesId.Value);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Api.V5/EpisodeFiles/EpisodeFileController.cs:69",
+          "code": "if (seriesId.HasValue)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Sonarr.Api.V5/EpisodeFiles/EpisodeFileController.cs:64",
+          "code": "if (!seriesId.HasValue && episodeFileIds?.Any() == false)"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "ISeriesService.GetSeries(int): 63 call sites of _seriesService.GetSeries( in src (non-test)"
+      }
+    },
+    {
+      "n": 20,
+      "from": 18,
+      "what": "loads the files of the series",
+      "at": "src/Sonarr.Api.V5/EpisodeFiles/EpisodeFileController.cs:72",
+      "code": "var files = _mediaFileService.GetFilesBySeries(seriesId.Value);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Api.V5/EpisodeFiles/EpisodeFileController.cs:69",
+          "code": "if (seriesId.HasValue)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Sonarr.Api.V5/EpisodeFiles/EpisodeFileController.cs:64",
+          "code": "if (!seriesId.HasValue && episodeFileIds?.Any() == false)"
+        }
+      ]
+    },
+    {
+      "n": 21,
+      "from": 20,
+      "what": "reads the files",
+      "at": "src/NzbDrone.Core/MediaFiles/MediaFileService.cs:72",
+      "code": "return _mediaFileRepository.GetFilesBySeries(seriesId);",
+      "end": {
+        "kind": "database",
+        "detail": "EpisodeFiles table"
+      }
+    },
+    {
+      "n": 22,
+      "from": 18,
+      "what": "maps each file to a resource (quality/custom-format calculation)",
+      "at": "src/Sonarr.Api.V5/EpisodeFiles/EpisodeFileController.cs:79",
+      "code": "return TypedResults.Ok(files.ConvertAll(e => e.ToResource(series, _upgradableSpecification, _formatCalculator)));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Api.V5/EpisodeFiles/EpisodeFileController.cs:69",
+          "code": "if (seriesId.HasValue)"
+        },
+        {
+          "kind": "unless",
+          "at": "src/Sonarr.Api.V5/EpisodeFiles/EpisodeFileController.cs:74",
+          "code": "if (files == null)"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "ToResource with the upgradable specification and custom-format calculator is not walked"
+      }
+    },
+    {
+      "n": 23,
+      "from": 10,
+      "what": "SeriesDetails reads the command queue",
+      "at": "frontend/src/Series/Details/SeriesDetails.tsx:135",
+      "code": "const { data: commands } = useCommands();"
+    },
+    {
+      "n": 24,
+      "from": 23,
+      "what": "useCommands queries GET /command (refetches on an interval)",
+      "at": "frontend/src/Commands/useCommands.ts:23",
+      "code": "const result = useApiQuery<Command[]>({\npath: '/command',\nqueryOptions: {\nrefetchInterval: COMMAND_REFETCH_INTERVAL,\n},\n});"
+    },
+    {
+      "n": 25,
+      "from": 24,
+      "what": "controller GetStartedCommands",
+      "at": "src/Sonarr.Api.V5/Commands/CommandController.cs:81",
+      "code": "public Ok<List<CommandResource>> GetStartedCommands()"
+    },
+    {
+      "n": 26,
+      "from": 25,
+      "what": "lists all commands",
+      "at": "src/Sonarr.Api.V5/Commands/CommandController.cs:83",
+      "code": "return TypedResults.Ok(_commandQueueManager.All()",
+      "end": {
+        "kind": "unknown",
+        "detail": "in-memory command queue (CommandQueueManager.All), no database read"
+      }
+    },
+    {
+      "n": 27,
+      "from": 10,
+      "what": "SeriesDetails wraps its content in SeriesDetailsProvider",
+      "at": "frontend/src/Series/Details/SeriesDetails.tsx:474",
+      "code": "<SeriesDetailsProvider seriesId={seriesId}>"
+    },
+    {
+      "n": 28,
+      "from": 27,
+      "what": "QueueDetailsProvider queries GET /queue/details?seriesId=",
+      "at": "frontend/src/Activity/Queue/Details/QueueDetailsProvider.tsx:32",
+      "code": "const { data } = useApiQuery<Queue[]>({\npath: '/queue/details',\nqueryParams: { ...filter },\nqueryOptions: {\nenabled: Object.keys(filter).length > 0,\n},\n});"
+    },
+    {
+      "n": 29,
+      "from": 28,
+      "what": "controller GetQueue",
+      "at": "src/Sonarr.Api.V5/Queue/QueueDetailsController.cs:42",
+      "code": "public Ok<List<QueueResource>> GetQueue(int? seriesId, [FromQuery]List<int> episodeIds, [FromQuery] QueueSubresource[]? includeSubresources = null)"
+    },
+    {
+      "n": 30,
+      "from": 29,
+      "what": "reads the download queue",
+      "at": "src/Sonarr.Api.V5/Queue/QueueDetailsController.cs:44",
+      "code": "var queue = _queueService.GetQueue();",
+      "end": {
+        "kind": "unknown",
+        "detail": "in-memory queue list (QueueService._queue), no database read"
+      }
+    },
+    {
+      "n": 31,
+      "from": 29,
+      "what": "reads the pending releases",
+      "at": "src/Sonarr.Api.V5/Queue/QueueDetailsController.cs:45",
+      "code": "var pending = _pendingReleaseService.GetPendingQueue();",
+      "end": {
+        "kind": "unknown",
+        "detail": "in-memory static list PendingReleaseService._pendingReleases, no database read"
+      }
+    },
+    {
+      "n": 32,
+      "from": 29,
+      "what": "filters to the series",
+      "at": "src/Sonarr.Api.V5/Queue/QueueDetailsController.cs:52",
+      "code": "return TypedResults.Ok(fullQueue.Where(q => q.Series?.Id == seriesId).ToResource(includeSeries, includeEpisodes));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Api.V5/Queue/QueueDetailsController.cs:50",
+          "code": "if (seriesId.HasValue)"
+        }
+      ]
+    },
+    {
+      "n": 33,
+      "from": 27,
+      "what": "SeriesDetailsProvider also calls useEpisodeFiles (same GET /episodeFile?seriesId= query as the step above, de-duplicated by react-query)",
+      "at": "frontend/src/Series/Details/SeriesDetailsProvider.tsx:10",
+      "code": "const { data } = useEpisodeFiles({ seriesId });",
+      "end": {
+        "kind": "unknown",
+        "detail": "same query key as the GET /episodeFile call; one request"
+      }
+    },
+    {
+      "n": 34,
+      "from": 10,
+      "what": "mount effect calls populate()",
+      "at": "frontend/src/Series/Details/SeriesDetails.tsx:375",
+      "code": "populate();"
+    },
+    {
+      "n": 35,
+      "from": 34,
+      "what": "populate refetches episodes and episode files",
+      "at": "frontend/src/Series/Details/SeriesDetails.tsx:368",
+      "code": "refetchEpisodes();\nrefetchEpisodeFiles();",
+      "end": {
+        "kind": "unknown",
+        "detail": "re-runs the GET /episode and GET /episodeFile calls above (refetchEpisodes/refetchEpisodeFiles)"
+      }
+    }
+  ],
+  "exits": [],
+  "links": [],
+  "notes": [
+    "Frontend request root is /api/v5, so the V5 controllers are followed (SeriesController, EpisodeController, EpisodeFileController, CommandController, QueueDetailsController).",
+    "Steps a-f run for SeriesDetailsPage; g onwards only when a series matches the titleSlug (the 'if (!series) { return <NotFound ... }' guard on SeriesDetailsPage returns first).",
+    "useEpisodes/useEpisodeFiles are only enabled when seriesId is defined (their 'enabled' option); not modelled as a condition.",
+    "Child components (SeriesDetailsSeason, EpisodeRow, ...) use the same /episode, /command and series queries, de-duplicated by react-query; not listed again.",
+    "Not walked on GET /series: MapCoversToLocal, PopulateAlternateTitles (scene mappings), LinkRootFolderPath, LinkSeriesStatistics.",
+    "Not included: the effect at SeriesDetails.tsx:378 registers a SignalR page populator (registerPagePopulator) - no request on mount; navigate('/') in SeriesDetailsPage's effect only runs when the series disappears.",
+    "Step 'a' is only the data hook of the page; the useSeries query may already be cached from app start."
+  ]
+}

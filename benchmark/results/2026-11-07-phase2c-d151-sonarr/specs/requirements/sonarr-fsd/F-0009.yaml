@@ -1,0 +1,137 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0009"
+doc: "sonarr-fsd"
+section: "Wanted / Missing episodes"
+title: "Missing episodes"
+parent: "F-0008"
+children: []
+textHash: "4ef6a2f5a8bf4e497c005d63d68f672450e3a9a94711061c4ad0f61e4d3ca4eb"
+requirements:
+  - id: "R-0054"
+    title: "Missing screen lists aired monitored episodes without files"
+    kind: "rule"
+    statement: "The missing screen lists monitored episodes that have aired but have no file on disk."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Wanted / Missing episodes"
+        text: "The missing screen lists monitored episodes that have aired but have no file on disk."
+        hash: "7fdf420cc047b4c149da08c7cb0e007c5f8fb68fc2c17d75b0db0580990ea96c"
+    acceptance:
+      - text: "A monitored episode that has aired and has no file on disk appears on the missing screen."
+        quotes:
+          - doc: "sonarr-fsd"
+            section: "Wanted / Missing episodes"
+            text: "The missing screen lists monitored episodes that have aired but have no file on disk."
+            hash: "7fdf420cc047b4c149da08c7cb0e007c5f8fb68fc2c17d75b0db0580990ea96c"
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "9c276b1ca4d059a2ed1775a32d922c1c03606f02f0a60748e21b5cfb8d8e6ca8"
+  - id: "R-0055"
+    title: "Below-cutoff episodes are not listed"
+    kind: "rule"
+    statement: "Episodes whose file exists but whose quality is below the cutoff are not listed on the missing screen."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Wanted / Missing episodes"
+        text: "Episodes whose file exists but whose quality is below the cutoff are not listed here."
+        hash: "1a2d828d09c991124880953f23da771d458443290c91fe512add9ca17482ec3c"
+    acceptance:
+      - text: "An episode with a file below the quality cutoff does not appear on the missing screen."
+        quotes:
+          - doc: "sonarr-fsd"
+            section: "Wanted / Missing episodes"
+            text: "Episodes whose file exists but whose quality is below the cutoff are not listed here."
+            hash: "1a2d828d09c991124880953f23da771d458443290c91fe512add9ca17482ec3c"
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "c98f71a5b5065178700523660cb4d2456725ad7d7dd53f038775354bd59fa59a"
+  - id: "R-0056"
+    title: "Search selected episodes"
+    kind: "flow"
+    statement: "The user can search for the selected episodes."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Wanted / Missing episodes"
+        text: "The user can search for the selected episodes, or for all missing episodes."
+        hash: "a0baf563420b806f6c82d5ffd857d090d2ea02a7b0faea7a02badc08cd7e102e"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "a1982939e11d98631bf6c5980c83b422f0b75048c343f03a4a101fdb75a58ccc"
+  - id: "R-0057"
+    title: "Search all missing episodes"
+    kind: "flow"
+    statement: "The user can search for all missing episodes."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Wanted / Missing episodes"
+        text: "The user can search for the selected episodes, or for all missing episodes."
+        hash: "a0baf563420b806f6c82d5ffd857d090d2ea02a7b0faea7a02badc08cd7e102e"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "7143442052af1e74cf02f741be440c695b63638f35a1dea0b59767e3410bf989"
+  - id: "R-0058"
+    title: "Search All starts without confirmation"
+    kind: "rule"
+    statement: "Search All starts straight away, without asking the user to confirm."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Wanted / Missing episodes"
+        text: "Search All starts straight away, without asking the user to confirm."
+        hash: "0bfb78d31a1e3c9ebffddefbda0f4cad418e814c702b140d46570dfeb84eef8d"
+    acceptance:
+      - text: "When the user chooses Search All, the search starts with no confirmation prompt."
+        quotes:
+          - doc: "sonarr-fsd"
+            section: "Wanted / Missing episodes"
+            text: "Search All starts straight away, without asking the user to confirm."
+            hash: "0bfb78d31a1e3c9ebffddefbda0f4cad418e814c702b140d46570dfeb84eef8d"
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "8f24b62807c25e73a9efcbe0057c6a6e3eebb6e73bdff5ed62ea1506bfa4857d"
+  - id: "R-0059"
+    title: "Toggle monitored/unmonitored missing episodes"
+    kind: "flow"
+    statement: "The user can toggle between monitored and unmonitored missing episodes."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Wanted / Missing episodes"
+        text: "The user can toggle between monitored and unmonitored missing episodes."
+        hash: "78f716187ae0383f6089dc65a6097fccf25d55a6bafa71b91b2d3f2cc91f213c"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "16dc7605def3947ee157c383dd08501a86708115023b46b18411ec99e5fea0ec"
+  - id: "R-0060"
+    title: "Weekly email digest of missing episodes"
+    kind: "rule"
+    statement: "A weekly email digest lists every missing episode."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Wanted / Missing episodes"
+        text: "A weekly email digest lists every missing episode."
+        hash: "f1bc6b75f091c53c21153ea8f85ece20b1d843691a43bcb150a76b596b8efed2"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "ec710547f93c4767e496858409b3cb842b2ce245f91e9ae08b094c7259d2828f"
+definitions: []
+journeys: []
+background: []
+retired: []

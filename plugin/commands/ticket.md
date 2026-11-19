@@ -1,12 +1,14 @@
 ---
 description: Turn a Jira ticket into a checked context bundle (Phase 3), then offer the bug proof and draft comments.
 argument-hint: "<KEY> [prove [hint] | questions [client] | resolution <base..head> [client] | post <draft>]"
-allowed-tools: Bash(stangent ticket:*), Bash(stangent jira login:*), Bash(*ticket-run.sh:*), Task, Read
+allowed-tools: Bash(stangent ticket:*), Bash(stangent graph impact:*), Bash(stangent jira login:*), Bash(*ticket-run.sh:*), Read
 ---
 
-Work on a Jira ticket with stangent (D69–D82). Code decides every step; you only run the subagent each step names.
+Work on a Jira ticket with stangent (D69–D82). Code decides every step; the batch driver runs the AI each step names.
 Never judge a quote, a page or a test yourself, never write a comment to Jira yourself, and never edit
 `.stangent/tickets/` except where a step's prompt tells a subagent to write its result.
+
+**Every AI step runs through the batch driver (D161, D162),** never as a subagent in this session: the driver gives each step the model and effort pinned in `stangent.yaml` and records them. If it stops with `ai_settings_missing`, tell the person to set `ai: { model: …, effort: … }` in `stangent.yaml` (or pass `--model` and `--effort` for one run) and stop: don't choose either yourself.
 
 **The bundle** (`$ARGUMENTS` is a key, e.g. `PROJ-123`):
 
@@ -17,13 +19,17 @@ Never judge a quote, a page or a test yourself, never write a comment to Jira yo
    yourself. It is an AI step capped by `tickets.findBudget` (default 30 turns, $1; usually a few cents):
 
    ```bash
-   ${CLAUDE_PLUGIN_ROOT}/scripts/ticket-run.sh --no-pull <KEY>
+   ${CLAUDE_PLUGIN_ROOT}/scripts/ticket-run.sh --max-cost "$STANGENT_MAX_COST" --no-pull <KEY>
    ```
 3. `stangent ticket bundle <KEY> --format md`, and read `.stangent/tickets/<KEY>/bundle.json` too.
 4. Show the user the Markdown view: the starting points with their reasons, the pages, FSD sections, impact and
    attachments. Ask whether to add or remove starting points (`stangent ticket points <KEY> --add <file|page|symbol>
    --remove <file|page|symbol>`, then build the bundle again). Missing pages: suggest `/stangent:spec-generate <page>`.
 5. The bundle is now this session's starting context: open the files its pointers name when the work needs them.
+   Before settling which files a fix changes, run `stangent graph impact --file <path> --format md` (or `--symbol
+   <Type.Member>`) on each file you mean to change: it lists who else runs that code (callers, endpoints, event
+   handlers, tests) and the files that usually change with it, which is where the rest of a multi-file fix tends to be
+   (D339: an agent with it named the whole fix for 8 of 20 multi-file Sonarr bugs, 3 without).
 6. Offer next steps: for a bug, **prove it** before any fix; for any ticket, a **questions** draft.
 
 **Prove a bug** (`<KEY> prove [hint]`): this runs an AI step that writes a test and runs commands; say it costs up to
@@ -32,7 +38,7 @@ through the driver, which starts the reproducer headless under the permission ru
 don't start `stangent-bug-reproducer` yourself:
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/ticket-run.sh --prove [--hint "<hint>"] <KEY>
+${CLAUDE_PLUGIN_ROOT}/scripts/ticket-run.sh --max-cost "$STANGENT_MAX_COST" --prove [--hint "<hint>"] <KEY>
 ```
 
 Then report the outcome from `.stangent/tickets/<KEY>/bug-proof.json`:
@@ -55,9 +61,14 @@ Then report the outcome from `.stangent/tickets/<KEY>/bug-proof.json`:
   user asks you to; then prove again.
 - **not provable here** or **failed**: say why; the developer reproduces it by hand.
 
-**Drafts** (`<KEY> questions [client]` or `<KEY> resolution <base..head> [client]`): run
-`stangent ticket draft <KEY> --kind <kind> [--tone client] [--pr <range>]`, start the subagent it names
-(`stangent-question-writer` or `stangent-summary-writer`), then `stangent ticket check <KEY> --step <kind>`. Show the
-draft from `.stangent/tickets/<KEY>/drafts/<kind>-<tone>.md`. **Never post it yourself**: the user reads it and runs
+**Drafts** (`<KEY> questions [client]` or `<KEY> resolution <base..head> [client]`): through the driver, from the
+ticket already pulled and its files already found:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/ticket-run.sh --max-cost "$STANGENT_MAX_COST" --no-pull --no-find --questions [--tone client] <KEY>
+${CLAUDE_PLUGIN_ROOT}/scripts/ticket-run.sh --max-cost "$STANGENT_MAX_COST" --no-pull --no-find --resolution <base..head> [--tone client] <KEY>
+```
+
+Show the draft from `.stangent/tickets/<KEY>/drafts/<kind>-<tone>.md`. **Never post it yourself**: the user reads it and runs
 `stangent ticket post <KEY> <kind>[-<tone>]` (or asks you to, in so many words, after reading it). If it fails with
 `draft_stale`, offer to make the draft again; `--stale` is the user's call, in so many words.

@@ -115,6 +115,10 @@ history (Kavita has a usable `openapi.json`); CleanArchitecture for the hand-che
 For 📜 history (Phase 1c): tuned on nopCommerce and Sonarr, judged on bitwarden/server (Kavita and eShop
 are reported but have too few fixes to count).
 
+## The disprove step on Sonarr (D119)
+
+Cut with the old link route (D342): `--score-disprove` and its config are gone; the committed results stay as history.
+
 ## Phase 3: tickets on Sonarr (D77–D81)
 
 The frozen set is in `tickets/sonarr/`: `selection.json` (40 bugs, newest first, and 10 not-bugs, chosen by

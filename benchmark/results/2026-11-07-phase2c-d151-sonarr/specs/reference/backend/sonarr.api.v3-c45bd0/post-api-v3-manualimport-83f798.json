@@ -1,0 +1,166 @@
+{
+  "codeTitle": "POST /api/v3/ManualImport",
+  "entry": "endpoint:Sonarr.Api.V3|POST /api/v3/ManualImport",
+  "generated": {
+    "bundleHash": "48979f9acc9008235f7e38c70a13c5d1141a3f9d58c41a2e88ba441029286fe9",
+    "checkRetries": 1,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 57632,
+      "cutOff": 169,
+      "depth": 4,
+      "points": 183
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 27814,
+      "calls": 1,
+      "costUsd": 0.114975,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5878,
+      "outputTokens": 354
+    },
+    "writer": {
+      "cacheReadTokens": 28366,
+      "cacheWriteTokens": 52767,
+      "calls": 2,
+      "costUsd": 0.293454,
+      "inputTokens": 6,
+      "model": "claude-sonnet-5-5",
+      "ms": 40072,
+      "outputTokens": 7670
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|POST /api/v3/ManualImport",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportController.ReprocessItems(System.Collections.Generic.List{Sonarr.Api.V3.ManualImport.ManualImportReprocessResource})"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/ManualImport"
+        ],
+        "id": "A1",
+        "text": "POST a list of manual import items; each is reprocessed using its path, download id, series, season, episodes, release group, quality, languages, indexer flags and release type."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportController.ReprocessItems(System.Collections.Generic.List{Sonarr.Api.V3.ManualImport.ManualImportReprocessResource})",
+          "Sonarr.Http|M:Sonarr.Http.REST.BadRequestException.#ctor(System.Object)"
+        ],
+        "id": "R1",
+        "text": "An empty items list is rejected with a bad request: \"items must be provided\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportController.ReprocessItems(System.Collections.Generic.List{Sonarr.Api.V3.ManualImport.ManualImportReprocessResource})"
+        ],
+        "id": "R2",
+        "text": "The request body must be JSON."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportController.ReprocessItems(System.Collections.Generic.List{Sonarr.Api.V3.ManualImport.ManualImportReprocessResource})"
+        ],
+        "id": "R3",
+        "text": "If an item's languages are only Unknown (or one/none) and the reprocessed result has languages, the item's languages are replaced by the result's."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportController.ReprocessItems(System.Collections.Generic.List{Sonarr.Api.V3.ManualImport.ManualImportReprocessResource})"
+        ],
+        "id": "R4",
+        "text": "If an item's quality is Unknown, it is replaced by the reprocessed quality."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportController.ReprocessItems(System.Collections.Generic.List{Sonarr.Api.V3.ManualImport.ManualImportReprocessResource})",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.IsNullOrWhiteSpace(System.String)"
+        ],
+        "id": "R5",
+        "text": "If an item's release group is null or whitespace, it is replaced by the reprocessed release group."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.ReprocessItem(System.String,System.String,System.Int32,System.Nullable{System.Int32},System.Collections.Generic.List{System.Int32},System.String,NzbDrone.Core.Qualities.QualityModel,System.Collections.Generic.List{NzbDrone.Core.Languages.Language},System.Int32,NzbDrone.Core.Parser.Model.ReleaseType)"
+        ],
+        "id": "R6",
+        "text": "When episode IDs are given, the file is evaluated against those episodes and the user-chosen series, episodes, release group, quality, languages, indexer flags and release type are reapplied after augmenting, before the import decision."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.ReprocessItem(System.String,System.String,System.Int32,System.Nullable{System.Int32},System.Collections.Generic.List{System.Int32},System.String,NzbDrone.Core.Qualities.QualityModel,System.Collections.Generic.List{NzbDrone.Core.Languages.Language},System.Int32,NzbDrone.Core.Parser.Model.ReleaseType)"
+        ],
+        "id": "R7",
+        "text": "If a season is given but no episodes, the item is rejected with \"Episodes not selected\" and the season selection is kept."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.ReprocessItem(System.String,System.String,System.Int32,System.Nullable{System.Int32},System.Collections.Generic.List{System.Int32},System.String,NzbDrone.Core.Qualities.QualityModel,System.Collections.Generic.List{NzbDrone.Core.Languages.Language},System.Int32,NzbDrone.Core.Parser.Model.ReleaseType)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.ProcessFile(System.String,System.String,System.String,System.String,NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R8",
+        "text": "If neither episodes nor season is given, the file is processed from scratch; an unknown series gives the rejection \"Unknown Series\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.ReprocessItem(System.String,System.String,System.Int32,System.Nullable{System.Int32},System.Collections.Generic.List{System.Int32},System.String,NzbDrone.Core.Qualities.QualityModel,System.Collections.Generic.List{NzbDrone.Core.Languages.Language},System.Int32,NzbDrone.Core.Parser.Model.ReleaseType)"
+        ],
+        "id": "R9",
+        "text": "If the language cannot be parsed from the path and the series is known, the series original language is used."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.MapItem(NzbDrone.Core.MediaFiles.EpisodeImport.ImportDecision,System.String,System.String,System.String)"
+        ],
+        "id": "R10",
+        "text": "Custom formats and score are only calculated when a series is known and the item has a season number."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportController.ReprocessItems(System.Collections.Generic.List{Sonarr.Api.V3.ManualImport.ManualImportReprocessResource})"
+        ],
+        "id": "S1",
+        "text": "Returns the submitted list of items, each updated with the reprocessed season number, full episodes, release type, indexer flags, rejections, custom formats and custom format score."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ImportRejectionResourceMapper.ToResource(NzbDrone.Core.MediaFiles.EpisodeImport.ImportRejection)"
+        ],
+        "id": "S2",
+        "text": "Each rejection is returned with a reason (the rejection message) and a type."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.CustomFormats.CustomFormatResourceMapper.ToResource(NzbDrone.Core.CustomFormats.CustomFormat,System.Boolean)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportController.ReprocessItems(System.Collections.Generic.List{Sonarr.Api.V3.ManualImport.ManualImportReprocessResource})"
+        ],
+        "id": "S3",
+        "text": "Custom formats are returned with only id and name; specification details are not included."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportController.ReprocessItems(System.Collections.Generic.List{Sonarr.Api.V3.ManualImport.ManualImportReprocessResource})"
+        ],
+        "id": "S4",
+        "text": "Episode IDs on each returned item are cleared (null) in favour of the full episode objects."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Manual Import Reprocess Items",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

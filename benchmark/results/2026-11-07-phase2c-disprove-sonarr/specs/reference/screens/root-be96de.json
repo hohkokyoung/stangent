@@ -1,0 +1,74 @@
+{
+  "codeTitle": "/",
+  "entry": "page:tsconfig.json|/",
+  "generated": {
+    "bundleHash": "38039be84d7ccc5df515010827a8d02cd1fb4bdc3aaa3120ed8fa16519ef10c6",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 6163,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 1
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 4148,
+      "calls": 1,
+      "costUsd": 0.017301,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8870,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3179,
+      "calls": 1,
+      "costUsd": 0.015506,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2469,
+      "outputTokens": 251
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "page:tsconfig.json|/"
+        ],
+        "id": "A1",
+        "text": "Opening the root path \"/\" sends the user to the \"/series\" page."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "page:tsconfig.json|/"
+        ],
+        "id": "R1",
+        "text": "The redirect replaces the current history entry, so Back does not return to \"/\"."
+      }
+    ],
+    "shows": [],
+    "sideEffects": []
+  },
+  "title": "Root redirect to Series",
+  "unknowns": [
+    {
+      "file": "frontend/src/App/AppRoutes.tsx",
+      "in": "page:tsconfig.json|/",
+      "line": 46,
+      "reason": "page /: its component couldn't be resolved"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

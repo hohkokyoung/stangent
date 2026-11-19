@@ -48,14 +48,41 @@ pull gives the same `ticket.json`, byte for byte, as the live one. `tickets.proj
 `.stangent/tickets/<KEY>/ticket.json` (git-ignored): the ticket's fields, the description and comments (a body Jira
 sends as HTML is turned by code into the Markdown it would otherwise have sent: links, images, list numbers, task ticks
 and code marks kept, D102), and every attachment saved with its hash. Text files go in up to `tickets.attachmentChars`;
-`.docx` goes through 2b's converter; images and anything else are listed with where they're mentioned; files over
+`.docx` goes through 2b's converter, flat if it has no headings, and if it can't be opened it's listed with `notConverted`, so an attachment never stops the pull; a workbook, a zip and files inside a document go through the same path (D123), saved under `attachments/<id>/converted/` with a `converted.json`, and reach `ticket.json` and the AI steps (D381: always; this was the `ticket-excel-text` switch, off by default); images and anything else are listed with where they're mentioned; files over
 100 MB are listed, not downloaded. For a bug (`tickets.bugTypes`): steps, expected, actual, version and environment from
 the field `tickets.fields` names, Jira's own environment and affects-version fields, or a labelled part of the
 description (`### Expected Behavior`, `**Actual:**`); the missing ones are listed.
 
+**`Ruling:` replies** (truth map layer 5, D364, D374; code only): pull's output gains `rulings` once
+a questions draft holding the PM's question ("Reply with a line starting `Ruling:`") has been posted. It reads the
+comments after that post (by their place after it; by time when Jira no longer lists it), leaving out stangent's own
+posts, for lines starting `Ruling:` (bold, italic or backtick marks and a `-` or `1.` bullet allowed; a quoted `>` line
+isn't one). Both tones' posted questions count, from the first. `Ruling: the code is right` (`code right`, `code`), `the FSD is
+right` (`fsd right`, `fsd`), `keep`, `remove`, and for a match `yes` or `no`, give that ruling; a fixed word with more after
+it ("yes, it does that", "keep it, thanks") is listed and asked back; any other text is the rule in the PM's words
+(`restated`). On a contradicted ticket ("Should the rule change?") `yes` or `no` is listed: the reply must give the rule.
+The entry the question was about is the latest proof attempt's `verdict.entry`, used only while a posted question is still
+the one that verdict writes (otherwise: "the bug proof has changed since the question was posted"). The ruling goes into `specs/fsd/<doc>/rulings.yaml` the way `fsd rule`
+writes it (only that entry's lines change), with `jira: { key, comment, author, created }`, **uncommitted**: the output
+says so, and that a person confirms it by committing; until then the entry backs no ticket (the bundle lists it with
+`usable: false`, "drafted from a Jira reply … isn't committed yet"). When nothing covered the ticket (`entry` null), or the
+reply gives the rule in words about a match, the ruling becomes an entry of the ticket's own, undocumented, keyed
+`ticket:<KEY>` (in the match's section, else with the code no section covers), on the ticket's file and symbol points; a
+review refresh keeps it as it is, never "not found again". Listed with why, nothing written: a `Ruling:` with nothing
+after it, two different `Ruling:` lines in one comment, a reply that doesn't fit the question (`keep` on a conflict,
+`the FSD is right` when nothing in the FSD covers it), people whose latest replies disagree (each person's latest reply
+replaces their earlier ones), a proof that no longer stops on the truth map, a "not covered" ticket in a repo with
+several FSDs, an entry a refresh removed, and a reply drafted before that a person has since taken out of `rulings.yaml`
+(recorded in `.stangent/tickets/<KEY>/rulings-drafted.json`; delete it to draft again). A reply already in `rulings.yaml`
+reads `already`. A ruling from Jira counts as committed only when its `ruling`, `statement` and `jira` lines all are. When
+someone answers the entry again with `fsd rule`, its `jira` line goes (the answer is theirs now); a ticket's own entry can
+be removed with `fsd rule <doc> <n> drop`. Anything that stops the reading is reported as `failed`, never a failed pull.
+States: `not-asked`, `waiting`, `listed`, `drafted`, `already`, `failed`. Then: read the diff, commit, `stangent fsd rulings-check <doc>`, and prove the
+ticket again (`ticket bundle`, `ticket prove`, or `ticket-run.sh --prove`).
+
 ## Starting points (D101; D70 as the fallback)
 
-- **The file finder** (`tickets.aiPoints`, default on): `stangent-file-finder`, a headless coding agent, gets the
+- **The file finder** (always, D381; only `ai.enabled: false` stops it): `stangent-file-finder`, a headless coding agent, gets the
   ticket (summary, description, comments, text attachments) and searches the repo itself, read-only: Read, Grep and Glob
   inside the repo, never `.stangent/` or `.git/` (permission rules the driver passes; an allow rule on the repo bounds
   Grep and Glob too). It returns up to 10 files, most likely first, each with a quote from the ticket, a line copied
@@ -68,7 +95,7 @@ description (`### Expected Behavior`, `**Actual:**`); the missing ones are liste
   files git tracks there (exact case) and lines against git's copy. Recorded with its input hash (the instructions and
   the ticket) and the commit it searched: an unchanged ticket makes no AI call, and once the code moves on the answer is
   kept and marked `stale`; `stangent ticket points <KEY> --refind` searches again.
-- **Code's signals, when the finder is off** (`tickets.aiPoints: false` or `ai.enabled: false`): stack-trace frames
+- **Code's signals, when the finder can't run** (`ai.enabled: false`, or it failed): stack-trace frames
   (.NET, also async and lambda frames; script frames by file) in the ticket or a text attachment → methods, by file and
   line or by name; URL paths → route pages and endpoint pages; quoted screen names, page titles and FSD section titles
   (through `specs/trace.yaml`) → pages; symbol names that exist in the graph. With the finder on they're only leads in
@@ -86,12 +113,12 @@ description (`### Expected Behavior`, `**Actual:**`); the missing ones are liste
 
 ## The bundle (D71, D101)
 
-`bundle.json` (validated against `schemas/ticket-bundle.v2.json`) and `bundle.md`: the ticket and attachments; the
+`bundle.json` (validated against `schemas/ticket-bundle.v3.json`; v3 adds `truth`, below) and `bundle.md`: the ticket and attachments; the
 starting points with their reasons (a found file with its ticket quote, its line and the finder's reason, labelled as an
 unchecked guess and left out of the reproducer's input, D107); the reference pages that explain
 them, each saying which found files it explains (its statements cite code in the file, or the file is in its slice),
 after your own and code's page points; the FSD sections linked to the included pages with each link's state and
-whether a person decided it (findings only with `fsd.findings`, marked unconfirmed); the impact answer from the
+whether a person decided it (the old route's findings are no longer shown, D388; `findings` is always `false`); the impact answer from the
 starting points within 2 lines (the found files' code, symbol points, page points' citations); pointers to files and
 symbols, the found files first. **No source code.** Over `tickets.bundleChars` (compact JSON): first the impact
 answer's item lists go (counts kept, `cap.impactTrimmed`; `stangent graph impact` lists them), then the lowest-ranked
@@ -100,6 +127,25 @@ starting points are never cut; a bundle still over with every page cut says so (
 are flagged (`/stangent:spec-generate`), never generated here. `finder` records the commit the finder searched and
 whether HEAD has moved on since (judged when the bundle is built). Same inputs and the same commit checked out → the
 same bytes.
+
+**The truth map's entries** (`truth`, v3; truth map layer 4, D361, D372; always on since D381):
+from every `specs/fsd/<doc>/truth-map.json`, each entry one of whose evidence lines is in a ticket file (a file point,
+a symbol point's file, a file a page point's statements cite; not the impact answer's), as `T1`, `T2`, … with its
+state, standing, ruling, the PM's words, confidence, who ruled, the review's notes and its lines, whether it **can back
+a ticket** (ruled, a confirmed match, or an unconfirmed match of high confidence; never blank, flagged, not found
+again, not a match, or an unconfirmed medium or low match, D366 (4)), and the full text of each section they sit in.
+**Also through flows and screens (D410):** the ticket's own code is the method each file point's quoted line sits in
+(the smallest graph node below a type holding it; none when the line is in no method, or reads the same in two) and each symbol point's span; the flows with a step on a line inside it (from
+`specs/flows/index.json`), plus the flows that continue into a shared one among them (one hop), are listed as
+`reach.flows`. An entry whose link is one of those flows, or the screen a screen-opens flow among them opens, applies
+too. Each entry's `via` says how: `file`, `flow:<id>` or `screen:<id>`; `bundle.md` prints "Found through …" for the
+last two. When the code sits in more than 5 flows (shared ones aside), `reach.tooMany` is true and only file matches
+count: the code is shared too widely to tell which screen the ticket is about. Example: KAVR-8's finder named
+`GenreRepository.cs`; the backing rule cites only the Browse Genres template, and reaches the ticket through
+`screen-opens-browse-genres`, which walks `GetBrowseableGenre`. No flows built: file matches only, as before. A flow file or index line that doesn't read is skipped.
+`state`: `none` (the repo has no truth map: nothing about the FSD is judged, as before); `built` (no entries:
+nothing the PM agreed covers the ticket's files). `off` is no longer written (D381); a bundle built before it with `off` is read
+as no truth map. The sections' text is the committed FSD's (D380), as `fsd rulings-check` wrote it into `truth-map.json`. `bundle.md` prints them under "The truth map (what the PM agreed)".
 
 ## The bug proof (D75, D76, D81)
 
@@ -128,6 +174,22 @@ same bytes.
   is in the ticket word for word; it compiles; and it **fails on that assertion** (TRX, Jest/Vitest and Playwright
   reports read by code; an exception in setup, a timeout or another assertion isn't proof; a mock's own check, such
   as Moq's `Verify`, is an assertion, D90). Playwright runs 3 times.
+- **The verdict** (truth map layer 4, D361, D364, D372; a truth map built): it comes before the test check (D408): with
+  no test target but an entry that can back the ticket, the reproducer gives the verdict only and returns `stopped`;
+  backed is then recorded `not-provable` with its verdict and no test. With no entry that
+  can back the ticket, nothing is asked of an AI: the attempt is recorded `not-provable` with `noProof: unclear` and the
+  entry it stopped on (or none: not covered). Otherwise the reproducer reads `bug-reproducer-output` v2 and gives
+  `verdict` (`backed`, `contradicted`, `unclear`) with the entry (`T1` …) and words from it (its FSD sentence, the PM's
+  words, its section's text, the review's note), word for word. Code checks the entry is in the input and the quote in
+  it (one retry), that backed comes with the test and the others with outcome `stopped`, and makes it **unclear**
+  (`forced`, `said` kept) when the cited entry can't back a ticket. A verdict that goes against its entry's ruling
+  (backed on "the code is right" or "keep"; contradicted on "the FSD is right", "remove" or "not a match") gets the
+  retry, with one exception (D411): **backed on a "keep" entry whose quote is at least four of the PM's own words in
+  it** stands, since "keep this code" on undocumented code keeps the feature and the words say how it should work; the
+  input and `bundle.md` say so. Every other pairing keeps the check. Contradicted and unclear write no test and run
+  none: `not-provable`, `noProof: contradicted | unclear`, `verdict` on the attempt (`bug-proof` v2). Backed goes on to
+  the test as before, its verdict kept, `pmConfirmed: false` on an unconfirmed high match. Off, the reproducer reads
+  exactly what it read before (v1).
 - **Outcomes** (`bug-proof.json`): `reproduced` (with the other tests already failing at that commit, the baseline),
   `not-reproduced` (the test passes, or the attempt hit its cap; `noProof` says which, D106: `ran-out`, `test-passed`, `flaky`),
   `not-reproduced-flaky`, `not-provable`, `failed` (no
@@ -146,6 +208,13 @@ same bytes.
   wrong reason (SONB-26).
 
 ## Drafts and posting (D74)
+
+**The PM's question** (truth map layer 4, D364, D372): after a proof stopped as contradicted or
+unclear, the questions draft's writer is told why and that code adds the question; code appends it to the checked text,
+quoting the rule ("**For the PM:** the FSD's §1 Orders says “…”, and nobody has ruled whether the code or the FSD is
+right (the code: `Core/OrderService.cs:5`). Which is right?"; no code names in the client tone), then "Reply with a
+line starting `Ruling:` …". Which entry it asks about stays in `bug-proof.json`'s verdict; `ticket pull` reads the
+reply back (layer 5, "`Ruling:` replies" under Pull).
 
 `stangent ticket draft <KEY> --kind questions|resolution [--tone internal|client] [--pr base..head --pr-url …]`: code
 gathers the facts (missing fields, clashes' candidates, the proof; or the PR's files, the pages and FSD sections it
@@ -176,7 +245,6 @@ tickets:
   tone: internal                    # or client
   bundleChars: 40000
   attachmentChars: 8000
-  aiPoints: true
   textFiles: [src/App/Localization/en.json]   # UI texts: a string in the code that is a key here reads as its text (D87)
   replay: benchmark/tickets/x/raw   # read saved results instead of Jira
   app: { build: …, start: …, url: http://localhost:8989, seed: …, readySeconds: 120, specDir: e2e/stangent, playwrightDir: e2e }

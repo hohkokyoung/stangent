@@ -1,0 +1,601 @@
+{
+  "doc": "sonarr-fsd",
+  "note": "Phase 2b (D56, D57): findings in specs/trace.yaml scored against the frozen answer key. 'found' lets a gap be reported as a conflict and back; 'foundAsKind' needs the planted kind.",
+  "found": {
+    "overall": {
+      "found": 26,
+      "of": 30,
+      "share": 0.867,
+      "range95": [
+        0.733,
+        0.967
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 6,
+      "of": 10,
+      "share": 0.6,
+      "range95": [
+        0.3,
+        0.9
+      ]
+    }
+  },
+  "foundAsKind": {
+    "overall": {
+      "found": 26,
+      "of": 30,
+      "share": 0.867,
+      "range95": [
+        0.733,
+        0.967
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 6,
+      "of": 10,
+      "share": 0.6,
+      "range95": [
+        0.3,
+        0.9
+      ]
+    }
+  },
+  "noise": {
+    "findings": 47,
+    "unplanted": 21,
+    "worstCaseShare": 0.447,
+    "sample": 20,
+    "handChecked": 0,
+    "realInSample": null
+  },
+  "bars": {
+    "finds": true,
+    "notTooNoisy": null
+  },
+  "finerVerdicts": null,
+  "candidates": {
+    "sections": 0,
+    "byCode": 0,
+    "byAi": 0,
+    "aiFoundNone": 0
+  },
+  "cost": {
+    "finder": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "judge": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "checker": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "disprover": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    }
+  },
+  "requirements": {
+    "features": 0,
+    "requirements": 0,
+    "withAcceptance": 0,
+    "byCheck": {
+      "confirmed": 0,
+      "disputed": 0,
+      "unchecked": 0
+    },
+    "background": 0,
+    "backgroundDisputed": 0,
+    "questions": 0,
+    "plantedCited": {
+      "cited": 0,
+      "of": 20,
+      "missed": [
+        "Up to 10 series can be selected from the search results and added together in one step.",
+        "The episode list of a series can be exported as a CSV file.",
+        "Episodes can be dragged to another day to change their air date.",
+        "Each queue item has a priority (High, Normal or Low) that the user can change to reorder the downloads.",
+        "Any history entry can be undone, which restores the episode file that an upgrade replaced.",
+        "A weekly email digest lists every missing episode.",
+        "Each tag has a colour, chosen from a palette of 12 colours, which is shown wherever the tag appears.",
+        "Each quality can be limited to a maximum episode runtime.",
+        "The font size can be set to small, medium or large.",
+        "Backups can be copied automatically to an S3 bucket.",
+        "Deleting a series always deletes its folder and all its files from disk.",
+        "Sonarr can share the calendar as an iCal feed, which covers the previous 14 days and the next 60 days.",
+        "Removing an item from the queue always adds the release to the blocklist.",
+        "Search All starts straight away, without asking the user to confirm.",
+        "Tag labels may contain letters, numbers, spaces and underscores.",
+        "Deleting a tag removes it from every series, profile and indexer that uses it.",
+        "The default delay profile can be given tags like any other.",
+        "Each log file can grow up to 50 megabytes before a new one is started.",
+        "Interval: how often an automatic backup is taken, from 1 to 30 days.",
+        "Retention: how long backups are kept, up to 365 days."
+      ]
+    },
+    "findingsWithRequirement": 0,
+    "failedSections": 0,
+    "retries": 0,
+    "fixes": 0,
+    "spentUsd": 0
+  },
+  "items": [
+    {
+      "id": "G1",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S001",
+      "state": "gap"
+    },
+    {
+      "id": "G2",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S002",
+      "state": "gap"
+    },
+    {
+      "id": "G3",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S005",
+      "state": "gap"
+    },
+    {
+      "id": "G4",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S007",
+      "state": "gap"
+    },
+    {
+      "id": "G5",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S008",
+      "state": "gap"
+    },
+    {
+      "id": "G6",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S010",
+      "state": "gap"
+    },
+    {
+      "id": "G7",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S013",
+      "state": "gap"
+    },
+    {
+      "id": "G8",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S015",
+      "state": "gap"
+    },
+    {
+      "id": "G9",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S019",
+      "state": "gap"
+    },
+    {
+      "id": "G10",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S020",
+      "state": "gap"
+    },
+    {
+      "id": "C1",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S003",
+      "state": "conflict"
+    },
+    {
+      "id": "C2",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S004",
+      "state": "conflict"
+    },
+    {
+      "id": "C3",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S006",
+      "state": "conflict"
+    },
+    {
+      "id": "C4",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S009",
+      "state": "conflict"
+    },
+    {
+      "id": "C5",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S011",
+      "state": "conflict"
+    },
+    {
+      "id": "C6",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S012",
+      "state": "conflict"
+    },
+    {
+      "id": "C7",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S014",
+      "state": "conflict"
+    },
+    {
+      "id": "C8",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S016",
+      "state": "conflict"
+    },
+    {
+      "id": "C9",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S017",
+      "state": "conflict"
+    },
+    {
+      "id": "C10",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S018",
+      "state": "conflict"
+    },
+    {
+      "id": "U1",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S026",
+      "state": "undocumented"
+    },
+    {
+      "id": "U2",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S047",
+      "state": "undocumented"
+    },
+    {
+      "id": "U3",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S044",
+      "state": "undocumented"
+    },
+    {
+      "id": "U4",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S021",
+      "state": "undocumented"
+    },
+    {
+      "id": "U5",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U6",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S027",
+      "state": "undocumented"
+    },
+    {
+      "id": "U7",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U8",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U9",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S024",
+      "state": "undocumented"
+    },
+    {
+      "id": "U10",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    }
+  ],
+  "handCheckSample": [
+    {
+      "id": "S042",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/system/logs/files/update",
+      "pageQuote": "Update log files screen.",
+      "note": "Update log files screen."
+    },
+    {
+      "id": "S025",
+      "state": "undocumented",
+      "section": "Settings / General",
+      "fsdQuote": "",
+      "page": "page:/settings/general",
+      "pageQuote": "General settings has a Restart button and many other sections (host, security, proxy, updates).",
+      "note": "General settings has a Restart button and many other sections (host, security, proxy, updates)."
+    },
+    {
+      "id": "S023",
+      "state": "undocumented",
+      "section": "2",
+      "fsdQuote": "",
+      "page": "page:/calendar",
+      "pageQuote": "Calendar has an agenda view the FSD does not list; iCal also has unmonitored and all-day options.",
+      "note": "Calendar has an agenda view the FSD does not list; iCal also has unmonitored and all-day options."
+    },
+    {
+      "id": "S029",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/add/import",
+      "pageQuote": "Library import (bulk import of series from a root folder).",
+      "note": "Library import (bulk import of series from a root folder)."
+    },
+    {
+      "id": "S033",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/importlists",
+      "pageQuote": "Import lists and exclusions settings.",
+      "note": "Import lists and exclusions settings."
+    },
+    {
+      "id": "S035",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/mediamanagement",
+      "pageQuote": "Media management settings and root folders.",
+      "note": "Media management settings and root folders."
+    },
+    {
+      "id": "S036",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/metadata",
+      "pageQuote": "Metadata settings.",
+      "note": "Metadata settings."
+    },
+    {
+      "id": "S040",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/system/events",
+      "pageQuote": "Events log screen with refresh, clear, table options.",
+      "note": "Events log screen with refresh, clear, table options."
+    },
+    {
+      "id": "S030",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/connect",
+      "pageQuote": "Connections (notifications) settings.",
+      "note": "Connections (notifications) settings."
+    },
+    {
+      "id": "S038",
+      "state": "undocumented",
+      "section": "Settings / Profiles / Delay profiles",
+      "fsdQuote": "",
+      "page": "page:/settings/profiles",
+      "pageQuote": "Delay profiles can be reordered by drag and drop.",
+      "note": "Delay profiles can be reordered by drag and drop."
+    },
+    {
+      "id": "S039",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/statistics",
+      "pageQuote": "Statistics screen.",
+      "note": "Statistics screen."
+    },
+    {
+      "id": "S046",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/",
+      "pageQuote": "Page header menu: Restart and Shutdown Sonarr.",
+      "note": "Page header menu: Restart and Shutdown Sonarr."
+    },
+    {
+      "id": "S037",
+      "state": "undocumented",
+      "section": "Settings / Profiles",
+      "fsdQuote": "",
+      "page": "page:/settings/profiles",
+      "pageQuote": "Release profiles are not described.",
+      "note": "Release profiles are not described."
+    },
+    {
+      "id": "S032",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/downloadclients",
+      "pageQuote": "Download clients and remote path mappings settings.",
+      "note": "Download clients and remote path mappings settings."
+    },
+    {
+      "id": "S041",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/system/logs/files",
+      "pageQuote": "Log files screen with refresh and delete.",
+      "note": "Log files screen with refresh and delete."
+    },
+    {
+      "id": "S028",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/series",
+      "pageQuote": "Library index with bulk edit footer (monitoring, tags, delete), status toggle and season pass.",
+      "note": "Library index with bulk edit footer (monitoring, tags, delete), status toggle and season pass."
+    },
+    {
+      "id": "S045",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/system/updates",
+      "pageQuote": "Updates screen.",
+      "note": "Updates screen."
+    },
+    {
+      "id": "S022",
+      "state": "undocumented",
+      "section": "1.2",
+      "fsdQuote": "",
+      "page": "page:/series/:titleSlug",
+      "pageQuote": "Edit series also has Monitor New Items, Season Folder, Language and Season Type, and the user can delete an episode file from episode details.",
+      "note": "Edit series also has Monitor New Items, Season Folder, Language and Season Type, and the user can delete an episode file from episode details."
+    },
+    {
+      "id": "S031",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/customformats",
+      "pageQuote": "Custom formats settings with bulk manage.",
+      "note": "Custom formats settings with bulk manage."
+    },
+    {
+      "id": "S034",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/indexers",
+      "pageQuote": "Indexers settings.",
+      "note": "Indexers settings."
+    }
+  ]
+}

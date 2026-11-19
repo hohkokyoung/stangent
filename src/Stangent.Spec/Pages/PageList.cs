@@ -27,12 +27,16 @@ public sealed record PageDef(string Id, string Kind, string Entry, string Title,
 public sealed class PageSet
 {
     public required IReadOnlyList<PageDef> Pages { get; init; }
+    /// <summary>Pages a person excluded with a reason (T.3): the graph calls for them, and nothing runs them. Their slices are still here.</summary>
+    public IReadOnlyList<PageDef> Excluded { get; init; } = [];
     public required IReadOnlyDictionary<string, Slice> Slices { get; init; }
     public required SliceBuilder Builder { get; init; }
     public required SourceReader Source { get; init; }
     public required SpecSettings Settings { get; init; }
     /// <summary>The commit the graph was built from: what a recorded page says it describes.</summary>
     public required string Commit { get; init; }
+    /// <summary>The graph itself: where a recorded page's line citations come from.</summary>
+    public required CodeGraph Graph { get; init; }
 
     Dictionary<string, PageDef>? byKey;
 
@@ -53,6 +57,17 @@ public static partial class PageList
     [GeneratedRegex(@"\b(?:View|PartialView)\s*\(")]
     private static partial Regex ReturnsView();
 
+    /// <summary>Flask's way of returning a server-rendered screen (D127).</summary>
+    [GeneratedRegex(@"\brender_template(?:_string)?\s*\(")]
+    private static partial Regex RendersTemplate();
+
+    static bool ShowsScreen(Node action, SourceReader source) =>
+        (action.File is { } f && (f.EndsWith(".py", StringComparison.Ordinal) || f.EndsWith(".wsgi", StringComparison.Ordinal)) ? RendersTemplate() : ReturnsView()).IsMatch(source.Text(action));
+
+    /// <summary>A route's page id. <paramref name="sameRoute"/> is how many routes share its name: two frontends' <c>/orders</c> are told apart by the frontend.</summary>
+    public static string ScreenId(Node route, int sameRoute) =>
+        sameRoute > 1 ? $"page:{(route.Project ?? "").Replace("project:", "")}|{route.Name}" : $"page:{route.Name}";
+
     public static PageSet Build(CodeGraph graph, string repoRoot, SpecSettings settings)
     {
         var builder = new SliceBuilder(graph, settings.HubCallers);
@@ -67,14 +82,14 @@ public static partial class PageList
         foreach (var r in routes)
         {
             var frontend = (r.Project ?? "").Replace("project:", "");
-            screens.Add((routeCounts[r.Name] > 1 ? $"page:{frontend}|{r.Name}" : $"page:{r.Name}", r, frontend));
+            screens.Add((ScreenId(r, routeCounts[r.Name]), r, frontend));
         }
         var routesTo = graph.AllEdges.Where(e => e.Kind == EdgeKind.RoutesTo).ToLookup(e => e.Source, StringComparer.Ordinal);
         foreach (var ep in nodes.Where(n => n.Kind == NodeKind.Endpoint).OrderBy(n => n.Id, StringComparer.Ordinal))
         {
             var (verb, route) = SplitEndpoint(ep.Name);
             if (verb is not ("GET" or "ANY")) continue;
-            if (!routesTo[ep.Id].Any(e => builder.Find(e.Target) is { } action && ReturnsView().IsMatch(source.Text(action)))) continue;
+            if (!routesTo[ep.Id].Any(e => builder.Find(e.Target) is { } action && ShowsScreen(action, source))) continue;
             screens.Add(($"page:{route}", ep, Project(builder, ep)));
         }
         // Two server-rendered screens on one route (GET and ANY): keep the first by id.
@@ -120,10 +135,13 @@ public static partial class PageList
             slices[b.Id] = builder.Build(b.Id, split ? settings.BackendDepth : depth, shared);
         }
 
+        // Last, so no page's slice or hash depends on what was excluded.
+        var excluded = settings.Exclusions ? PageExclusions.Ids(repoRoot) : [];
+        var ordered = pages.OrderBy(p => KindOrder(p.Kind)).ThenBy(p => p.Id, StringComparer.Ordinal).ToList();
         return new PageSet
         {
-            Pages = [.. pages.OrderBy(p => KindOrder(p.Kind)).ThenBy(p => p.Id, StringComparer.Ordinal)],
-            Slices = slices, Builder = builder, Source = source, Settings = settings, Commit = graph.Commit,
+            Pages = [.. ordered.Where(p => !excluded.Contains(p.Id))], Excluded = [.. ordered.Where(p => excluded.Contains(p.Id))],
+            Slices = slices, Builder = builder, Source = source, Settings = settings, Commit = graph.Commit, Graph = graph,
         };
     }
 

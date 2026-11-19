@@ -1,0 +1,177 @@
+{
+  "codeTitle": "HealthCheckService.HandleAsync(ApplicationStartedEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckService.HandleAsync(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+  "generated": {
+    "bundleHash": "c098abc138565aa2f052b0fa2abc5ed9a4b6caecd55c7615b0f5b81133e9e113",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 92180,
+      "cutOff": 192,
+      "depth": 4,
+      "points": 101
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 42188,
+      "calls": 1,
+      "costUsd": 0.172841,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4376,
+      "outputTokens": 391
+    },
+    "writer": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 40183,
+      "calls": 1,
+      "costUsd": 0.186496,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 14284,
+      "outputTokens": 2576
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckService.HandleAsync(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckService.HandleAsync(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckService.ProcessHealthChecks"
+        ],
+        "id": "A1",
+        "text": "When the application starts, all startup health checks are queued and run immediately."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckService.ProcessHealthChecks",
+          "Sonarr.Common|M:NzbDrone.Common.TPL.Debouncer.Pause",
+          "Sonarr.Common|M:NzbDrone.Common.TPL.Debouncer.Resume"
+        ],
+        "id": "R1",
+        "text": "Pending checks are taken from the queue and the queue is cleared before they run. The debouncer is paused while they run and resumed afterwards, even if a check fails."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckService.ProcessHealthChecks",
+          "Sonarr.Common|M:NzbDrone.Common.Cache.ICached`1.Set(System.String,`0,System.Nullable{System.TimeSpan})",
+          "Sonarr.Common|M:NzbDrone.Common.Cache.ICached`1.Find(System.String)"
+        ],
+        "id": "R2",
+        "text": "A failing result (any type other than Ok) is stored by the check's source name. A failed event is published only if no result was already stored for that source."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckService.ProcessHealthChecks",
+          "Sonarr.Common|M:NzbDrone.Common.Cache.ICached.Remove(System.String)"
+        ],
+        "id": "R3",
+        "text": "An Ok result removes the stored result for that source. A restored event is published only if a previous result existed."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckService.ProcessHealthChecks",
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckFailedEvent.#ctor(NzbDrone.Core.HealthCheck.HealthCheck,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckRestoredEvent.#ctor(NzbDrone.Core.HealthCheck.HealthCheck,System.Boolean)"
+        ],
+        "id": "R4",
+        "text": "Failed and restored events carry a flag that says whether health checks have not yet run after the startup grace period."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.Checks.ApiKeyValidationCheck.Check"
+        ],
+        "id": "R5",
+        "text": "The API key check warns when the API key is shorter than the minimum length."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.Checks.SystemTimeCheck.Check"
+        ],
+        "id": "R6",
+        "text": "The system time check reports an error when the system time differs from the service time by one day or more."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.Checks.IndexerStatusCheck.Check",
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.Checks.IndexerLongTermStatusCheck.Check"
+        ],
+        "id": "R7",
+        "text": "The indexer status check only counts indexers whose initial failure was within the last 6 hours. The long-term check only counts those whose initial failure was more than 6 hours ago."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.Checks.PackageGlobalMessageCheck.Check"
+        ],
+        "id": "R8",
+        "text": "A package global message starting with \"Error:\" becomes an Error and one starting with \"Warn:\" becomes a Warning. Any other message becomes a Notice."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheck.#ctor(System.Type)",
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheck.#ctor(System.Type,NzbDrone.Core.HealthCheck.HealthCheckResult,NzbDrone.Core.HealthCheck.HealthCheckReason,System.String,System.String)"
+        ],
+        "id": "S1",
+        "text": "Each health check returns a result with a source, a type (Ok, Notice, Warning or Error), a reason, a message and a wiki link. A check with no problem returns an Ok result."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckService.ProcessHealthChecks",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Events.IEventAggregator.PublishEvent``1(``0)"
+        ],
+        "id": "E1",
+        "text": "A failed event is published for each newly failing check, and a restored event for each check that recovers."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.HealthCheckService.ProcessHealthChecks",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Events.IEventAggregator.PublishEvent``1(``0)"
+        ],
+        "id": "E2",
+        "text": "After all checks run, a HealthCheckCompleteEvent is published."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.HealthCheck.HealthCheckFailedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.HealthCheck.HealthCheckRestoredEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.HandleAsync(NzbDrone.Core.HealthCheck.HealthCheckCompleteEvent)"
+        ],
+        "id": "E3",
+        "text": "The notification service handles failed, restored and complete health check events."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Health.HealthController.Handle(NzbDrone.Core.HealthCheck.HealthCheckCompleteEvent)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Health.HealthController.Handle(NzbDrone.Core.HealthCheck.HealthCheckCompleteEvent)"
+        ],
+        "id": "E4",
+        "text": "The V3 and V5 health controllers handle the health check complete event."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.Checks.SystemTimeCheck.Check",
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.Checks.ProxyCheck.Check",
+          "Sonarr.Core|M:NzbDrone.Core.HealthCheck.ServerSideNotificationService.Check"
+        ],
+        "id": "E5",
+        "text": "Some checks call external services. The system time check and the proxy check call the cloud service, and the server notification check fetches notifications from it."
+      }
+    ]
+  },
+  "title": "Health checks run at application start",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

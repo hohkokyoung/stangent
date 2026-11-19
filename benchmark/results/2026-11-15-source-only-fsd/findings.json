@@ -1,0 +1,574 @@
+{
+ "findings": [
+  {
+   "state": "gap",
+   "section": "1.1",
+   "fsdQuote": "Up to 10 series can be selected from the search results and added together in one step.",
+   "screen": null,
+   "note": "Add New opens a modal for one search result at a time; there is no multi-select or batch add (only the separate import screen adds many).",
+   "evidence": [
+    "frontend/src/AddSeries/AddNewSeries/AddNewSeriesSearchResult.tsx:204",
+    "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:140"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "1.1",
+   "fsdQuote": null,
+   "screen": "/add/new",
+   "note": "The add modal also has Season Folder, Language and Season Type options, and a 'search for cutoff unmet episodes' checkbox, none of which the FSD lists.",
+   "evidence": [
+    "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:262",
+    "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:297",
+    "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:352"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "1.1",
+   "fsdQuote": null,
+   "screen": "/add/new",
+   "note": "Monitor choices include separate 'monitor specials' and 'unmonitor specials' options; FSD lists only 'specials'.",
+   "evidence": [
+    "frontend/src/Utilities/Series/monitorOptions.ts:59",
+    "frontend/src/Utilities/Series/monitorOptions.ts:65"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "1.2",
+   "fsdQuote": "The episode list of a series can be exported as a CSV file.",
+   "screen": null,
+   "note": "No CSV export exists in the series details toolbar or the frontend.",
+   "evidence": [
+    "frontend/src/Series/Details/SeriesDetails.tsx:481"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "1.2",
+   "fsdQuote": "Deleting a series always deletes its folder and all its files from disk.",
+   "screen": null,
+   "note": "The delete modal has an optional 'delete files' checkbox that defaults to off; files are deleted only if ticked. It also has an 'add import list exclusion' option.",
+   "evidence": [
+    "frontend/src/Series/Delete/DeleteSeriesModalContent.tsx:42",
+    "frontend/src/Series/Delete/DeleteSeriesModalContent.tsx:83",
+    "frontend/src/Series/Delete/DeleteSeriesModalContent.tsx:112"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "1.2",
+   "fsdQuote": null,
+   "screen": "/series/:titleSlug",
+   "note": "Series details toolbar also has Preview Rename, Manage Episodes (files), History and Expand/Collapse All actions not described.",
+   "evidence": [
+    "frontend/src/Series/Details/SeriesDetails.tsx:513",
+    "frontend/src/Series/Details/SeriesDetails.tsx:523",
+    "frontend/src/Series/Details/SeriesDetails.tsx:532"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "2",
+   "fsdQuote": "Episodes can be dragged to another day to change their air date.",
+   "screen": null,
+   "note": "The calendar has no drag-and-drop; nothing in the calendar code handles dragging.",
+   "evidence": [
+    "frontend/src/Calendar/CalendarPage.tsx",
+    "frontend/src/Calendar/Events/CalendarEvent.tsx"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "2",
+   "fsdQuote": "Sonarr can share the calendar as an iCal feed, which covers the previous 14 days and the next 60 days.",
+   "screen": null,
+   "note": "The iCal feed defaults to the previous 7 days and next 28 days (pastDays/futureDays query parameters).",
+   "evidence": [
+    "src/Sonarr.Api.V3/Calendar/CalendarFeedController.cs:31"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "2",
+   "fsdQuote": null,
+   "screen": "/calendar",
+   "note": "Calendar also has an Agenda view (besides month, week, forecast, day), plus calendar options and an iCal 'show as all-day events' option.",
+   "evidence": [
+    "frontend/src/Calendar/calendarViews.ts:5",
+    "frontend/src/Calendar/Header/CalendarHeader.tsx:191",
+    "frontend/src/Calendar/iCal/CalendarLinkModalContent.tsx:111"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "3.1",
+   "fsdQuote": "Each queue item has a priority (High, Normal or Low) that the user can change to reorder the downloads.",
+   "screen": null,
+   "note": "No priority field or control exists on queue items.",
+   "evidence": [
+    "frontend/src/Activity/Queue/QueueRow.tsx",
+    "src/Sonarr.Api.V3/Queue/QueueController.cs"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "3.1",
+   "fsdQuote": "Removing an item from the queue always adds the release to the blocklist.",
+   "screen": null,
+   "note": "Removal offers blocklist choices including 'Do not blocklist', 'Blocklist and search', and blocklist only; blocklisting is optional.",
+   "evidence": [
+    "frontend/src/Activity/Queue/RemoveQueueItemModal.tsx:106",
+    "frontend/src/Activity/Queue/RemoveQueueItemModal.tsx:109"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "3.1",
+   "fsdQuote": null,
+   "screen": "/activity/queue",
+   "note": "Removal also lets the user choose remove from download client, change category, or ignore the download.",
+   "evidence": [
+    "frontend/src/Activity/Queue/RemoveQueueItemModal.tsx:77",
+    "frontend/src/Activity/Queue/RemoveQueueItemModal.tsx:85",
+    "frontend/src/Activity/Queue/RemoveQueueItemModal.tsx:93"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "3.2",
+   "fsdQuote": "Any history entry can be undone, which restores the episode file that an upgrade replaced.",
+   "screen": null,
+   "note": "There is no undo; the only history action is 'Mark as failed', offered only for grabbed entries.",
+   "evidence": [
+    "frontend/src/Activity/History/Details/HistoryDetailsModal.tsx:79",
+    "frontend/src/Activity/History/Details/HistoryDetailsModal.tsx:86"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/activity/blocklist",
+   "note": "Blocklist screen under Activity is not described.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:88"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "Wanted / Missing episodes",
+   "fsdQuote": "Search All starts straight away, without asking the user to confirm.",
+   "screen": null,
+   "note": "Search All opens a confirmation modal showing the number of episodes before searching.",
+   "evidence": [
+    "frontend/src/Wanted/Missing/Missing.tsx:344",
+    "frontend/src/Wanted/Missing/Missing.tsx:363"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "Wanted / Missing episodes",
+   "fsdQuote": "A weekly email digest lists every missing episode.",
+   "screen": null,
+   "note": "No weekly digest of missing episodes exists in the notifications or jobs code.",
+   "evidence": [
+    "src/NzbDrone.Core/Notifications",
+    "src/NzbDrone.Core/Jobs/TaskManager.cs"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "Wanted / Missing episodes",
+   "fsdQuote": null,
+   "screen": "/wanted/cutoffunmet",
+   "note": "Cutoff Unmet screen (episodes below cutoff) is not described; the FSD only says they are not on Missing.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx:96"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / Tags",
+   "fsdQuote": "Tag labels may contain letters, numbers, spaces and underscores.",
+   "screen": null,
+   "note": "Tag labels may only contain letters, numbers and hyphens (a-z, 0-9, -).",
+   "evidence": [
+    "src/Sonarr.Api.V3/Tags/TagController.cs:31"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / Tags",
+   "fsdQuote": "Deleting a tag removes it from every series, profile and indexer that uses it.",
+   "screen": null,
+   "note": "A tag that is still in use cannot be deleted (conflict error; UI only offers delete when unused).",
+   "evidence": [
+    "src/NzbDrone.Core/Tags/TagService.cs:188",
+    "frontend/src/Settings/Tags/Tag.tsx:76"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "Settings / Tags",
+   "fsdQuote": "Each tag has a colour, chosen from a palette of 12 colours, which is shown wherever the tag appears.",
+   "screen": null,
+   "note": "Tags have only a label; no colour field or palette exists.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Tags/TagResource.cs",
+    "frontend/src/Settings/Tags/Tag.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "Settings / Tags",
+   "fsdQuote": null,
+   "screen": "/settings/tags",
+   "note": "Tags screen also manages auto-tagging rules, which the FSD does not mention.",
+   "evidence": [
+    "frontend/src/Settings/Tags/Tag.tsx:117",
+    "frontend/src/Settings/Tags/AutoTagging/AutoTaggings.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "Settings / Profiles / Quality profiles",
+   "fsdQuote": null,
+   "screen": "/settings/profiles",
+   "note": "Quality profiles also have custom format scoring: minimum custom format score, upgrade until score and minimum score increment.",
+   "evidence": [
+    "frontend/src/Settings/Profiles/Quality/EditQualityProfileModalContent.tsx:414",
+    "frontend/src/Settings/Profiles/Quality/EditQualityProfileModalContent.tsx:433",
+    "frontend/src/Settings/Profiles/Quality/EditQualityProfileModalContent.tsx:454"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/profiles",
+   "note": "Release profiles (listed on the same Profiles screen) are not described.",
+   "evidence": [
+    "frontend/src/Settings/Profiles/Release/ReleaseProfiles.tsx"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / Profiles / Delay profiles",
+   "fsdQuote": "Preferred Protocol: Usenet or Torrent.",
+   "screen": null,
+   "note": "Protocol choices are four: prefer Usenet, prefer Torrent, only Usenet, only Torrent.",
+   "evidence": [
+    "frontend/src/Settings/Profiles/Delay/EditDelayProfileModalContent.tsx:27",
+    "frontend/src/Settings/Profiles/Delay/EditDelayProfileModalContent.tsx:37"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / Profiles / Delay profiles",
+   "fsdQuote": "The default delay profile can be given tags like any other.",
+   "screen": null,
+   "note": "The default delay profile (id 1) must have no tags; validation requires an empty tag list.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Profiles/Delay/DelayProfileController.cs:22"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "Settings / Profiles / Delay profiles",
+   "fsdQuote": null,
+   "screen": "/settings/profiles",
+   "note": "Delay profiles have bypass options: bypass if highest quality, and bypass if above a custom format score (with minimum score).",
+   "evidence": [
+    "frontend/src/Settings/Profiles/Delay/EditDelayProfileModalContent.tsx:203",
+    "frontend/src/Settings/Profiles/Delay/EditDelayProfileModalContent.tsx:217"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "Settings / Quality definitions",
+   "fsdQuote": "Each quality can be limited to a maximum episode runtime.",
+   "screen": null,
+   "note": "Quality definitions have min, preferred and max size only; there is no runtime limit.",
+   "evidence": [
+    "src/NzbDrone.Core/Qualities/QualityDefinition.cs:14",
+    "frontend/src/Settings/Quality/Definition/QualityDefinitionLimits.tsx"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / General / Logging",
+   "fsdQuote": "Each log file can grow up to 50 megabytes before a new one is started.",
+   "screen": null,
+   "note": "The log size limit is validated between 1 and 10 megabytes.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Config/HostConfigController.cs:125"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / General / Backups",
+   "fsdQuote": "Interval: how often an automatic backup is taken, from 1 to 30 days.",
+   "screen": null,
+   "note": "Backup interval is validated from 1 to 7 days.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Config/HostConfigController.cs:132",
+    "src/NzbDrone.Core/Jobs/TaskManager.cs:183"
+   ]
+  },
+  {
+   "state": "conflict",
+   "section": "Settings / General / Backups",
+   "fsdQuote": "Retention: how long backups are kept, up to 365 days.",
+   "screen": null,
+   "note": "Backup retention is validated from 1 to 90 days.",
+   "evidence": [
+    "src/Sonarr.Api.V3/Config/HostConfigController.cs:133"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "Settings / Interface",
+   "fsdQuote": "The font size can be set to small, medium or large.",
+   "screen": null,
+   "note": "The UI settings screen has no font size option.",
+   "evidence": [
+    "frontend/src/Settings/UI/UISettings.tsx:145"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "Settings / Interface",
+   "fsdQuote": null,
+   "screen": "/settings/ui",
+   "note": "UI settings also have time zone, header colour and colour-impaired mode options.",
+   "evidence": [
+    "frontend/src/Settings/UI/UISettings.tsx:242",
+    "frontend/src/Settings/UI/UISettings.tsx:284",
+    "frontend/src/Settings/UI/UISettings.tsx:296"
+   ]
+  },
+  {
+   "state": "gap",
+   "section": "System / Backups",
+   "fsdQuote": "Backups can be copied automatically to an S3 bucket.",
+   "screen": null,
+   "note": "No S3 or remote backup copy exists in the backup service or settings.",
+   "evidence": [
+    "src/NzbDrone.Core/Backup/BackupService.cs",
+    "frontend/src/Settings/General/BackupSettings.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "System / Backups",
+   "fsdQuote": null,
+   "screen": "/system/backups",
+   "note": "Each backup row can be deleted; not mentioned.",
+   "evidence": [
+    "frontend/src/System/Backup/BackupRow.tsx:27"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/series",
+   "note": "Series index (library list with poster/overview/table views, filters, bulk actions) is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/add/import",
+   "note": "Import existing series: choose root folder to import is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/add/import/:rootFolderId",
+   "note": "Import series from a root folder is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/seasonpass",
+   "note": "Season Pass screen is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/serieseditor",
+   "note": "Series editor (bulk edit) is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/statistics",
+   "note": "Statistics screen is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/mediamanagement",
+   "note": "Media Management settings is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/customformats",
+   "note": "Custom Formats settings is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/indexers",
+   "note": "Indexers settings is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/downloadclients",
+   "note": "Download Clients settings is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/importlists",
+   "note": "Import Lists settings is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/connect",
+   "note": "Connections (notifications) settings is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/metadata",
+   "note": "Metadata settings is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/settings/metadatasource",
+   "note": "Metadata Source settings is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/status",
+   "note": "System Status is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/tasks",
+   "note": "System Tasks is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/updates",
+   "note": "System Updates is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/events",
+   "note": "System Log Events is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/logs/files",
+   "note": "Log Files is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/system/logs/files/update",
+   "note": "Update Log Files is a screen in the app that the FSD does not describe.",
+   "evidence": [
+    "frontend/src/App/AppRoutes.tsx"
+   ]
+  }
+ ]
+}

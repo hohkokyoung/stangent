@@ -10,10 +10,14 @@ public static class PageRender
         [("shows", "Shows"), ("actions", "Actions"), ("rules", "Rules"), ("sideEffects", "Side effects")];
 
     /// <param name="pathOf">The page path for an id that has a page of its own (endpoints, shared components), or null.</param>
-    public static string Markdown(JsonObject page, Func<string, string?> pathOf)
+    /// <param name="lines">The page's line citations (<see cref="PageLines"/>), or null before it has any.</param>
+    /// <param name="marks">A person's corrections on this page (T.1), so a reader can see which words are a person's.</param>
+    public static string Markdown(JsonObject page, Func<string, string?> pathOf, JsonObject? lines = null, (IReadOnlyDictionary<string, string> Corrected, IReadOnlyList<JsonObject> Removed)? marks = null)
     {
         var md = new StringBuilder();
         var self = pathOf((string)page["id"]!) ?? "";
+        var up = string.Concat(Enumerable.Repeat("../", self.Count(c => c == '/'))) + "index.md";
+        md.Append($"[All pages]({up})\n\n");
         md.Append($"# {(string)page["title"]!}\n\n");
         md.Append($"`{(string)page["id"]!}` · {(string)page["kind"]!} · {(string)page["group"]!}\n\n");
         md.Append($"From the code: {(string)page["codeTitle"]!}\n\n");
@@ -36,8 +40,14 @@ public static class PageRender
                 md.Append($"- **{(string)s["id"]!}** {(string)s["text"]!} {string.Join("", refs)}");
                 if (s["endpoints"] is JsonArray eps && eps.Count > 0)
                     md.Append(" → " + string.Join(", ", eps.Select(e => Link((string)e!, pathOf, self))));
+                if (marks?.Corrected.GetValueOrDefault((string)s["id"]!) is { } correction) md.Append($" *(corrected by a person, {correction})*");
                 md.Append('\n');
             }
+        }
+        if (marks?.Removed is { Count: > 0 } removed)
+        {
+            md.Append("\n## Removed by a person\n\n");
+            foreach (var c in removed) md.Append($"- {(string)c["id"]!}: \"{(string)c["was"]!}\", because {(string)c["why"]!}\n");
         }
 
         var unknowns = page["unknowns"]!.AsArray();
@@ -56,11 +66,23 @@ public static class PageRender
         }
 
         md.Append("\n## Cited symbols\n\n");
-        for (var i = 0; i < cited.Count; i++) md.Append($"{i + 1}. {Link(cited[i], pathOf, self)}\n");
+        var wholePage = (string?)lines?["note"];
+        if (wholePage is not null) md.Append($"No lines are cited: {wholePage}.\n\n");
+        else if ((string?)lines?["commit"] is { } at) md.Append($"Lines are at commit {Short(at)}, filled by code from the graph.\n\n");
+        for (var i = 0; i < cited.Count; i++)
+        {
+            md.Append($"{i + 1}. {Link(cited[i], pathOf, self)}");
+            var symbol = lines?["symbols"]?[cited[i]] as JsonObject;
+            if (PageLines.Cite(symbol) is { } cite) md.Append($" · `{cite}`");
+            if ((string?)symbol?["note"] is { } note) md.Append($" · {note}");
+            if (wholePage is null && (string?)symbol?["why"] is { } why) md.Append($" · no lines: {why}");
+            md.Append('\n');
+        }
 
         var g = page["generated"]!;
         md.Append($"\n<sub>commit {Short((string)g["commit"]!)} · inputs {Short((string)g["bundleHash"]!)} · slice of {(int)g["slice"]!["points"]!} points, ");
         md.Append($"{(int)g["slice"]!["depth"]!} lines deep · written by {(string?)g["writer"]!["model"] ?? "?"}, checked by {(string?)g["verifier"]!["model"] ?? "?"}</sub>\n");
+        md.Append($"\n---\n\n[All pages]({up}) · Generated from the code, so don't edit this file. If it's wrong, `stangent spec correct` records a correction.\n");
         return md.ToString();
     }
 
@@ -73,4 +95,43 @@ public static class PageRender
     }
 
     static string Short(string s) => s.Length > 7 ? s[..7] : s;
+}
+
+/// <summary>T.7 (D131): <c>specs/reference/index.md</c>, every written page by kind and group. From the pages' JSON by code, read by people and nothing else.</summary>
+public static class PageNavigation
+{
+    public static string FileIn(SpecPaths paths) => Path.Combine(paths.ReferenceDir, "index.md");
+
+    /// <summary>Rewrites the index. Side-by-side runs take turns, and the file is whole at any moment. Returns how many pages it lists.</summary>
+    public static int Write(SpecPaths paths)
+    {
+        using var _ = PageRun.Lock(paths);
+        var (text, count) = Render(paths);
+        Quotes.WriteAtomic(FileIn(paths), text);
+        return count;
+    }
+
+    static (string Text, int Count) Render(SpecPaths paths)
+    {
+        var pages = new List<(string Kind, string Group, string Title, string Id, string Path)>();
+        if (Directory.Exists(paths.ReferenceDir))
+            foreach (var file in Directory.EnumerateFiles(paths.ReferenceDir, "*.json", SearchOption.AllDirectories))
+                if (file != paths.FailedFile && PageRun.LoadJson(file) is JsonObject p && p["sections"] is not null && (string?)p["id"] is { } id)
+                    pages.Add(((string)p["kind"]!, (string?)p["group"] ?? "", (string?)p["title"] ?? id, id, Path.GetRelativePath(paths.ReferenceDir, file)[..^".json".Length].Replace('\\', '/') + ".md"));
+        var md = new StringBuilder("# Reference pages\n\nGenerated by code from the pages. Don't edit this file: `stangent spec nav` writes it again. `stangent spec coverage` says what isn't written.\n");
+        foreach (var (kind, title) in new[] { (PageKind.Screen, "Screens"), (PageKind.Component, "Shared components"), (PageKind.Backend, "Backend") })
+        {
+            var ofKind = pages.Where(p => p.Kind == kind).ToList();
+            if (ofKind.Count == 0) continue;
+            md.Append($"\n## {title} ({ofKind.Count})\n");
+            foreach (var group in ofKind.GroupBy(p => p.Group).OrderBy(g => g.Key, StringComparer.Ordinal))
+            {
+                if (group.Key.Length > 0) md.Append($"\n### {group.Key}\n\n");
+                else md.Append('\n');
+                foreach (var p in group.OrderBy(p => p.Id, StringComparer.Ordinal))
+                    md.Append($"- [{p.Title.Replace("[", "\\[").Replace("]", "\\]")}]({p.Path})\n");
+            }
+        }
+        return (md.ToString(), pages.Count);
+    }
 }

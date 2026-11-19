@@ -1,0 +1,196 @@
+{
+  "codeTitle": "ANY /api/v3/Command",
+  "entry": "endpoint:Sonarr.Api.V3|ANY /api/v3/Command",
+  "generated": {
+    "bundleHash": "1f23e7fb9e3c764fdd76d4d493228748279cdec0a36c5aa7cf8991f036f0da6a",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 17798,
+      "cutOff": 9,
+      "depth": 4,
+      "points": 65
+    },
+    "verifier": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 12177,
+      "calls": 1,
+      "costUsd": 0.050612,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2769,
+      "outputTokens": 190
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 20625,
+      "calls": 2,
+      "costUsd": 0.131204,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 24812,
+      "outputTokens": 4842
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|ANY /api/v3/Command",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandController.StartCommand(Sonarr.Api.V3.Commands.CommandResource)",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.IManageCommandQueue.Push``1(``0,NzbDrone.Core.Messaging.Commands.CommandPriority,NzbDrone.Core.Messaging.Commands.CommandTrigger)",
+          "Sonarr.Common|M:NzbDrone.Common.Serializer.STJson.Deserialize(System.String,System.Type)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Command"
+        ],
+        "id": "A1",
+        "text": "Start a command with a JSON body: the command type is matched by the resource name, the body is deserialized into that command, and it is pushed to the command queue as a manual trigger."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandController.CancelCommand(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.CommandQueueManager.Cancel(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Command"
+        ],
+        "id": "A2",
+        "text": "Cancel a command by id, which removes it from the queue if it is still queued."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Command"
+        ],
+        "id": "A3",
+        "text": "Get a command by id."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandController.StartCommand(Sonarr.Api.V3.Commands.CommandResource)",
+          "Sonarr.Common|M:NzbDrone.Common.Composition.KnownTypes.GetImplementations(System.Type)"
+        ],
+        "id": "R1",
+        "text": "The command type is the single known Command implementation whose class name, with \"Command\" removed, equals the requested name, ignoring case. Zero or multiple matches cause an error."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandController.StartCommand(Sonarr.Api.V3.Commands.CommandResource)"
+        ],
+        "id": "R2",
+        "text": "ManualImportCommand is queued with High priority. All other commands are queued with Normal priority."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandController.StartCommand(Sonarr.Api.V3.Commands.CommandResource)"
+        ],
+        "id": "R3",
+        "text": "SuppressMessages is set to the opposite of the submitted SendUpdatesToClient, and SendUpdatesToClient is then forced to true."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandController.StartCommand(Sonarr.Api.V3.Commands.CommandResource)"
+        ],
+        "id": "R4",
+        "text": "The command's ClientUserAgent is taken from the request's UserAgent header."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.CommandQueueManager.Cancel(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.CommandQueue.RemoveIfQueued(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Exceptions.NzbDroneClientException.#ctor(System.Net.HttpStatusCode,System.String)"
+        ],
+        "id": "R5",
+        "text": "A command can be cancelled only when it is in the queue with status Queued. If it is not removed (including when no such command is found), a 409 Conflict error \"Unable to cancel task\" is raised."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R6",
+        "text": "For POST and PUT requests, resources are validated before the action runs. The id argument is validated when the action is marked for id validation and validation is not skipped."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R7",
+        "text": "Calls to endpoints marked deprecated are logged as a warning and get a \"Deprecation: true\" response header."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Created(System.Int32)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandController.StartCommand(Sonarr.Api.V3.Commands.CommandResource)"
+        ],
+        "id": "S1",
+        "text": "Starting a command returns a created-at-action result pointing to the new command's resource, looked up by the tracked command's id."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "Getting a command by id returns it as JSON, or Not Found when the model is not found."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandController.CancelCommand(System.Int32)"
+        ],
+        "id": "S3",
+        "text": "Cancelling a command returns no body."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Commands.CommandController.StartCommand(Sonarr.Api.V3.Commands.CommandResource)",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.IManageCommandQueue.Push``1(``0,NzbDrone.Core.Messaging.Commands.CommandPriority,NzbDrone.Core.Messaging.Commands.CommandTrigger)"
+        ],
+        "id": "E1",
+        "text": "Starting a command adds it to the command queue as a manual-trigger command."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Commands.CommandQueue.RemoveIfQueued(System.Int32)"
+        ],
+        "id": "E2",
+        "text": "Cancelling a queued command removes it from the queue and wakes up waiting threads on the queue."
+      }
+    ]
+  },
+  "title": "Command API (start and cancel commands)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "Source shows CreatedAtAction but does not show the 201 status code explicitly; mild. The lookup by id is supported.",
+        "id": "F1",
+        "kind": "unsupported",
+        "outcome": "fixed",
+        "reason": "Removed the explicit 201 status claim; the source only shows CreatedAtAction.",
+        "statement": "S1",
+        "statementText": "Starting a command returns a 201 Created result pointing to the new command's resource, looked up by the tracked command's id."
+      },
+      {
+        "explanation": "Mostly supported, but 'Otherwise' covers non-existent commands too; supported by code (RemoveIfQueued returns false). No real issue.",
+        "id": "F2",
+        "kind": "unsupported",
+        "outcome": "fixed",
+        "reason": "Clarified that the 409 applies whenever the command is not removed, including when no such command is found.",
+        "statement": "R5",
+        "statementText": "Only commands with status Queued can be cancelled. Otherwise a 409 Conflict error \"Unable to cancel task\" is raised."
+      }
+    ]
+  }
+}

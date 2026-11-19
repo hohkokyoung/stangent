@@ -1,0 +1,360 @@
+{
+  "codeTitle": "FormInput",
+  "entry": "ts|frontend/src/Components/Form/FormInput.tsx#FormInput",
+  "generated": {
+    "bundleHash": "a9d86f0ae459029d012adadb5382c0d390848cfe133f64f8163b6c50b760c659",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 170919,
+      "cutOff": 17,
+      "depth": 6,
+      "points": 774
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 81618,
+      "calls": 1,
+      "costUsd": 0.334621,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8739,
+      "outputTokens": 797
+    },
+    "writer": {
+      "cacheReadTokens": 79960,
+      "cacheWriteTokens": 81237,
+      "calls": 1,
+      "costUsd": 0.417998,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 40836,
+      "outputTokens": 7705
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Components/Form/FormInput.tsx#FormInput",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Select/RootFolderSelectInput.tsx#RootFolderSelectInput",
+          "ts|frontend/src/Components/FileBrowser/FileBrowserModalContent.tsx#FileBrowserModalContent"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/RootFolder"
+        ],
+        "id": "A1",
+        "text": "Choosing the 'Add a new path' option in the root folder select opens a file browser modal; confirming a path adds it as a root folder."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Tag/SeriesTagInput.tsx#SeriesTagInput"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Tag"
+        ],
+        "id": "A2",
+        "text": "Typing a new tag name in the series tag input creates the tag if no tag with that label exists, then adds it to the value."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/OAuthInput.tsx#OAuthInput",
+          "ts|frontend/src/OAuth/useOAuth.ts#useOAuth"
+        ],
+        "id": "A3",
+        "text": "The OAuth input button starts the OAuth flow; on success it sets each returned result key as a field value."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/CaptchaInput.tsx#CaptchaInput",
+          "ts|frontend/src/Components/Form/useCaptcha.ts#useCaptcha"
+        ],
+        "id": "A4",
+        "text": "The captcha input's refresh button checks the captcha, and solving the reCAPTCHA fetches a captcha cookie token that is put in the field."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Tag/DeviceInput.tsx#DeviceInput"
+        ],
+        "id": "A5",
+        "text": "The device input's refresh button reloads the list of devices from the provider."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Select/EnhancedSelectInput.tsx#EnhancedSelectInput"
+        ],
+        "id": "A6",
+        "text": "The select input can be opened by click or keyboard; arrow keys move, Enter or Tab selects, Escape closes, and typing letters jumps to a matching option."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Tag/TagInputTag.tsx#TagInputTag",
+          "ts|frontend/src/Components/Form/Tag/TagInput.tsx#TagInput"
+        ],
+        "id": "A7",
+        "text": "Clicking a tag in a tag input removes it, and Backspace on empty text removes the last tag."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/FormInput.tsx#FormInput"
+        ],
+        "id": "R1",
+        "text": "The error state takes priority: the warning state applies only when there are no errors."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/FormInput.tsx#FormInput"
+        ],
+        "id": "R2",
+        "text": "The field id defaults to the surrounding form row's id, otherwise to the field name."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/NumberInput.tsx#NumberInput",
+          "ts|frontend/src/Components/Form/NumberInput.tsx#parseValue",
+          "ts|frontend/src/Components/Form/FloatInput.tsx#FloatInput"
+        ],
+        "id": "R3",
+        "text": "Number inputs clamp to min and max when the field loses focus, and an empty value becomes null; float inputs parse as decimals, others as integers."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/PasswordInput.tsx#PasswordInput",
+          "ts|frontend/src/Components/Form/PasswordInput.tsx#onCopy"
+        ],
+        "id": "R4",
+        "text": "The password input is a text input of type password with copy blocked."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Select/QualityProfileSelectInput.tsx#QualityProfileSelectInput",
+          "ts|frontend/src/Components/Form/Select/QualityProfileSelectInput.tsx#useValues"
+        ],
+        "id": "R5",
+        "text": "Quality profile options are sorted by name; if the value is empty or not among the options, the first numeric option is selected automatically."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Select/RootFolderSelectInput.tsx#useRootFolderOptions",
+          "ts|frontend/src/Components/Form/Select/RootFolderSelectInput.tsx#RootFolderSelectInput"
+        ],
+        "id": "R6",
+        "text": "Root folders are sorted by path, and an empty root folder value defaults to the first available folder."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Select/DownloadClientSelectInput.tsx#DownloadClientSelectInput"
+        ],
+        "id": "R7",
+        "text": "Download client options are filtered to the given protocol (default torrent), sorted by name, with an optional '(Any)' entry with key 0."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Select/IndexerFlagsSelectInput.tsx#IndexerFlagsSelectInput"
+        ],
+        "id": "R8",
+        "text": "Indexer flags are stored as a sum of the selected flag ids."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Select/MonitorEpisodesSelectInput.tsx#MonitorEpisodesSelectInput",
+          "ts|frontend/src/Components/Form/Select/SeriesTypeSelectInput.tsx#SeriesTypeSelectInput",
+          "ts|frontend/src/Components/Form/Select/LanguageSelectInput.tsx#LanguageSelectInput"
+        ],
+        "id": "R9",
+        "text": "Several select inputs can add a 'No Change' and a disabled '(Mixed)' entry at the top of their options."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Select/LanguageSelectInput.tsx#LanguageSelectInput"
+        ],
+        "id": "R10",
+        "text": "Language options exclude Any, Original and Unknown unless the matching include flag is set; Any is included by default."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Tag/TextTagInput.tsx#TextTagInput"
+        ],
+        "id": "R11",
+        "text": "Text tag input splits entered text on commas and trims it, except entries starting with '/' which are kept whole; delimiters are Tab, Enter and comma."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/KeyValueListInput.tsx#KeyValueListInput"
+        ],
+        "id": "R12",
+        "text": "The key/value input drops rows where both key and value are empty when focus leaves."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/AutoCompleteInput.tsx#AutoCompleteInput"
+        ],
+        "id": "R13",
+        "text": "Autocomplete suggestions are values that contain the typed text, ignoring case."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/FormInput.tsx#FormInput"
+        ],
+        "id": "S1",
+        "text": "Renders one form field whose input control is chosen by the field's type, with an optional unit label next to it."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/FormInput.tsx#FormInput"
+        ],
+        "id": "S2",
+        "text": "Any buttons passed in are shown after the input, and the last button is told it is the last one."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/FormInput.tsx#FormInput"
+        ],
+        "id": "S3",
+        "text": "Validation errors and warnings are listed below the input as help text, combining client-side messages with server-supplied ones. Errors come first in order of client then server."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/FormInput.tsx#FormInput"
+        ],
+        "id": "S4",
+        "text": "Error and warning entries with an errorMessage show the message with an info link and a detailed-description tooltip; other entries show just their message."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Select/EnhancedSelectInput.tsx#EnhancedSelectInput"
+        ],
+        "id": "S5",
+        "text": "The select input shows a loading indicator in place of the dropdown arrow while its options are being fetched."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Select/RootFolderSelectInput.tsx#useRootFolderOptions",
+          "ts|frontend/src/Components/Form/Select/RootFolderSelectInputOption.tsx#RootFolderSelectInputOption"
+        ],
+        "id": "S6",
+        "text": "The root folder select lists each root folder path with its free space, flags missing values as 'Missing', and ends with an 'Add a new path' option."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Select/UMaskInput.tsx#UMaskInput",
+          "ts|frontend/src/Components/Form/Select/UMaskInput.tsx#formatPermissions"
+        ],
+        "id": "S7",
+        "text": "The UMask input shows the umask, folder and file permission values in octal, plus a rwx-style permission string."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/KeyValueListInput.tsx#KeyValueListInput",
+          "ts|frontend/src/Components/Form/KeyValueListInputItem.tsx#KeyValueListInputItem"
+        ],
+        "id": "S8",
+        "text": "The key/value list input shows each pair as a key box and a value box, with a remove button on every row except the always-present empty new row at the end."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/KeyValueListInputItem.tsx#KeyValueListInputItem"
+        ],
+        "id": "S9",
+        "text": "The key/value placeholders default to 'Key' and 'Value'."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/RootFolder/useRootFolders.ts#useAddRootFolder"
+        ],
+        "id": "E1",
+        "text": "Adding a root folder from the select posts it to the root folder API and updates the cached list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Tags/useTags.ts#useAddTag"
+        ],
+        "id": "E2",
+        "text": "Creating a tag posts it to the tag API and updates the cached tag list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useProviderOptions.ts#useProviderOptions",
+          "ts|frontend/src/Components/Form/Select/ProviderOptionSelectInput.tsx#ProviderOptionSelectInput"
+        ],
+        "id": "E3",
+        "text": "Provider option selects load their options with a POST to the provider's action endpoint."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/OAuth/useOAuth.ts#showOAuthWindow",
+          "ts|frontend/src/OAuth/useOAuth.ts#useOAuth",
+          "ts|frontend/src/OAuth/useOAuth.ts#executeIntermediateRequest"
+        ],
+        "id": "E4",
+        "text": "The OAuth flow opens a browser window and calls provider actions startOAuth, continueOAuth, pollOAuth and getOAuthToken."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/OAuthInput.tsx#OAuthInput"
+        ],
+        "id": "E5",
+        "text": "OAuth failures are pushed to the field's error list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Components/Form/Tag/SeriesTagInput.tsx#SeriesTagInput"
+        ],
+        "id": "E6",
+        "text": "Tag creation failures are pushed to the field's error and warning list."
+      }
+    ]
+  },
+  "title": "Form Input (generic form field)",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/OAuth/useOAuth.ts",
+      "in": "ts|frontend/src/OAuth/useOAuth.ts#executeIntermediateRequest",
+      "line": 120,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useProviderSettings",
+      "line": 78,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Utilities/Fetch/fetchJson.ts",
+      "in": "ts|frontend/src/Utilities/Fetch/fetchJson.ts#fetchJson",
+      "line": 56,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Utilities/requestAction.js",
+      "in": "ts|frontend/src/Utilities/requestAction.js#requestAction",
+      "line": 37,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

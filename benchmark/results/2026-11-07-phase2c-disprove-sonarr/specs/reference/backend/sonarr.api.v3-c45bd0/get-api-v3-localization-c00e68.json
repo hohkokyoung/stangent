@@ -1,0 +1,115 @@
+{
+  "codeTitle": "GET /api/v3/Localization",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/Localization",
+  "generated": {
+    "bundleHash": "675d4202dc72df56480d81196ec6363ea00de3a1e6fb77064221883d650c1f00",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 10282,
+      "cutOff": 9,
+      "depth": 4,
+      "points": 11
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6560,
+      "calls": 1,
+      "costUsd": 0.028809,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3786,
+      "outputTokens": 239
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4856,
+      "calls": 1,
+      "costUsd": 0.029684,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 6255,
+      "outputTokens": 998
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/Localization",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Localization",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Localization.LocalizationController.GetLocalization"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/Localization"
+        ],
+        "id": "A1",
+        "text": "A caller requests GET /api/v3/Localization to receive the localization dictionary for the current language."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Localization.LocalizationService.GetLanguageFileName"
+        ],
+        "id": "R1",
+        "text": "The language file name is derived from the language identifier by replacing \"-\" with \"_\" and lowercasing."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Localization.LocalizationService.GetLocalizationDictionary(System.String)"
+        ],
+        "id": "R2",
+        "text": "An empty or missing language name causes an ArgumentNullException."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Localization.LocalizationService.GetLocalizationDictionary(System.String)"
+        ],
+        "id": "R3",
+        "text": "Dictionary files are read from the Localization/Core folder under the application startup folder, using the default culture's .json file as a further argument."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Localization.LocalizationService.GetLocalizationDictionary(System.String)"
+        ],
+        "id": "R4",
+        "text": "In debug builds the dictionary is loaded fresh on every request; otherwise it is cached under the key \"localization\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Localization.LocalizationResourceMapper.ToResource(System.Collections.Generic.Dictionary{System.String,System.String})"
+        ],
+        "id": "R5",
+        "text": "If the dictionary is null, the resource returned is null."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Localization.LocalizationResourceMapper.ToResource(System.Collections.Generic.Dictionary{System.String,System.String})",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Localization.LocalizationController.GetLocalization"
+        ],
+        "id": "S1",
+        "text": "Returns a localization object whose Strings field is a dictionary of translation keys to translated text."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Localization.LocalizationController.GetLocalization"
+        ],
+        "id": "S2",
+        "text": "The response is JSON."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Get Localization Strings",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

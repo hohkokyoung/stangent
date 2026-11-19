@@ -1,0 +1,712 @@
+using System.Text;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
+using Stangent.Core;
+
+namespace Stangent.Flows;
+
+/// <summary>A condition on the way to an item (D251): where it is, its code, its kind, and how the flow's Markdown reads it.</summary>
+public sealed record SummaryCondition(string At, string Code, string Kind, string? Case, string Text)
+{
+    internal string Key => $"{At}|{Code}|{Kind}|{Case}";
+}
+
+/// <summary>
+/// One numbered item of a section (D251): what a flow does that a reader cares about, with its place in the code, its label
+/// (certain ✅, guessed 🟡, unknown ❓) and every condition on the way to it. <see cref="MustCite"/>: the page writer must cite it (D255 item 1).
+/// </summary>
+public sealed class SummaryItem
+{
+    public required string Id { get; set; }
+    public required string Kind { get; init; }
+    public required string Text { get; init; }
+    public List<string> Flows { get; } = [];
+    public required string At { get; init; }
+    public required string Code { get; init; }
+    public required string Label { get; init; }
+    public string? Reason { get; init; }
+    public required IReadOnlyList<SummaryCondition> Conditions { get; set; }
+    /// <summary>The same item with no flows or other places yet, for one section to fill.</summary>
+    public SummaryItem Copy() => new() { Id = Id, Kind = Kind, Text = Text, At = At, Code = Code, Label = Label, Reason = Reason, Conditions = Conditions };
+    public bool MustCite => Kind is "who" or "save" or "message" or "outside-call" or "exit" or "check" || Label != "certain";
+    public string Mark => Label switch { "guessed" => "🟡", "unknown" => "❓", _ => "✅" };
+
+    /// <summary>Two items with one key are one item (their flows joined). Who is one item per wording, wherever the rule is written.</summary>
+    /// <summary>Exits (D264) are one item per what they throw and their own conditions' code, wherever they are; the other places go in <see cref="AlsoAt"/>.</summary>
+    internal string Key => Kind switch
+    {
+        "who" => $"who\u0001{Text}\u0001{Label}",
+        "exit" => $"exit\u0001{Text}\u0001{Label}\u0001{string.Join("\u0002", Conditions.Select(c => $"{c.Code}|{c.Kind}|{c.Case}"))}",
+        "read" or "shows" => $"{Kind}\u0001{Text}\u0001{Label}",
+        _ => $"{Place}\u0001{string.Join("\u0002", Conditions.Select(c => c.Key))}",
+    };
+    /// <summary>Other places the same exit is written (D264), in the order found.</summary>
+    public List<string> AlsoAt { get; } = [];
+    /// <summary>What and where, without the conditions.</summary>
+    internal string Place => $"{Kind}\u0001{Text}\u0001{At}\u0001{Label}";
+
+    public JsonObject ToJson()
+    {
+        var o = new JsonObject
+        {
+            ["id"] = Id, ["kind"] = Kind, ["text"] = Text, ["at"] = At, ["code"] = Code, ["label"] = Label, ["mustCite"] = MustCite,
+            ["flows"] = new JsonArray([.. Flows.Select(f => (JsonNode)f)]),
+            ["conditions"] = new JsonArray([.. Conditions.Select(c =>
+            {
+                var x = new JsonObject { ["at"] = c.At, ["code"] = c.Code, ["kind"] = c.Kind, ["text"] = c.Text };
+                if (c.Case is not null) x["case"] = c.Case;
+                return (JsonNode)x;
+            })]),
+        };
+        if (Reason is not null) o["reason"] = Reason;
+        if (AlsoAt.Count > 0) o["alsoAt"] = new JsonArray([.. AlsoAt.Select(a => (JsonNode)a)]);
+        return o;
+    }
+}
+
+/// <summary>One section of an area's page (D253): its id (stable across runs), heading, the group it sits under, its flows and items.</summary>
+public sealed class SummarySection
+{
+    public required string Id { get; init; }
+    public required string Title { get; init; }
+    /// <summary>in-short, screen, clicks, message, jobs.</summary>
+    public required string Kind { get; init; }
+    /// <summary>The heading it sits under: empty, or "On its own" (handlers and jobs).</summary>
+    public string Group { get; init; } = "";
+    public List<string> Flows { get; } = [];
+    public List<SummaryItem> Items { get; } = [];
+
+    /// <summary>D254: the hash of what the writer reads for this section, before the rules and model are added.</summary>
+    public string ItemsHash => CanonicalJson.Hash(CanonicalJson.SerializeCompact(Json()));
+
+    public JsonObject Json() => new()
+    {
+        ["id"] = Id, ["title"] = Title, ["kind"] = Kind, ["group"] = Group,
+        ["flows"] = new JsonArray([.. Flows.Select(f => (JsonNode)f)]),
+        ["items"] = new JsonArray([.. Items.Select(i => (JsonNode)i.ToJson())]),
+    };
+}
+
+/// <summary>An area's summary (D251, D253): its sections in page order, "In short" first.</summary>
+public sealed class AreaSummary
+{
+    public required string Area { get; init; }
+    public required string Folder { get; init; }
+    public required string Commit { get; init; }
+    public List<SummarySection> Sections { get; } = [];
+    /// <summary>Flows the summary couldn't read (no file on disk): listed, never skipped silently (D111).</summary>
+    public List<string> Missing { get; } = [];
+
+    public SummarySection? Find(string id) => Sections.FirstOrDefault(s => s.Id == id);
+
+    public JsonObject ToJson() => new()
+    {
+        ["contract"] = PageSummary.Contract, ["version"] = PageSummary.Version, ["commit"] = Commit, ["area"] = Area, ["folder"] = Folder,
+        ["sections"] = new JsonArray([.. Sections.Select(s => (JsonNode)s.Json())]),
+        ["cantTell"] = new JsonArray([.. Sections.SelectMany(s => s.Items.Where(i => i.Label == "unknown").Select(i => (JsonNode)new JsonObject { ["section"] = s.Id, ["item"] = i.Id }))]),
+        ["missing"] = new JsonArray([.. Missing.Select(m => (JsonNode)m)]),
+        ["counts"] = Counts(),
+    };
+
+    public JsonObject Counts() => new()
+    {
+        ["sections"] = Sections.Count, ["flows"] = Sections.Where(s => s.Id != PageSummary.InShort).Sum(s => s.Flows.Count), ["items"] = Sections.Sum(s => s.Items.Count),
+        ["mustCite"] = Sections.Sum(s => s.Items.Count(i => i.MustCite)),
+        ["guessed"] = Sections.Sum(s => s.Items.Count(i => i.Label == "guessed")), ["unknown"] = Sections.Sum(s => s.Items.Count(i => i.Label == "unknown")),
+        ["byKind"] = new JsonObject(Sections.SelectMany(s => s.Items).GroupBy(i => i.Kind).OrderBy(g => g.Key, StringComparer.Ordinal)
+            .Select(g => KeyValuePair.Create(g.Key, (JsonNode?)g.Count()))),
+    };
+}
+
+/// <summary>
+/// Layer 4's summary (D251–D253), by code, no AI: each start flow of an area cut into numbered items (who, start, saves, reads,
+/// messages, outside calls, screens opened, what it sets off later, early exits, checks grouped by field, texts it shows, what
+/// can't be followed), each with every condition on the way to it, laid out in D253's sections. Read from the flow files
+/// (contract <c>flows</c> v2); the same flows and <c>areas.yaml</c> give the same bytes. The page writer words these items and
+/// nothing else; the linking judge reads the same items.
+/// </summary>
+public static class PageSummary
+{
+    public const string Contract = "pages";
+    /// <summary>v2 (D285): the developer page by code replaced the AI-worded page; the summary's own shape is unchanged.</summary>
+    public const int Version = 2;
+    public const string InShort = "in-short";
+    public const string OnItsOwn = "On its own";
+    static readonly StringComparer O = StringComparer.Ordinal;
+    /// <summary>D264: a section whose item lines are longer than this is split by flow (about 10K tokens of items per writer call).</summary>
+    public const int SectionLimit = 40_000;
+
+    /// <summary>The item lines the writer reads of a section, before the rules.</summary>
+    public static int Chars(SummarySection s) => s.Items.Sum(i => ItemLine(i, true).Length);
+
+    /// <summary>Calls that turn a key into the words shown (D252): a stack's translation function, by its own name, with a quoted key first.</summary>
+    static readonly HashSet<string> TranslationCalls = new(["translate", "t", "T", "instant", "GetResource", "GetResourceAsync", "Localize"], O);
+    static readonly Regex Key = new(@"\b(?<fn>[A-Za-z_]\w*)\s*\(\s*(?<q>['""])(?<key>[^'""\r\n]+)\k<q>", RegexOptions.CultureInvariant);
+
+    /// <summary>The summary of one area, placed by <paramref name="placement"/> (from <c>areas.yaml</c>, or a proposal for a look before it's confirmed).</summary>
+    public static AreaSummary Build(string root, Areas a, Placement placement, string area, string folder, int sectionLimit = SectionLimit)
+    {
+        var reader = new FlowReader(root, a);
+        var summary = new AreaSummary { Area = area, Folder = folder, Commit = a.Commit };
+        var starts = placement.AreaOf.Where(x => x.Value == area && a.Flows.ContainsKey(x.Key)).Select(x => a.Flows[x.Key])
+            .OrderBy(f => f.Name.ToLowerInvariant(), O).ThenBy(f => f.Id, O).ToList();
+        foreach (var f in starts) if (reader.Load(f.Id) is null) summary.Missing.Add(f.Id);
+        var readable = starts.Where(f => reader.Load(f.Id) is not null).ToList();
+        var translations = new Translations(root, resources: true);
+
+        // Who: said once for the area when every start flow shares it (D251), else per section.
+        var whoOf = readable.ToDictionary(f => f.Id, f => Who(reader.Load(f.Id)!), O);
+        var shared = whoOf.Values.Select(w => w.Text).Distinct(O).Count() == 1 && whoOf.Count > 0;
+
+        var inShort = new SummarySection { Id = InShort, Title = "In short", Kind = "in-short" };
+        summary.Sections.Add(inShort);
+        if (shared)
+        {
+            var w = whoOf.Values.First();
+            var item = w.Item();
+            item.Flows.AddRange(readable.Select(f => f.Id));
+            inShort.Items.Add(item);
+            inShort.Flows.AddRange(readable.Select(f => f.Id));
+        }
+
+        // Screens, each with the clicks placed on it (D219, D253); clicks on no screen of this area after them.
+        var screens = readable.Where(f => f.Kind == "screen-opens").ToList();
+        var sections = new List<(SummarySection Section, List<IndexFlow> Flows)>();
+        var byPoint = new Dictionary<string, (SummarySection, List<IndexFlow>)>(O);
+        foreach (var s in screens)
+        {
+            var sec = new SummarySection { Id = s.Id, Title = s.Name == "" ? s.Id : s.Name, Kind = "screen" };
+            var entry = (sec, new List<IndexFlow> { s });
+            sections.Add(entry);
+            byPoint.TryAdd(s.Point, entry);
+        }
+        var loose = new List<IndexFlow>();
+        foreach (var c in readable.Where(f => f.Kind == "click"))
+        {
+            var on = a.ScreensOf(c.Id).Where(byPoint.ContainsKey).ToList();
+            var first = sections.FirstOrDefault(x => on.Contains(x.Flows[0].Point));
+            if (first.Section is not null) first.Flows.Add(c); else loose.Add(c);
+        }
+        if (loose.Count > 0) sections.Add((new SummarySection { Id = "clicks", Title = "Clicks on no screen of this area", Kind = "clicks" }, loose));
+        // On its own: handlers grouped by the message they answer, then jobs together (D253).
+        foreach (var g in readable.Where(f => f.Kind == "handler").GroupBy(f => Message(reader.Load(f.Id)!), O).OrderBy(g => g.Key, O))
+        {
+            var name = g.Key.Contains('.') && !g.Key.Contains('<') ? g.Key[(g.Key.LastIndexOf('.') + 1)..] : g.Key;
+            sections.Add((new SummarySection { Id = $"on-{(FlowBuilder.Slug(g.Key) is { Length: > 0 } s ? s : "message")}", Title = $"When {name} is sent", Kind = "message", Group = OnItsOwn }, [.. g]));
+        }
+        var jobs = readable.Where(f => f.Kind == "job").ToList();
+        if (jobs.Count > 0) sections.Add((new SummarySection { Id = "jobs", Title = "Jobs", Kind = "jobs", Group = OnItsOwn }, jobs));
+
+        var cuts = new Dictionary<string, List<SummaryItem>>(O);
+        List<SummaryItem> CutOf(IndexFlow f) => cuts.TryGetValue(f.Id, out var c) ? c : cuts[f.Id] = Cut(reader, reader.Load(f.Id)!, translations);
+        SummarySection Make(SummarySection like, string id, string title, List<IndexFlow> flows)
+        {
+            var sec = new SummarySection { Id = id, Title = title, Kind = like.Kind, Group = like.Group };
+            var items = new List<SummaryItem>();
+            var seen = new Dictionary<string, SummaryItem>(O);
+            void Add(SummaryItem item, string flow)
+            {
+                if (seen.TryGetValue(item.Key, out var had))
+                {
+                    if (!had.Flows.Contains(flow)) had.Flows.Add(flow);
+                    if (item.At != had.At && !had.AlsoAt.Contains(item.At)) had.AlsoAt.Add(item.At);
+                    // D265: a read or shown text found again keeps only the conditions every place shares.
+                    if (had.Kind is "read" or "shows")
+                    {
+                        var keep = item.Conditions.Select(c => c.Key).ToHashSet(O);
+                        had.Conditions = [.. had.Conditions.Where(c => keep.Contains(c.Key))];
+                    }
+                    return;
+                }
+                var copy = item.Copy();
+                copy.Flows.Add(flow);
+                seen[copy.Key] = copy;
+                items.Add(copy);
+            }
+            if (!shared)
+                foreach (var f in flows) Add(whoOf[f.Id].Item(), f.Id);
+            foreach (var f in flows)
+            {
+                sec.Flows.Add(f.Id);
+                foreach (var item in CutOf(f)) Add(item, f.Id);
+            }
+            if (sec.Kind == "screen") FoldClicks(items, flows[0].Id);
+            Number(items);
+            sec.Items.AddRange(items);
+            return sec;
+        }
+        foreach (var (like, flows) in sections)
+        {
+            var whole = Make(like, like.Id, like.Title, flows);
+            if (Chars(whole) <= sectionLimit || flows.Count == 1) { summary.Sections.Add(whole); continue; }
+            // D264: too big for one call: split by flow, in order, each part as full as the limit allows (a flow over it alone).
+            var parts = new List<List<IndexFlow>>();
+            var current = new List<IndexFlow>();
+            foreach (var f in flows)
+            {
+                if (current.Count > 0 && Chars(Make(like, like.Id, like.Title, [.. current, f])) > sectionLimit) { parts.Add(current); current = []; }
+                current.Add(f);
+            }
+            parts.Add(current);
+            for (var n = 0; n < parts.Count; n++)
+                summary.Sections.Add(Make(like, $"{like.Id}-part-{n + 1}", $"{like.Title} ({n + 1} of {parts.Count})", parts[n]));
+        }
+        Number(inShort.Items);
+        return summary;
+    }
+
+    /// <summary>
+    /// A screen's flow walks into the clicks it shows, so it reaches their items again, under the click's conditions and how the
+    /// screen shows it (D251: "saves Series" carries "only while the add dialog is open" and "only when Add is pressed"). Such a pair
+    /// is one item: the screen's, which holds every condition of the click's, with both flows. Copies on another path stay apart.
+    /// </summary>
+    static void FoldClicks(List<SummaryItem> items, string screen)
+    {
+        var fromScreen = items.Where(i => i.Flows.Contains(screen)).ToList();
+        foreach (var click in items.Where(i => !i.Flows.Contains(screen) && i.Kind != "who" && i.Kind != "start").ToList())
+        {
+            var need = click.Conditions.Select(c => c.Key).ToHashSet(O);
+            var into = fromScreen.FirstOrDefault(x => x.Place == click.Place && need.IsSubsetOf(x.Conditions.Select(c => c.Key)));
+            if (into is null) continue;
+            foreach (var f in click.Flows) if (!into.Flows.Contains(f)) into.Flows.Add(f);
+            items.Remove(click);
+        }
+    }
+
+    /// <summary>D251's ids: a letter per kind (W who, T start, A what it does, S shows, U can't be followed, X early exits, K checks), numbered in order.</summary>
+    static void Number(List<SummaryItem> items)
+    {
+        static string Letter(string kind) => kind switch
+        {
+            "who" => "W", "start" => "T", "exit" => "X", "check" => "K", "shows" => "S", "unknown" => "U", _ => "A",
+        };
+        static int Rank(string kind) => kind switch { "who" => 0, "start" => 1, "exit" => 3, "check" => 4, _ => 2 };
+        var ordered = items.Select((i, n) => (i, n)).OrderBy(x => Rank(x.i.Kind)).ThenBy(x => x.n).Select(x => x.i).ToList();
+        var counters = new Dictionary<string, int>(O);
+        foreach (var i in ordered)
+        {
+            var l = Letter(i.Kind);
+            counters[l] = counters.GetValueOrDefault(l) + 1;
+            i.Id = $"{l}{counters[l]}";
+        }
+        items.Clear();
+        items.AddRange(ordered);
+    }
+
+    sealed record WhoInfo(string Text, string Label, string? Reason, string At, string Code)
+    {
+        public SummaryItem Item() => new() { Id = "", Kind = "who", Text = Text, At = At, Code = Code, Label = Label, Reason = Reason, Conditions = [] };
+    }
+
+    /// <summary>D251: the common kinds by code's template; a named access rule as the flow states it, for the writer to word.</summary>
+    static WhoInfo Who(JsonObject flow)
+    {
+        var actor = flow["actor"] as JsonObject ?? new JsonObject();
+        var who = (string?)actor["who"] ?? "unknown";
+        var at = (string?)actor["at"] ?? "";
+        var code = (string?)actor["code"] ?? "";
+        var label = (string?)actor["label"] == "guessed" ? "guessed" : "certain";
+        var why = (string?)actor["why"];
+        return who switch
+        {
+            "signed-in user" => new("who: anyone signed in", label, label == "certain" ? null : why, at, code),
+            "anyone, signed in or not" => new("who: anyone, signed in or not", label, label == "certain" ? null : why, at, code),
+            "system" => new("who: the app itself, on its own", label, label == "certain" ? null : why, at, code),
+            "unknown" => new("who: not known from the code", "unknown", why ?? "who can start it isn't known", at, code),
+            _ => new($"who: {who}", label, label == "certain" ? null : why, at, code),
+        };
+    }
+
+    internal static string Message(JsonObject flow)
+    {
+        var start = flow["start"] as JsonObject;
+        var triggers = start?["triggers"] as JsonArray;
+        return triggers is { Count: > 0 } ? (string)triggers[0]! : (string?)start?["what"] ?? (string)flow["id"]!;
+    }
+
+    /// <summary>One start flow cut into items (D251). Calls that end nowhere (package code, hubs, caches) give none; a save is never dropped, even inside shared code.</summary>
+    static List<SummaryItem> Cut(FlowReader reader, JsonObject flow, Translations translations)
+    {
+        var items = new List<SummaryItem>();
+        var start = flow["start"] as JsonObject ?? new JsonObject();
+        items.Add(new SummaryItem { Id = "", Kind = "start", Text = StartText(flow), At = (string?)start["at"] ?? "", Code = (string?)start["code"] ?? "", Label = "certain", Conditions = [] });
+
+        var steps = FlowReader.Steps(flow);
+        var unknownAt = (flow["unknowns"] as JsonArray ?? []).OfType<JsonObject>().Where(u => u["step"] is not null)
+            .GroupBy(u => (int)u["step"]!).ToDictionary(g => g.Key, g => g.First());
+        var attached = new HashSet<int>();
+        var links = (flow["links"] as JsonArray ?? []).OfType<JsonObject>().ToList();
+        var guesses = (flow["guesses"] as JsonArray ?? []).OfType<JsonObject>().ToList();
+
+        foreach (var st in steps.Values.OrderBy(s => (int)s["n"]!))
+        {
+            var n = (int)st["n"]!;
+            var stepKind = (string)st["kind"]!;
+            var what = (string)st["what"]!;
+            string? itemKind = stepKind switch
+            {
+                "database" => what.StartsWith("reads", StringComparison.Ordinal) ? "read" : "save",
+                "outside-call" => "outside-call",
+                "message" => "message",
+                "queue" => "queue",
+                _ => null,
+            };
+            var text = what;
+            string? shows = null;
+            if (itemKind is null && stepKind == "call" && Shows(st, translations) is { } s) { itemKind = "shows"; shows = s; }
+            if (itemKind is null) continue;
+            if (shows is not null) text = shows;
+            var label = (string?)st["label"] == "guessed" ? "guessed" : "certain";
+            var reason = label == "guessed" ? (string?)st["reason"] : null;
+            if (itemKind == "message")
+            {
+                var handlers = links.Where(l => (string?)l["kind"] == "message" && (int?)l["step"] == n).ToList();
+                if (handlers.Count > 0)
+                {
+                    text += $" → handled by {string.Join(", ", handlers.Select(h => (string)h["to"]!).Distinct(O))}";
+                    if (handlers.Any(h => (string?)h["label"] == "guessed"))
+                    {
+                        label = "guessed";
+                        reason ??= guesses.Where(g => (int?)g["step"] == n).Select(g => (string)g["reason"]!).Distinct(O).FirstOrDefault() ?? "its handlers were found by the message's type";
+                    }
+                }
+            }
+            if (unknownAt.TryGetValue(n, out var u)) { label = "unknown"; reason = (string)u["why"]!; attached.Add(n); }
+            items.Add(new SummaryItem
+            {
+                Id = "", Kind = itemKind, Text = text, At = (string?)st["at"] ?? "", Code = (string?)st["code"] ?? "", Label = label, Reason = reason,
+                Conditions = FlowReader.PathConditions(steps, n),
+            });
+        }
+
+        var shared = new SaveSet();
+        foreach (var l in links)
+        {
+            var lk = (string?)l["kind"];
+            var step = (int?)l["step"];
+            var conds = step is { } sn ? FlowReader.PathConditions(steps, sn) : [];
+            if (lk is "screen" or "runs-later" && step is { } ls && items.Any(i => i.Kind == "queue" && steps.TryGetValue(ls, out var q) && (string?)q["at"] == i.At)) continue;   // the queue step says it already
+            if (lk is "screen" or "runs-later")
+            {
+                var guessed = (string?)l["label"] == "guessed";
+                items.Add(new SummaryItem
+                {
+                    Id = "", Kind = lk == "screen" ? "screen" : "later", Text = (string)l["sentence"]!, At = (string?)l["at"] ?? "", Code = (string?)l["code"] ?? "",
+                    Label = guessed ? "guessed" : "certain", Reason = guessed ? (string?)l["reason"] ?? (step is { } gs ? guesses.Where(g => (int?)g["step"] == gs).Select(g => (string)g["reason"]!).FirstOrDefault() : null) ?? "a guessed link" : null,
+                    Conditions = conds,
+                });
+            }
+            else if (lk == "continues" && (string?)l["flow"] is { } target)
+                foreach (var save in reader.SharedSaves(target)) shared.Add(save with { Conditions = Merge(conds, save.Conditions) });
+        }
+        foreach (var save in shared.List)
+            items.Add(new SummaryItem { Id = "", Kind = save.Kind, Text = save.Text, At = save.At, Code = save.Code, Label = save.Label, Reason = save.Reason, Conditions = save.Conditions });
+
+        foreach (var u in (flow["unknowns"] as JsonArray ?? []).OfType<JsonObject>())
+        {
+            var step = (int?)u["step"];
+            if (step is { } sn && attached.Contains(sn)) continue;
+            items.Add(new SummaryItem
+            {
+                Id = "", Kind = "unknown", Text = $"can't be followed: {(string)u["why"]!}", At = (string?)u["at"] ?? "", Code = (string?)u["code"] ?? "",
+                Label = "unknown", Reason = (string)u["why"]!, Conditions = step is { } s ? FlowReader.PathConditions(steps, s) : [],
+            });
+        }
+
+        foreach (var e in (flow["exits"] as JsonArray ?? []).OfType<JsonObject>())
+        {
+            var step = (int?)e["step"];
+            // D264: an exit's own conditions only; the path to it stays in the flow's file.
+            var conds = FlowReader.Conditions(e["conditions"] as JsonArray);
+            items.Add(new SummaryItem { Id = "", Kind = "exit", Text = $"stops: {(string)e["what"]!}", At = (string?)e["at"] ?? "", Code = (string?)e["code"] ?? "", Label = "certain", Conditions = conds });
+        }
+
+        // Checks grouped by the field they check (D251): "SeriesResource.TvdbId: GreaterThan(0), SeriesExistsValidator".
+        foreach (var g in CheckGroups(flow))
+            items.Add(new SummaryItem { Id = "", Kind = "check", Text = g.Text, At = (string?)g.Checks[0]["at"] ?? "", Code = (string?)g.Checks[0]["code"] ?? "", Label = "certain", Conditions = [] });
+        return items;
+    }
+
+    /// <summary>A start flow's start as a fixed sentence (D251's <c>T</c> item).</summary>
+    internal static string StartText(JsonObject flow)
+    {
+        var id = (string)flow["id"]!;
+        var kind = (string)flow["kind"]!;
+        var name = (string?)flow["name"] ?? id;
+        var start = flow["start"] as JsonObject ?? new JsonObject();
+        var triggers = (start["triggers"] as JsonArray)?.Select(t => (string)t!).ToList() ?? [];
+        return kind switch
+        {
+            "click" => $"starts with the click \"{name}\"",
+            "screen-opens" => $"opens the screen {name}",
+            "job" => $"runs as a job{(triggers.Count > 0 ? $" ({string.Join("; ", triggers)})" : "")}",
+            "handler" => $"runs when {Message(flow)} is sent",
+            _ => $"starts: {(string?)start["what"] ?? name}",
+        };
+    }
+
+    /// <summary>A flow's checks grouped by the field they check (D251's <c>K</c> items), in order: the field, the item's sentence, the checks.</summary>
+    internal static List<(string Field, string Text, List<JsonObject> Checks)> CheckGroups(JsonObject flow)
+    {
+        var checks = (flow["checks"] as JsonArray ?? []).OfType<JsonObject>().ToList();
+        var groups = new List<(string, string, List<JsonObject>)>();
+        foreach (var g in checks.GroupBy(c => Field(c), O))
+        {
+            var rules = g.Select(c =>
+            {
+                var rule = (string)c["what"]! is var w && w.IndexOf(": ", StringComparison.Ordinal) is var i and >= 0 ? w[(i + 2)..] : (string)c["rule"]!;
+                var msg = (string?)c["message"] ?? "";
+                return $"{rule}{(msg != "" ? $" \"{msg}\"" : "")}{((bool?)c["onlyWarns"] == true ? " (only warns)" : "")}";
+            }).Distinct(O).ToList();
+            groups.Add((g.Key, $"checks {g.Key}: {string.Join(", ", rules)}", g.ToList()));
+        }
+        return groups;
+    }
+
+    static string Field(JsonObject check)
+    {
+        var what = (string)check["what"]!;
+        var i = what.IndexOf(": ", StringComparison.Ordinal);
+        return Short(i >= 0 ? what[..i] : (string?)check["property"] ?? what);
+    }
+
+    /// <summary>A member's id as a person reads it: <c>Sonarr.Core|M:NzbDrone.Core.Tv.AddSeriesService.SetPropertiesAndValidate(…)</c> → <c>AddSeriesService.SetPropertiesAndValidate</c>.</summary>
+    static string Short(string id)
+    {
+        var bar = id.IndexOf('|');
+        if (bar < 0 || id.Length < bar + 3 || id[bar + 2] != ':') return id;
+        var name = id[(bar + 3)..];
+        var paren = name.IndexOf('(');
+        if (paren >= 0) name = name[..paren];
+        var parts = name.Split('.');
+        return string.Join('.', parts.TakeLast(2)).Replace("`1", "").Replace("`2", "");
+    }
+
+    /// <summary>D252: a translation call with a quoted key, turned into its English text through the translation files D228 reads.</summary>
+    static string? Shows(JsonObject step, Translations translations)
+    {
+        var what = (string)step["what"]!;
+        if (!what.StartsWith("calls ", StringComparison.Ordinal)) return null;
+        var callee = what["calls ".Length..].Split(' ')[0];
+        var fn = callee.Contains('.') ? callee[(callee.LastIndexOf('.') + 1)..] : callee;
+        if (!TranslationCalls.Contains(fn)) return null;
+        var code = (string?)step["code"] ?? "";
+        foreach (Match m in Key.Matches(code))
+        {
+            if (m.Groups["fn"].Value != fn) continue;
+            var key = m.Groups["key"].Value;
+            return translations.Text(key) is { } text ? $"shows \"{text}\" (text key '{key}')" : $"shows the text with key '{key}' (no English text found for it)";
+        }
+        return null;
+    }
+
+    internal static List<SummaryCondition> Merge(IEnumerable<SummaryCondition> outer, IEnumerable<SummaryCondition> inner)
+    {
+        var list = new List<SummaryCondition>();
+        var seen = new HashSet<string>(O);
+        foreach (var c in outer.Concat(inner)) if (seen.Add(c.Key)) list.Add(c);
+        return list;
+    }
+
+    // ---- Markdown -----------------------------------------------------------------------------------------------------------
+
+    /// <summary>One item as a line: id, label, what, where, and its conditions (the writer's input and the code-made list).</summary>
+    public static string ItemLine(SummaryItem i, bool withId)
+    {
+        var sb = new StringBuilder("- ");
+        if (withId) sb.Append($"**{i.Id}** ");
+        sb.Append($"{i.Mark} {i.Text}");
+        if (i.Reason is not null && i.Label != "certain") sb.Append($" ({(i.Label == "guessed" ? "guessed" : "not known")}: {i.Reason})");
+        if (i.At != "") sb.Append($" (`{i.At}`{(i.AlsoAt.Count > 0 ? $" and {i.AlsoAt.Count} other place{(i.AlsoAt.Count == 1 ? "" : "s")}" : "")})");
+        sb.Append('\n');
+        for (var n = 0; n < i.Conditions.Count; n++) sb.Append($"  - condition {n + 1}: {i.Conditions[n].Text} (`{i.Conditions[n].At}`)\n");
+        return sb.ToString();
+    }
+
+    /// <summary>The whole summary as Markdown, for a person to read (<c>pages summary --format md</c>).</summary>
+    public static string Markdown(AreaSummary s)
+    {
+        var sb = new StringBuilder($"# {s.Area}: the summary layer 4 words (D251)\n\n");
+        string? group = null;
+        foreach (var sec in s.Sections)
+        {
+            if (sec.Group != "" && sec.Group != group) sb.Append($"## {sec.Group}\n\n");
+            group = sec.Group;
+            sb.Append($"{(sec.Group != "" ? "###" : "##")} {sec.Title} (`{sec.Id}`)\n\n");
+            if (sec.Items.Count == 0) sb.Append("(no items of its own)\n\n");
+            foreach (var i in sec.Items) sb.Append(ItemLine(i, true));
+            if (sec.Items.Count > 0) sb.Append('\n');
+        }
+        if (s.Missing.Count > 0) sb.Append($"**Flows with no file, left out:** {string.Join(", ", s.Missing)}\n");
+        return sb.ToString();
+    }
+}
+
+/// <summary>Reads flow files (contract <c>flows</c> v3) by id through <c>specs/flows/index.json</c>'s <c>file</c>, each once.</summary>
+sealed class FlowReader(string root, Areas a)
+{
+    readonly Dictionary<string, JsonObject?> cache = new(StringComparer.Ordinal);
+    readonly Dictionary<string, List<SharedSave>> saves = new(StringComparer.Ordinal);
+    readonly Dictionary<string, List<SharedSave>> outerSaves = new(StringComparer.Ordinal);
+
+    public JsonObject? Load(string id)
+    {
+        if (cache.TryGetValue(id, out var have)) return have;
+        var rel = a.Flows.TryGetValue(id, out var f) && f.File is not null ? f.File : $"{FlowFiles.Folder}/{id}.json";
+        var path = Path.Combine(root, rel);
+        JsonObject? json = null;
+        if (File.Exists(path))
+            try { json = JsonNode.Parse(File.ReadAllText(path)) as JsonObject; } catch (System.Text.Json.JsonException) { }
+        return cache[id] = json;
+    }
+
+    public static Dictionary<int, JsonObject> Steps(JsonObject flow) =>
+        (flow["steps"] as JsonArray ?? []).OfType<JsonObject>().GroupBy(s => (int)s["n"]!).ToDictionary(g => g.Key, g => g.First());
+
+    public static List<SummaryCondition> Conditions(JsonArray? cs) => [.. (cs ?? []).OfType<JsonObject>().Select(c =>
+    {
+        var at = (string?)c["at"] ?? "";
+        var colon = at.LastIndexOf(':');
+        var cond = new Condition((string)c["kind"]!, (string)c["code"]!, colon > 0 ? at[..colon] : at, colon > 0 && int.TryParse(at[(colon + 1)..], out var line) ? line : 0, (string?)c["case"]);
+        return new SummaryCondition(at, cond.Code, cond.Kind, cond.Case, FlowFiles.ConditionText(cond));
+    })];
+
+    /// <summary>
+    /// Every condition from the flow's start down to step <paramref name="n"/>: the outermost step first (D251). A flow file lists one
+    /// step's own conditions innermost first; <paramref name="outerFirst"/> turns each step's round too, as the code nests them (D288).
+    /// </summary>
+    public static List<SummaryCondition> PathConditions(Dictionary<int, JsonObject> steps, int n, bool outerFirst = false)
+    {
+        var chain = new List<JsonObject>();
+        var seen = new HashSet<int>();
+        for (int? at = n; at is { } k && steps.TryGetValue(k, out var st) && seen.Add(k); at = (int?)st["from"]) chain.Add(st);
+        chain.Reverse();
+        return PageSummary.Merge([], chain.SelectMany(s => Conditions(s["conditions"] as JsonArray, outerFirst)));
+    }
+
+    /// <summary>One item's conditions as the flow file lists them (innermost first), or outermost first.</summary>
+    public static List<SummaryCondition> Conditions(JsonArray? cs, bool outerFirst)
+    {
+        var list = Conditions(cs);
+        if (outerFirst) list.Reverse();
+        return list;
+    }
+
+    /// <summary>
+    /// The saves a shared flow makes, itself or through the shared flows it continues into: each save once, by its text, line and
+    /// label, with only the conditions on every path to it (a save reached along many paths would otherwise be many items).
+    /// </summary>
+    /// <remarks>
+    /// Shared flows can continue into each other in a loop; the walk cuts the loop where it meets a flow already on its way, so a
+    /// flow's saves depend on where the walk started. Only the flow asked for is cached, each worked out from scratch with its own
+    /// memo, so what it returns never depends on which flows were asked for before (a page's bytes on which areas were built first).
+    /// </remarks>
+    public IReadOnlyList<SharedSave> SharedSaves(string id, bool outerFirst = false, SharedCut? cut = null)
+    {
+        var cached = outerFirst ? outerSaves : saves;
+        var key = cut is null ? id : $"{cut.Name}\u0001{id}";
+        if (cached.TryGetValue(key, out var have)) return have;
+        return cached[key] = SharedSaves(id, [], new Dictionary<string, List<SharedSave>>(StringComparer.Ordinal), outerFirst, cut);
+    }
+
+    readonly Dictionary<string, List<JsonObject>> messages = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// D304(6): the message links (a message sent, its receivers) in a shared flow and the shared flows it continues into, each a
+    /// copy naming the shared flow it is in (<c>sharedIn</c>); its step is the shared flow's own, for the caller to replace.
+    /// </summary>
+    public IReadOnlyList<JsonObject> SharedMessages(string id, SharedCut? cut = null)
+    {
+        var key = cut is null ? id : $"{cut.Name}\u0001{id}";
+        if (messages.TryGetValue(key, out var have)) return have;
+        var found = new List<JsonObject>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var walking = new HashSet<string>(StringComparer.Ordinal);
+        void Walk(string f)
+        {
+            if (!walking.Add(f) || Load(f) is not { } flow) return;
+            var name = (string?)flow["name"] ?? f;
+            foreach (var l in (flow["links"] as JsonArray ?? []).OfType<JsonObject>())
+                if ((string?)l["kind"] == "message" && seen.Add($"{(string?)l["at"]}|{(string?)l["flow"] ?? (string?)l["to"]}"))
+                {
+                    var copy = (JsonObject)l.DeepClone();
+                    copy["sharedIn"] = name;
+                    found.Add(copy);
+                }
+                // D306: a heavy shared flow's messages are listed in its own part, not again under each flow reaching it.
+                else if ((string?)l["kind"] == "continues" && (string?)l["flow"] is { } t && cut?.Heavy.Contains(t) != true) Walk(t);
+        }
+        Walk(id);
+        return messages[key] = found;
+    }
+
+    List<SharedSave> SharedSaves(string id, HashSet<string> walking, Dictionary<string, List<SharedSave>> memo, bool outerFirst, SharedCut? cut)
+    {
+        if (memo.TryGetValue(id, out var have)) return have;
+        if (!walking.Add(id) || Load(id) is not { } flow) return [];
+        var found = new SaveSet();
+        var name = (string?)flow["name"] ?? id;
+        var steps = Steps(flow);
+        foreach (var st in steps.Values.OrderBy(s => (int)s["n"]!))
+        {
+            // D291, D292, D294: saves (one that may save too), pushes to the browser and files written or deleted, like saves.
+            // D305(1): and a plugin's outside calls ("may call … through the plugin …"), which sit behind shared code.
+            var change = PageChart.Change(st);
+            var plugin = change == "outside-call" && PageChart.PluginCall((string?)st["what"] ?? "");
+            if (change is not ("save" or "push" or "file") && !plugin) continue;
+            var guessed = (string?)st["label"] == "guessed";
+            found.Add(new SharedSave($"{PageChart.ChangeText((string)st["what"]!)} (in shared code {name})", (string?)st["at"] ?? "", (string?)st["code"] ?? "", guessed ? "guessed" : "certain",
+                guessed ? (string?)st["reason"] : null, PathConditions(steps, (int)st["n"]!, outerFirst), plugin ? "outside-call" : "save"));
+        }
+        foreach (var l in (flow["links"] as JsonArray ?? []).OfType<JsonObject>())
+            if ((string?)l["kind"] == "continues" && (string?)l["flow"] is { } target && target != id)
+            {
+                var outer = (int?)l["step"] is { } sn ? PathConditions(steps, sn, outerFirst) : [];
+                // D306: heavy shared work is shown once in its own part; here, one line runs it.
+                if (cut is not null && cut.Heavy.Contains(target))
+                {
+                    found.Add(new SharedSave(cut.Box(target), (string?)l["at"] ?? "", "", "certain", null, outer, "shared"));
+                    continue;
+                }
+                foreach (var s in SharedSaves(target, walking, memo, outerFirst, cut)) found.Add(s with { Conditions = PageSummary.Merge(outer, s.Conditions) });
+            }
+        walking.Remove(id);
+        return memo[id] = found.List;
+    }
+}
+
+/// <summary>
+/// D306: the heavy shared flows of one area's page, each shown once in a part of its own: where a flow continues into one, its
+/// saves, messages and the rest stay in that part and the flow shows one line, <see cref="Box"/>.
+/// </summary>
+public sealed class SharedCut(string name, IReadOnlySet<string> heavy, Func<string, string> box)
+{
+    /// <summary>What tells this cut's cached results from another area's.</summary>
+    public string Name => name;
+    public IReadOnlySet<string> Heavy => heavy;
+    /// <summary>The line standing for a heavy flow: "runs X (see its part): N changes, M stops".</summary>
+    public string Box(string id) => box(id);
+    /// <summary>D307: lines into parts whose every change is a framework change (D281), with the most start flows any of them is in:
+    /// listed under shared code, not drawn, as those changes were.</summary>
+    public Dictionary<string, int> Framework { get; } = new(StringComparer.Ordinal);
+}
+
+/// <summary>A save inside shared code, with the conditions on every path to it.</summary>
+public sealed record SharedSave(string Text, string At, string Code, string Label, string? Reason, List<SummaryCondition> Conditions, string Kind = "save")
+{
+    internal string Key => $"{Text}\u0001{At}\u0001{Label}";
+}
+
+/// <summary>Saves by text, line and label, in the order first found; a save found again keeps only the conditions both paths share.</summary>
+sealed class SaveSet
+{
+    readonly Dictionary<string, int> at = new(StringComparer.Ordinal);
+    public List<SharedSave> List { get; } = [];
+
+    public void Add(SharedSave s)
+    {
+        if (!at.TryGetValue(s.Key, out var i)) { at[s.Key] = List.Count; List.Add(s); return; }
+        var keep = s.Conditions.Select(c => c.Key).ToHashSet(StringComparer.Ordinal);
+        List[i] = List[i] with { Conditions = [.. List[i].Conditions.Where(c => keep.Contains(c.Key))] };
+    }
+}

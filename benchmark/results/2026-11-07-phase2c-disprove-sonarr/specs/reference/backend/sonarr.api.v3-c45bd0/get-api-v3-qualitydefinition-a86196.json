@@ -1,0 +1,108 @@
+{
+  "codeTitle": "GET /api/v3/QualityDefinition",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/QualityDefinition",
+  "generated": {
+    "bundleHash": "fe8a010cf08739dc53321f5a8a845d4245d951015dab2ade00bc3df1e043cd0c",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 9839,
+      "cutOff": 10,
+      "depth": 4,
+      "points": 23
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6601,
+      "calls": 1,
+      "costUsd": 0.027113,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1686,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 5029,
+      "calls": 1,
+      "costUsd": 0.029026,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5389,
+      "outputTokens": 863
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/QualityDefinition",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/QualityDefinition",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Qualities.QualityDefinitionController.GetAll"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/QualityDefinition"
+        ],
+        "id": "A1",
+        "text": "A caller requests all quality definitions with a GET and receives them as a list."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Qualities.QualityDefinitionService.All"
+        ],
+        "id": "R1",
+        "text": "The list is ordered by each definition's Weight, ascending."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Qualities.QualityDefinitionService.GetAll"
+        ],
+        "id": "R2",
+        "text": "Definitions are cached for 5 seconds, so changes may take up to that long to appear."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Qualities.QualityDefinitionResourceMapper.ToResource(NzbDrone.Core.Qualities.QualityDefinition)"
+        ],
+        "id": "R3",
+        "text": "A null definition maps to null in the response."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Qualities.QualityDefinitionController.GetAll"
+        ],
+        "id": "S1",
+        "text": "Returns a list of all quality definitions."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Qualities.QualityDefinitionResourceMapper.ToResource(NzbDrone.Core.Qualities.QualityDefinition)"
+        ],
+        "id": "S2",
+        "text": "Each item has Id, Quality, Title, Weight, MinSize, MaxSize and PreferredSize."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Qualities.QualityDefinitionService.GetAll"
+        ],
+        "id": "E1",
+        "text": "Definitions are read from the repository and stored in a cache keyed \"all\" for 5 seconds. Nothing is saved or changed."
+      }
+    ]
+  },
+  "title": "List quality definitions (GET /api/v3/QualityDefinition)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

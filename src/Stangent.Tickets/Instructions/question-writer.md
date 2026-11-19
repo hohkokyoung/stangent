@@ -16,6 +16,9 @@ Ask only what the input supports:
 - **A bug that wasn't reproduced:** say what was tried (the test, in plain words for the client tone) and ask for what's
   needed to reproduce it, linked `{"kind":"proof","outcome":"<the outcome as the input gives it>"}`. If the input says the
   attempt only ran out of its limit, leave it out: don't mention it or link it.
+- **Backed by the truth map with no test target:** if the input's proof says the truth map backs the ticket but no test
+  project covers its code (D408), the bug isn't in doubt: don't ask the reporter for steps to reproduce it, and leave the
+  proof out.
 - **A failure the test reproduced:** it shows the code differs from what the reporter expected, not that the code is
   wrong. Unless the input says a developer confirmed it as a bug, don't call it a bug or promise a fix; you may say what
   the test showed (in plain words for the client tone), linked `{"kind":"proof","outcome":"reproduced"}`.

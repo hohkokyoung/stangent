@@ -1,0 +1,194 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0005"
+doc: "sonarr-fsd"
+section: "1.2"
+title: "Series details"
+parent: "F-0001"
+children: []
+textHash: "e1a922536bf3f47c2ba58ee27dfcd38e46a40daad9df49d3f70e5b244261cb51"
+requirements:
+  - id: "R-0025"
+    title: "Series details shows series information"
+    kind: "data"
+    statement: "The series details screen shows one series with its poster, overview, network, status, path, size on disk and seasons."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.2"
+        text: "The series details screen shows one series: its poster, overview, network, status, path, size on disk and its seasons, with each season's episodes listed underneath."
+        hash: "a5ea9679f303f497f737d23ceb5d5c86a0c96fccea62e61b132d1d1b51a72f16"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "8a6248dadafb68529a5f24ea64d73685ec2e6ede8c027e2578222422f9705fda"
+  - id: "R-0026"
+    title: "Episodes listed under each season"
+    kind: "data"
+    statement: "Each season's episodes are listed underneath that season on the series details screen."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.2"
+        text: "The series details screen shows one series: its poster, overview, network, status, path, size on disk and its seasons, with each season's episodes listed underneath."
+        hash: "a5ea9679f303f497f737d23ceb5d5c86a0c96fccea62e61b132d1d1b51a72f16"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "94af50a037fd551f69804ec914a8576d41c2037201194d267cdf67d305a71f9f"
+  - id: "R-0027"
+    title: "Monitor or unmonitor whole series"
+    kind: "rule"
+    statement: "The user can monitor or unmonitor the whole series."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.2"
+        text: "The user can monitor or unmonitor the whole series, a season, or a single episode."
+        hash: "6de05ddb5f2372a8d58d56d78c48638ee595409f1c8fac29aa5cfe73f1577d4f"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "cd0d7f64550eb860c7bcdc9fb9f8e82c24f44588dece7ae8b332193280b35613"
+  - id: "R-0028"
+    title: "Monitor or unmonitor a season"
+    kind: "rule"
+    statement: "The user can monitor or unmonitor a season."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.2"
+        text: "The user can monitor or unmonitor the whole series, a season, or a single episode."
+        hash: "6de05ddb5f2372a8d58d56d78c48638ee595409f1c8fac29aa5cfe73f1577d4f"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "7c6e17f894e7170c849f453809ba14f1c3b80b3b13d1c958d3185e266f0716a8"
+  - id: "R-0029"
+    title: "Monitor or unmonitor an episode"
+    kind: "rule"
+    statement: "The user can monitor or unmonitor a single episode."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.2"
+        text: "The user can monitor or unmonitor the whole series, a season, or a single episode."
+        hash: "6de05ddb5f2372a8d58d56d78c48638ee595409f1c8fac29aa5cfe73f1577d4f"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "716eec73aea153864b69d22fdb2d6004b754e2511de81d2869da05f70b51cfe5"
+  - id: "R-0030"
+    title: "Search monitored episodes of series"
+    kind: "rule"
+    statement: "The user can search for all monitored episodes of the series, automatically or interactively."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.2"
+        text: "The user can search for all monitored episodes of the series, or for one season, or for one episode, either automatically or interactively."
+        hash: "307eb3abeeb47d89159cc4d0479e4b07c989eaf92eff75c52d5d1d0624689d4f"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "1ca265d80a7c7cad52e3eca48583c3a0190ae046d284d5cfcb37142884ecbd49"
+  - id: "R-0031"
+    title: "Search one season"
+    kind: "rule"
+    statement: "The user can search for one season, automatically or interactively."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.2"
+        text: "The user can search for all monitored episodes of the series, or for one season, or for one episode, either automatically or interactively."
+        hash: "307eb3abeeb47d89159cc4d0479e4b07c989eaf92eff75c52d5d1d0624689d4f"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "e3fee4c621527e2494be75380386679f8ec0679c64960541424781377f6d3ba8"
+  - id: "R-0032"
+    title: "Search one episode"
+    kind: "rule"
+    statement: "The user can search for one episode, automatically or interactively."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.2"
+        text: "The user can search for all monitored episodes of the series, or for one season, or for one episode, either automatically or interactively."
+        hash: "307eb3abeeb47d89159cc4d0479e4b07c989eaf92eff75c52d5d1d0624689d4f"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "9b19b544d63d97f363c598ed8852e32bbaaff497ec4b035b54efe4f725b6431c"
+  - id: "R-0033"
+    title: "Edit series"
+    kind: "rule"
+    statement: "The user can edit the series' monitoring, quality profile, series type, path and tags."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.2"
+        text: "The user can edit the series: its monitoring, quality profile, series type, path and tags."
+        hash: "8658cc983794df183a9ff7a11f8007ff9e529e83f89d1db901eeaedcdc8ea547"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "d4d1160e9c4d8f81354b5a9172a1a31e55ec184a6e3e3108b901c82cec7ba69c"
+  - id: "R-0034"
+    title: "Export episode list as CSV"
+    kind: "flow"
+    statement: "The episode list of a series can be exported as a CSV file."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.2"
+        text: "The episode list of a series can be exported as a CSV file."
+        hash: "4c3e5ec08e5b93b4f4182f65649503c230a705cd0a0bb078707df38d52e1bef4"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "0c18ff3b861f067cbaa4e193904add304a7b4875d92d1b12840cad36a6100aa0"
+  - id: "R-0035"
+    title: "Deleting a series deletes files"
+    kind: "rule"
+    statement: "Deleting a series always deletes its folder and all its files from disk."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.2"
+        text: "Deleting a series always deletes its folder and all its files from disk."
+        hash: "938ea1dc72f470198d9661eb7766fb9eefc78327e78964ccdc16d5e85094b442"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "0157ddaaaf359fc33de7208512e50b525cb3e62423e2bae2db5153fb1389e1ac"
+  - id: "R-0036"
+    title: "Refresh series"
+    kind: "flow"
+    statement: "The user can refresh the series to fetch the latest information about it and rescan its files."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.2"
+        text: "The user can refresh the series to fetch the latest information about it and rescan its files."
+        hash: "6cfaeb5a7d048f2951cb35fef918fed3c9cecaebf7166b4811590767ec35c438"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "2833cd991c86655edcabd9eb0fcd82193a3a64a42c1329b10cae3c370c7826fd"
+definitions: []
+journeys: []
+background: []
+retired: []

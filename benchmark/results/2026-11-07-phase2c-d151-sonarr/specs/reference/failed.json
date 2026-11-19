@@ -1,0 +1,11 @@
+[
+  {
+    "bundleHash": "82cee0b3175fd6a429ed9407bd549e276ead2d92d61f343edd59dc8a9e5e9649",
+    "errors": [
+      "Finding F1 is rejected, but its `quote` isn't a line from the slice's source. Copy the line that supports E2, or fix it."
+    ],
+    "id": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCanBeRemovedEvent)",
+    "path": "backend/sonarr.core-1b4c77/downloadeventhub.handle-downloadcanberemovedevent-8c8bce",
+    "reason": "failed the code check twice"
+  }
+]

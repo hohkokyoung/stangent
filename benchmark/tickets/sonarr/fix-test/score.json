@@ -1,0 +1,527 @@
+{
+  "A": {
+    "clean": 9,
+    "costUsd": 0.7,
+    "green": 12,
+    "runs": 12,
+    "symptom": 3,
+    "tokens": 674159,
+    "touchesAFixFile": 12,
+    "unjudged": 0
+  },
+  "B": {
+    "clean": 9,
+    "costUsd": 0.92,
+    "green": 12,
+    "runs": 12,
+    "symptom": 3,
+    "tokens": 854033,
+    "touchesAFixFile": 12,
+    "unjudged": 0
+  },
+  "bar": {
+    "result": "failed",
+    "rule": "B >= A + 2 clean and green with tokens within 10%, or the same count for >= 10% fewer tokens (D345)",
+    "why": "B 9 clean and green vs A 9, tokens 127% of A's: the fixer gets only the finder's files and the failing test (D345)"
+  },
+  "bothSides": 12,
+  "bugs": {
+    "SONB-12": {
+      "A": {
+        "calls": 1,
+        "costUsd": 0.0511,
+        "devFiles": [
+          "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 1.0,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 44383
+      },
+      "B": {
+        "calls": 1,
+        "costUsd": 0.0627,
+        "devFiles": [
+          "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 1.0,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 53830
+      }
+    },
+    "SONB-13": {
+      "A": {
+        "calls": 1,
+        "costUsd": 0.0698,
+        "devFiles": [
+          "src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserProxy.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserProxy.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 1.0,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 65522
+      },
+      "B": {
+        "calls": 1,
+        "costUsd": 0.077,
+        "devFiles": [
+          "src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserProxy.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/Notifications/MediaBrowser/MediaBrowserProxy.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 1.0,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 72672
+      }
+    },
+    "SONB-15": {
+      "A": {
+        "calls": 1,
+        "costUsd": 0.0429,
+        "devFiles": [
+          "src/NzbDrone.Core/CustomFormats/Specifications/ResolutionSpecification.cs",
+          "src/NzbDrone.Core/CustomFormats/Specifications/SourceSpecification.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/CustomFormats/Specifications/ResolutionSpecification.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 0.5,
+        "green": true,
+        "judgment": "symptom",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 50416
+      },
+      "B": {
+        "calls": 1,
+        "costUsd": 0.0482,
+        "devFiles": [
+          "src/NzbDrone.Core/CustomFormats/Specifications/ResolutionSpecification.cs",
+          "src/NzbDrone.Core/CustomFormats/Specifications/SourceSpecification.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/CustomFormats/Specifications/ResolutionSpecification.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 0.5,
+        "green": true,
+        "judgment": "symptom",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 43689
+      }
+    },
+    "SONB-19": {
+      "A": {
+        "calls": 1,
+        "costUsd": 0.0525,
+        "devFiles": [
+          "src/NzbDrone.Core/Notifications/Plex/Server/PlexServerService.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/Notifications/Plex/Server/PlexServerService.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 1.0,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 46386
+      },
+      "B": {
+        "calls": 1,
+        "costUsd": 0.0635,
+        "devFiles": [
+          "src/NzbDrone.Core/Notifications/Plex/Server/PlexServerService.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/Notifications/Plex/Server/PlexServerService.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 1.0,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 53433
+      }
+    },
+    "SONB-20": {
+      "A": {
+        "calls": 1,
+        "costUsd": 0.0367,
+        "devFiles": [
+          "src/NzbDrone.Core/Extras/Metadata/Consumers/Plex/PlexMetadata.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/Extras/Metadata/Consumers/Plex/PlexMetadata.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 1.0,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 26688
+      },
+      "B": {
+        "calls": 1,
+        "costUsd": 0.0522,
+        "devFiles": [
+          "src/NzbDrone.Core/Extras/Metadata/Consumers/Plex/PlexMetadata.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/Extras/Metadata/Consumers/Plex/PlexMetadata.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 1.0,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 48075
+      }
+    },
+    "SONB-21": {
+      "A": {
+        "calls": 1,
+        "costUsd": 0.0603,
+        "devFiles": [
+          "src/NzbDrone.Common.Test/DiskTests/DiskTransferServiceFixture.cs",
+          "src/NzbDrone.Common/Disk/DiskTransferService.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Common/Disk/DiskTransferService.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 0.5,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 58084
+      },
+      "B": {
+        "calls": 1,
+        "costUsd": 0.0892,
+        "devFiles": [
+          "src/NzbDrone.Common.Test/DiskTests/DiskTransferServiceFixture.cs",
+          "src/NzbDrone.Common/Disk/DiskTransferService.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Common/Disk/DiskTransferService.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 0.5,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 94946
+      }
+    },
+    "SONB-22": {
+      "A": {
+        "calls": 1,
+        "costUsd": 0.0854,
+        "devFiles": [
+          "src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadata.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadata.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 1.0,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 81123
+      },
+      "B": {
+        "calls": 1,
+        "costUsd": 0.1087,
+        "devFiles": [
+          "src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadata.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadata.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 1.0,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 100668
+      }
+    },
+    "SONB-23": {
+      "A": {
+        "calls": 1,
+        "costUsd": 0.049,
+        "devFiles": [
+          "src/NzbDrone.Common/Http/HttpRequestBuilder.cs",
+          "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV2.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV2.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 0.5,
+        "green": true,
+        "judgment": "symptom",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 53408
+      },
+      "B": {
+        "calls": 1,
+        "costUsd": 0.0627,
+        "devFiles": [
+          "src/NzbDrone.Common/Http/HttpRequestBuilder.cs",
+          "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV2.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV1.cs",
+          "src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV2.cs"
+        ],
+        "filesPrecision": 0.5,
+        "filesRecall": 0.5,
+        "green": true,
+        "judgment": "symptom",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 63407
+      }
+    },
+    "SONB-24": {
+      "A": {
+        "calls": 1,
+        "costUsd": 0.0696,
+        "devFiles": [
+          "src/NzbDrone.Core/Notifications/Discord/Discord.cs",
+          "src/NzbDrone.Core/Notifications/NotificationService.cs",
+          "src/NzbDrone.Core/Notifications/Slack/Slack.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/Notifications/NotificationService.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 0.333,
+        "green": true,
+        "judgment": "symptom",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 68638
+      },
+      "B": {
+        "calls": 2,
+        "costUsd": 0.1473,
+        "devFiles": [
+          "src/NzbDrone.Core/Notifications/Discord/Discord.cs",
+          "src/NzbDrone.Core/Notifications/NotificationService.cs",
+          "src/NzbDrone.Core/Notifications/Slack/Slack.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/Notifications/NotificationService.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 0.333,
+        "green": true,
+        "judgment": "symptom",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 120036
+      }
+    },
+    "SONB-25": {
+      "A": {
+        "calls": 1,
+        "costUsd": 0.067,
+        "devFiles": [
+          "src/NzbDrone.Core.Test/ParserTests/LanguageParserFixture.cs",
+          "src/NzbDrone.Core/Parser/LanguageParser.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/Parser/LanguageParser.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 0.5,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 85588
+      },
+      "B": {
+        "calls": 1,
+        "costUsd": 0.0664,
+        "devFiles": [
+          "src/NzbDrone.Core.Test/ParserTests/LanguageParserFixture.cs",
+          "src/NzbDrone.Core/Parser/LanguageParser.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/Parser/LanguageParser.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 0.5,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 90560
+      }
+    },
+    "SONB-26": {
+      "A": {
+        "calls": 1,
+        "costUsd": 0.0556,
+        "devFiles": [
+          "src/NzbDrone.Common/Extensions/DateTimeExtensions.cs",
+          "src/NzbDrone.Core.Test/MediaFiles/UpdateEpisodeFileServiceTests/ChangeFileDateForFileFixture.cs",
+          "src/NzbDrone.Core/MediaFiles/UpdateEpisodeFileService.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/MediaFiles/UpdateEpisodeFileService.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 0.333,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 46528
+      },
+      "B": {
+        "calls": 1,
+        "costUsd": 0.0755,
+        "devFiles": [
+          "src/NzbDrone.Common/Extensions/DateTimeExtensions.cs",
+          "src/NzbDrone.Core.Test/MediaFiles/UpdateEpisodeFileServiceTests/ChangeFileDateForFileFixture.cs",
+          "src/NzbDrone.Core/MediaFiles/UpdateEpisodeFileService.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/MediaFiles/UpdateEpisodeFileService.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 0.333,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 59662
+      }
+    },
+    "SONB-27": {
+      "A": {
+        "calls": 1,
+        "costUsd": 0.0567,
+        "devFiles": [
+          "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 1.0,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 47395
+      },
+      "B": {
+        "calls": 1,
+        "costUsd": 0.0645,
+        "devFiles": [
+          "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs"
+        ],
+        "edited": [
+          "src/NzbDrone.Core/MediaFiles/EpisodeImport/Manual/ManualImportService.cs"
+        ],
+        "filesPrecision": 1.0,
+        "filesRecall": 1.0,
+        "green": true,
+        "judgment": "clean",
+        "outsideReach": [],
+        "sharedFiles": 1,
+        "stop": "fixed",
+        "testReach": "passed",
+        "tokens": 53055
+      }
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "codeTitle": "/seasonpass",
+  "entry": "page:tsconfig.json|/seasonpass",
+  "generated": {
+    "bundleHash": "dd0cae4292ea9b7be0edade4e1cd5177ed5cc669bcc526c6b3aa7f7589d5b4cc",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 6170,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 1
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 4118,
+      "calls": 1,
+      "costUsd": 0.017181,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3117,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3187,
+      "calls": 1,
+      "costUsd": 0.014978,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2287,
+      "outputTokens": 195
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/seasonpass",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [],
+    "rules": [
+      {
+        "cites": [
+          "page:tsconfig.json|/seasonpass"
+        ],
+        "id": "R1",
+        "text": "The application has a route at the path /seasonpass."
+      }
+    ],
+    "shows": [],
+    "sideEffects": []
+  },
+  "title": "Season Pass page",
+  "unknowns": [
+    {
+      "file": "frontend/src/App/AppRoutes.tsx",
+      "in": "page:tsconfig.json|/seasonpass",
+      "line": 65,
+      "reason": "page /seasonpass: its component couldn't be resolved"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

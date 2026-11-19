@@ -1,0 +1,107 @@
+# Questions for the BA (D99): ambiguities and clashes in the FSD, never resolved by the AI.
+version: 1
+questions:
+  - id: "Q-0001"
+    section: "3.2"
+    text: "What does undoing a history entry do when the entry is not an upgrade (e.g. grabbed, deleted, renamed or failed), given that only the restoring of an upgraded file is described?"
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "3.2"
+        text: "Any history entry can be undone, which restores the episode file that an upgrade replaced."
+        hash: "5750091a578935b5e642243d2d4200279213effd6a4f5c6c1aab63ef9fba03d8"
+    status: "open"
+    answer: null
+  - id: "Q-0002"
+    section: "1.1"
+    text: "What happens when the user selects more than 10 series: is the selection blocked or is an error shown?"
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "1.1"
+        text: "Up to 10 series can be selected from the search results and added together in one step."
+        hash: "6e0a78cdc2f62083146d71489b6d63837e25c450265fc89520037de0a9754ca6"
+    status: "open"
+    answer: null
+  - id: "Q-0003"
+    section: "Wanted / Missing episodes"
+    text: "The missing screen lists only monitored episodes, yet the user can toggle to unmonitored missing episodes; which is the default view, and does the first sentence apply only to the default?"
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Wanted / Missing episodes"
+        text: "The missing screen lists monitored episodes that have aired but have no file on disk."
+        hash: "7fdf420cc047b4c149da08c7cb0e007c5f8fb68fc2c17d75b0db0580990ea96c"
+      - doc: "sonarr-fsd"
+        section: "Wanted / Missing episodes"
+        text: "The user can toggle between monitored and unmonitored missing episodes."
+        hash: "78f716187ae0383f6089dc65a6097fccf25d55a6bafa71b91b2d3f2cc91f213c"
+    status: "open"
+    answer: null
+  - id: "Q-0004"
+    section: "Wanted / Missing episodes"
+    text: "Does the weekly email digest list every missing episode including unmonitored ones, or only those the missing screen lists as monitored?"
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Wanted / Missing episodes"
+        text: "A weekly email digest lists every missing episode."
+        hash: "f1bc6b75f091c53c21153ea8f85ece20b1d843691a43bcb150a76b596b8efed2"
+    status: "open"
+    answer: null
+  - id: "Q-0005"
+    section: "Settings / Tags"
+    text: "When a tag is deleted, is it also removed from import lists, notifications and download clients, which are linked by tags but not named in the deletion sentence?"
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Tags"
+        text: "Deleting a tag removes it from every series, profile and indexer that uses it."
+        hash: "56b4430d010de1f36d52c35ac6dbfc3cf01339c0e1d8d140553fef40043c15cc"
+    status: "open"
+    answer: null
+  - id: "Q-0006"
+    section: "Settings / Tags"
+    text: "Does 'profile' in the deletion sentence cover both delay profiles and release profiles?"
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Tags"
+        text: "Deleting a tag removes it from every series, profile and indexer that uses it."
+        hash: "56b4430d010de1f36d52c35ac6dbfc3cf01339c0e1d8d140553fef40043c15cc"
+    status: "open"
+    answer: null
+  - id: "Q-0007"
+    section: "Settings / General / Backups"
+    text: "Is there a minimum value for Retention, since only an upper limit of 365 days is stated?"
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / General / Backups"
+        text: "Retention: how long backups are kept, up to 365 days."
+        hash: "bac224af4ea94d3818cc6d9464afa7769f167d8c531dd2004be2e7daf05b6b98"
+    status: "open"
+    answer: null
+  - id: "Q-0008"
+    section: "Settings / Interface"
+    text: "What does setting the column headers of the calendar mean, and what options are available for them?"
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Interface"
+        text: "The interface settings set the first day of the week and the column headers of the calendar."
+        hash: "093e9abdd6dc5af35e529a8746381dd6c62a553081b9f47bc9e07369143f8f0b"
+    status: "open"
+    answer: null
+  - id: "Q-0009"
+    section: "Settings / Interface"
+    text: "What formats are available for the short date, long date and time formats?"
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Interface"
+        text: "The short date format, long date format and time format can be chosen, and dates can be shown relative to today."
+        hash: "5c0582fbf5e167a535cf37e47e2f120d0fe0ff506920f18d480d8e6056d6fb64"
+    status: "open"
+    answer: null
+  - id: "Q-0010"
+    section: "System / Backups"
+    text: "Is the S3 copy optional or configurable, and what settings (bucket, schedule, credentials) control it?"
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "System / Backups"
+        text: "Backups can be copied automatically to an S3 bucket."
+        hash: "8e8abfddd82a3bc006addd8239fc6c6e9e598e179a87dc6c60de803e93219bc9"
+    status: "open"
+    answer: null

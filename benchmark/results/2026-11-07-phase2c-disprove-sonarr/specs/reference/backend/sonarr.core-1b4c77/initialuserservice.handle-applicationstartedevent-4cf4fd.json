@@ -1,0 +1,152 @@
+{
+  "codeTitle": "InitialUserService.Handle(ApplicationStartedEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Authentication.InitialUserService.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+  "generated": {
+    "bundleHash": "a6384bf1166ece7ea5b888c9c66c298878c545bb0c7aa4b90dfc5d81b2fbeff4",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 16668,
+      "cutOff": 12,
+      "depth": 4,
+      "points": 42
+    },
+    "verifier": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 11126,
+      "calls": 1,
+      "costUsd": 0.046998,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3101,
+      "outputTokens": 249
+    },
+    "writer": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 9306,
+      "calls": 1,
+      "costUsd": 0.052518,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8787,
+      "outputTokens": 1529
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Authentication.InitialUserService.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.InitialUserService.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.InitialUserService.CreateInitialUser"
+        ],
+        "id": "A1",
+        "text": "When the application has started, it tries to create an initial user so that sign-in is possible."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.InitialUserService.CreateInitialUser",
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.UserService.FindUser"
+        ],
+        "id": "R1",
+        "text": "If a user already exists, nothing is created."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.InitialUserService.MigrateFromConfigFile",
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.InitialUserService.CreateInitialUser"
+        ],
+        "id": "R2",
+        "text": "If the config file exists and has a non-blank Username and Password, a user is created from them and no further steps run."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.InitialUserService.MigrateFromConfigFile"
+        ],
+        "id": "R3",
+        "text": "If the config file is missing, or its username or password is blank, no user is migrated from it."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.InitialUserService.CreateInitialUser"
+        ],
+        "id": "R4",
+        "text": "A user is created from the configured initial credentials only when the authentication method is Forms."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.InitialUserService.CreateInitialUser",
+          "config:Sonarr.Host|Sonarr:Auth:InitialUsername"
+        ],
+        "id": "R5",
+        "text": "The username is the configured initial username, or a default username when that is blank."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.InitialUserService.CreateInitialUser",
+          "Sonarr.Common|M:NzbDrone.Common.SecretGenerator.Generate(System.Int32)",
+          "config:Sonarr.Host|Sonarr:Auth:InitialPassword"
+        ],
+        "id": "R6",
+        "text": "The password is the configured initial password. When that is blank, a random password is generated."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.UserService.Add(System.String,System.String)"
+        ],
+        "id": "R7",
+        "text": "The stored username is converted to lower case. The user gets a new unique identifier."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.UserService.SetUserHashedPassword(NzbDrone.Core.Authentication.User,System.String)"
+        ],
+        "id": "R8",
+        "text": "The password is stored as a salted hash with an iteration count, not as plain text."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.UserService.Add(System.String,System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Insert(`0)"
+        ],
+        "id": "E1",
+        "text": "A new user record is inserted into the datastore."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.InitialUserService.CreateInitialUser"
+        ],
+        "id": "E2",
+        "text": "When the password was generated, two warnings are logged to the auth log. One gives the created username and the generated password. The other tells the user to change it from Settings: General."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.InitialUserService.CreateInitialUser"
+        ],
+        "id": "E3",
+        "text": "When the configured password is used, an info message is logged saying the user was created with the configured password."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Authentication.InitialUserService.Handle(NzbDrone.Core.Lifecycle.ApplicationStartedEvent)"
+        ],
+        "id": "E4",
+        "text": "If creating the user fails, the error is logged and startup continues. The message says sign-in will not be possible until a user is created."
+      }
+    ]
+  },
+  "title": "Initial user creation on application start",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

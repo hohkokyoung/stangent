@@ -1,0 +1,556 @@
+{
+  "doc": "kavita-fsd",
+  "note": "Phase 2b (D56, D57): findings in specs/trace.yaml scored against the frozen answer key. 'found' lets a gap be reported as a conflict and back; 'foundAsKind' needs the planted kind.",
+  "found": {
+    "overall": {
+      "found": 28,
+      "of": 30,
+      "share": 0.933,
+      "range95": [
+        0.833,
+        1
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 8,
+      "of": 10,
+      "share": 0.8,
+      "range95": [
+        0.5,
+        1
+      ]
+    }
+  },
+  "foundAsKind": {
+    "overall": {
+      "found": 28,
+      "of": 30,
+      "share": 0.933,
+      "range95": [
+        0.833,
+        1
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 8,
+      "of": 10,
+      "share": 0.8,
+      "range95": [
+        0.5,
+        1
+      ]
+    }
+  },
+  "noise": {
+    "findings": 43,
+    "unplanted": 15,
+    "worstCaseShare": 0.349,
+    "sample": 15,
+    "handChecked": 0,
+    "realInSample": null
+  },
+  "bars": {
+    "finds": true,
+    "notTooNoisy": null
+  },
+  "finerVerdicts": null,
+  "candidates": {
+    "sections": 0,
+    "byCode": 0,
+    "byAi": 0,
+    "aiFoundNone": 0
+  },
+  "cost": {
+    "finder": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "judge": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "checker": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "disprover": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    }
+  },
+  "requirements": {
+    "features": 0,
+    "requirements": 0,
+    "withAcceptance": 0,
+    "byCheck": {
+      "confirmed": 0,
+      "disputed": 0,
+      "unchecked": 0
+    },
+    "background": 0,
+    "backgroundDisputed": 0,
+    "questions": 0,
+    "plantedCited": {
+      "cited": 0,
+      "of": 20,
+      "missed": [
+        "Each row on the Home screen can be collapsed, and Kavita remembers the choice on the next visit.",
+        "A Random button on the library screen opens a randomly chosen series from that library.",
+        "Users can keep a private note on a series that only they can see.",
+        "A slideshow mode turns the page automatically after a set number of seconds.",
+        "Selected text can be read aloud using the device's text-to-speech voice.",
+        "The series in a collection can be exported to a CSV file.",
+        "The owner can share a reading list through a public link that opens without signing in.",
+        "Users can turn on two-factor sign-in with an authenticator app.",
+        "An invite can be given an expiry date, after which its link stops working.",
+        "A maintenance mode switch blocks all non-admin users from signing in until it is turned off.",
+        "The On Deck row shows up to 50 series.",
+        "Manga series open on the Volumes tab by default.",
+        "Brightness can be set anywhere from 0% to 100%.",
+        "Font size can be set from 50% to 200%.",
+        "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it.",
+        "A filter box for finding items appears once a list has more than 25 items.",
+        "A new password must be at least 8 characters long.",
+        "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB.",
+        "Changes on this page are stored only when the administrator presses Save.",
+        "Manage Collections is turned on by default for a new library."
+      ]
+    },
+    "findingsWithRequirement": 0,
+    "failedSections": 0,
+    "retries": 0,
+    "fixes": 0,
+    "spentUsd": 0
+  },
+  "items": [
+    {
+      "id": "G1",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S002",
+      "state": "gap"
+    },
+    {
+      "id": "G2",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S003",
+      "state": "gap"
+    },
+    {
+      "id": "G3",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S005",
+      "state": "gap"
+    },
+    {
+      "id": "G4",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S012",
+      "state": "gap"
+    },
+    {
+      "id": "G5",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S015",
+      "state": "gap"
+    },
+    {
+      "id": "G6",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S018",
+      "state": "gap"
+    },
+    {
+      "id": "G7",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S022",
+      "state": "gap"
+    },
+    {
+      "id": "G8",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S029",
+      "state": "gap"
+    },
+    {
+      "id": "G9",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S040",
+      "state": "gap"
+    },
+    {
+      "id": "G10",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S037",
+      "state": "gap"
+    },
+    {
+      "id": "C1",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S001",
+      "state": "conflict"
+    },
+    {
+      "id": "C2",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S004",
+      "state": "conflict"
+    },
+    {
+      "id": "C3",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S011",
+      "state": "conflict"
+    },
+    {
+      "id": "C4",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S014",
+      "state": "conflict"
+    },
+    {
+      "id": "C5",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S017",
+      "state": "conflict"
+    },
+    {
+      "id": "C6",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S021",
+      "state": "conflict"
+    },
+    {
+      "id": "C7",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S028",
+      "state": "conflict"
+    },
+    {
+      "id": "C8",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S031",
+      "state": "conflict"
+    },
+    {
+      "id": "C9",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S036",
+      "state": "conflict"
+    },
+    {
+      "id": "C10",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S041",
+      "state": "conflict"
+    },
+    {
+      "id": "U1",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S025",
+      "state": "undocumented"
+    },
+    {
+      "id": "U2",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S026",
+      "state": "undocumented"
+    },
+    {
+      "id": "U3",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S010",
+      "state": "undocumented"
+    },
+    {
+      "id": "U4",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S032",
+      "state": "undocumented"
+    },
+    {
+      "id": "U5",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S043",
+      "state": "undocumented"
+    },
+    {
+      "id": "U6",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S038",
+      "state": "undocumented"
+    },
+    {
+      "id": "U7",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S023",
+      "state": "undocumented"
+    },
+    {
+      "id": "U8",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S013",
+      "state": "undocumented"
+    },
+    {
+      "id": "U9",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U10",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    }
+  ],
+  "handCheckSample": [
+    {
+      "id": "S008",
+      "state": "conflict",
+      "section": "3.3",
+      "fsdQuote": "A chapter's screen shows its release date, writers, cover artists, genres and tags",
+      "page": null,
+      "pageQuote": null,
+      "note": "The release date is shown only when the library is Comic or Comic (Flexible), not for every chapter."
+    },
+    {
+      "id": "S007",
+      "state": "undocumented",
+      "section": "3.2",
+      "fsdQuote": "",
+      "page": "page:/library/:libraryId/series/:seriesId/volume/:volumeId",
+      "pageQuote": "A single-chapter volume also gets Related (reading lists) and Annotations tabs, and admins get an Edit button; none are mentioned.",
+      "note": "A single-chapter volume also gets Related (reading lists) and Annotations tabs, and admins get an Edit button; none are mentioned."
+    },
+    {
+      "id": "S016",
+      "state": "undocumented",
+      "section": "4.2",
+      "fsdQuote": "",
+      "page": "page:/library/:libraryId/series/:seriesId/book/:chapterId",
+      "pageQuote": "The book reader settings include a Disable Bookmark Icon switch and a Reset to Defaults button that are not described.",
+      "note": "The book reader settings include a Disable Bookmark Icon switch and a Reset to Defaults button that are not described."
+    },
+    {
+      "id": "S027",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/all-filters",
+      "pageQuote": "An All Filters screen (smart filters list) exists inside scope and is not described.",
+      "note": "An All Filters screen (smart filters list) exists inside scope and is not described."
+    },
+    {
+      "id": "S033",
+      "state": "undocumented",
+      "section": "9.2",
+      "fsdQuote": "",
+      "page": "page:/settings",
+      "pageQuote": "Preferences also has On Deck Last Progress (days) and On Deck Last Chapter Add (days) settings that control what appears in the On Deck row.",
+      "note": "Preferences also has On Deck Last Progress (days) and On Deck Last Chapter Add (days) settings that control what appears in the On Deck row."
+    },
+    {
+      "id": "S034",
+      "state": "undocumented",
+      "section": "9.2",
+      "fsdQuote": "",
+      "page": "page:/settings",
+      "pageQuote": "Preferences has an OPDS Settings group (Embed Progress Indicator, Include Continue From Entry) and a social Include Unknowns switch, not mentioned.",
+      "note": "Preferences has an OPDS Settings group (Embed Progress Indicator, Include Continue From Entry) and a social Include Unknowns switch, not mentioned."
+    },
+    {
+      "id": "S019",
+      "state": "undocumented",
+      "section": "6.2",
+      "fsdQuote": "",
+      "page": "page:/collections/:collectionId",
+      "pageQuote": "Collections synced from an outside service have a Sync Details button that opens a drawer; the FSD only mentions the synced count and last sync time.",
+      "note": "Collections synced from an outside service have a Sync Details button that opens a drawer; the FSD only mentions the synced count and last sync time."
+    },
+    {
+      "id": "S039",
+      "state": "undocumented",
+      "section": "10.2",
+      "fsdQuote": "",
+      "page": "page:/settings",
+      "pageQuote": "Users rows also have a Change Password button (admin resets another user's password), a profile link, and an identity provider icon.",
+      "note": "Users rows also have a Change Password button (admin resets another user's password), a profile link, and an identity provider icon."
+    },
+    {
+      "id": "S042",
+      "state": "undocumented",
+      "section": "10.3",
+      "fsdQuote": "",
+      "page": "page:/settings",
+      "pageQuote": "The Libraries page has a bulk actions menu with row selection (e.g. copy settings to other libraries).",
+      "note": "The Libraries page has a bulk actions menu with row selection (e.g. copy settings to other libraries)."
+    },
+    {
+      "id": "S035",
+      "state": "undocumented",
+      "section": "9.2",
+      "fsdQuote": "",
+      "page": "page:/settings",
+      "pageQuote": "Preferences has an Annotations highlight colors bar, not mentioned.",
+      "note": "Preferences has an Annotations highlight colors bar, not mentioned."
+    },
+    {
+      "id": "S024",
+      "state": "undocumented",
+      "section": "8.2",
+      "fsdQuote": "",
+      "page": "page:/person/:name",
+      "pageQuote": "The person page has an actions menu (edit/merge, admin only), web link icons next to the name, and a cover image.",
+      "note": "The person page has an actions menu (edit/merge, admin only), web link icons next to the name, and a cover image."
+    },
+    {
+      "id": "S009",
+      "state": "undocumented",
+      "section": "3.3",
+      "fsdQuote": "",
+      "page": "page:/library/:libraryId/series/:seriesId/chapter/:chapterId",
+      "pageQuote": "Chapter detail also has an Annotations tab (shown when highlights exist) and an admin-only Edit button that are not described.",
+      "note": "Chapter detail also has an Annotations tab (shown when highlights exist) and an admin-only Edit button that are not described."
+    },
+    {
+      "id": "S006",
+      "state": "undocumented",
+      "section": "3.1",
+      "fsdQuote": "",
+      "page": "page:/library/:libraryId/series/:seriesId",
+      "pageQuote": "Series detail also has an Annotations tab (shown when the series has annotations) that the tab list leaves out.",
+      "note": "Series detail also has an Annotations tab (shown when the series has annotations) that the tab list leaves out."
+    },
+    {
+      "id": "S020",
+      "state": "undocumented",
+      "section": "6.1",
+      "fsdQuote": "",
+      "page": "page:/collections",
+      "pageQuote": "The Collections screen supports bulk selection and bulk operations on collection cards, not mentioned in the FSD.",
+      "note": "The Collections screen supports bulk selection and bulk operations on collection cards, not mentioned in the FSD."
+    },
+    {
+      "id": "S030",
+      "state": "undocumented",
+      "section": "9.1",
+      "fsdQuote": "",
+      "page": "page:/settings",
+      "pageQuote": "Users signed in through OpenID Connect see an OIDC section on Account with an Unlink button; not mentioned.",
+      "note": "Users signed in through OpenID Connect see an OIDC section on Account with an Unlink button; not mentioned."
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+{
+  "codeTitle": "GET /login",
+  "entry": "endpoint:Sonarr.Http|GET /login",
+  "generated": {
+    "bundleHash": "5935b2a863ae8f20fcd781d7ac84fd6ef31349c0a3b9db90f8757135df9f8a17",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 13839,
+      "cutOff": 22,
+      "depth": 4,
+      "points": 14
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 8831,
+      "calls": 1,
+      "costUsd": 0.038193,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4049,
+      "outputTokens": 269
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 6710,
+      "calls": 1,
+      "costUsd": 0.04136,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8582,
+      "outputTokens": 1424
+    }
+  },
+  "group": "Sonarr.Http",
+  "id": "endpoint:Sonarr.Http|GET /login",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.LoginPage"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Http|GET /login"
+        ],
+        "id": "A1",
+        "text": "A caller requests GET /login and receives the login page resource."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.LoginPage"
+        ],
+        "id": "R1",
+        "text": "The login page is accessible anonymously, without authentication."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.MapResource(System.String)"
+        ],
+        "id": "R2",
+        "text": "A path matching the invalid-path pattern returns Not Found before any handler is tried."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.MapResource(System.String)",
+          "Sonarr.Http|M:Sonarr.Http.Frontend.Mappers.IMapHttpRequestsToDisk.CanHandle(System.String)"
+        ],
+        "id": "R3",
+        "text": "Exactly one registered mapper must claim the path via CanHandle; if none does, Not Found is returned and a warning is logged."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.Mappers.MediaCoverProxyMapper.CanHandle(System.String)"
+        ],
+        "id": "R4",
+        "text": "The media cover proxy mapper handles only paths starting with \"/MediaCoverProxy/\" (case-insensitive)."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.LoginPage",
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.MapResource(System.String)"
+        ],
+        "id": "S1",
+        "text": "Returns the static login page resource for the path \"/login\" as a file response."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.MapResource(System.String)",
+          "Sonarr.Http|M:Sonarr.Http.Frontend.Mappers.StaticResourceMapperBase.GetResponse(Microsoft.AspNetCore.Http.HttpContext,System.String)"
+        ],
+        "id": "S2",
+        "text": "Returns a Not Found response when no handler can serve the path, when the handler returns nothing, or when the file is not found on disk."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.Mappers.StaticResourceMapperBase.GetResponse(Microsoft.AspNetCore.Http.HttpContext,System.String)"
+        ],
+        "id": "S3",
+        "text": "The file's content type is determined from the file path, and defaults to application/octet-stream when unknown. For text/plain, UTF-8 encoding is set."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.MapResource(System.String)",
+          "Sonarr.Http|M:Sonarr.Http.Extensions.RequestExtensions.DisableCache(Microsoft.AspNetCore.Http.IHeaderDictionary)"
+        ],
+        "id": "E1",
+        "text": "When the response is an HTML file, cache is disabled: Last-Modified is removed, Cache-Control is \"no-cache, no-store\", Expires is \"-1\" and Pragma is \"no-cache\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.MapResource(System.String)",
+          "Sonarr.Http|M:Sonarr.Http.Frontend.Mappers.StaticResourceMapperBase.GetResponse(Microsoft.AspNetCore.Http.HttpContext,System.String)"
+        ],
+        "id": "E2",
+        "text": "A warning is logged when no handler exists for the path or the file is not found."
+      }
+    ]
+  },
+  "title": "Login page (GET /login)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

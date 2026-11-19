@@ -1,0 +1,27 @@
+{
+  "commit": "f4abc65c5e04bf2ccdbd681550c92a3ed1b50893",
+  "doc": "kavita-fsd",
+  "fsdVersion": "781973da1378f7804d05e38d0ccaf8693e6c1c86b3de76d65d0638a9e9c3df66",
+  "inputs": "sha256:962f23b9c1f116ec68df8b778dadbf6ed7b0b0fdd7687053d03add39ab9790cf",
+  "list": true,
+  "retryUsed": false,
+  "run": 1,
+  "stage": "checked",
+  "usage": {
+    "cacheReadTokens": 2234521,
+    "cacheWriteTokens": 97362,
+    "calls": 1,
+    "costUsd": 1.082374,
+    "inputTokens": 86,
+    "model": "claude-sonnet-5-5",
+    "ms": 320228,
+    "outputTokens": 24585,
+    "settings": {
+      "agent": "stangent-fsd-reviewer",
+      "claudeVersion": "2.1.292 (Claude Code)",
+      "effort": "medium",
+      "mode": "agentic",
+      "model": "claude-sonnet-5-5"
+    }
+  }
+}

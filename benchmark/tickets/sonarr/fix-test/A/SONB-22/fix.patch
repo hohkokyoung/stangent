@@ -1,0 +1,14 @@
+diff --git a/src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadata.cs b/src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadata.cs
+index d0fd3c23a2..f856ac434a 100644
+--- a/src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadata.cs
++++ b/src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadata.cs
+@@ -417,6 +417,9 @@ public override MetadataFileResult EpisodeMetadata(Series series, EpisodeFile ep
+ 
+                 xmlResult += sw.ToString();
+                 xmlResult += Environment.NewLine;
++
++                // Only the first document should carry the XML declaration
++                xws.OmitXmlDeclaration = true;
+             }
+ 
+             return new MetadataFileResult(GetEpisodeMetadataFilename(episodeFile.RelativePath), xmlResult.Trim(Environment.NewLine.ToCharArray()));

@@ -51,11 +51,17 @@ public static class GraphStore
                 Exec(db, "INSERT INTO fragments VALUES ($p, $f)", ("$p", f.ProjectId), ("$f", f.Fingerprint));
                 WriteParts(db, f.ProjectId, f.Nodes, f.Edges, f.BlindSpots, f.Facts);
             }
-            WriteParts(db, LinkedOwner, graph.LinkedNodes, graph.LinkedEdges, graph.LinkedBlindSpots, []);
+            WriteParts(db, LinkedOwner, graph.LinkedNodes, graph.LinkedEdges, graph.LinkedBlindSpots, graph.LinkedFacts);
             foreach (var e in graph.LoadErrors.Order(StringComparer.Ordinal))
                 Exec(db, "INSERT INTO load_errors VALUES ($m)", ("$m", e));
             if (graph.History is { } history)
                 Exec(db, "INSERT INTO meta VALUES ('history', $h)", ("$h", CanonicalJson.SerializeCompact(HistoryJson(history))));
+            if (graph.DirtyFiles is { } dirty)
+                Exec(db, "INSERT INTO meta VALUES ('dirtyFiles', $d)", ("$d", CanonicalJson.SerializeCompact(FilesJson(dirty))));
+            if (graph.NotInCommit is { } notInCommit)
+                Exec(db, "INSERT INTO meta VALUES ('notInCommit', $n)", ("$n", CanonicalJson.SerializeCompact(FilesJson(notInCommit))));
+            if (graph.ScreenTests.Count > 0)
+                Exec(db, "INSERT INTO meta VALUES ('screenTests', $s)", ("$s", CanonicalJson.SerializeCompact(ScreenTestsJson(graph.ScreenTests))));
             foreach (var l in SortHistory(graph.HistoryLines))
                 Exec(db, "INSERT INTO history_lines VALUES ($s, $t, $n, $of)", ("$s", l.Source), ("$t", l.Target), ("$n", l.Shared), ("$of", l.Of));
             Exec(db, """
@@ -102,6 +108,12 @@ public static class GraphStore
             graph.LoadErrors.Add(r.GetString(0));
         if (Scalar(db, "SELECT value FROM meta WHERE key = 'history'") is { } history)
             graph.History = HistoryFrom(JsonNode.Parse(history)!.AsObject());
+        if (Scalar(db, "SELECT value FROM meta WHERE key = 'dirtyFiles'") is { } dirty)
+            graph.DirtyFiles = FilesFrom(JsonNode.Parse(dirty)!.AsArray());
+        if (Scalar(db, "SELECT value FROM meta WHERE key = 'notInCommit'") is { } notInCommit)
+            graph.NotInCommit = FilesFrom(JsonNode.Parse(notInCommit)!.AsArray());
+        if (Scalar(db, "SELECT value FROM meta WHERE key = 'screenTests'") is { } tests)
+            graph.ScreenTests.AddRange(ScreenTestsFrom(JsonNode.Parse(tests)!.AsArray()));
         foreach (var r in Rows(db, "SELECT source, target, shared, of FROM history_lines ORDER BY target, source"))
             graph.HistoryLines.Add(new HistoryLine(r.GetString(0), r.GetString(1), r.GetInt32(2), r.GetInt32(3)));
         return graph;
@@ -136,6 +148,10 @@ public static class GraphStore
                         throw new StangentException("unsupported_graph", $"{path}: graph schema v{(int)o["schemaVersion"]!} (expected v{SchemaVersion}).");
                     graph.Commit = (string)o["commit"]!;
                     if (o["history"] is JsonObject h) graph.History = HistoryFrom(h);
+                    // Missing or null: an export from before these were always written, which can't tell clean from don't know.
+                    graph.DirtyFiles = o["dirtyFiles"] is JsonArray d ? FilesFrom(d) : null;
+                    graph.NotInCommit = o["notInCommit"] is JsonArray n ? FilesFrom(n) : null;
+                    if (o["screenTests"] is JsonArray st) graph.ScreenTests.AddRange(ScreenTestsFrom(st));
                     break;
                 case "history":
                     graph.HistoryLines.Add(new HistoryLine((string)o["source"]!, (string)o["target"]!, (int)o["shared"]!, (int)o["of"]!));
@@ -171,11 +187,16 @@ public static class GraphStore
 
     public static IEnumerable<string> CanonicalLines(CodeGraph graph)
     {
-        yield return Line(new()
+        var meta = new JsonObject
         {
             ["t"] = "meta", ["schemaVersion"] = SchemaVersion, ["commit"] = graph.Commit,
             ["history"] = graph.History is { } history ? HistoryJson(history) : null,
-        });
+        };
+        // Always: an empty list is a clean tree, null is don't know, and an import has to tell them apart.
+        meta["dirtyFiles"] = graph.DirtyFiles is { } dirty ? FilesJson(dirty) : null;
+        meta["notInCommit"] = graph.NotInCommit is { } notInCommit ? FilesJson(notInCommit) : null;
+        if (graph.ScreenTests.Count > 0) meta["screenTests"] = ScreenTestsJson(graph.ScreenTests);
+        yield return Line(meta);
         foreach (var f in graph.Fragments.Values)
             yield return Line(new() { ["t"] = "fragment", ["project"] = f.ProjectId, ["fingerprint"] = f.Fingerprint });
         foreach (var (owner, nodes, edges, spots, facts) in Owners(graph))
@@ -212,6 +233,17 @@ public static class GraphStore
             yield return Line(new() { ["t"] = "loadError", ["message"] = e });
     }
 
+    static JsonArray FilesJson(IEnumerable<string> files) => new([.. files.Order(StringComparer.Ordinal).Select(f => (JsonNode)f)]);
+
+    static List<string> FilesFrom(JsonArray files) => [.. files.Select(f => (string)f!)];
+
+    static JsonArray ScreenTestsJson(IEnumerable<ScreenTest> tests) => new([.. tests
+        .OrderBy(t => t.Spec, StringComparer.Ordinal).ThenBy(t => t.Line).ThenBy(t => t.Page, StringComparer.Ordinal)
+        .Select(t => (JsonNode)new JsonObject { ["spec"] = t.Spec, ["line"] = t.Line, ["goto"] = t.Goto, ["page"] = t.Page, ["label"] = (int)t.Label })]);
+
+    static IEnumerable<ScreenTest> ScreenTestsFrom(JsonArray tests) => tests.Select(t =>
+        new ScreenTest((string)t!["spec"]!, (int)t["line"]!, (string)t["goto"]!, (string)t["page"]!, (Label)(int)t["label"]!));
+
     static IEnumerable<HistoryLine> SortHistory(IEnumerable<HistoryLine> lines) =>
         lines.OrderBy(l => l.Target, StringComparer.Ordinal).ThenBy(l => l.Source, StringComparer.Ordinal);
 
@@ -229,7 +261,7 @@ public static class GraphStore
     static IEnumerable<(string, List<Node>, List<Edge>, List<BlindSpot>, List<Fact>)> Owners(CodeGraph graph)
     {
         foreach (var f in graph.Fragments.Values) yield return (f.ProjectId, f.Nodes, f.Edges, f.BlindSpots, f.Facts);
-        yield return (LinkedOwner, graph.LinkedNodes, graph.LinkedEdges, graph.LinkedBlindSpots, []);
+        yield return (LinkedOwner, graph.LinkedNodes, graph.LinkedEdges, graph.LinkedBlindSpots, graph.LinkedFacts);
     }
 
     static void WriteParts(SqliteConnection db, string owner, List<Node> nodes, List<Edge> edges, List<BlindSpot> spots, List<Fact> facts)
@@ -262,7 +294,7 @@ public static class GraphStore
     {
         if (owner == LinkedOwner)
         {
-            (nodes, edges, spots, facts) = (graph.LinkedNodes, graph.LinkedEdges, graph.LinkedBlindSpots, null);
+            (nodes, edges, spots, facts) = (graph.LinkedNodes, graph.LinkedEdges, graph.LinkedBlindSpots, graph.LinkedFacts);
             return nodes;
         }
         var f = graph.Fragments[owner];

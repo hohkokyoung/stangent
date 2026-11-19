@@ -1,0 +1,1 @@
+Sonarr.Core|T:NzbDrone.Core.CustomFormats.ResolutionSpecificationValidator: 5 test(s), the proof's test among them (Sonarr.Api.Test|M:NzbDrone.Api.Test.v3.CustomFormats.ResolutionSpecificationValidationFixture.Validate_accepts_unknown_resolution)

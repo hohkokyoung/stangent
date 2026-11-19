@@ -1,0 +1,110 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0013"
+doc: "sonarr-fsd"
+section: "Settings / Profiles / Delay profiles"
+title: "Delay profiles"
+parent: "F-0011"
+children: []
+textHash: "9b8d97bf9711ba3223780ba6d934f3718309b7a461247f11dd663d17c4d48ace"
+requirements:
+  - id: "R-0066"
+    title: "Delay profile makes Sonarr wait"
+    kind: "rule"
+    statement: "A delay profile makes Sonarr wait before grabbing a release, so that a better one can appear."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Profiles / Delay profiles"
+        text: "A delay profile makes Sonarr wait before grabbing a release, so that a better one can appear."
+        hash: "7c808c7eb663f77cf54b9288f801c3b13e844451bbabd37cb00bbd0191a04de1"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "c872d4a1bebed504a84160b38bf75de803c7e16ea468fd14f8cf8fc1faaac4ce"
+  - id: "R-0067"
+    title: "Preferred protocol"
+    kind: "data"
+    statement: "A delay profile has a Preferred Protocol, either Usenet or Torrent."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Profiles / Delay profiles"
+        text: "Preferred Protocol: Usenet or Torrent."
+        hash: "d53b41613e8f14112e9a7f2c9ea72aa1ac3574be9e56c8b8d22cb469275209b9"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "381e8dda26c67af7766ae1fa8ec07b5112aaa7386be6d54b93b0aca7e9058b71"
+  - id: "R-0068"
+    title: "Delays in minutes"
+    kind: "data"
+    statement: "A delay profile has a Usenet Delay and a Torrent Delay, each in minutes."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Profiles / Delay profiles"
+        text: "Usenet Delay and Torrent Delay: in minutes; neither can be negative."
+        hash: "432d7cc8c316ebf8e39d5b51d71e56b78665143a38276a3428e470893b91176b"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "5663e321d424f7ae3151722fa8acc51bc2e2e56484b0e9d4fdb470c242bb8f97"
+  - id: "R-0069"
+    title: "Delays can't be negative"
+    kind: "validation"
+    statement: "Neither the Usenet Delay nor the Torrent Delay can be negative."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Profiles / Delay profiles"
+        text: "Usenet Delay and Torrent Delay: in minutes; neither can be negative."
+        hash: "432d7cc8c316ebf8e39d5b51d71e56b78665143a38276a3428e470893b91176b"
+    acceptance:
+      - text: "A Usenet Delay of -5 minutes is not accepted."
+        quotes:
+          - doc: "sonarr-fsd"
+            section: "Settings / Profiles / Delay profiles"
+            text: "Usenet Delay and Torrent Delay: in minutes; neither can be negative."
+            hash: "432d7cc8c316ebf8e39d5b51d71e56b78665143a38276a3428e470893b91176b"
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "74051ec5588213a3c1a21e63040e9693fb9b8aabbb52e64afd1522087d23758b"
+  - id: "R-0070"
+    title: "Profile applies by matching tags"
+    kind: "rule"
+    statement: "A delay profile applies to the series with the same tags."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Profiles / Delay profiles"
+        text: "Tags: a delay profile applies to the series with the same tags."
+        hash: "df97e0c5a174150f4c50e974b369f7226031a2d65610780829f46a9bf9f37448"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "ecff670c213245a84019e48c3079eed72c026e4fe6125d57a4e9c99e9aa36a22"
+  - id: "R-0071"
+    title: "Default profile can have tags"
+    kind: "rule"
+    statement: "The default delay profile can be given tags like any other."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Profiles / Delay profiles"
+        text: "The default delay profile can be given tags like any other."
+        hash: "c1dc91cdc9dc0c2fed6078d05d41c7f41d473cb851ee672916af29ab84ab2540"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "85da97b37b719fac21c296ec926355d69fe3eeca264d662beea4fb3067b593f6"
+definitions: []
+journeys: []
+background: []
+retired: []

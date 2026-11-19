@@ -1,0 +1,1102 @@
+{
+  "repo": "kavita",
+  "commit": "2d225367f0310ac7354423b772a4c6a7caf63fd2",
+  "id": "manga-reader-opens",
+  "name": "Manga reader screen opens",
+  "kind": "screen-opens",
+  "start": {
+    "what": "ngOnInit of the manga reader component",
+    "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:747",
+    "code": "ngOnInit(): void {"
+  },
+  "actor": {
+    "who": "signed-in user who may access the library and chapter",
+    "why": "parent route has canActivate authGuard and the library route has libraryAccessGuard; the reader API requires [Authorize] and [ChapterAccess]/[SeriesAccess]",
+    "at": "UI/Web/src/app/app-routing.module.ts:90",
+    "code": "canActivate: [libraryAccessGuard],"
+  },
+  "checks": [],
+  "steps": [
+    {
+      "n": 1,
+      "from": null,
+      "what": "libraryAccessGuard asks whether the user may open the library",
+      "at": "UI/Web/src/app/_guards/library-access.guard.ts:20",
+      "code": "return memberService.hasLibraryAccess(libraryId).pipe(",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "UI/Web/src/app/_guards/library-access.guard.ts:16",
+          "code": "if (isNaN(libraryId)) {"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "from": 1,
+      "what": "GET api/users/has-library-access?libraryId=",
+      "at": "UI/Web/src/app/_services/member.service.ts:48",
+      "code": "return this.httpClient.get<boolean>(this.baseUrl + 'users/has-library-access?libraryId=' + libraryId);"
+    },
+    {
+      "n": 3,
+      "from": 2,
+      "what": "controller action HasLibraryAccess",
+      "at": "Kavita.Server/Controllers/UsersController.cs:121",
+      "code": "public async Task< ActionResult<bool>> HasLibraryAccess(int libraryId)"
+    },
+    {
+      "n": 4,
+      "from": 3,
+      "what": "reads the libraries the user may see",
+      "at": "Kavita.Server/Controllers/UsersController.cs:124",
+      "code": "var libs = await unitOfWork.LibraryRepository.GetLibraryDtosForUsernameAsync(Username!, ct);",
+      "end": {
+        "kind": "database",
+        "detail": "Library rows for the user (LibraryRepository.GetLibraryDtosForUsernameAsync)"
+      }
+    },
+    {
+      "n": 5,
+      "from": null,
+      "what": "libraryResolver loads the library",
+      "at": "UI/Web/src/app/_resolvers/library.resolver.ts:23",
+      "code": "return libraryService.getLibrary(parseInt(libId, 10)).pipe(",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "UI/Web/src/app/_resolvers/library.resolver.ts:18",
+          "code": "if (!libId || libId === '0') {"
+        }
+      ]
+    },
+    {
+      "n": 6,
+      "from": 5,
+      "what": "GET api/library?libraryId=",
+      "at": "UI/Web/src/app/_services/library.service.ts:106",
+      "code": "return this.httpClient.get<Library>(this.baseUrl + 'library?libraryId=' + libraryId);"
+    },
+    {
+      "n": 7,
+      "from": 6,
+      "what": "controller action GetLibrary",
+      "at": "Kavita.Server/Controllers/LibraryController.cs:214",
+      "code": "public async Task<ActionResult<LibraryDto?>> GetLibrary(int libraryId)"
+    },
+    {
+      "n": 8,
+      "from": 7,
+      "what": "admin gets the full library DTO",
+      "at": "Kavita.Server/Controllers/LibraryController.cs:219",
+      "code": "return Ok(await unitOfWork.LibraryRepository.GetLibraryDtoByIdAsync(libraryId, ct));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/LibraryController.cs:217",
+          "code": "if (User.IsInRole(PolicyConstants.AdminRole))"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Library (LibraryRepository.GetLibraryDtoByIdAsync)"
+      }
+    },
+    {
+      "n": 9,
+      "from": 7,
+      "what": "other users get the lite library DTO",
+      "at": "Kavita.Server/Controllers/LibraryController.cs:221",
+      "code": "return Ok(await unitOfWork.LibraryRepository.GetLiteLibraryDtoByIdAsync(libraryId, ct));",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "Kavita.Server/Controllers/LibraryController.cs:217",
+          "code": "if (User.IsInRole(PolicyConstants.AdminRole))"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Library (LibraryRepository.GetLiteLibraryDtoByIdAsync)"
+      }
+    },
+    {
+      "n": 10,
+      "from": null,
+      "what": "readingProfileResolver loads the reading profile for the series",
+      "at": "UI/Web/src/app/_resolvers/reading-profile.resolver.ts:16",
+      "code": "return readingProfileService.getForSeries(libraryId, seriesId);"
+    },
+    {
+      "n": 11,
+      "from": 10,
+      "what": "GET api/reading-profile/{libraryId}/{seriesId}?skipImplicit=",
+      "at": "UI/Web/src/app/_services/reading-profile.service.ts:15",
+      "code": "return this.httpClient.get<ReadingProfile>(this.baseUrl + `reading-profile/${libraryId}/${seriesId}?skipImplicit=${skipImplicit}`);"
+    },
+    {
+      "n": 12,
+      "from": 11,
+      "what": "controller action GetProfileForSeries",
+      "at": "Kavita.Server/Controllers/ReadingProfileController.cs:45",
+      "code": "public async Task<ActionResult<UserReadingProfileDto>> GetProfileForSeries(int libraryId, int seriesId, [FromQuery] bool skipImplicit, [FromQuery] int? deviceId = null)"
+    },
+    {
+      "n": 13,
+      "from": 12,
+      "what": "readingProfileService.GetReadingProfileDtoForSeries",
+      "at": "Kavita.Server/Controllers/ReadingProfileController.cs:50",
+      "code": "return Ok(await readingProfileService.GetReadingProfileDtoForSeries(UserId, libraryId, seriesId, deviceId, skipImplicit, ct));"
+    },
+    {
+      "n": 14,
+      "from": 13,
+      "what": "maps the profile found for the series",
+      "at": "Kavita.Services/Reading/ReadingProfileService.cs:34",
+      "code": "return mapper.Map<UserReadingProfileDto>(await GetReadingProfileForSeries(userId, libraryId, seriesId,"
+    },
+    {
+      "n": 15,
+      "from": 14,
+      "what": "reads the series, library, device or default reading profile",
+      "at": "Kavita.Services/Reading/ReadingProfileService.cs:27",
+      "code": "return await unitOfWork.AppUserReadingProfileRepository.GetProfileForSeries(userId, libraryId, seriesId,",
+      "end": {
+        "kind": "database",
+        "detail": "AppUserReadingProfile (AppUserReadingProfileRepository.GetProfileForSeries)"
+      }
+    },
+    {
+      "n": 16,
+      "from": null,
+      "what": "ngOnInit: reads route.data (readingProfile) and sets up the reader settings",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:764",
+      "code": "this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(data => {",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:751",
+          "code": "if (libraryId === null || seriesId === null || chapterId === null) {"
+        }
+      ]
+    },
+    {
+      "n": 17,
+      "from": 16,
+      "what": "setupReaderSettings runs once the profile is there",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:773",
+      "code": "this.setupReaderSettings();",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:765",
+          "code": "if (data['readingProfile'] == null) {"
+        }
+      ]
+    },
+    {
+      "n": 18,
+      "from": 17,
+      "what": "for an implicit profile, loads the parent profile of the series",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:890",
+      "code": "this.readingProfileService.getForSeries(this.libraryId, this.seriesId, true).subscribe(parent => {",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:889",
+          "code": "if (readingProfile.kind === ReadingProfileKind.Implicit) {"
+        }
+      ]
+    },
+    {
+      "n": 19,
+      "from": 18,
+      "what": "GET api/reading-profile/{libraryId}/{seriesId}?skipImplicit=",
+      "at": "UI/Web/src/app/_services/reading-profile.service.ts:15",
+      "code": "return this.httpClient.get<ReadingProfile>(this.baseUrl + `reading-profile/${libraryId}/${seriesId}?skipImplicit=${skipImplicit}`);"
+    },
+    {
+      "n": 20,
+      "from": 19,
+      "what": "controller action GetProfileForSeries",
+      "at": "Kavita.Server/Controllers/ReadingProfileController.cs:45",
+      "code": "public async Task<ActionResult<UserReadingProfileDto>> GetProfileForSeries(int libraryId, int seriesId, [FromQuery] bool skipImplicit, [FromQuery] int? deviceId = null)"
+    },
+    {
+      "n": 21,
+      "from": 20,
+      "what": "readingProfileService.GetReadingProfileDtoForSeries",
+      "at": "Kavita.Server/Controllers/ReadingProfileController.cs:50",
+      "code": "return Ok(await readingProfileService.GetReadingProfileDtoForSeries(UserId, libraryId, seriesId, deviceId, skipImplicit, ct));"
+    },
+    {
+      "n": 22,
+      "from": 21,
+      "what": "maps the profile found for the series",
+      "at": "Kavita.Services/Reading/ReadingProfileService.cs:34",
+      "code": "return mapper.Map<UserReadingProfileDto>(await GetReadingProfileForSeries(userId, libraryId, seriesId,"
+    },
+    {
+      "n": 23,
+      "from": 22,
+      "what": "reads the series, library, device or default reading profile",
+      "at": "Kavita.Services/Reading/ReadingProfileService.cs:27",
+      "code": "return await unitOfWork.AppUserReadingProfileRepository.GetProfileForSeries(userId, libraryId, seriesId,",
+      "end": {
+        "kind": "database",
+        "detail": "AppUserReadingProfile (AppUserReadingProfileRepository.GetProfileForSeries)"
+      }
+    },
+    {
+      "n": 24,
+      "from": null,
+      "what": "ngOnInit: asks whether the user has reading progress in this library type",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:786",
+      "code": "this.memberService.hasReadingProgress(this.libraryId).subscribe(progress => {",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:751",
+          "code": "if (libraryId === null || seriesId === null || chapterId === null) {"
+        }
+      ]
+    },
+    {
+      "n": 25,
+      "from": 24,
+      "what": "GET api/users/has-reading-progress?libraryId=",
+      "at": "UI/Web/src/app/_services/member.service.ts:52",
+      "code": "return this.httpClient.get<boolean>(this.baseUrl + 'users/has-reading-progress?libraryId=' + libraryId);"
+    },
+    {
+      "n": 26,
+      "from": 25,
+      "what": "controller action HasReadingProgress",
+      "at": "Kavita.Server/Controllers/UsersController.cs:107",
+      "code": "public async Task<ActionResult<bool>> HasReadingProgress(int libraryId)"
+    },
+    {
+      "n": 27,
+      "from": 26,
+      "what": "reads the library",
+      "at": "Kavita.Server/Controllers/UsersController.cs:110",
+      "code": "var library = await unitOfWork.LibraryRepository.GetLibraryForIdAsync(libraryId, ct: ct);",
+      "end": {
+        "kind": "database",
+        "detail": "Library (LibraryRepository.GetLibraryForIdAsync)"
+      }
+    },
+    {
+      "n": 28,
+      "from": 26,
+      "what": "checks whether the user has progress on a library of that type",
+      "at": "Kavita.Server/Controllers/UsersController.cs:112",
+      "code": "return Ok(await unitOfWork.AppUserProgressRepository.UserHasProgress(library.Type, UserId, ct));",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/UsersController.cs:111",
+          "code": "if (library == null) return BadRequest(await localizationService.TranslateAsync(UserId, \"library-doesnt-exist\"));"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "AppUserProgress and Series (AppUserProgressRepository.UserHasProgress)"
+      }
+    },
+    {
+      "n": 29,
+      "from": null,
+      "what": "ngOnInit: init(true) loads the chapter and starts rendering",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:793",
+      "code": "this.init(true);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:751",
+          "code": "if (libraryId === null || seriesId === null || chapterId === null) {"
+        }
+      ]
+    },
+    {
+      "n": 30,
+      "from": 29,
+      "what": "bookmark mode: loads the bookmark info of the series",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1139",
+      "code": "this.readerService.getBookmarkInfo(this.seriesId).subscribe(bookmarkInfo => {",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1138",
+          "code": "if (this.bookmarkMode()) {"
+        }
+      ]
+    },
+    {
+      "n": 31,
+      "from": 30,
+      "what": "GET api/reader/bookmark-info?seriesId=",
+      "at": "UI/Web/src/app/_services/reader.service.ts:183",
+      "code": "return this.httpClient.get<BookmarkInfo>(this.baseUrl + 'reader/bookmark-info?seriesId=' + seriesId);"
+    },
+    {
+      "n": 32,
+      "from": 31,
+      "what": "controller action GetBookmarkInfo",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:278",
+      "code": "public async Task<ActionResult<BookmarkInfoDto>> GetBookmarkInfo(int seriesId, bool includeDimensions = true)"
+    },
+    {
+      "n": 33,
+      "from": 32,
+      "what": "caches the user's bookmarked pages of the series",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:281",
+      "code": "var totalPages = await cacheService.CacheBookmarkForSeries(UserId, seriesId, ct);",
+      "end": {
+        "kind": "database",
+        "detail": "AppUserBookmark (CacheService.CacheBookmarkForSeries; also writes cached page files)"
+      }
+    },
+    {
+      "n": 34,
+      "from": 32,
+      "what": "reads the series",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:282",
+      "code": "var series = await unitOfWork.SeriesRepository.GetSeriesByIdAsync(seriesId, SeriesIncludes.None, ct);",
+      "end": {
+        "kind": "database",
+        "detail": "Series (SeriesRepository.GetSeriesByIdAsync)"
+      }
+    },
+    {
+      "n": 35,
+      "from": 29,
+      "what": "loads the user's progress of the chapter (forkJoin)",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1161",
+      "code": "progress: this.readerService.getProgress(this.chapterId()),",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1138",
+          "code": "if (this.bookmarkMode()) {"
+        }
+      ]
+    },
+    {
+      "n": 36,
+      "from": 35,
+      "what": "GET api/reader/get-progress?chapterId=",
+      "at": "UI/Web/src/app/_services/reader.service.ts:187",
+      "code": "return this.httpClient.get<ProgressBookmark>(this.baseUrl + 'reader/get-progress?chapterId=' + chapterId);"
+    },
+    {
+      "n": 37,
+      "from": 36,
+      "what": "controller action GetProgress",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:662",
+      "code": "public async Task<ActionResult<ProgressDto>> GetProgress(int chapterId)"
+    },
+    {
+      "n": 38,
+      "from": 37,
+      "what": "reads the user's progress row for the chapter",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:665",
+      "code": "var progress = await unitOfWork.AppUserProgressRepository.GetUserProgressDtoAsync(chapterId, UserId, ct);",
+      "end": {
+        "kind": "database",
+        "detail": "AppUserProgress (AppUserProgressRepository.GetUserProgressDtoAsync)"
+      }
+    },
+    {
+      "n": 39,
+      "from": 29,
+      "what": "loads the chapter info with page dimensions (forkJoin)",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1162",
+      "code": "chapterInfo: this.readerService.getChapterInfo(this.chapterId(), true),",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1138",
+          "code": "if (this.bookmarkMode()) {"
+        }
+      ]
+    },
+    {
+      "n": 40,
+      "from": 39,
+      "what": "GET api/reader/chapter-info?chapterId=&includeDimensions=",
+      "at": "UI/Web/src/app/_services/reader.service.ts:203",
+      "code": "return this.httpClient.get<ChapterInfo>(this.baseUrl + 'reader/chapter-info?chapterId=' + chapterId + '&includeDimensions=' + includeDimensions);"
+    },
+    {
+      "n": 41,
+      "from": 40,
+      "what": "controller action GetChapterInfo",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:200",
+      "code": "public async Task<ActionResult<ChapterInfoDto>> GetChapterInfo(int chapterId, bool extractPdf = false, bool includeDimensions = false)"
+    },
+    {
+      "n": 42,
+      "from": 41,
+      "what": "extracts the chapter's files to the cache folder if not cached yet (CacheService.Ensure)",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:204",
+      "code": "var chapter = await cacheService.Ensure(chapterId, extractPdf, ct);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/ReaderController.cs:203",
+          "code": "if (chapterId <= 0) return Ok(null); // This can happen occasionally from UI, we should just ignore"
+        }
+      ]
+    },
+    {
+      "n": 43,
+      "from": 42,
+      "what": "reads the chapter and its files",
+      "at": "Kavita.Services/CacheService.cs:143",
+      "code": "var chapter = await unitOfWork.ChapterRepository.GetChapterAsync(chapterId, ct: ct);",
+      "end": {
+        "kind": "database",
+        "detail": "Chapter with Files (ChapterRepository.GetChapterAsync)"
+      }
+    },
+    {
+      "n": 44,
+      "from": 42,
+      "what": "extracts the archive/images into the cache directory",
+      "at": "Kavita.Services/CacheService.cs:176",
+      "code": "await ExtractChapterFiles(extractPath, files, extractPdfToImages);",
+      "end": {
+        "kind": "unknown",
+        "detail": "writes extracted pages to the cache directory on disk (file system, not a database); extraction code not walked"
+      }
+    },
+    {
+      "n": 45,
+      "from": 41,
+      "what": "reads the chapter info DTO",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:207",
+      "code": "var dto = await unitOfWork.ChapterRepository.GetChapterInfoDtoAsync(chapterId, ct);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/ReaderController.cs:205",
+          "code": "if (chapter == null) return NotFound();"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Chapter, Volume, Series (ChapterRepository.GetChapterInfoDtoAsync)"
+      }
+    },
+    {
+      "n": 46,
+      "from": 41,
+      "what": "reads the series DTO with the user's progress",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:211",
+      "code": "var series = await unitOfWork.SeriesRepository.GetSeriesDtoByIdAsync(dto.SeriesId, UserId, ct);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/ReaderController.cs:208",
+          "code": "if (dto == null) return BadRequest(await localizationService.TranslateAsync(UserId, \"perform-scan\"));"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Series (SeriesRepository.GetSeriesDtoByIdAsync)"
+      }
+    },
+    {
+      "n": 47,
+      "from": 41,
+      "what": "reads the publication status",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:214",
+      "code": "var publicationStatus = await unitOfWork.SeriesRepository.GetPublicationStatusAsync(dto.SeriesId, ct);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/ReaderController.cs:212",
+          "code": "if (series == null) return NotFound();"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "SeriesMetadata (SeriesRepository.GetPublicationStatusAsync)"
+      }
+    },
+    {
+      "n": 48,
+      "from": 29,
+      "what": "loads the chapter's bookmarks (forkJoin)",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1163",
+      "code": "bookmarks: this.readerService.getBookmarks(this.chapterId()),",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1138",
+          "code": "if (this.bookmarkMode()) {"
+        }
+      ]
+    },
+    {
+      "n": 49,
+      "from": 48,
+      "what": "GET api/reader/chapter-bookmarks?chapterId=",
+      "at": "UI/Web/src/app/_services/reader.service.ts:160",
+      "code": "return this.httpClient.get<PageBookmark[]>(this.baseUrl + 'reader/chapter-bookmarks?chapterId=' + chapterId);"
+    },
+    {
+      "n": 50,
+      "from": 49,
+      "what": "controller action GetBookmarks",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:731",
+      "code": "public async Task<ActionResult<IEnumerable<BookmarkDto>>> GetBookmarks(int chapterId)"
+    },
+    {
+      "n": 51,
+      "from": 50,
+      "what": "reads the user's bookmarks of the chapter",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:734",
+      "code": "return Ok(await unitOfWork.UserRepository.GetBookmarkDtosForChapter(UserId, chapterId, ct));",
+      "end": {
+        "kind": "database",
+        "detail": "AppUserBookmark (UserRepository.GetBookmarkDtosForChapter)"
+      }
+    },
+    {
+      "n": 52,
+      "from": 35,
+      "what": "after the forkJoin succeeds: asks for the next chapter id",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1229",
+      "code": "this.readerService.getNextChapter(this.seriesId, this.volumeId, this.chapterId(), this.readingListId).subscribe(chapterId => {",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1138",
+          "code": "if (this.bookmarkMode()) {"
+        }
+      ]
+    },
+    {
+      "n": 53,
+      "from": 52,
+      "what": "GET api/reader/next-chapter?seriesId=&volumeId=&currentChapterId=",
+      "at": "UI/Web/src/app/_services/reader.service.ts:247",
+      "code": "return this.httpClient.get<number>(this.baseUrl + 'reader/next-chapter?seriesId=' + seriesId + '&volumeId=' + volumeId + '&currentChapterId=' + currentChapterId);"
+    },
+    {
+      "n": 54,
+      "from": 53,
+      "what": "controller action GetNextChapter",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:967",
+      "code": "public async Task<ActionResult<int>> GetNextChapter(int seriesId, int volumeId, int currentChapterId)"
+    },
+    {
+      "n": 55,
+      "from": 54,
+      "what": "readerService.GetNextChapterIdAsync",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:970",
+      "code": "return Ok(await readerService.GetNextChapterIdAsync(seriesId, volumeId, currentChapterId, UserId, ct));"
+    },
+    {
+      "n": 56,
+      "from": 55,
+      "what": "reads the volumes and chapters of the series",
+      "at": "Kavita.Services/Reading/ReaderService.cs:359",
+      "code": "var volumes = await unitOfWork.VolumeRepository.GetVolumesDtoAsync(seriesId, userId, ct: ct);",
+      "end": {
+        "kind": "database",
+        "detail": "Volume and Chapter (VolumeRepository.GetVolumesDtoAsync)"
+      }
+    },
+    {
+      "n": 57,
+      "from": 52,
+      "what": "fetches the first page of the next chapter as an image",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1235",
+      "code": "this.getPage(0, this.nextChapterId);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1231",
+          "code": "if (chapterId === CHAPTER_ID_DOESNT_EXIST || chapterId === this.chapterId()) {"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "image request GET api/reader/image for the next chapter's page 0; same code as the current-page image request walked below"
+      }
+    },
+    {
+      "n": 58,
+      "from": 35,
+      "what": "after the forkJoin succeeds: asks for the previous chapter id",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1239",
+      "code": "this.readerService.getPrevChapter(this.seriesId, this.volumeId, this.chapterId(), this.readingListId).subscribe(chapterId => {",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1138",
+          "code": "if (this.bookmarkMode()) {"
+        }
+      ]
+    },
+    {
+      "n": 59,
+      "from": 58,
+      "what": "GET api/reader/prev-chapter?seriesId=&volumeId=&currentChapterId=",
+      "at": "UI/Web/src/app/_services/reader.service.ts:254",
+      "code": "return this.httpClient.get<number>(this.baseUrl + 'reader/prev-chapter?seriesId=' + seriesId + '&volumeId=' + volumeId + '&currentChapterId=' + currentChapterId);"
+    },
+    {
+      "n": 60,
+      "from": 59,
+      "what": "controller action GetPreviousChapter",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:987",
+      "code": "public async Task<ActionResult<int>> GetPreviousChapter(int seriesId, int volumeId, int currentChapterId)"
+    },
+    {
+      "n": 61,
+      "from": 60,
+      "what": "readerService.GetPrevChapterIdAsync",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:990",
+      "code": "return Ok(await readerService.GetPrevChapterIdAsync(seriesId, volumeId, currentChapterId, UserId, ct));"
+    },
+    {
+      "n": 62,
+      "from": 61,
+      "what": "reads the volumes and chapters of the series",
+      "at": "Kavita.Services/Reading/ReaderService.cs:451",
+      "code": "var volumes = (await unitOfWork.VolumeRepository.GetVolumesDtoAsync(seriesId, userId, ct: ct)).ToList();",
+      "end": {
+        "kind": "database",
+        "detail": "Volume and Chapter (VolumeRepository.GetVolumesDtoAsync)"
+      }
+    },
+    {
+      "n": 63,
+      "from": 58,
+      "what": "fetches the last page of the previous chapter as an image",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1245",
+      "code": "this.getPage(1000000, this.prevChapterId);",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1241",
+          "code": "if (chapterId === CHAPTER_ID_DOESNT_EXIST || chapterId === this.chapterId()) {"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "image request GET api/reader/image for the previous chapter's last page; same code as the current-page image request walked below"
+      }
+    },
+    {
+      "n": 64,
+      "from": 35,
+      "what": "renders the current page",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1249",
+      "code": "this.render();",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1138",
+          "code": "if (this.bookmarkMode()) {"
+        }
+      ]
+    },
+    {
+      "n": 65,
+      "from": 64,
+      "what": "render() loads the page unless the reader is in webtoon mode",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1274",
+      "code": "this.loadPage();",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1271",
+          "code": "if (this.isReaderModeWebtoon()) {"
+        }
+      ]
+    },
+    {
+      "n": 66,
+      "from": 65,
+      "what": "loadPage sets the canvas image",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1711",
+      "code": "this.setCanvasImage();"
+    },
+    {
+      "n": 67,
+      "from": 66,
+      "what": "getPage creates an Image whose src is the page URL",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1542",
+      "code": "this.canvasImage = this.getPage(this.pageNum(), this.chapterId(), this.layoutMode() !== LayoutMode.Single);"
+    },
+    {
+      "n": 68,
+      "from": 67,
+      "what": "the new Image requests the page",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1058",
+      "code": "img.src = this.getPageUrl(pageNum, chapterId);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1056",
+          "code": "if (!img || forceNew) {"
+        }
+      ]
+    },
+    {
+      "n": 69,
+      "from": 68,
+      "what": "GET api/reader/image?chapterId=&apiKey=&page=",
+      "at": "UI/Web/src/app/_services/reader.service.ts:191",
+      "code": "return `${this.baseUrl}reader/image?chapterId=${chapterId}&apiKey=${this.encodedKey}&page=${page}`;"
+    },
+    {
+      "n": 70,
+      "from": 69,
+      "what": "controller action GetImage",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:92",
+      "code": "public async Task<ActionResult> GetImage(int chapterId, int page, string apiKey, bool extractPdf = false)"
+    },
+    {
+      "n": 71,
+      "from": 70,
+      "what": "extracts the chapter into the cache folder if needed (CacheService.Ensure)",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:99",
+      "code": "var chapter = await cacheService.Ensure(chapterId, extractPdf, ct);"
+    },
+    {
+      "n": 72,
+      "from": 71,
+      "what": "reads the chapter and its files",
+      "at": "Kavita.Services/CacheService.cs:143",
+      "code": "var chapter = await unitOfWork.ChapterRepository.GetChapterAsync(chapterId, ct: ct);",
+      "end": {
+        "kind": "database",
+        "detail": "Chapter with Files (ChapterRepository.GetChapterAsync)"
+      }
+    },
+    {
+      "n": 73,
+      "from": 70,
+      "what": "sends the cached page file with caching headers",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:103",
+      "code": "return CachedFile(path, maxAge: TimeSpan.FromHours(1).Seconds);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/ReaderController.cs:100",
+          "code": "if (chapter == null) return NotFound();"
+        }
+      ],
+      "end": {
+        "kind": "unknown",
+        "detail": "returns the cached page image file from the cache directory on disk (CachedFile); not a database read"
+      }
+    },
+    {
+      "n": 74,
+      "from": 35,
+      "what": "when the forkJoin fails, closes the reader after 200 ms",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1252",
+      "code": "this.closeReader();",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1250",
+          "code": "}, () => {"
+        }
+      ],
+      "end": {
+        "kind": "screen",
+        "detail": "the series detail screen (readerService.closeReader navigates back)"
+      }
+    }
+  ],
+  "exits": [
+    {
+      "what": "404 from the [ChapterAccess]/[SeriesAccess] filters when the user has no access to the entity",
+      "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:135",
+      "code": "context.Result = new NotFoundResult();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:133",
+          "code": "if (!hasAccess)"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:115",
+          "code": "if (alwaysAllowAdmin && user.IsInRole(PolicyConstants.AdminRole)) return;"
+        }
+      ]
+    },
+    {
+      "what": "404 from the access filter when the request has no entity id",
+      "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:125",
+      "code": "context.Result = new NotFoundResult();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:123",
+          "code": "if (failOnMissing)"
+        },
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:121",
+          "code": "if (entityId == null)"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:115",
+          "code": "if (alwaysAllowAdmin && user.IsInRole(PolicyConstants.AdminRole)) return;"
+        }
+      ]
+    },
+    {
+      "what": "404 when the chapter cannot be loaded (chapter-info)",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:205",
+      "code": "if (chapter == null) return NotFound();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/ReaderController.cs:205",
+          "code": "if (chapter == null) return NotFound();"
+        }
+      ]
+    },
+    {
+      "what": "400 when the chapter has no info row (series needs a scan)",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:208",
+      "code": "if (dto == null) return BadRequest(await localizationService.TranslateAsync(UserId, \"perform-scan\"));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/ReaderController.cs:208",
+          "code": "if (dto == null) return BadRequest(await localizationService.TranslateAsync(UserId, \"perform-scan\"));"
+        }
+      ]
+    },
+    {
+      "what": "404 when the series DTO is missing (chapter-info)",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:212",
+      "code": "if (series == null) return NotFound();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/ReaderController.cs:212",
+          "code": "if (series == null) return NotFound();"
+        }
+      ]
+    },
+    {
+      "what": "404 when the publication status is missing (chapter-info)",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:215",
+      "code": "if (publicationStatus == null) return NotFound();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/ReaderController.cs:215",
+          "code": "if (publicationStatus == null) return NotFound();"
+        }
+      ]
+    },
+    {
+      "what": "404 when the chapter cannot be loaded (image)",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:100",
+      "code": "if (chapter == null) return NotFound();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/ReaderController.cs:100",
+          "code": "if (chapter == null) return NotFound();"
+        }
+      ]
+    },
+    {
+      "what": "rethrows the error after cleaning the cached chapter when the image request fails",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:108",
+      "code": "throw;",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "Kavita.Server/Controllers/ReaderController.cs:105",
+          "code": "catch (Exception)"
+        }
+      ]
+    },
+    {
+      "what": "404 when the cached page file does not exist (CachedFile)",
+      "at": "Kavita.Server/Controllers/BaseApiController.cs:72",
+      "code": "if (string.IsNullOrEmpty(path) || !System.IO.File.Exists(path)) return NotFound();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/BaseApiController.cs:72",
+          "code": "if (string.IsNullOrEmpty(path) || !System.IO.File.Exists(path)) return NotFound();"
+        }
+      ]
+    },
+    {
+      "what": "throws KavitaException when a chapter file is missing on disk while extracting",
+      "at": "Kavita.Services/CacheService.cs:233",
+      "code": "throw new KavitaException(await localizationService.TranslateAsync(\"file-doesnt-exist\"));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Services/CacheService.cs:230",
+          "code": "if (!directoryService.FileSystem.Path.Exists(file.FilePath))"
+        },
+        {
+          "kind": "loop",
+          "at": "Kavita.Services/CacheService.cs:223",
+          "code": "foreach (var file in files)"
+        }
+      ]
+    },
+    {
+      "what": "400 when the library does not exist (has-reading-progress)",
+      "at": "Kavita.Server/Controllers/UsersController.cs:111",
+      "code": "if (library == null) return BadRequest(await localizationService.TranslateAsync(UserId, \"library-doesnt-exist\"));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/UsersController.cs:111",
+          "code": "if (library == null) return BadRequest(await localizationService.TranslateAsync(UserId, \"library-doesnt-exist\"));"
+        }
+      ]
+    },
+    {
+      "what": "redirects to /home when the library id is not a number (library guard)",
+      "at": "UI/Web/src/app/_guards/library-access.guard.ts:17",
+      "code": "return of(router.parseUrl('/home'));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/_guards/library-access.guard.ts:16",
+          "code": "if (isNaN(libraryId)) {"
+        }
+      ]
+    },
+    {
+      "what": "redirects to /home when the user has no access to the library",
+      "at": "UI/Web/src/app/_guards/library-access.guard.ts:21",
+      "code": "map(hasAccess => hasAccess || router.parseUrl('/home'))"
+    },
+    {
+      "what": "redirects to /home when the library id is missing or 0",
+      "at": "UI/Web/src/app/_resolvers/library.resolver.ts:20",
+      "code": "return of(router.parseUrl('/home'));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/_resolvers/library.resolver.ts:18",
+          "code": "if (!libId || libId === '0') {"
+        }
+      ]
+    },
+    {
+      "what": "redirects to /home when loading the library fails",
+      "at": "UI/Web/src/app/_resolvers/library.resolver.ts:25",
+      "code": "return of(router.parseUrl('/home'));",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "UI/Web/src/app/_resolvers/library.resolver.ts:24",
+          "code": "catchError(() => {"
+        }
+      ]
+    },
+    {
+      "what": "redirects to the login screen when the user is not signed in (auth guard)",
+      "at": "UI/Web/src/app/_guards/auth.guard.ts:25",
+      "code": "};",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "UI/Web/src/app/_guards/auth.guard.ts:17",
+          "code": "if (accountService.isLoggedIn()) return true;"
+        }
+      ]
+    },
+    {
+      "what": "goes to /home when the route lacks a library, series or chapter id",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:752",
+      "code": "this.router.navigateByUrl('/home');",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:751",
+          "code": "if (libraryId === null || seriesId === null || chapterId === null) {"
+        }
+      ]
+    },
+    {
+      "what": "goes to /home when the reading profile resolver gave nothing",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:766",
+      "code": "this.router.navigateByUrl('/home');",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:765",
+          "code": "if (data['readingProfile'] == null) {"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "kind": "screen",
+      "to": "Home screen",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:752",
+      "code": "this.router.navigateByUrl('/home');",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:751",
+          "code": "if (libraryId === null || seriesId === null || chapterId === null) {"
+        }
+      ]
+    },
+    {
+      "kind": "screen",
+      "to": "Home screen",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:766",
+      "code": "this.router.navigateByUrl('/home');",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:765",
+          "code": "if (data['readingProfile'] == null) {"
+        }
+      ]
+    },
+    {
+      "kind": "screen",
+      "to": "Series detail screen (closeReader)",
+      "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1252",
+      "code": "this.closeReader();",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:1250",
+          "code": "}, () => {"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Route: library/:libraryId (authGuard, libraryAccessGuard, libraryResolver) -> child series/:seriesId/manga (app-routing.module.ts:118) -> lazy manga-reader.router.module.ts with path ':chapterId' (line 7) and resolver readingProfileResolver. Guards and resolvers run before ngOnInit, so they are steps with no parent.",
+    "Route variant ':chapterId/list/:listId' (line 15) uses the same component; the component reads readingListId from the query string, not from :listId. With a reading list the next/prev calls go to api/readinglist/next-chapter and prev-chapter instead (reader.service.ts:245/252); not walked.",
+    "Also in ngOnInit: the toObservable(persistableSettings) pipe (796) that auto-saves the profile via updateImplicit after the settings change (the first value is skipped, so it does not call at open), and the currentImage$ focus subscription (811); not followed.",
+    "The constructor hides the nav bars, registers key bindings and settings effects (registerSettingsEffects); no requests. ngAfterViewInit adds scroll listeners only.",
+    "init(true) is also reached by chapter changes with other arguments; this key covers the first load. setPageNum (1214) can request chapter info of the next/prev chapter near the ends, only after nextChapterId is known; not part of the first load and not followed.",
+    "In bookmark mode the forkJoin branch is skipped (return at 1157); the bookmark branch loads the bookmark info instead.",
+    "Persisting progress (saveProgress) is only called on page change (or when the chapter has one page, line 1187); not walked.",
+    "Frontend base URL is environment.apiUrl ('.../api/'), so paths are under /api. The image URL carries the user's image auth key in apiKey."
+  ]
+}

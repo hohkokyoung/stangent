@@ -1,9 +1,9 @@
 ---
 phase: 1a
 name: csharp-map
-status: done
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1 }
-provides: { code-graph: 3, impact-report: 5 }
+status: needs review
+consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1 }
+provides: { code-graph: 7, impact-report: 5 }
 ---
 
 # Phase 1a · C# map
@@ -284,6 +284,30 @@ The line-level table above and the exact check were re-run after these fixes. eS
 - **Consumers:** 1b (consumes `code-graph` v2), marked `needs review` per D20; 1c, which made the change.
   No phase consumes `impact-report` yet; the `/stangent:impact` command shows its Markdown and was updated with it.
 
+### Reopened 2026-11-04 by the overhaul, 1.1 · line citations (D115)
+- **Built:** `stangent graph where <symbol>` and `SymbolLines.Where`. The lines were already stored for every point, so nothing was
+  rebuilt. Builds now record the files on the map that differ from the commit (`meta.dirtyFiles`), and a citation is refused for those files.
+- **What each kind of symbol answers,** and the gaps: `docs/code-graph.md`, "Line citations".
+- **Results:** tests on the shop fixture cover a C# method, a TypeScript method, a real partial type across two files, a dirty tree
+  and the same tree committed. A citation fills an `evidence` record that passes its validator.
+- **Contract:** `code-graph` is bumped once for 1.1 and 1.2 together; see the next note.
+- **Impact on other phases:** 2.3 reads this for `repo/path:lines`. Nothing else changes: `BuildStats` only gains a field.
+
+### Fresh check of 1.1 and 1.2, and the fix round, 2026-11-04 (D115)
+- **Found: an export with no `dirtyFiles` read as clean, citing wrong lines.** Fixed: the key is always written, and missing means don't know, with no citation.
+- **Found: a gitignored compiled file was cited as matching the commit.** Fixed: `meta.notInCommit` from `git ls-tree`, no citation, a `note` saying why.
+- **Found: a tracked `*.spec.ts` link with no target crashed `graph build`.** Fixed: an unreadable spec or folder is ❓; a folder named `.spec.ts` was already fine, now tested.
+- **Found: a spec could link to a screen in another app.** Fixed: inside a frontend only that frontend; outside, only when exactly one matches; ports stay ignored, a known gap.
+- **Found: `/series/%61dd` linked to `/series/:id`.** Fixed: a percent-encoded path is ❓.
+- **Found, not fixed:** bug proof's own read (`AppSession.cs:34`) still throws on such a link (no consumer code changes in this round); the `graph screen-tests` span name has a hyphen, so telemetry drops its event.
+
+### Reopened 2026-11-04 by the overhaul, 1.2 · `code-graph` v3 → v4 (D115)
+- **`code-graph` v4:** the `opens-screen` line kind, stored apart (`meta.screenTests`), the `playwright-specs` detector and its ❓, and
+  `meta.dirtyFiles` from 1.1, and `meta.notInCommit`. `meta.schemaVersion` stays 3: no table changed. `screenTests` is written only when it has something in it; the other two always are.
+- **Details and measurements:** `phases/1b-frontend-api.md`.
+- **Consumers (D20):** 1b, 1c, 1d, 2a, 2b, 2c and 3 were marked `needs review`, then checked and moved to v4 (each phase file says so).
+  None of their code changed for the contract. `impact-report` is unchanged: v5.
+
 ### Reopened 2026-10-20 by Phase 2b · `impact-report` v4 → v5
 - **`impact-report` v5:** the reserved `requirements` array became `fsdSections`: the FSD sections a change reaches
   through the reference pages whose statements cite a changed or affected symbol, with their link states and whether
@@ -291,3 +315,21 @@ The line-level table above and the exact check were re-run after these fixes. eS
   spec layer supplies (`ImpactAnalyzer.FsdSections`); the graph itself knows nothing about pages or the FSD.
   `--expand fsdSections` lists them all; the Markdown has a "📄 FSD sections" block.
 - **Consumers:** 2a and 2b, which consumed v4 and moved to v5 with the change. No other phase consumes it yet.
+
+Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions` v2 → v3. By grep, nothing here reads telemetry, and results are read by name, so `components` beside `result` changes nothing. Moved.
+
+## Reopened by rebuild layer 2 (2026-11-08): `code-graph` v5
+
+What flows need (D154), found missing on Sonarr and Kavita and fixed on the owner's go (`phases/r2-graph-for-flows.md`, G1–G8):
+an app's own verb attributes give real verbs and templates (Sonarr's `ANY` endpoints became `POST`/`GET`/`PUT`/`DELETE`, so
+**endpoint ids changed**); overrides of `[NonAction]` methods aren't actions; outside calls through Flurl and app-owned clients are
+facts or ❓; EF entities reached through navigations and `Entity<T>("Name")` table maps are tables; new lines `writes` and `reads`
+(not walked); facts `auth`, `fallback-auth`, `guard`, `ui-event`, `rule`; a new detector `validation`; a React component's own
+handlers are points (`Component.handler`) that the component `uses`, so a screen reaches its calls one step deeper.
+Every consumer of `code-graph` is `needs review` in `roadmap.md` (D20); none was changed.
+Same day, after its fresh check (D164): F1–F10 fixed, tables from EF's snapshot first, and every build cross-checks endpoints with
+OpenAPI files and tables with the snapshot (`.stangent/graph-crosscheck.json`); still v5.
+
+## code-graph v7 (2026-11-17, the truth map's layer 3, D370)
+
+`template-file` points and walked 🟡 `sends-template` lines from the `template-files` detector (`docs/code-graph.md`, "Template files"). Consumers still on v6 (r2, r3, 4) are marked `needs review` in `roadmap.md` (D20); the truth map, which made the change, consumes v7.

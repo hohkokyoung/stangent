@@ -1,0 +1,183 @@
+{
+  "codeTitle": "ANY /api/v3/EpisodeFile",
+  "entry": "endpoint:Sonarr.Api.V3|ANY /api/v3/EpisodeFile",
+  "generated": {
+    "bundleHash": "3178a147b2fce94547344d53265f1d5c83afc58d98c52dd852c80f4b58f3f1af",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 32193,
+      "cutOff": 22,
+      "depth": 4,
+      "points": 103
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 18731,
+      "calls": 1,
+      "costUsd": 0.078423,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4013,
+      "outputTokens": 332
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 15241,
+      "calls": 1,
+      "costUsd": 0.089444,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 14588,
+      "outputTokens": 2820
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|ANY /api/v3/EpisodeFile",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.EpisodeFiles.EpisodeFileController.SetQuality(Sonarr.Api.V3.EpisodeFiles.EpisodeFileResource)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.IMediaFileService.Update(NzbDrone.Core.MediaFiles.EpisodeFile)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/EpisodeFile"
+        ],
+        "id": "A1",
+        "text": "Update an episode file by id (PUT, JSON body): sets its quality, and optionally its scene name and release group, then saves it."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.EpisodeFiles.EpisodeFileController.DeleteEpisodeFile(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.ISeriesService.GetSeries(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.IDeleteMediaFiles.DeleteEpisodeFile(NzbDrone.Core.Tv.Series,NzbDrone.Core.MediaFiles.EpisodeFile)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/EpisodeFile"
+        ],
+        "id": "A2",
+        "text": "Delete an episode file by id: looks up the file and its series, then deletes the file through the deletion service."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.EpisodeFiles.EpisodeFileController.SetQuality(Sonarr.Api.V3.EpisodeFiles.EpisodeFileResource)"
+        ],
+        "id": "R1",
+        "text": "When updating, the scene name is applied only if it is provided and is a valid scene title."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Parser.SceneChecker.IsSceneTitle(System.String)"
+        ],
+        "id": "R2",
+        "text": "A scene title must contain a dot, contain no spaces, and parse to a release group, a known quality and a non-blank series title."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.EpisodeFiles.EpisodeFileController.SetQuality(Sonarr.Api.V3.EpisodeFiles.EpisodeFileResource)"
+        ],
+        "id": "R3",
+        "text": "The release group is applied on update only when provided."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.EpisodeFiles.EpisodeFileController.DeleteEpisodeFile(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Exceptions.NzbDroneClientException.#ctor(System.Net.HttpStatusCode,System.String)"
+        ],
+        "id": "R4",
+        "text": "Deleting a file that is not found returns 404 with \"Episode file not found\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.MediaFileDeletionService.DeleteEpisodeFile(NzbDrone.Core.Tv.Series,NzbDrone.Core.MediaFiles.EpisodeFile)"
+        ],
+        "id": "R5",
+        "text": "Deletion fails with 409 Conflict if the series' root folder does not exist or has no subdirectories."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.MediaFileDeletionService.DeleteEpisodeFile(NzbDrone.Core.Tv.Series,NzbDrone.Core.MediaFiles.EpisodeFile)"
+        ],
+        "id": "R6",
+        "text": "If the disk file cannot be moved to the recycle bin, deletion fails with 500 \"Unable to delete episode file\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R7",
+        "text": "On PUT, an id of 0 in the body is filled from the route id; on POST/PUT resources are validated, and the id is validated for id-based actions unless validation is skipped."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "A GET by id returns the episode file resource with 200 OK, or 404 Not Found when the file is not found."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.Accepted(System.Int32)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.EpisodeFiles.EpisodeFileController.SetQuality(Sonarr.Api.V3.EpisodeFiles.EpisodeFileResource)"
+        ],
+        "id": "S2",
+        "text": "After a quality update, the response is 202 Accepted pointing at the updated episode file resource."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.IMediaFileService.Update(NzbDrone.Core.MediaFiles.EpisodeFile)",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.EpisodeFiles.EpisodeFileController.SetQuality(Sonarr.Api.V3.EpisodeFiles.EpisodeFileResource)"
+        ],
+        "id": "E1",
+        "text": "Updating saves the changed episode file record."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.MediaFileDeletionService.DeleteEpisodeFile(NzbDrone.Core.Tv.Series,NzbDrone.Core.MediaFiles.EpisodeFile)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.IRecycleBinProvider.DeleteFile(System.String,System.String)"
+        ],
+        "id": "E2",
+        "text": "Deleting moves the file on disk, if present, to the recycle bin."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.MediaFileDeletionService.DeleteEpisodeFile(NzbDrone.Core.Tv.Series,NzbDrone.Core.MediaFiles.EpisodeFile)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.IMediaFileService.Delete(NzbDrone.Core.MediaFiles.EpisodeFile,NzbDrone.Core.MediaFiles.DeleteMediaFileReason)"
+        ],
+        "id": "E3",
+        "text": "Deleting removes the episode file record from the database with reason Manual, even if the disk file was already gone."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.MediaFileDeletionService.DeleteEpisodeFile(NzbDrone.Core.Tv.Series,NzbDrone.Core.MediaFiles.EpisodeFile)",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Events.IEventAggregator.PublishEvent``1(``0)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.HandleAsync(NzbDrone.Core.MediaFiles.Events.DeleteCompletedEvent)"
+        ],
+        "id": "E4",
+        "text": "After deletion a DeleteCompletedEvent is published, which the notification service handles."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "E5",
+        "text": "Calls to deprecated endpoints are logged as a warning and get a \"Deprecation: true\" response header."
+      }
+    ]
+  },
+  "title": "Episode File API",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

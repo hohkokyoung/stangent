@@ -1,3 +1,4 @@
+using Stangent.Core.State;
 using System.Net;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -101,6 +102,13 @@ public class BugProofTests
 
     static string AssertFailure(int line = 8) => TestReportTests.Trx((TestName, "Failed", "Assert.Throws() Failure: No exception was thrown",
         $"   at Shop.Tests.OrderTests.Rejects_orders_over_100() in /home/ci/shop/{TestFile}:line {line}"));
+
+    [Fact]
+    public void Ai_enabled_false_stops_the_proof_before_any_call()   // D24: the one setting D381 kept
+    {
+        using var p = new Proof("ai:\n  enabled: false\n");
+        Assert.Equal("ai_disabled", Assert.Throws<StangentException>(() => p.Prepare()).Code);
+    }
 
     [Fact]
     public void The_input_names_the_test_project_that_covers_the_code_and_the_commands()
@@ -485,6 +493,20 @@ public class BugProofTests
         p.Check(Written());
         Assert.Equal("reproduced", (string?)p.Record["outcome"]);
         return p;
+    }
+
+    [Fact]
+    public void The_proof_s_outcome_and_a_person_s_call_are_in_the_history()
+    {
+        using var p = Reproduced();
+        Assert.Equal([(null, "reproduced")], StateChanges.History(p.App.Root, StateKinds.Proof, Key).Select(m => (m.From, m.To)));
+        Assert.Equal(["done"], StateChanges.History(p.App.Root, StateKinds.TicketStep, $"{Key}/prove").Select(m => m.To));
+
+        BugProof.Confirm(p.App.Repo, Key, "Pat");
+        BugProof.Confirm(p.App.Repo, Key, "Lee");   // questionable, allowed: a second person's name replaces the first's
+        var calls = StateChanges.History(p.App.Root, StateKinds.ProofConfirmation, Key);
+        Assert.Equal([("unconfirmed", "confirmed", "Pat"), ("confirmed", "confirmed", "Lee")], calls.Select(m => (m.From, m.To, m.Who.Name)));
+        Assert.All(calls, m => Assert.Equal(StateActor.PersonKind, m.Who.Kind));
     }
 
     static string FailureOn(string message, int line = 8) => TestReportTests.Trx((TestName, "Failed", message,
@@ -1270,7 +1292,7 @@ public class BugProofTests
     }
 
     /// <summary>Stands in for dotnet and npx: canned reports written where the command asks for them.</summary>
-    sealed class FakeRunner : ICommandRunner
+    internal sealed class FakeRunner : ICommandRunner
     {
         public List<string> Commands { get; } = [];
         public Queue<string> Tests { get; } = new();

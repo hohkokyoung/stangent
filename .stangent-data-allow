@@ -1,0 +1,2 @@
+# Documents allowed in this repo (`stangent data check`, D113). One per line: <path> # <reason>. Exact paths only.
+benchmark/fsd/sonarr/sonarr-fsd.docx # the benchmark's planted FSD, written for Sonarr's open-source code; no client text

@@ -1,0 +1,129 @@
+{
+  "codeTitle": "MoveSeriesService.Execute(MoveSeriesCommand)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Tv.MoveSeriesService.Execute(NzbDrone.Core.Tv.Commands.MoveSeriesCommand)",
+  "generated": {
+    "bundleHash": "492d03d5c32eaac1eeb5338300f2e2e0f8bc728caf5a5fb637ecd55e51249384",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 17399,
+      "cutOff": 2,
+      "depth": 4,
+      "points": 57
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 10953,
+      "calls": 1,
+      "costUsd": 0.046191,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4331,
+      "outputTokens": 220
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 8025,
+      "calls": 1,
+      "costUsd": 0.05365,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 12738,
+      "outputTokens": 2127
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Tv.MoveSeriesService.Execute(NzbDrone.Core.Tv.Commands.MoveSeriesCommand)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.MoveSeriesService.Execute(NzbDrone.Core.Tv.Commands.MoveSeriesCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.ISeriesService.GetSeries(System.Int32)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.MoveSeriesService.MoveSingleSeries(NzbDrone.Core.Tv.Series,System.String,System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})"
+        ],
+        "id": "A1",
+        "text": "Executing a move-series command loads the series by the command's series id and moves it from the command's source path to its destination path."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.MoveSeriesService.MoveSingleSeries(NzbDrone.Core.Tv.Series,System.String,System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.PathExtensions.IsPathValid(System.String,NzbDrone.Common.Disk.PathValidationType)"
+        ],
+        "id": "R1",
+        "text": "If the source path is not a valid path for the current OS, the series is not moved, a warning is logged, and the series path is set to the destination path."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.MoveSeriesService.MoveSingleSeries(NzbDrone.Core.Tv.Series,System.String,System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.FolderExists(System.String)"
+        ],
+        "id": "R2",
+        "text": "If the source folder does not exist, no files are moved and the series path is updated to the destination path, whether or not the destination folder exists. A debug message is logged if it exists, a warning if not."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.MoveSeriesService.MoveSingleSeries(NzbDrone.Core.Tv.Series,System.String,System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.PathExtensions.PathEquals(System.String,System.String,System.Nullable{System.StringComparison})"
+        ],
+        "id": "R3",
+        "text": "If the source and destination paths are equal, nothing is moved and the series path is set to the destination path."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.MoveSeriesService.MoveSingleSeries(NzbDrone.Core.Tv.Series,System.String,System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.MoveSeriesService.UpdatePath(System.Int32,System.String)"
+        ],
+        "id": "R4",
+        "text": "If the move fails with an IO error, the error is logged and the series path is reset to the source path. Any other exception also resets the path to the source and is rethrown."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.MoveSeriesService.UpdatePath(System.Int32,System.String)"
+        ],
+        "id": "R5",
+        "text": "Each path update sets the series Path to the given path and clears its PendingPath."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.MoveSeriesService.MoveSingleSeries(NzbDrone.Core.Tv.Series,System.String,System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.CreateFolder(System.String)",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskTransferService.TransferFolder(System.String,System.String,NzbDrone.Common.Disk.TransferMode)"
+        ],
+        "id": "E1",
+        "text": "A real move creates the parent folder of the destination, then moves the source folder to the destination using move transfer mode."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.MoveSeriesService.MoveSingleSeries(NzbDrone.Core.Tv.Series,System.String,System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Events.IEventAggregator.PublishEvent``1(``0)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.Events.SeriesMovedEvent.#ctor(NzbDrone.Core.Tv.Series,System.String,System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.ISeriesService.UpdateSeries(NzbDrone.Core.Tv.Series,System.Boolean,System.Boolean)"
+        ],
+        "id": "E2",
+        "text": "After a successful move, the series is saved with the new path and a SeriesMovedEvent with the series, source and destination paths is published."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.MoveSeriesService.MoveSingleSeries(NzbDrone.Core.Tv.Series,System.String,System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})",
+          "Sonarr.Common|M:NzbDrone.Common.Instrumentation.Extensions.LoggerExtensions.ProgressInfo(NLog.Logger,System.String,System.Object[])"
+        ],
+        "id": "E3",
+        "text": "Progress messages are logged when a move starts and when it succeeds."
+      }
+    ]
+  },
+  "title": "Move Series (backend command)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

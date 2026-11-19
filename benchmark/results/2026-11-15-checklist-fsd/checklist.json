@@ -1,0 +1,1180 @@
+{
+ "items": [
+  {
+   "id": "K001",
+   "kind": "screen",
+   "name": "/activity/blocklist",
+   "area": "Activity",
+   "start": "frontend/src/App/AppRoutes.tsx:88",
+   "flow": "screen-opens-activity-blocklist"
+  },
+  {
+   "id": "K002",
+   "kind": "screen",
+   "name": "/activity/history",
+   "area": "Activity",
+   "start": "frontend/src/App/AppRoutes.tsx:84",
+   "flow": "screen-opens-activity-history"
+  },
+  {
+   "id": "K003",
+   "kind": "screen",
+   "name": "/activity/queue",
+   "area": "Activity",
+   "start": "frontend/src/App/AppRoutes.tsx:86",
+   "flow": "screen-opens-activity-queue"
+  },
+  {
+   "id": "K004",
+   "kind": "click",
+   "name": "Apply",
+   "area": "Activity",
+   "start": "frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx:974",
+   "flow": "click-interactiveimportmodalcontentinner-handleimportselectedpress"
+  },
+  {
+   "id": "K005",
+   "kind": "click",
+   "name": "Clear blocklist",
+   "area": "Activity",
+   "start": "frontend/src/Activity/Blocklist/Blocklist.tsx:290",
+   "flow": "click-blocklistcontent-handleclearblocklistconfirmed"
+  },
+  {
+   "id": "K006",
+   "kind": "click",
+   "name": "Delete Selected Episode Files",
+   "area": "Activity",
+   "start": "frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx:1055",
+   "flow": "click-interactiveimportmodalcontentinner-handleconfirmdelete"
+  },
+  {
+   "id": "K007",
+   "kind": "click",
+   "name": "Grab",
+   "area": "Activity",
+   "start": "frontend/src/Activity/Queue/QueueRow.tsx:408",
+   "flow": "click-queuerow-handlegrabpress"
+  },
+  {
+   "id": "K008",
+   "kind": "click",
+   "name": "Grab Selected",
+   "area": "Activity",
+   "start": "frontend/src/Activity/Queue/Queue.tsx:335",
+   "flow": "click-queuecontent-handlegrabselectedpress"
+  },
+  {
+   "id": "K009",
+   "kind": "click",
+   "name": "Mark as Failed",
+   "area": "Activity",
+   "start": "frontend/src/Activity/History/Details/HistoryDetailsModal.tsx:84",
+   "flow": "click-historydetailsmodal-handlemarkasfailedpress"
+  },
+  {
+   "id": "K010",
+   "kind": "click",
+   "name": "Refresh",
+   "area": "Activity",
+   "start": "frontend/src/Activity/History/History.tsx:138",
+   "flow": "click-history-handlerefreshpress"
+  },
+  {
+   "id": "K011",
+   "kind": "click",
+   "name": "Remove Selected",
+   "area": "Activity",
+   "start": "frontend/src/Activity/Blocklist/Blocklist.tsx:280",
+   "flow": "click-blocklistcontent-handleremoveselectedconfirmed"
+  },
+  {
+   "id": "K012",
+   "kind": "click",
+   "name": "Remove from Blocklist",
+   "area": "Activity",
+   "start": "frontend/src/Activity/Blocklist/BlocklistRow.tsx:152",
+   "flow": "click-blocklistrow-handleremovepress"
+  },
+  {
+   "id": "K013",
+   "kind": "click",
+   "name": "handleEpisodesSelect",
+   "area": "Activity",
+   "start": "frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx:1003",
+   "flow": "click-interactiveimportmodalcontentinner-handleepisodesselect"
+  },
+  {
+   "id": "K014",
+   "kind": "click",
+   "name": "handleIndexerFlagsSelect",
+   "area": "Activity",
+   "start": "frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx:1037",
+   "flow": "click-interactiveimportmodalcontentinner-handleindexerflagsselect"
+  },
+  {
+   "id": "K015",
+   "kind": "click",
+   "name": "handleLanguagesSelect",
+   "area": "Activity",
+   "start": "frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx:1019",
+   "flow": "click-interactiveimportmodalcontentinner-handlelanguagesselect"
+  },
+  {
+   "id": "K016",
+   "kind": "click",
+   "name": "handleQualitySelect",
+   "area": "Activity",
+   "start": "frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx:1029",
+   "flow": "click-interactiveimportmodalcontentinner-handlequalityselect"
+  },
+  {
+   "id": "K017",
+   "kind": "click",
+   "name": "handleReleaseGroupSelect",
+   "area": "Activity",
+   "start": "frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx:1011",
+   "flow": "click-interactiveimportmodalcontentinner-handlereleasegroupselect"
+  },
+  {
+   "id": "K018",
+   "kind": "click",
+   "name": "handleReleaseTypeSelect",
+   "area": "Activity",
+   "start": "frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx:1045",
+   "flow": "click-interactiveimportmodalcontentinner-handlereleasetypeselect"
+  },
+  {
+   "id": "K019",
+   "kind": "click",
+   "name": "handleRemoveQueueItemModalConfirmed",
+   "area": "Activity",
+   "start": "frontend/src/Activity/Queue/QueueRow.tsx:439",
+   "flow": "click-queuerow-handleremovequeueitemmodalconfirmed"
+  },
+  {
+   "id": "K020",
+   "kind": "click",
+   "name": "handleRemoveSelectedConfirmed",
+   "area": "Activity",
+   "start": "frontend/src/Activity/Queue/Queue.tsx:422",
+   "flow": "click-queuecontent-handleremoveselectedconfirmed"
+  },
+  {
+   "id": "K021",
+   "kind": "click",
+   "name": "handleReprocessItems",
+   "area": "Activity",
+   "start": "frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx:911",
+   "flow": "click-interactiveimportmodalcontentinner-handlereprocessitems"
+  },
+  {
+   "id": "K022",
+   "kind": "click",
+   "name": "handleSeasonSelect",
+   "area": "Activity",
+   "start": "frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx:992",
+   "flow": "click-interactiveimportmodalcontentinner-handleseasonselect"
+  },
+  {
+   "id": "K023",
+   "kind": "click",
+   "name": "handleSeriesSelect",
+   "area": "Activity",
+   "start": "frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx:984",
+   "flow": "click-interactiveimportmodalcontentinner-handleseriesselect"
+  },
+  {
+   "id": "K024",
+   "kind": "click",
+   "name": "handleTableOptionChange",
+   "area": "Activity",
+   "start": "frontend/src/Activity/Blocklist/Blocklist.tsx:251",
+   "flow": "click-blocklistcontent-handletableoptionchange"
+  },
+  {
+   "id": "K025",
+   "kind": "click",
+   "name": "handleTableOptionChange",
+   "area": "Activity",
+   "start": "frontend/src/Activity/History/History.tsx:192",
+   "flow": "click-history-handletableoptionchange"
+  },
+  {
+   "id": "K026",
+   "kind": "click",
+   "name": "handleTableOptionChange",
+   "area": "Activity",
+   "start": "frontend/src/Activity/Queue/Queue.tsx:277",
+   "flow": "click-queuecontent-handletableoptionchange"
+  },
+  {
+   "id": "K027",
+   "kind": "screen",
+   "name": "/calendar",
+   "area": "Calendar",
+   "start": "frontend/src/App/AppRoutes.tsx:78",
+   "flow": "screen-opens-calendar"
+  },
+  {
+   "id": "K028",
+   "kind": "click",
+   "name": "Delete",
+   "area": "Series",
+   "start": "frontend/src/Series/Delete/DeleteSeriesModalContent.tsx:143",
+   "flow": "click-deleteseriesmodalcontent-handledeleteseriesconfirmed"
+  },
+  {
+   "id": "K029",
+   "kind": "click",
+   "name": "Grab Release",
+   "area": "Series",
+   "start": "frontend/src/InteractiveSearch/InteractiveSearchRow.tsx:390",
+   "flow": "click-interactivesearchrow-ongrabconfirm"
+  },
+  {
+   "id": "K030",
+   "kind": "click",
+   "name": "Mark as Failed",
+   "area": "Series",
+   "start": "frontend/src/Series/History/SeriesHistoryRow.tsx:176",
+   "flow": "click-serieshistoryrow-handleconfirmmarkasfailed"
+  },
+  {
+   "id": "K031",
+   "kind": "click",
+   "name": "Remove filter",
+   "area": "Series",
+   "start": "frontend/src/Components/Filter/CustomFilters/CustomFilter.tsx:70",
+   "flow": "click-customfilter-handleremovepress"
+  },
+  {
+   "id": "K032",
+   "kind": "click",
+   "name": "Save",
+   "area": "Series",
+   "start": "frontend/src/Series/Edit/EditSeriesModalContent.tsx:338",
+   "flow": "click-editseriesmodalcontent-handlesavepress"
+  },
+  {
+   "id": "K033",
+   "kind": "click",
+   "name": "Save",
+   "area": "Series",
+   "start": "frontend/src/Components/Filter/Builder/FilterBuilderModalContent.tsx:197",
+   "flow": "click-filterbuildermodalcontent-handlesavefilterpress"
+  },
+  {
+   "id": "K034",
+   "kind": "click",
+   "name": "Save",
+   "area": "Series",
+   "start": "frontend/src/Series/MonitoringOptions/MonitoringOptionsModalContent.tsx:111",
+   "flow": "click-monitoringoptionsmodalcontent-handlesavepress"
+  },
+  {
+   "id": "K035",
+   "kind": "click",
+   "name": "handleGrabPress",
+   "area": "Series",
+   "start": "frontend/src/InteractiveSearch/InteractiveSearchRow.tsx:358",
+   "flow": "click-interactivesearchrow-handlegrabpress"
+  },
+  {
+   "id": "K036",
+   "kind": "click",
+   "name": "handleMoveSeriesPress",
+   "area": "Series",
+   "start": "frontend/src/Series/Edit/EditSeriesModalContent.tsx:359",
+   "flow": "click-editseriesmodalcontent-handlemoveseriespress"
+  },
+  {
+   "id": "K037",
+   "kind": "screen",
+   "name": "/add/new",
+   "area": "Series \u203a Add New",
+   "start": "frontend/src/App/AppRoutes.tsx:54",
+   "flow": "screen-opens-add-new"
+  },
+  {
+   "id": "K038",
+   "kind": "click",
+   "name": "Add {title}",
+   "area": "Series \u203a Add New",
+   "start": "frontend/src/AddSeries/AddNewSeries/AddNewSeriesModalContent.tsx:367",
+   "flow": "click-addnewseriesmodalcontent-handleaddseriespress"
+  },
+  {
+   "id": "K039",
+   "kind": "screen",
+   "name": "/series/:titleSlug",
+   "area": "Series \u203a Details",
+   "start": "frontend/src/App/AppRoutes.tsx:70",
+   "flow": "screen-opens-series-titleslug"
+  },
+  {
+   "id": "K040",
+   "kind": "click",
+   "name": "Mark as Failed",
+   "area": "Series \u203a Details",
+   "start": "frontend/src/Episode/History/EpisodeHistoryRow.tsx:145",
+   "flow": "click-episodehistoryrow-handleconfirmmarkasfailed"
+  },
+  {
+   "id": "K041",
+   "kind": "click",
+   "name": "Monitored",
+   "area": "Series \u203a Details",
+   "start": "frontend/src/Series/Details/SeriesDetails.tsx:689",
+   "flow": "click-seriesdetails-handlemonitortoggle"
+  },
+  {
+   "id": "K042",
+   "kind": "click",
+   "name": "handleDeleteEpisodeFile",
+   "area": "Series \u203a Details",
+   "start": "frontend/src/Episode/Summary/EpisodeSummary.tsx:157",
+   "flow": "click-episodesummary-handledeleteepisodefile"
+  },
+  {
+   "id": "K043",
+   "kind": "click",
+   "name": "handleMonitorEpisodePress",
+   "area": "Series \u203a Details",
+   "start": "frontend/src/Episode/EpisodeDetailsModalContent.tsx:123",
+   "flow": "click-episodedetailsmodalcontent-handlemonitorepisodepress"
+  },
+  {
+   "id": "K044",
+   "kind": "click",
+   "name": "handleMonitorEpisodePress",
+   "area": "Series \u203a Details",
+   "start": "frontend/src/Series/Details/SeriesDetailsSeason.tsx:503",
+   "flow": "click-seriesdetailsseason-handlemonitorepisodepress"
+  },
+  {
+   "id": "K045",
+   "kind": "click",
+   "name": "handleMonitorSeasonPress",
+   "area": "Series \u203a Details",
+   "start": "frontend/src/Series/Details/SeriesDetailsSeason.tsx:288",
+   "flow": "click-seriesdetailsseason-handlemonitorseasonpress"
+  },
+  {
+   "id": "K046",
+   "kind": "screen",
+   "name": "/series",
+   "area": "Series \u203a Index",
+   "start": "frontend/src/App/AppRoutes.tsx:52",
+   "flow": "screen-opens-series"
+  },
+  {
+   "id": "K047",
+   "kind": "click",
+   "name": "Delete",
+   "area": "Series \u203a Index",
+   "start": "frontend/src/Series/Index/Select/Delete/DeleteSeriesModalContent.tsx:133",
+   "flow": "click-deleteseriesmodalcontent-ondeleteseriesconfirmed"
+  },
+  {
+   "id": "K048",
+   "kind": "click",
+   "name": "onApplyTagsPress",
+   "area": "Series \u203a Index",
+   "start": "frontend/src/Series/Index/Select/SeriesIndexSelectFooter.tsx:236",
+   "flow": "click-seriesindexselectfooter-onapplytagspress"
+  },
+  {
+   "id": "K049",
+   "kind": "click",
+   "name": "onMonitoredPress",
+   "area": "Series \u203a Index",
+   "start": "frontend/src/Series/Index/Table/SeriesStatusCell.tsx:46",
+   "flow": "click-seriesstatuscell-onmonitoredpress"
+  },
+  {
+   "id": "K050",
+   "kind": "click",
+   "name": "onMonitoringSavePress",
+   "area": "Series \u203a Index",
+   "start": "frontend/src/Series/Index/Select/SeriesIndexSelectFooter.tsx:242",
+   "flow": "click-seriesindexselectfooter-onmonitoringsavepress"
+  },
+  {
+   "id": "K051",
+   "kind": "click",
+   "name": "onSavePress",
+   "area": "Series \u203a Index",
+   "start": "frontend/src/Series/Index/Select/SeriesIndexSelectFooter.tsx:230",
+   "flow": "click-seriesindexselectfooter-onsavepress"
+  },
+  {
+   "id": "K052",
+   "kind": "click",
+   "name": "onSeasonMonitoredPress",
+   "area": "Series \u203a Index",
+   "start": "frontend/src/Series/Index/Select/SeasonPass/SeasonPassSeason.tsx:43",
+   "flow": "click-seasonpassseason-onseasonmonitoredpress"
+  },
+  {
+   "id": "K053",
+   "kind": "screen",
+   "name": "/add/import",
+   "area": "Series \u203a Library Import",
+   "start": "frontend/src/App/AppRoutes.tsx:56",
+   "flow": "screen-opens-add-import"
+  },
+  {
+   "id": "K054",
+   "kind": "screen",
+   "name": "/add/import/:rootFolderId",
+   "area": "Series \u203a Library Import",
+   "start": "frontend/src/App/AppRoutes.tsx:58",
+   "flow": "screen-opens-add-import-rootfolderid"
+  },
+  {
+   "id": "K055",
+   "kind": "click",
+   "name": "Import {selectedCount} Series",
+   "area": "Series \u203a Library Import",
+   "start": "frontend/src/AddSeries/ImportSeries/Import/ImportSeriesFooter.tsx:296",
+   "flow": "click-importseriesfooter-handleimportpress"
+  },
+  {
+   "id": "K056",
+   "kind": "click",
+   "name": "handleNewRootFolderSelect",
+   "area": "Series \u203a Library Import",
+   "start": "frontend/src/AddSeries/ImportSeries/SelectFolder/ImportSeriesSelectFolder.tsx:147",
+   "flow": "click-importseriesselectfolder-handlenewrootfolderselect"
+  },
+  {
+   "id": "K057",
+   "kind": "click",
+   "name": "handleCaptchaChange",
+   "area": "Settings",
+   "start": "frontend/src/Components/Form/CaptchaInput.tsx:106",
+   "flow": "click-captchainput-handlecaptchachange"
+  },
+  {
+   "id": "K058",
+   "kind": "click",
+   "name": "handleNewRootFolderSelect",
+   "area": "Settings",
+   "start": "frontend/src/Components/Form/Select/RootFolderSelectInput.tsx:208",
+   "flow": "click-rootfolderselectinput-handlenewrootfolderselect"
+  },
+  {
+   "id": "K059",
+   "kind": "click",
+   "name": "handlePress",
+   "area": "Settings",
+   "start": "frontend/src/Components/Form/OAuthInput.tsx:68",
+   "flow": "click-oauthinput-handlepress"
+  },
+  {
+   "id": "K060",
+   "kind": "click",
+   "name": "handleRefreshPress",
+   "area": "Settings",
+   "start": "frontend/src/Components/Form/CaptchaInput.tsx:96",
+   "flow": "click-captchainput-handlerefreshpress"
+  },
+  {
+   "id": "K061",
+   "kind": "click",
+   "name": "handleRefreshPress",
+   "area": "Settings",
+   "start": "frontend/src/Components/Form/Tag/DeviceInput.tsx:120",
+   "flow": "click-deviceinput-handlerefreshpress"
+  },
+  {
+   "id": "K062",
+   "kind": "click",
+   "name": "handleTagAdd",
+   "area": "Settings",
+   "start": "frontend/src/Components/Form/Tag/SeriesTagInput.tsx:134",
+   "flow": "click-seriestaginput-handletagadd"
+  },
+  {
+   "id": "K063",
+   "kind": "screen",
+   "name": "/settings/connect",
+   "area": "Settings \u203a Connect",
+   "start": "frontend/src/App/AppRoutes.tsx:124",
+   "flow": "screen-opens-settings-connect"
+  },
+  {
+   "id": "K064",
+   "kind": "click",
+   "name": "Save",
+   "area": "Settings \u203a Connect",
+   "start": "frontend/src/Settings/Notifications/Notifications/EditNotificationModalContent.tsx:178",
+   "flow": "click-editnotificationmodalcontent-handlesavepress"
+  },
+  {
+   "id": "K065",
+   "kind": "click",
+   "name": "Test",
+   "area": "Settings \u203a Connect",
+   "start": "frontend/src/Settings/Notifications/Notifications/EditNotificationModalContent.tsx:168",
+   "flow": "click-editnotificationmodalcontent-handletestpress"
+  },
+  {
+   "id": "K066",
+   "kind": "click",
+   "name": "handleFieldChange",
+   "area": "Settings \u203a Connect",
+   "start": "frontend/src/Settings/Notifications/Notifications/EditNotificationModalContent.tsx:133",
+   "flow": "click-editnotificationmodalcontent-handlefieldchange"
+  },
+  {
+   "id": "K067",
+   "kind": "screen",
+   "name": "/settings/customformats",
+   "area": "Settings \u203a Custom Formats",
+   "start": "frontend/src/App/AppRoutes.tsx:110",
+   "flow": "screen-opens-settings-customformats"
+  },
+  {
+   "id": "K068",
+   "kind": "click",
+   "name": "Delete Custom Format(s)",
+   "area": "Settings \u203a Custom Formats",
+   "start": "frontend/src/Settings/CustomFormats/CustomFormats/Manage/ManageCustomFormatsModalContent.tsx:239",
+   "flow": "click-managecustomformatsmodalcontentinner-onconfirmdelete"
+  },
+  {
+   "id": "K069",
+   "kind": "click",
+   "name": "onSavePress",
+   "area": "Settings \u203a Custom Formats",
+   "start": "frontend/src/Settings/CustomFormats/CustomFormats/Manage/ManageCustomFormatsModalContent.tsx:228",
+   "flow": "click-managecustomformatsmodalcontentinner-onsavepress"
+  },
+  {
+   "id": "K070",
+   "kind": "screen",
+   "name": "/settings/downloadclients",
+   "area": "Settings \u203a Download Clients",
+   "start": "frontend/src/App/AppRoutes.tsx:117",
+   "flow": "screen-opens-settings-downloadclients"
+  },
+  {
+   "id": "K071",
+   "kind": "click",
+   "name": "Delete Download Client(s)",
+   "area": "Settings \u203a Download Clients",
+   "start": "frontend/src/Settings/DownloadClients/DownloadClients/Manage/ManageDownloadClientsModalContent.tsx:289",
+   "flow": "click-managedownloadclientsmodalcontentinner-onconfirmdelete"
+  },
+  {
+   "id": "K072",
+   "kind": "click",
+   "name": "Save",
+   "area": "Settings \u203a Download Clients",
+   "start": "frontend/src/Settings/DownloadClients/DownloadClients/EditDownloadClientModalContent.tsx:264",
+   "flow": "click-editdownloadclientmodalcontent-handlesavepress"
+  },
+  {
+   "id": "K073",
+   "kind": "click",
+   "name": "Save",
+   "area": "Settings \u203a Download Clients",
+   "start": "frontend/src/Settings/DownloadClients/RemotePathMappings/EditRemotePathMappingModalContent.tsx:161",
+   "flow": "click-editremotepathmappingmodalcontent-handlesavepress"
+  },
+  {
+   "id": "K074",
+   "kind": "click",
+   "name": "Test All Clients",
+   "area": "Settings \u203a Download Clients",
+   "start": "frontend/src/Settings/DownloadClients/DownloadClientSettings.tsx:96",
+   "flow": "click-downloadclientsettings-handletestalldownloadclientspress"
+  },
+  {
+   "id": "K075",
+   "kind": "click",
+   "name": "Testing {name}",
+   "area": "Settings \u203a Download Clients",
+   "start": "frontend/src/Settings/DownloadClients/DownloadClients/EditDownloadClientModalContent.tsx:254",
+   "flow": "click-editdownloadclientmodalcontent-handletestpress"
+  },
+  {
+   "id": "K076",
+   "kind": "click",
+   "name": "handleFieldChange",
+   "area": "Settings \u203a Download Clients",
+   "start": "frontend/src/Settings/DownloadClients/DownloadClients/EditDownloadClientModalContent.tsx:157",
+   "flow": "click-editdownloadclientmodalcontent-handlefieldchange"
+  },
+  {
+   "id": "K077",
+   "kind": "click",
+   "name": "onApplyTagsPress",
+   "area": "Settings \u203a Download Clients",
+   "start": "frontend/src/Settings/DownloadClients/DownloadClients/Manage/ManageDownloadClientsModalContent.tsx:277",
+   "flow": "click-managedownloadclientsmodalcontentinner-onapplytagspress"
+  },
+  {
+   "id": "K078",
+   "kind": "click",
+   "name": "onSavePress",
+   "area": "Settings \u203a Download Clients",
+   "start": "frontend/src/Settings/DownloadClients/DownloadClients/Manage/ManageDownloadClientsModalContent.tsx:271",
+   "flow": "click-managedownloadclientsmodalcontentinner-onsavepress"
+  },
+  {
+   "id": "K079",
+   "kind": "screen",
+   "name": "/settings/general",
+   "area": "Settings \u203a General",
+   "start": "frontend/src/App/AppRoutes.tsx:135",
+   "flow": "screen-opens-settings-general"
+  },
+  {
+   "id": "K080",
+   "kind": "click",
+   "name": "Restart {appName}",
+   "area": "Settings \u203a General",
+   "start": "frontend/src/Settings/General/GeneralSettings.tsx:227",
+   "flow": "click-generalsettings-handleconfirmrestart"
+  },
+  {
+   "id": "K081",
+   "kind": "screen",
+   "name": "/settings/importlists",
+   "area": "Settings \u203a Import Lists",
+   "start": "frontend/src/App/AppRoutes.tsx:122",
+   "flow": "screen-opens-settings-importlists"
+  },
+  {
+   "id": "K082",
+   "kind": "click",
+   "name": "Delete Import List Exclusion",
+   "area": "Settings \u203a Import Lists",
+   "start": "frontend/src/Settings/ImportLists/ImportListExclusions/ImportListExclusionRow.tsx:100",
+   "flow": "click-importlistexclusionrow-handledeletepress"
+  },
+  {
+   "id": "K083",
+   "kind": "click",
+   "name": "Delete Import List(s)",
+   "area": "Settings \u203a Import Lists",
+   "start": "frontend/src/Settings/ImportLists/ImportLists/Manage/ManageImportListsModalContent.tsx:283",
+   "flow": "click-manageimportlistsmodalcontentinner-onconfirmdelete"
+  },
+  {
+   "id": "K084",
+   "kind": "click",
+   "name": "Delete Selected",
+   "area": "Settings \u203a Import Lists",
+   "start": "frontend/src/Settings/ImportLists/ImportListExclusions/ImportListExclusions.tsx:231",
+   "flow": "click-importlistexclusionscontent-handledeleteselectedconfirmed"
+  },
+  {
+   "id": "K085",
+   "kind": "click",
+   "name": "Save",
+   "area": "Settings \u203a Import Lists",
+   "start": "frontend/src/Settings/ImportLists/ImportListExclusions/EditImportListExclusionModalContent.tsx:128",
+   "flow": "click-editimportlistexclusionmodalcontent-handlesavepress"
+  },
+  {
+   "id": "K086",
+   "kind": "click",
+   "name": "Save",
+   "area": "Settings \u203a Import Lists",
+   "start": "frontend/src/Settings/ImportLists/ImportLists/EditImportListModalContent.tsx:358",
+   "flow": "click-editimportlistmodalcontent-handlesavepress"
+  },
+  {
+   "id": "K087",
+   "kind": "click",
+   "name": "Test",
+   "area": "Settings \u203a Import Lists",
+   "start": "frontend/src/Settings/ImportLists/ImportLists/EditImportListModalContent.tsx:348",
+   "flow": "click-editimportlistmodalcontent-handletestpress"
+  },
+  {
+   "id": "K088",
+   "kind": "click",
+   "name": "Test All Lists",
+   "area": "Settings \u203a Import Lists",
+   "start": "frontend/src/Settings/ImportLists/ImportListSettings.tsx:93",
+   "flow": "click-importlistsettings-handletestallimportlistspress"
+  },
+  {
+   "id": "K089",
+   "kind": "click",
+   "name": "handleAddModalClose",
+   "area": "Settings \u203a Import Lists",
+   "start": "frontend/src/Settings/ImportLists/ImportListExclusions/ImportListExclusions.tsx:222",
+   "flow": "click-importlistexclusionscontent-handleaddmodalclose"
+  },
+  {
+   "id": "K090",
+   "kind": "click",
+   "name": "handleFieldChange",
+   "area": "Settings \u203a Import Lists",
+   "start": "frontend/src/Settings/ImportLists/ImportLists/EditImportListModalContent.tsx:298",
+   "flow": "click-editimportlistmodalcontent-handlefieldchange"
+  },
+  {
+   "id": "K091",
+   "kind": "click",
+   "name": "handleInputChange",
+   "area": "Settings \u203a Import Lists",
+   "start": "frontend/src/Settings/ImportLists/ImportListExclusions/EditImportListExclusionModalContent.tsx:93",
+   "flow": "click-editimportlistexclusionmodalcontent-handleinputchange"
+  },
+  {
+   "id": "K092",
+   "kind": "click",
+   "name": "handleTableOptionChange",
+   "area": "Settings \u203a Import Lists",
+   "start": "frontend/src/Settings/ImportLists/ImportListExclusions/ImportListExclusions.tsx:173",
+   "flow": "click-importlistexclusionscontent-handletableoptionchange"
+  },
+  {
+   "id": "K093",
+   "kind": "click",
+   "name": "onApplyTagsPress",
+   "area": "Settings \u203a Import Lists",
+   "start": "frontend/src/Settings/ImportLists/ImportLists/Manage/ManageImportListsModalContent.tsx:271",
+   "flow": "click-manageimportlistsmodalcontentinner-onapplytagspress"
+  },
+  {
+   "id": "K094",
+   "kind": "click",
+   "name": "onSavePress",
+   "area": "Settings \u203a Import Lists",
+   "start": "frontend/src/Settings/ImportLists/ImportLists/Manage/ManageImportListsModalContent.tsx:265",
+   "flow": "click-manageimportlistsmodalcontentinner-onsavepress"
+  },
+  {
+   "id": "K095",
+   "kind": "screen",
+   "name": "/settings/indexers",
+   "area": "Settings \u203a Indexers",
+   "start": "frontend/src/App/AppRoutes.tsx:115",
+   "flow": "screen-opens-settings-indexers"
+  },
+  {
+   "id": "K096",
+   "kind": "click",
+   "name": "Delete Indexer(s)",
+   "area": "Settings \u203a Indexers",
+   "start": "frontend/src/Settings/Indexers/Indexers/Manage/ManageIndexersModalContent.tsx:299",
+   "flow": "click-manageindexersmodalcontentinner-onconfirmdelete"
+  },
+  {
+   "id": "K097",
+   "kind": "click",
+   "name": "Save",
+   "area": "Settings \u203a Indexers",
+   "start": "frontend/src/Settings/Indexers/Indexers/EditIndexerModalContent.tsx:313",
+   "flow": "click-editindexermodalcontent-handlesavepress"
+  },
+  {
+   "id": "K098",
+   "kind": "click",
+   "name": "Test All Indexers",
+   "area": "Settings \u203a Indexers",
+   "start": "frontend/src/Settings/Indexers/IndexerSettings.tsx:93",
+   "flow": "click-indexersettings-handletestallindexerspress"
+  },
+  {
+   "id": "K099",
+   "kind": "click",
+   "name": "Testing {name}",
+   "area": "Settings \u203a Indexers",
+   "start": "frontend/src/Settings/Indexers/Indexers/EditIndexerModalContent.tsx:303",
+   "flow": "click-editindexermodalcontent-handletestpress"
+  },
+  {
+   "id": "K100",
+   "kind": "click",
+   "name": "handleFieldChange",
+   "area": "Settings \u203a Indexers",
+   "start": "frontend/src/Settings/Indexers/Indexers/EditIndexerModalContent.tsx:208",
+   "flow": "click-editindexermodalcontent-handlefieldchange"
+  },
+  {
+   "id": "K101",
+   "kind": "click",
+   "name": "onApplyTagsPress",
+   "area": "Settings \u203a Indexers",
+   "start": "frontend/src/Settings/Indexers/Indexers/Manage/ManageIndexersModalContent.tsx:287",
+   "flow": "click-manageindexersmodalcontentinner-onapplytagspress"
+  },
+  {
+   "id": "K102",
+   "kind": "click",
+   "name": "onSavePress",
+   "area": "Settings \u203a Indexers",
+   "start": "frontend/src/Settings/Indexers/Indexers/Manage/ManageIndexersModalContent.tsx:281",
+   "flow": "click-manageindexersmodalcontentinner-onsavepress"
+  },
+  {
+   "id": "K103",
+   "kind": "screen",
+   "name": "/settings/mediamanagement",
+   "area": "Settings \u203a Media Management",
+   "start": "frontend/src/App/AppRoutes.tsx:104",
+   "flow": "screen-opens-settings-mediamanagement"
+  },
+  {
+   "id": "K104",
+   "kind": "click",
+   "name": "Remove Root Folder",
+   "area": "Settings \u203a Media Management",
+   "start": "frontend/src/RootFolder/RootFolderRow.tsx:157",
+   "flow": "click-rootfolderrow-handleconfirmdelete"
+  },
+  {
+   "id": "K105",
+   "kind": "click",
+   "name": "onNewRootFolderSelect",
+   "area": "Settings \u203a Media Management",
+   "start": "frontend/src/Settings/MediaManagement/RootFolder/AddRootFolder.tsx:60",
+   "flow": "click-addrootfolder-onnewrootfolderselect"
+  },
+  {
+   "id": "K106",
+   "kind": "screen",
+   "name": "/settings/metadata",
+   "area": "Settings \u203a Metadata",
+   "start": "frontend/src/App/AppRoutes.tsx:126",
+   "flow": "screen-opens-settings-metadata"
+  },
+  {
+   "id": "K107",
+   "kind": "click",
+   "name": "Save",
+   "area": "Settings \u203a Metadata",
+   "start": "frontend/src/Settings/Metadata/Metadata/EditMetadataModalContent.tsx:118",
+   "flow": "click-editmetadatamodalcontent-handlesavepress"
+  },
+  {
+   "id": "K108",
+   "kind": "click",
+   "name": "handleFieldChange",
+   "area": "Settings \u203a Metadata",
+   "start": "frontend/src/Settings/Metadata/Metadata/EditMetadataModalContent.tsx:106",
+   "flow": "click-editmetadatamodalcontent-handlefieldchange"
+  },
+  {
+   "id": "K109",
+   "kind": "screen",
+   "name": "/settings/profiles",
+   "area": "Settings \u203a Profiles",
+   "start": "frontend/src/App/AppRoutes.tsx:106",
+   "flow": "screen-opens-settings-profiles"
+  },
+  {
+   "id": "K110",
+   "kind": "click",
+   "name": "Save",
+   "area": "Settings \u203a Profiles",
+   "start": "frontend/src/Settings/Profiles/Delay/EditDelayProfileModalContent.tsx:286",
+   "flow": "click-editdelayprofilemodalcontent-handlesavepress"
+  },
+  {
+   "id": "K111",
+   "kind": "click",
+   "name": "Save",
+   "area": "Settings \u203a Profiles",
+   "start": "frontend/src/Settings/Profiles/Quality/EditQualityProfileModalContent.tsx:578",
+   "flow": "click-editqualityprofilemodalcontent-handlesavepress"
+  },
+  {
+   "id": "K112",
+   "kind": "click",
+   "name": "Save",
+   "area": "Settings \u203a Profiles",
+   "start": "frontend/src/Settings/Profiles/Release/EditReleaseProfileModalContent.tsx:259",
+   "flow": "click-editreleaseprofilemodalcontent-handlesavepress"
+  },
+  {
+   "id": "K113",
+   "kind": "click",
+   "name": "handleDragEnd",
+   "area": "Settings \u203a Profiles",
+   "start": "frontend/src/Settings/Profiles/Delay/DelayProfiles.tsx:99",
+   "flow": "click-delayprofiles-handledragend"
+  },
+  {
+   "id": "K114",
+   "kind": "screen",
+   "name": "/settings/quality",
+   "area": "Settings \u203a Quality",
+   "start": "frontend/src/App/AppRoutes.tsx:108",
+   "flow": "screen-opens-settings-quality"
+  },
+  {
+   "id": "K115",
+   "kind": "screen",
+   "name": "/settings/tags",
+   "area": "Settings \u203a Tags",
+   "start": "frontend/src/App/AppRoutes.tsx:133",
+   "flow": "screen-opens-settings-tags"
+  },
+  {
+   "id": "K116",
+   "kind": "click",
+   "name": "Delete Tag",
+   "area": "Settings \u203a Tags",
+   "start": "frontend/src/Settings/Tags/Tag.tsx:147",
+   "flow": "click-tag-handleconfirmdeletetag"
+  },
+  {
+   "id": "K117",
+   "kind": "screen",
+   "name": "/settings/ui",
+   "area": "Settings \u203a UI",
+   "start": "frontend/src/App/AppRoutes.tsx:137",
+   "flow": "screen-opens-settings-ui"
+  },
+  {
+   "id": "K118",
+   "kind": "screen",
+   "name": "/statistics",
+   "area": "Statistics",
+   "start": "frontend/src/App/AppRoutes.tsx:72",
+   "flow": "screen-opens-statistics"
+  },
+  {
+   "id": "K119",
+   "kind": "screen",
+   "name": "/system/backups",
+   "area": "System",
+   "start": "frontend/src/App/AppRoutes.tsx:147",
+   "flow": "screen-opens-system-backups"
+  },
+  {
+   "id": "K120",
+   "kind": "screen",
+   "name": "/system/events",
+   "area": "System",
+   "start": "frontend/src/App/AppRoutes.tsx:151",
+   "flow": "screen-opens-system-events"
+  },
+  {
+   "id": "K121",
+   "kind": "screen",
+   "name": "/system/logs/files",
+   "area": "System",
+   "start": "frontend/src/App/AppRoutes.tsx:153",
+   "flow": "screen-opens-system-logs-files"
+  },
+  {
+   "id": "K122",
+   "kind": "screen",
+   "name": "/system/logs/files/update",
+   "area": "System",
+   "start": "frontend/src/App/AppRoutes.tsx:155",
+   "flow": "screen-opens-system-logs-files-update"
+  },
+  {
+   "id": "K123",
+   "kind": "screen",
+   "name": "/system/status",
+   "area": "System",
+   "start": "frontend/src/App/AppRoutes.tsx:143",
+   "flow": "screen-opens-system-status"
+  },
+  {
+   "id": "K124",
+   "kind": "screen",
+   "name": "/system/tasks",
+   "area": "System",
+   "start": "frontend/src/App/AppRoutes.tsx:145",
+   "flow": "screen-opens-system-tasks"
+  },
+  {
+   "id": "K125",
+   "kind": "screen",
+   "name": "/system/updates",
+   "area": "System",
+   "start": "frontend/src/App/AppRoutes.tsx:149",
+   "flow": "screen-opens-system-updates"
+  },
+  {
+   "id": "K126",
+   "kind": "click",
+   "name": "Cancel",
+   "area": "System",
+   "start": "frontend/src/System/Tasks/Queued/QueuedTaskRow.tsx:236",
+   "flow": "click-queuedtaskrow-handlecancelpress"
+  },
+  {
+   "id": "K127",
+   "kind": "click",
+   "name": "Clear",
+   "area": "System",
+   "start": "frontend/src/System/Events/LogsTable.tsx:123",
+   "flow": "click-logstable-handleclearlogspress"
+  },
+  {
+   "id": "K128",
+   "kind": "click",
+   "name": "Delete Backup",
+   "area": "System",
+   "start": "frontend/src/System/Backup/BackupRow.tsx:127",
+   "flow": "click-backuprow-handleconfirmdeletepress"
+  },
+  {
+   "id": "K129",
+   "kind": "click",
+   "name": "Refresh",
+   "area": "System",
+   "start": "frontend/src/System/Events/LogsTable.tsx:113",
+   "flow": "click-logstable-handlerefreshpress"
+  },
+  {
+   "id": "K130",
+   "kind": "click",
+   "name": "Restart",
+   "area": "System",
+   "start": "frontend/src/Components/Page/Header/PageHeaderActionsMenu.tsx:54",
+   "flow": "click-pageheaderactionsmenu-handlerestartpress"
+  },
+  {
+   "id": "K131",
+   "kind": "click",
+   "name": "Restore",
+   "area": "System",
+   "start": "frontend/src/System/Backup/RestoreBackupModalContent.tsx:199",
+   "flow": "click-restorebackupmodalcontent-handlerestorepress"
+  },
+  {
+   "id": "K132",
+   "kind": "click",
+   "name": "Shutdown",
+   "area": "System",
+   "start": "frontend/src/Components/Page/Header/PageHeaderActionsMenu.tsx:60",
+   "flow": "click-pageheaderactionsmenu-handleshutdownpress"
+  },
+  {
+   "id": "K133",
+   "kind": "click",
+   "name": "Test All",
+   "area": "System",
+   "start": "frontend/src/System/Status/Health/Health.tsx:139",
+   "flow": "click-health-handletestalldownloadclientspress"
+  },
+  {
+   "id": "K134",
+   "kind": "click",
+   "name": "Test All",
+   "area": "System",
+   "start": "frontend/src/System/Status/Health/Health.tsx:129",
+   "flow": "click-health-handletestallindexerspress"
+  },
+  {
+   "id": "K135",
+   "kind": "click",
+   "name": "handleDeleteFilesPress",
+   "area": "System",
+   "start": "frontend/src/System/Logs/App/AppLogFiles.tsx:37",
+   "flow": "click-applogfiles-handledeletefilespress"
+  },
+  {
+   "id": "K136",
+   "kind": "click",
+   "name": "handleDeleteFilesPress",
+   "area": "System",
+   "start": "frontend/src/System/Logs/Update/UpdateLogFiles.tsx:37",
+   "flow": "click-updatelogfiles-handledeletefilespress"
+  },
+  {
+   "id": "K137",
+   "kind": "click",
+   "name": "handleRefreshPress",
+   "area": "System",
+   "start": "frontend/src/System/Logs/App/AppLogFiles.tsx:36",
+   "flow": "click-applogfiles-handlerefreshpress"
+  },
+  {
+   "id": "K138",
+   "kind": "click",
+   "name": "handleRefreshPress",
+   "area": "System",
+   "start": "frontend/src/System/Logs/Update/UpdateLogFiles.tsx:36",
+   "flow": "click-updatelogfiles-handlerefreshpress"
+  },
+  {
+   "id": "K139",
+   "kind": "click",
+   "name": "handleTableOptionChange",
+   "area": "System",
+   "start": "frontend/src/System/Events/LogsTable.tsx:164",
+   "flow": "click-logstable-handletableoptionchange"
+  },
+  {
+   "id": "K140",
+   "kind": "screen",
+   "name": "/wanted/cutoffunmet",
+   "area": "Wanted",
+   "start": "frontend/src/App/AppRoutes.tsx:96",
+   "flow": "screen-opens-wanted-cutoffunmet"
+  },
+  {
+   "id": "K141",
+   "kind": "screen",
+   "name": "/wanted/missing",
+   "area": "Wanted",
+   "start": "frontend/src/App/AppRoutes.tsx:94",
+   "flow": "screen-opens-wanted-missing"
+  },
+  {
+   "id": "K142",
+   "kind": "click",
+   "name": "Search for all Cutoff Unmet episodes",
+   "area": "Wanted",
+   "start": "frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx:355",
+   "flow": "click-cutoffunmetcontent-handlesearchallcutoffunmetconfirmed"
+  },
+  {
+   "id": "K143",
+   "kind": "click",
+   "name": "Search for all missing episodes",
+   "area": "Wanted",
+   "start": "frontend/src/Wanted/Missing/Missing.tsx:363",
+   "flow": "click-missingcontent-handlesearchallmissingconfirmed"
+  },
+  {
+   "id": "K144",
+   "kind": "click",
+   "name": "Unmonitor Selected",
+   "area": "Wanted",
+   "start": "frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx:260",
+   "flow": "click-cutoffunmetcontent-handletoggleselectedpress"
+  },
+  {
+   "id": "K145",
+   "kind": "click",
+   "name": "Unmonitor Selected",
+   "area": "Wanted",
+   "start": "frontend/src/Wanted/Missing/Missing.tsx:259",
+   "flow": "click-missingcontent-handletoggleselectedpress"
+  },
+  {
+   "id": "K146",
+   "kind": "click",
+   "name": "handleTableOptionChange",
+   "area": "Wanted",
+   "start": "frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx:314",
+   "flow": "click-cutoffunmetcontent-handletableoptionchange"
+  },
+  {
+   "id": "K147",
+   "kind": "click",
+   "name": "handleTableOptionChange",
+   "area": "Wanted",
+   "start": "frontend/src/Wanted/Missing/Missing.tsx:324",
+   "flow": "click-missingcontent-handletableoptionchange"
+  }
+ ]
+}

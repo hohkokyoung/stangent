@@ -1,0 +1,117 @@
+{
+  "doc": "kavita-fsd",
+  "findings": [
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:23"
+      ],
+      "fsdQuote": null,
+      "id": "F-006",
+      "note": "A Browse Genres screen exists, but the FSD describes only People and Tags under Browse.",
+      "runs": [
+        2
+      ],
+      "screen": "/browse/genres",
+      "section": "8",
+      "sectionId": "S-0020",
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:25"
+      ],
+      "fsdQuote": null,
+      "id": "F-007",
+      "note": "An All Annotations screen exists under Browse, but the FSD does not describe it.",
+      "runs": [
+        2
+      ],
+      "screen": "/browse/annotations",
+      "section": "8",
+      "sectionId": "S-0020",
+      "state": "undocumented"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/_routes/browse-routing.module.ts:17"
+      ],
+      "fsdQuote": "The People screen lists people with the number of series and issues each appears in, along with a filter panel and a jump bar, and clicking a person opens that person's page.",
+      "id": "F-008",
+      "note": "A People browse route renders BrowsePeopleComponent. This match is based on the route only. I did not read the component for the counts, filter panel or jump bar.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "8.1",
+      "sectionId": "S-0021",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "Kavita.Server/Extensions/IdentityServiceExtensions.cs:59",
+        "Kavita.Models/DTOs/RegisterDto.cs:15"
+      ],
+      "fsdQuote": "A new password must be at least 8 characters long.",
+      "id": "F-011",
+      "note": "The server requires a minimum password length of 6, not 8.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "9.1",
+      "sectionId": "S-0025",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "Kavita.Services/SettingsService.cs:443",
+        "Kavita.Services/SettingsService.cs:455"
+      ],
+      "fsdQuote": "Days of Backups and Days of Logs each accept a value from 1 to 30 and both default to 30.",
+      "id": "F-020",
+      "note": "The server rejects Days of Backups and Days of Logs values above 30 or below 1. I did not read the default of 30, so only the range is confirmed.",
+      "runs": [
+        2
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:157"
+      ],
+      "fsdQuote": "Manage Collections is turned on by default for a new library.",
+      "id": "F-022",
+      "note": "The new-library form defaults manageCollections to false.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "10.3",
+      "sectionId": "S-0030",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:152-154",
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:152"
+      ],
+      "fsdQuote": "Include in Dashboard and Include in Search are turned on by default.",
+      "id": "F-023",
+      "note": "Both includeInDashboard and includeInSearch default to true.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "10.3",
+      "sectionId": "S-0030",
+      "state": "match"
+    }
+  ]
+}

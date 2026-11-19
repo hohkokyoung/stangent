@@ -9,25 +9,29 @@ public static class DetectorRegistry
     public static IReadOnlyList<IDetector> BuiltIn { get; } =
     [
         new RoutesDetector(),
+        new FlaskRoutesDetector(), // Python's routes (D127), before anything links calls to endpoints
+        new RazorViewsDetector(), // after routes: server-rendered views, their forms → endpoints, View() → views (N1, N2)
         new DiDetector(),
         new PublishHandleDetector(),
         new EntityTablesDetector(),
+        new ValidationDetector(), // rules as facts on the properties they check (G7)
+        new FormFieldsDetector(), // fields the server defines and their choices (D329)
+        new ConstantsDetector(), // constants' values (G9)
+        new TemplateFilesDetector(), // constants that name a template file through their class's file-name pattern (D362 (5))
+        new BackgroundJobsDetector(), // work queued to run later (G11)
+        new JobsDetector(), // system jobs and the code that queues them (D171, D173)
+        new ConditionsDetector(), // the conditions around each call, and early exits (D174)
+        new MenuDetector(), // menus built in C# as data (D221)
+        new OnLoadDetector(), // after routes and views: MVC GET actions that return a view (D171)
         new ConfigKeysDetector(),
         new HttpServicesDetector(), // after routes: it links calls to their endpoints
         new FrontendHttpDetector(), // after routes too: frontend calls → endpoints, fields → properties
+        new SignalRDetector(), // after DI: messages sent, through wrappers behind interfaces, and the frontend's listeners (G10)
+        new PlaywrightDetector(), // existing specs' goto → screens, stored apart and never walked (D115)
     ];
 
-    /// <summary>Empty list → all built-ins; <c>[none]</c> → none; otherwise the named ones (D17).</summary>
-    public static IReadOnlyList<IDetector> Enabled(StangentConfig config)
-    {
-        if (config.Detectors.Count == 0) return BuiltIn;
-        if (config.Detectors is ["none"]) return [];
-        var unknown = config.Detectors.Except(BuiltIn.Select(d => d.Name)).ToList();
-        if (unknown.Count > 0)
-            throw new StangentException("unknown_detector",
-                $"stangent.yaml names unknown detector(s): {string.Join(", ", unknown)}. Known: {string.Join(", ", BuiltIn.Select(d => d.Name))}.");
-        return [.. BuiltIn.Where(d => config.Detectors.Contains(d.Name))];
-    }
+    /// <summary>Every built-in detector runs (D381): a detector that finds nothing in a repo adds nothing.</summary>
+    public static IReadOnlyList<IDetector> Enabled(StangentConfig config) => BuiltIn;
 
     public static IReadOnlyDictionary<string, List<string>> Settings(StangentConfig config, string detector) =>
         config.DetectorSettings.TryGetValue(detector, out var s) ? s : new Dictionary<string, List<string>>();

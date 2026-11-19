@@ -1,0 +1,380 @@
+{
+  "codeTitle": "/calendar · CalendarPage",
+  "entry": "page:tsconfig.json|/calendar",
+  "generated": {
+    "bundleHash": "cc112bb86aee354c90053bd1300efb4de612aa78378cfd704dd6eb4942873a5c",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 146101,
+      "cutOff": 25,
+      "depth": 6,
+      "points": 556
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 72828,
+      "calls": 1,
+      "costUsd": 0.298631,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7531,
+      "outputTokens": 714
+    },
+    "writer": {
+      "cacheReadTokens": 70758,
+      "cacheWriteTokens": 72535,
+      "calls": 1,
+      "costUsd": 0.39041,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 45346,
+      "outputTokens": 8611
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/calendar",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/CalendarPage.tsx#CalendarPage",
+          "ts|frontend/src/Calendar/iCal/CalendarLinkModalContent.tsx#CalendarLinkModalContent"
+        ],
+        "id": "A1",
+        "text": "Pressing the iCal link toolbar item opens a Calendar Feed dialog with options for unmonitored, season premieres only, all-day events and tags, and a generated feed URL with copy and webcal buttons."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/CalendarPage.tsx#CalendarPage",
+          "ts|frontend/src/Commands/useCommands.ts#useCommandExecuting",
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "A2",
+        "text": "Pressing RSS Sync runs the RssSync command; the button spins while it is queued or started."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/CalendarMissingEpisodeSearchButton.tsx#CalendarMissingEpisodeSearchButton"
+        ],
+        "id": "A3",
+        "text": "Pressing Search for Missing runs an episode search for the missing episode IDs in range."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/CalendarPage.tsx#CalendarPage",
+          "ts|frontend/src/Calendar/Options/CalendarOptionsModalContent.tsx#CalendarOptionsModalContent"
+        ],
+        "id": "A4",
+        "text": "Pressing Options opens the Calendar Options dialog with local options (collapse multiple episodes, cover art, episode information, finale/special/cutoff icons, full color events) and global settings (first day of week, week column header, time format, color impaired mode)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Options/CalendarOptionsModalContent.tsx#CalendarOptionsModalContent",
+          "ts|frontend/src/Settings/UI/useUiSettings.ts#useSaveUiSettings"
+        ],
+        "id": "A5",
+        "text": "Changing a global setting in the options dialog saves it immediately as a UI setting."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/CalendarPage.tsx#CalendarPage",
+          "ts|frontend/src/Calendar/CalendarFilterModal.tsx#CalendarFilterModal"
+        ],
+        "id": "A6",
+        "text": "Choosing a filter sets the selected calendar filter; custom filters of type calendar are listed."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Header/CalendarHeader.tsx#CalendarHeader",
+          "ts|frontend/src/Calendar/useCalendar.ts#goToDate"
+        ],
+        "id": "A7",
+        "text": "Users can go to the previous or next range, jump to today, pick a date, or change the view from the header."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Day/CalendarDays.tsx#CalendarDays"
+        ],
+        "id": "A8",
+        "text": "Swiping horizontally by more than 100 px moves to the previous or next range."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Events/CalendarEvent.tsx#CalendarEvent",
+          "ts|frontend/src/Calendar/Agenda/AgendaEvent.tsx#AgendaEvent"
+        ],
+        "id": "A9",
+        "text": "Pressing an event opens the episode details dialog."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Events/CalendarEventGroup.tsx#CalendarEventGroup"
+        ],
+        "id": "A10",
+        "text": "A collapsed group of episodes can be expanded and collapsed."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/useCalendar.ts#useCalendar"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/Calendar"
+        ],
+        "id": "A11",
+        "text": "The calendar loads episodes for the visible date range."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/CalendarPage.tsx#CalendarPage"
+        ],
+        "id": "R1",
+        "text": "The number of days shown is the page width divided by the minimum day width, clamped between 3 and 7."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/CalendarMissingEpisodeSearchButton.tsx#useMissingEpisodeIdsSelector"
+        ],
+        "id": "R2",
+        "text": "Missing episodes for search are those with no file, aired within the visible range and already in the past, and not in the download queue."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/CalendarMissingEpisodeSearchButton.tsx#CalendarMissingEpisodeSearchButton"
+        ],
+        "id": "R3",
+        "text": "The Search for Missing button is disabled when there are no missing episodes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R4",
+        "text": "Repeating the same command within 5 seconds is ignored."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/useCalendar.ts#useCalendar"
+        ],
+        "id": "R5",
+        "text": "The unmonitored and includeSpecials filters default to true; a tags filter limits episodes by tag. These are sent with the date range to the calendar request."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/useCalendar.ts#getDates"
+        ],
+        "id": "R6",
+        "text": "Date range: Day view is one day; Week is the week by first day of week; Forecast starts yesterday and spans the day count; Month covers the full weeks of the month; Agenda runs from yesterday to one month ahead."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/useCalendar.ts#getPopulatableRange"
+        ],
+        "id": "R7",
+        "text": "Fetched range is widened by 1 day in Day view and 1 week each side in Week and Forecast views."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/useCalendar.ts#goToPreviousRange",
+          "ts|frontend/src/Calendar/useCalendar.ts#goToNextRange",
+          "ts|frontend/src/Calendar/Header/CalendarHeader.tsx#CalendarHeader"
+        ],
+        "id": "R8",
+        "text": "Previous/next moves by the day count in Forecast view, otherwise by one view unit. Agenda view disables navigation and date picker."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Calendar.tsx#Calendar",
+          "ts|frontend/src/Helpers/Hooks/useCurrentPage.ts#useCurrentPage"
+        ],
+        "id": "R9",
+        "text": "The calendar jumps back to today on a repeating timer, and on opening unless the page was reached by back/forward navigation."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Day/CalendarDay.tsx#useCalendarEvents"
+        ],
+        "id": "R10",
+        "text": "With collapse multiple episodes on, a day's episodes of the same series and season are grouped, and days are sorted by air time."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/CalendarPage.tsx#CalendarPage"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Calendar\" and has a toolbar with iCal link, RSS sync, search for missing, options and a filter menu."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/CalendarPage.tsx#CalendarPage",
+          "ts|frontend/src/Series/NoSeries.tsx#NoSeries"
+        ],
+        "id": "S2",
+        "text": "When the library has no series, the calendar is replaced by a message to import or add series, with buttons \"Import Existing Series\" (/add/import) and \"Add New Series\" (/add/new)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/CalendarPage.tsx#CalendarPage"
+        ],
+        "id": "S3",
+        "text": "The legend is shown below the calendar only when series exist."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/CalendarPage.tsx#CalendarPage"
+        ],
+        "id": "S4",
+        "text": "The filter menu is disabled when there are no series."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Calendar.tsx#Calendar"
+        ],
+        "id": "S5",
+        "text": "While calendar data loads, a loading indicator shows; if loading fails, a danger alert shows \"CalendarLoadError\" text."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Header/CalendarHeader.tsx#CalendarHeader",
+          "ts|frontend/src/Calendar/Header/CalendarHeaderViewButton.tsx#getTitle"
+        ],
+        "id": "S6",
+        "text": "The calendar header shows previous/next arrows, a Today link, a go-to-date picker, a title and view switchers for Month, Week, Forecast, Day and Agenda; a loading indicator appears while fetching."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Header/CalendarHeader.tsx#CalendarHeader"
+        ],
+        "id": "S7",
+        "text": "The header title is the long date in Day view, month and year in Month view, \"Agenda\" in Agenda view, and a start — end date range in other views."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Header/CalendarHeader.tsx#CalendarHeader"
+        ],
+        "id": "S8",
+        "text": "On large screens the view choices are in a dropdown menu; the Month option is hidden on small screens. Otherwise each view is a separate button."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Calendar.tsx#Calendar",
+          "ts|frontend/src/Calendar/Day/DaysOfWeek.tsx#DaysOfWeek",
+          "ts|frontend/src/Calendar/Day/CalendarDays.tsx#CalendarDays"
+        ],
+        "id": "S9",
+        "text": "Non-agenda views show a row of day-of-week headers and a grid of days; in Month view the header shows the first 7 dates."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Agenda/Agenda.tsx#Agenda"
+        ],
+        "id": "S10",
+        "text": "Agenda view lists episodes in order with a long-date heading whenever the day changes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Day/CalendarDay.tsx#CalendarDay"
+        ],
+        "id": "S11",
+        "text": "Each day cell lists that day's episodes; in Day view with none it shows \"NoEpisodesAiring\" text. Month view cells show the day number."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Events/CalendarEvent.tsx#CalendarEvent"
+        ],
+        "id": "S12",
+        "text": "Each event shows series title, episode title and season x episode number (when episode information is on), and air time range; status icons show for warnings, downloading, premiere, finale, special and cutoff not met."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Agenda/AgendaEvent.tsx#AgendaEvent"
+        ],
+        "id": "S13",
+        "text": "Agenda events can also show series cover art when that option is on."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/getStatusStyle.ts#getStatusStyle"
+        ],
+        "id": "S14",
+        "text": "An event's status is downloaded, downloading, unmonitored, onAir, missing or unaired."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Legend/Legend.tsx#Legend"
+        ],
+        "id": "S15",
+        "text": "The legend lists Unaired, Unmonitored, On Air, Missing, Downloading, Downloaded and Premiere, plus Season Finale/Series Finale, Special and Cutoff Not Met entries depending on options."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "E1",
+        "text": "Pressing RSS Sync or Search for Missing sends a command to the server (POST /command)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+          "ts|frontend/src/Settings/UI/useUiSettings.ts#useSaveUiSettings"
+        ],
+        "id": "E2",
+        "text": "Changing a global option saves UI settings to the server (PUT)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Calendar/Calendar.tsx#Calendar",
+          "ts|frontend/src/Utilities/pagePopulator.ts#registerPagePopulator"
+        ],
+        "id": "E3",
+        "text": "The calendar refetches when episode files are updated or deleted, and when a series refresh finishes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/EpisodeFile/useEpisodeFiles.ts#useEpisodeFiles"
+        ],
+        "id": "E4",
+        "text": "Episode files for the visible episodes are requested from the episode file endpoint."
+      }
+    ]
+  },
+  "title": "Calendar",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSettings",
+      "line": 12,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useSettings.ts",
+      "in": "ts|frontend/src/Settings/useSettings.ts#useSaveSettings",
+      "line": 29,
+      "reason": "HTTP PUT to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,530 @@
+{
+  "doc": "sonarr-fsd",
+  "note": "Phase 2b (D56, D57): findings in specs/trace.yaml scored against the frozen answer key. 'found' lets a gap be reported as a conflict and back; 'foundAsKind' needs the planted kind.",
+  "found": {
+    "overall": {
+      "found": 23,
+      "of": 30,
+      "share": 0.767,
+      "range95": [
+        0.6,
+        0.9
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 9,
+      "of": 10,
+      "share": 0.9,
+      "range95": [
+        0.7,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 4,
+      "of": 10,
+      "share": 0.4,
+      "range95": [
+        0.1,
+        0.7
+      ]
+    }
+  },
+  "foundAsKind": {
+    "overall": {
+      "found": 22,
+      "of": 30,
+      "share": 0.733,
+      "range95": [
+        0.567,
+        0.867
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 8,
+      "of": 10,
+      "share": 0.8,
+      "range95": [
+        0.5,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 4,
+      "of": 10,
+      "share": 0.4,
+      "range95": [
+        0.1,
+        0.7
+      ]
+    }
+  },
+  "noise": {
+    "findings": 40,
+    "unplanted": 17,
+    "worstCaseShare": 0.425,
+    "sample": 17,
+    "handChecked": 0,
+    "realInSample": null
+  },
+  "bars": {
+    "finds": false,
+    "notTooNoisy": null
+  },
+  "finerVerdicts": null,
+  "candidates": {
+    "sections": 0,
+    "byCode": 0,
+    "byAi": 0,
+    "aiFoundNone": 0
+  },
+  "cost": {
+    "finder": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "judge": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "checker": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "disprover": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    }
+  },
+  "items": [
+    {
+      "id": "G1",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S001",
+      "state": "gap"
+    },
+    {
+      "id": "G2",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S002",
+      "state": "gap"
+    },
+    {
+      "id": "G3",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S004",
+      "state": "gap"
+    },
+    {
+      "id": "G4",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S007",
+      "state": "gap"
+    },
+    {
+      "id": "G5",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S008",
+      "state": "gap"
+    },
+    {
+      "id": "G6",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S010",
+      "state": "gap"
+    },
+    {
+      "id": "G7",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S012",
+      "state": "gap"
+    },
+    {
+      "id": "G8",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S014",
+      "state": "gap"
+    },
+    {
+      "id": "G9",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S018",
+      "state": "gap"
+    },
+    {
+      "id": "G10",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S019",
+      "state": "gap"
+    },
+    {
+      "id": "C1",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S003",
+      "state": "conflict"
+    },
+    {
+      "id": "C2",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S005",
+      "state": "conflict"
+    },
+    {
+      "id": "C3",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S006",
+      "state": "conflict"
+    },
+    {
+      "id": "C4",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": false,
+      "by": "S009",
+      "state": "gap"
+    },
+    {
+      "id": "C5",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S011",
+      "state": "conflict"
+    },
+    {
+      "id": "C6",
+      "kind": "conflict",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "C7",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S013",
+      "state": "conflict"
+    },
+    {
+      "id": "C8",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S015",
+      "state": "conflict"
+    },
+    {
+      "id": "C9",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S016",
+      "state": "conflict"
+    },
+    {
+      "id": "C10",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S017",
+      "state": "conflict"
+    },
+    {
+      "id": "U1",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S023",
+      "state": "undocumented"
+    },
+    {
+      "id": "U2",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S024",
+      "state": "undocumented"
+    },
+    {
+      "id": "U3",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S026",
+      "state": "undocumented"
+    },
+    {
+      "id": "U4",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S038",
+      "state": "undocumented"
+    },
+    {
+      "id": "U5",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U6",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U7",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U8",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U9",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U10",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    }
+  ],
+  "handCheckSample": [
+    {
+      "id": "S022",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/serieseditor",
+      "pageQuote": "Series Editor screen is not described.",
+      "note": "Series Editor screen is not described."
+    },
+    {
+      "id": "S021",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/seasonpass",
+      "pageQuote": "Season Pass screen is not described.",
+      "note": "Season Pass screen is not described."
+    },
+    {
+      "id": "S027",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/system/updates",
+      "pageQuote": "Updates screen is not described.",
+      "note": "Updates screen is not described."
+    },
+    {
+      "id": "S031",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/indexers",
+      "pageQuote": "Indexers settings screen is not described.",
+      "note": "Indexers settings screen is not described."
+    },
+    {
+      "id": "S033",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/customformats",
+      "pageQuote": "Custom Formats settings screen is not described.",
+      "note": "Custom Formats settings screen is not described."
+    },
+    {
+      "id": "S034",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/importlists",
+      "pageQuote": "Import Lists settings screen is not described.",
+      "note": "Import Lists settings screen is not described."
+    },
+    {
+      "id": "S039",
+      "state": "undocumented",
+      "section": "2",
+      "fsdQuote": "",
+      "page": null,
+      "pageQuote": null,
+      "note": "The iCal feed also has options to include unmonitored episodes and show events as all-day."
+    },
+    {
+      "id": "S028",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/system/events",
+      "pageQuote": "Log events screen is not described.",
+      "note": "Log events screen is not described."
+    },
+    {
+      "id": "S036",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/metadata",
+      "pageQuote": "Metadata settings screen is not described.",
+      "note": "Metadata settings screen is not described."
+    },
+    {
+      "id": "S037",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/statistics",
+      "pageQuote": "Statistics screen is not described.",
+      "note": "Statistics screen is not described."
+    },
+    {
+      "id": "S035",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/connect",
+      "pageQuote": "Connect (notifications) settings screen is not described.",
+      "note": "Connect (notifications) settings screen is not described."
+    },
+    {
+      "id": "S030",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/mediamanagement",
+      "pageQuote": "Media Management settings screen is not described.",
+      "note": "Media Management settings screen is not described."
+    },
+    {
+      "id": "S040",
+      "state": "undocumented",
+      "section": "Settings / Profiles / Delay profiles",
+      "fsdQuote": "",
+      "page": null,
+      "pageQuote": null,
+      "note": "Delay profiles also have bypass if highest quality and bypass above custom format score options, plus enabling usenet/torrent protocols."
+    },
+    {
+      "id": "S025",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/system/status",
+      "pageQuote": "System Status screen is not described.",
+      "note": "System Status screen is not described."
+    },
+    {
+      "id": "S020",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/add/import",
+      "pageQuote": "Import Existing Series screen (select root folder) is not described.",
+      "note": "Import Existing Series screen (select root folder) is not described."
+    },
+    {
+      "id": "S029",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/system/logs/files",
+      "pageQuote": "Log files screen is not described.",
+      "note": "Log files screen is not described."
+    },
+    {
+      "id": "S032",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/downloadclients",
+      "pageQuote": "Download Clients settings screen is not described.",
+      "note": "Download Clients settings screen is not described."
+    }
+  ]
+}

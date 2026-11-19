@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:fsd-review:v1",
+  "title": "specs/fsd/<doc>/review.json: the FSD review (contract fsd-review v1, D341)",
+  "description": "The checked review runs of one FSD version against one commit, unioned by `stangent fsd review-merge`: exact duplicates joined, each finding saying which runs found it; findings that failed code's checks after the retry listed apart. Generated; answers and decisions don't go here.",
+  "type": "object",
+  "required": ["contract", "version", "doc", "commit", "fsdVersion", "model", "effort", "tokens", "costUsd", "runs", "counts", "findings", "dropped"],
+  "additionalProperties": false,
+  "definitions": {
+    "finding": {
+      "type": "object",
+      "required": ["state", "section", "fsdQuote", "screen", "note", "evidence"],
+      "properties": {
+        "state": { "enum": ["gap", "conflict", "undocumented"] },
+        "section": { "type": ["string", "null"] },
+        "fsdQuote": { "type": ["string", "null"] },
+        "screen": { "type": ["string", "null"] },
+        "note": { "type": "string" },
+        "evidence": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "properties": {
+    "contract": { "const": "fsd-review" },
+    "version": { "const": 1 },
+    "doc": { "type": "string" },
+    "commit": { "description": "The commit the reviewers read (a worktree of HEAD).", "type": "string" },
+    "fsdVersion": { "description": "The reviewed version's original hash, as document.json records it.", "type": "string" },
+    "model": { "type": "string" },
+    "effort": { "type": "string" },
+    "tokens": { "type": "integer", "minimum": 0 },
+    "costUsd": { "type": "number", "minimum": 0 },
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["run", "findings", "dropped", "retried", "usage"],
+        "additionalProperties": false,
+        "properties": {
+          "run": { "type": "integer", "minimum": 1 },
+          "findings": { "type": "integer", "minimum": 0 },
+          "dropped": { "type": "integer", "minimum": 0 },
+          "retried": { "type": "boolean" },
+          "usage": { "type": "object" }
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "required": ["gap", "conflict", "undocumented"],
+      "additionalProperties": false,
+      "properties": { "gap": { "type": "integer" }, "conflict": { "type": "integer" }, "undocumented": { "type": "integer" } }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "allOf": [{ "$ref": "#/definitions/finding" }],
+        "type": "object",
+        "required": ["id", "sectionId", "runs"],
+        "properties": {
+          "id": { "description": "F-001 …, in section order; not permanent: a new merge numbers again.", "type": "string", "pattern": "^F-[0-9]{3,}$" },
+          "sectionId": { "description": "The section's permanent id (S-0001), or null.", "type": ["string", "null"] },
+          "runs": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 1 } },
+          "maybeSameAs": { "description": "Undocumented findings of another run in the same section with an evidence file in common: possibly the same difference, never joined by code.", "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^F-[0-9]{3,}$" } }
+        }
+      }
+    },
+    "dropped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["run", "finding", "reasons"],
+        "additionalProperties": false,
+        "properties": {
+          "run": { "type": "integer", "minimum": 1 },
+          "finding": { "$ref": "#/definitions/finding" },
+          "reasons": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

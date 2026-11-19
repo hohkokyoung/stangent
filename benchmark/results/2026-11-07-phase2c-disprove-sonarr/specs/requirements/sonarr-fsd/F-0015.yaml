@@ -1,0 +1,44 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0015"
+doc: "sonarr-fsd"
+section: "Settings / Quality definitions"
+title: "Quality definitions"
+parent: "F-0010"
+children: []
+textHash: "aee73f8ec7119991535bdbc3a39f299a1d5c017867dd38e4bf59e08b0edadcb3"
+requirements:
+  - id: "R-0083"
+    title: "Screen lists every quality with sizes"
+    kind: "data"
+    statement: "The quality definitions screen lists every quality with its title and its minimum, preferred and maximum size in megabytes per minute."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Quality definitions"
+        text: "The quality definitions screen lists every quality with its title and its minimum, preferred and maximum size in megabytes per minute."
+        hash: "9cc58db70c9074e87994205ce403f16ef1be8384fda80cde0628f5b93835d599"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "45d6c4ec599967973a508950db4d28696dfe7681419f1da245f7e223f036a19a"
+  - id: "R-0084"
+    title: "Quality can have max episode runtime"
+    kind: "rule"
+    statement: "Each quality can be limited to a maximum episode runtime."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "Settings / Quality definitions"
+        text: "Each quality can be limited to a maximum episode runtime."
+        hash: "67d24bd9230c7fa946ad223870a193eb540bfe05158f7dc5b2e631b1f0dec1f5"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "303f9aefa0140af50c490baf2cc935419e62b8e3afc78d94184048331fc303a6"
+definitions: []
+journeys: []
+background: []
+retired: []

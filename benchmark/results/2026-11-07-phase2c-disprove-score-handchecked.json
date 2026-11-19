@@ -1,0 +1,224 @@
+{
+  "doc": "sonarr-fsd",
+  "note": "The disprove step (D119): the frozen key before and after. falseAlarmShare uses the hand check of the 20 sampled before the step; a fresh hand check of what's left is still owed before a bar is called met (D61).",
+  "before2c": {
+    "found": 24,
+    "of": 30,
+    "falseAlarmShare": 0.44,
+    "results": "benchmark/results/2026-11-03-phase2c-sonarr-links-score.json"
+  },
+  "before": {
+    "found": {
+      "found": 24,
+      "of": 30,
+      "share": 0.8,
+      "range95": [
+        0.633,
+        0.933
+      ]
+    },
+    "noise": {
+      "findings": 90,
+      "unplanted": 66,
+      "worstCaseShare": 0.733,
+      "sample": 20,
+      "handChecked": 20,
+      "realInSample": 8,
+      "falseAlarmShare": 0.44,
+      "falseAlarmRange95": [
+        0.293,
+        0.587
+      ]
+    }
+  },
+  "after": {
+    "found": {
+      "overall": {
+        "found": 19,
+        "of": 30,
+        "share": 0.633,
+        "range95": [
+          0.467,
+          0.8
+        ]
+      },
+      "gap": {
+        "found": 8,
+        "of": 10,
+        "share": 0.8,
+        "range95": [
+          0.6,
+          1
+        ]
+      },
+      "conflict": {
+        "found": 7,
+        "of": 10,
+        "share": 0.7,
+        "range95": [
+          0.4,
+          1
+        ]
+      },
+      "undocumented": {
+        "found": 4,
+        "of": 10,
+        "share": 0.4,
+        "range95": [
+          0.1,
+          0.7
+        ]
+      }
+    },
+    "foundAsKind": {
+      "overall": {
+        "found": 18,
+        "of": 30,
+        "share": 0.6,
+        "range95": [
+          0.433,
+          0.767
+        ]
+      },
+      "gap": {
+        "found": 8,
+        "of": 10,
+        "share": 0.8,
+        "range95": [
+          0.6,
+          1
+        ]
+      },
+      "conflict": {
+        "found": 6,
+        "of": 10,
+        "share": 0.6,
+        "range95": [
+          0.3,
+          0.9
+        ]
+      },
+      "undocumented": {
+        "found": 4,
+        "of": 10,
+        "share": 0.4,
+        "range95": [
+          0.1,
+          0.7
+        ]
+      }
+    },
+    "findings": 52,
+    "unplanted": 33,
+    "falseAlarmShare": 0.231
+  },
+  "handChecked": {
+    "false": {
+      "checked": 21,
+      "leftTheQueue": 9,
+      "stillInTheQueue": 12
+    },
+    "real": {
+      "checked": 23,
+      "leftTheQueue": 2,
+      "stillInTheQueue": 21
+    }
+  },
+  "byVerdict": {
+    "unverified": 23,
+    "stands": 21,
+    "refuted": 19,
+    "page-gap": 19,
+    "unreachable": 0,
+    "cant-tell": 8
+  },
+  "byQueue": {
+    "ba": 52,
+    "developer": 19,
+    "developer-confirm": 19,
+    "closed": 0,
+    "page-owner": 0,
+    "decided": 0,
+    "gone": 0
+  },
+  "plantedLost": [
+    {
+      "item": "G6",
+      "kind": "gap",
+      "entry": "L02bd86859c",
+      "verdict": "page-gap",
+      "goesTo": "developer",
+      "why": "Neither the page nor the code shown mentions a weekly email digest. The missing-episodes endpoint only returns a paged list, and nothing here schedules or sends email. The bundle can't prove no digest exists elsewhere."
+    },
+    {
+      "item": "G10",
+      "kind": "gap",
+      "entry": "L50dd25ed5e",
+      "verdict": "page-gap",
+      "goesTo": "developer",
+      "why": "The page says nothing about S3. The backup code shown only reads local folders and has no S3 or remote copy. The backup-creation method isn't in the bundle, so absence can't be proven. The nearest code is the local backup folder lookup."
+    },
+    {
+      "item": "C5",
+      "kind": "conflict",
+      "entry": "L8fbf1c9448",
+      "verdict": "page-gap",
+      "goesTo": "developer",
+      "why": "The page states no character rule. The shown Add code only lowercases the label and inserts it, with no letter/number/underscore check. Validators in the controller constructor aren't in the bundle, so the code can't fully settle it."
+    },
+    {
+      "item": "C9",
+      "kind": "conflict",
+      "entry": "L382ca47c9f",
+      "verdict": "page-gap",
+      "goesTo": "developer",
+      "why": "The Interval input sets no min or max, unlike the Log Size Limit and port inputs. The frontend therefore doesn't enforce 1 to 30. The server-side validator isn't in the bundle, so the code can't settle whether 1 to 30 is enforced there. The page doesn't state the range either."
+    },
+    {
+      "item": "C10",
+      "kind": "conflict",
+      "entry": "L627347402e",
+      "verdict": "page-gap",
+      "goesTo": "developer",
+      "why": "The Retention input is a plain number input with no max, so the frontend does not enforce 365 days. Any server-side limit is not in the bundle, and the page doesn't mention a cap, so the code here can't settle it."
+    }
+  ],
+  "bars": {
+    "found27of30": false,
+    "falseAlarmsAtMost30Percent": true
+  },
+  "cost": {
+    "finder": {
+      "calls": 2,
+      "sections": 2,
+      "inputTokensPerSection": 12593.5,
+      "outputTokensPerSection": 264.5,
+      "secondsPerSection": 3.3,
+      "costUsd": 0.1
+    },
+    "judge": {
+      "calls": 16,
+      "sections": 16,
+      "inputTokensPerSection": 9301.375,
+      "outputTokensPerSection": 759.4375,
+      "secondsPerSection": 5.3,
+      "costUsd": 0.67
+    },
+    "checker": {
+      "calls": 16,
+      "sections": 16,
+      "inputTokensPerSection": 9425,
+      "outputTokensPerSection": 503.5,
+      "secondsPerSection": 5.4,
+      "costUsd": 0.64
+    },
+    "disprover": {
+      "calls": 72,
+      "sections": 14,
+      "inputTokensPerSection": 166366.5,
+      "outputTokensPerSection": 2439.8571428571427,
+      "secondsPerSection": 24.7,
+      "costUsd": 8.59
+    }
+  }
+}

@@ -1,0 +1,19 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0010"
+doc: "sonarr-fsd"
+section: "Settings"
+title: "Settings"
+parent: null
+children:
+  - "F-0011"
+  - "F-0014"
+  - "F-0015"
+  - "F-0016"
+  - "F-0018"
+textHash: null
+requirements: []
+definitions: []
+journeys: []
+background: []
+retired: []

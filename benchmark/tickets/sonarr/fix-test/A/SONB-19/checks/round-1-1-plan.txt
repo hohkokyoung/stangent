@@ -1,0 +1,1 @@
+src/NzbDrone.Core/Notifications/Plex/Server/PlexServerService.cs · Sonarr.Core|M:NzbDrone.Core.Notifications.Plex.Server.PlexServerService.UpdateSectionPath(System.String,NzbDrone.Core.Notifications.Plex.Server.PlexSection,NzbDrone.Core.Notifications.Plex.Server.PlexSectionLocation,NzbDrone.Core.Notifications.Plex.Server.PlexServerSettings)

@@ -1,0 +1,1 @@
+Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.DownloadCompletedEvent): 1703 test(s), the proof's test among them (Sonarr.Core.Test|M:NzbDrone.Core.Test.NotificationTests.NotificationServiceFixture.should_send_manual_interaction_notification_when_episodes_cannot_be_determined)

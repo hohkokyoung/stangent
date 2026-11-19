@@ -1,0 +1,333 @@
+{
+  "codeTitle": "EpisodeDetailsModalContent",
+  "entry": "ts|frontend/src/Episode/EpisodeDetailsModalContent.tsx#EpisodeDetailsModalContent",
+  "generated": {
+    "bundleHash": "c6704d33b1d4c39fccc11143f67e7ae306b9a22ccfb72c71d472fbb914df5995",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 154276,
+      "cutOff": 80,
+      "depth": 6,
+      "points": 793
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 75443,
+      "calls": 1,
+      "costUsd": 0.307171,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 9536,
+      "outputTokens": 522
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 71432,
+      "calls": 1,
+      "costUsd": 0.321658,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 20297,
+      "outputTokens": 3565
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Episode/EpisodeDetailsModalContent.tsx#EpisodeDetailsModalContent",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Episode/EpisodeDetailsModalContent.tsx#EpisodeDetailsModalContent",
+          "ts|frontend/src/Components/MonitorToggleButton.tsx#MonitorToggleButton",
+          "ts|frontend/src/Episode/useEpisode.ts#useToggleEpisodesMonitored"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|PUT /api/v3/Episode/monitor",
+          "endpoint:Sonarr.Api.V5|PUT /api/v5/Episode/monitor"
+        ],
+        "id": "A1",
+        "text": "Toggling the monitor button sets the episode's monitored state to the opposite of its current value."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/EpisodeDetailsModalContent.tsx#EpisodeDetailsModalContent"
+        ],
+        "id": "A2",
+        "text": "Selecting a tab calls onTabChange with whether it is the Search tab."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/Search/EpisodeSearch.tsx#EpisodeSearch",
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "A3",
+        "text": "Quick Search runs an episode search command for the episode and closes the modal."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/Search/EpisodeSearch.tsx#EpisodeSearch"
+        ],
+        "id": "A4",
+        "text": "Interactive Search opens the interactive release search in place."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/Summary/EpisodeFileRow.tsx#EpisodeFileRow",
+          "ts|frontend/src/EpisodeFile/useEpisodeFiles.ts#useDeleteEpisodeFile"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|DELETE /api/v3/EpisodeFile/bulk",
+          "endpoint:Sonarr.Api.V5|DELETE /api/v5/EpisodeFile/bulk"
+        ],
+        "id": "A5",
+        "text": "Deleting the episode file asks for confirmation, then deletes the file."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/History/EpisodeHistoryRow.tsx#EpisodeHistoryRow",
+          "ts|frontend/src/Activity/History/useHistory.ts#useMarkAsFailed"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/History/failed/{id}",
+          "endpoint:Sonarr.Api.V5|POST /api/v5/History/failed/{id:int}"
+        ],
+        "id": "A6",
+        "text": "On a grabbed history row, Mark as Failed asks for confirmation, then marks the history item as failed."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveSearch/InteractiveSearchRow.tsx#InteractiveSearchRow",
+          "ts|frontend/src/InteractiveSearch/useReleases.ts#useGrabRelease"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/Release",
+          "endpoint:Sonarr.Api.V5|POST /api/v5/Release"
+        ],
+        "id": "A7",
+        "text": "In interactive search, a release can be grabbed with the download button, or with a manual override via the override dialog."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveSearch/useReleases.ts#useReleases",
+          "ts|frontend/src/InteractiveSearch/InteractiveSearch.tsx#InteractiveSearch"
+        ],
+        "id": "A8",
+        "text": "Typing in the release filter box narrows the release list to titles containing the text, case-insensitively."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Episode/EpisodeDetailsModalContent.tsx#EpisodeDetailsModalContent"
+        ],
+        "id": "R1",
+        "text": "The monitor toggle is disabled when the series is not monitored."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/EpisodeDetailsModalContent.tsx#EpisodeDetailsModalContent",
+          "ts|frontend/src/Episode/useEpisode.ts#useToggleEpisodesMonitored"
+        ],
+        "id": "R2",
+        "text": "The monitor toggle shows a spinner while saving."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/EpisodeDetailsModalContent.tsx#EpisodeDetailsModalContent"
+        ],
+        "id": "R3",
+        "text": "The modal opens on the 'details' tab by default."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/History/EpisodeHistoryRow.tsx#EpisodeHistoryRow"
+        ],
+        "id": "R4",
+        "text": "The Mark as Failed button appears only for history rows whose event type is grabbed."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R5",
+        "text": "The same command run within 5 seconds is skipped."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/Search/EpisodeSearch.tsx#EpisodeSearch"
+        ],
+        "id": "R6",
+        "text": "Interactive search opens directly if startInteractiveSearch is set or releases were already fetched."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveSearch/useReleases.ts#releaseStore",
+          "ts|frontend/src/InteractiveSearch/useReleases.ts#useReleases"
+        ],
+        "id": "R7",
+        "text": "Releases are sorted by releaseWeight ascending by default; results are cached for 30 minutes with no retry."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveSearch/Peers.tsx#getKind"
+        ],
+        "id": "R8",
+        "text": "Seeder counts in the peers label are colored by thresholds: over 50, over 10, over 0, otherwise danger."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveSearch/OverrideMatch/OverrideMatchModalContent.tsx#OverrideMatchModalContent"
+        ],
+        "id": "R9",
+        "text": "A manual grab requires a series, at least one episode, a quality and at least one language, otherwise an error is shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveSearch/InteractiveSearchRow.tsx#InteractiveSearchRow"
+        ],
+        "id": "R10",
+        "text": "A grab that is not downloadAllowed asks for confirmation first."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Episode/EpisodeDetailsModalContent.tsx#EpisodeDetailsModalContent"
+        ],
+        "id": "S1",
+        "text": "The header shows the series title and the season/episode number, followed by the episode title next to a monitor toggle button."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/EpisodeDetailsModalContent.tsx#EpisodeDetailsModalContent"
+        ],
+        "id": "S2",
+        "text": "The body has three tabs: Details, History and Search."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/EpisodeDetailsModalContent.tsx#EpisodeDetailsModalContent"
+        ],
+        "id": "S3",
+        "text": "The footer has a Close button, and an Open Series button when showOpenSeriesButton is set."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/Summary/EpisodeSummary.tsx#EpisodeSummary",
+          "ts|frontend/src/Settings/Profiles/Quality/QualityProfileName.tsx#QualityProfileName"
+        ],
+        "id": "S4",
+        "text": "The Details tab shows when the episode airs with its network, the series quality profile name (Unknown if not found), and the episode overview, or 'NoEpisodeOverview' text when empty."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/Summary/EpisodeSummary.tsx#EpisodeSummary",
+          "ts|frontend/src/Episode/Summary/EpisodeFileRow.tsx#EpisodeFileRow"
+        ],
+        "id": "S5",
+        "text": "When the episode has a file with a path, a table shows its path, size, languages, quality, custom formats, custom format score and actions."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/History/EpisodeHistory.tsx#EpisodeHistory"
+        ],
+        "id": "S6",
+        "text": "The History tab shows a loading indicator while fetching, an error alert on failure, an info alert when there is no history, otherwise a table of history rows."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/History/EpisodeHistoryRow.tsx#EpisodeHistoryRow"
+        ],
+        "id": "S7",
+        "text": "Each history row shows event type icon, source title, languages, quality, custom formats, score, relative date, and an info popover with event details."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/Search/EpisodeSearch.tsx#EpisodeSearch"
+        ],
+        "id": "S8",
+        "text": "The Search tab shows Quick Search and Interactive Search buttons, or the interactive search results once opened."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveSearch/InteractiveSearch.tsx#InteractiveSearch"
+        ],
+        "id": "S9",
+        "text": "Interactive search shows a release filter text box, a filter menu, a loading indicator, error and empty-result messages, and a sortable table of releases."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Episode/useEpisode.ts#useToggleEpisodesMonitored"
+        ],
+        "id": "E1",
+        "text": "Toggling monitored updates the cached episode list with the new monitored value on success."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/EpisodeFile/useEpisodeFiles.ts#useDeleteEpisodeFile"
+        ],
+        "id": "E2",
+        "text": "Deleting an episode file refreshes the cached episode file and episode data."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/History/useHistory.ts#useMarkAsFailed"
+        ],
+        "id": "E3",
+        "text": "Marking as failed refreshes the cached history on success."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveSearch/useReleases.ts#useClearReleasesOnUnmount",
+          "ts|frontend/src/Episode/EpisodeDetailsModalContent.tsx#EpisodeDetailsModalContent"
+        ],
+        "id": "E4",
+        "text": "Closing the modal removes the cached release search results for the episode."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "E5",
+        "text": "Executing a command posts it to the command endpoint and adds it to the cached command list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveSearch/useReleases.ts#useReleases"
+        ],
+        "id": "E6",
+        "text": "Loading releases adds any new rejection reasons to the saved rejection filter tags."
+      }
+    ]
+  },
+  "title": "Episode Details Modal",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useProviderSettings",
+      "line": 78,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

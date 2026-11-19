@@ -1,0 +1,1389 @@
+{
+  "repo": "kavita",
+  "commit": "2d225367f0310ac7354423b772a4c6a7caf63fd2",
+  "id": "series-detail-opens",
+  "name": "Series detail screen opens",
+  "kind": "screen-opens",
+  "start": {
+    "what": "ngOnInit of the series detail component",
+    "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:544",
+    "code": "ngOnInit(): void {"
+  },
+  "actor": {
+    "who": "signed-in user who may access the library and the series",
+    "why": "parent route has canActivate authGuard and the library route has libraryAccessGuard; the API requires [Authorize] and [SeriesAccess]",
+    "at": "UI/Web/src/app/app-routing.module.ts:90",
+    "code": "canActivate: [libraryAccessGuard],"
+  },
+  "checks": [],
+  "steps": [
+    {
+      "n": 1,
+      "from": null,
+      "what": "libraryAccessGuard asks whether the user may open the library",
+      "at": "UI/Web/src/app/_guards/library-access.guard.ts:20",
+      "code": "return memberService.hasLibraryAccess(libraryId).pipe(",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "UI/Web/src/app/_guards/library-access.guard.ts:16",
+          "code": "if (isNaN(libraryId)) {"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "from": 1,
+      "what": "GET api/users/has-library-access?libraryId=",
+      "at": "UI/Web/src/app/_services/member.service.ts:48",
+      "code": "return this.httpClient.get<boolean>(this.baseUrl + 'users/has-library-access?libraryId=' + libraryId);"
+    },
+    {
+      "n": 3,
+      "from": 2,
+      "what": "controller action HasLibraryAccess",
+      "at": "Kavita.Server/Controllers/UsersController.cs:121",
+      "code": "public async Task< ActionResult<bool>> HasLibraryAccess(int libraryId)"
+    },
+    {
+      "n": 4,
+      "from": 3,
+      "what": "reads the libraries the user may see",
+      "at": "Kavita.Server/Controllers/UsersController.cs:124",
+      "code": "var libs = await unitOfWork.LibraryRepository.GetLibraryDtosForUsernameAsync(Username!, ct);",
+      "end": {
+        "kind": "database",
+        "detail": "Library rows for the user (LibraryRepository.GetLibraryDtosForUsernameAsync)"
+      }
+    },
+    {
+      "n": 5,
+      "from": null,
+      "what": "libraryResolver loads the library",
+      "at": "UI/Web/src/app/_resolvers/library.resolver.ts:23",
+      "code": "return libraryService.getLibrary(parseInt(libId, 10)).pipe(",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "UI/Web/src/app/_resolvers/library.resolver.ts:18",
+          "code": "if (!libId || libId === '0') {"
+        }
+      ]
+    },
+    {
+      "n": 6,
+      "from": 5,
+      "what": "GET api/library?libraryId=",
+      "at": "UI/Web/src/app/_services/library.service.ts:106",
+      "code": "return this.httpClient.get<Library>(this.baseUrl + 'library?libraryId=' + libraryId);"
+    },
+    {
+      "n": 7,
+      "from": 6,
+      "what": "controller action GetLibrary",
+      "at": "Kavita.Server/Controllers/LibraryController.cs:214",
+      "code": "public async Task<ActionResult<LibraryDto?>> GetLibrary(int libraryId)"
+    },
+    {
+      "n": 8,
+      "from": 7,
+      "what": "admin gets the full library DTO",
+      "at": "Kavita.Server/Controllers/LibraryController.cs:219",
+      "code": "return Ok(await unitOfWork.LibraryRepository.GetLibraryDtoByIdAsync(libraryId, ct));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/LibraryController.cs:217",
+          "code": "if (User.IsInRole(PolicyConstants.AdminRole))"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Library (LibraryRepository.GetLibraryDtoByIdAsync)"
+      }
+    },
+    {
+      "n": 9,
+      "from": 7,
+      "what": "other users get the lite library DTO",
+      "at": "Kavita.Server/Controllers/LibraryController.cs:221",
+      "code": "return Ok(await unitOfWork.LibraryRepository.GetLiteLibraryDtoByIdAsync(libraryId, ct));",
+      "conditions": [
+        {
+          "kind": "else",
+          "at": "Kavita.Server/Controllers/LibraryController.cs:217",
+          "code": "if (User.IsInRole(PolicyConstants.AdminRole))"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Library (LibraryRepository.GetLiteLibraryDtoByIdAsync)"
+      }
+    },
+    {
+      "n": 10,
+      "from": null,
+      "what": "seriesResolver loads the series",
+      "at": "UI/Web/src/app/_resolvers/series.resolver.ts:19",
+      "code": "return seriesService.getSeries(parseInt(seriesId, 10)).pipe(",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "UI/Web/src/app/_resolvers/series.resolver.ts:14",
+          "code": "if (!seriesId || seriesId === '0') {"
+        }
+      ]
+    },
+    {
+      "n": 11,
+      "from": 10,
+      "what": "GET api/series/{seriesId}",
+      "at": "UI/Web/src/app/_services/series.service.ts:86",
+      "code": "return this.httpClient.get<Series>(this.baseUrl + 'series/' + seriesId);"
+    },
+    {
+      "n": 12,
+      "from": 11,
+      "what": "controller action GetSeries",
+      "at": "Kavita.Server/Controllers/SeriesController.cs:84",
+      "code": "public async Task<ActionResult<SeriesDto>> GetSeries(int seriesId)"
+    },
+    {
+      "n": 13,
+      "from": 12,
+      "what": "loads the series DTO for the user",
+      "at": "Kavita.Server/Controllers/SeriesController.cs:87",
+      "code": "var series = await unitOfWork.SeriesRepository.GetSeriesDtoByIdAsync(seriesId, UserId, ct);",
+      "end": {
+        "kind": "database",
+        "detail": "Series (SeriesRepository.GetSeriesDtoByIdAsync)"
+      }
+    },
+    {
+      "n": 14,
+      "from": null,
+      "what": "ngOnInit: after loadPageSource fires, debounce 300ms and run loadSeries",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:545",
+      "code": "this.loadPage$.pipe(takeUntilDestroyed(this.destroyRef), debounceTime(300), tap(val => this.loadSeries(this.seriesId(), val))).subscribe();"
+    },
+    {
+      "n": 15,
+      "from": null,
+      "what": "ngOnInit: asks whether scrobbling is on hold for the series",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:592",
+      "code": "this.scrobbleService.hasHold(this.seriesId()).subscribe(res => {"
+    },
+    {
+      "n": 16,
+      "from": 15,
+      "what": "GET api/scrobbling/has-hold?seriesId=",
+      "at": "UI/Web/src/app/_services/scrobbling.service.ts:114",
+      "code": "return this.httpClient.get(this.baseUrl + 'scrobbling/has-hold?seriesId=' + seriesId, TextResonse)"
+    },
+    {
+      "n": 17,
+      "from": 16,
+      "what": "controller action HasHold",
+      "at": "Kavita.Server/Controllers/ScrobblingController.cs:271",
+      "code": "public async Task<ActionResult<bool>> HasHold(int seriesId)"
+    },
+    {
+      "n": 18,
+      "from": 17,
+      "what": "reads the user's hold on the series",
+      "at": "Kavita.Server/Controllers/ScrobblingController.cs:274",
+      "code": "return Ok(await unitOfWork.UserRepository.HasHoldOnSeries(UserId, seriesId, ct));",
+      "end": {
+        "kind": "database",
+        "detail": "AppUser ScrobbleHolds (UserRepository.HasHoldOnSeries)"
+      }
+    },
+    {
+      "n": 19,
+      "from": null,
+      "what": "ngOnInit: asks whether the library allows scrobbling",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:596",
+      "code": "this.scrobbleService.libraryAllowsScrobbling(this.seriesId()).subscribe(res => {"
+    },
+    {
+      "n": 20,
+      "from": 19,
+      "what": "GET api/scrobbling/library-allows-scrobbling?seriesId=",
+      "at": "UI/Web/src/app/_services/scrobbling.service.ts:109",
+      "code": "return this.httpClient.get(this.baseUrl + 'scrobbling/library-allows-scrobbling?seriesId=' + seriesId, TextResonse)"
+    },
+    {
+      "n": 21,
+      "from": 20,
+      "what": "controller action LibraryAllowsScrobbling",
+      "at": "Kavita.Server/Controllers/ScrobblingController.cs:284",
+      "code": "public async Task<ActionResult<bool>> LibraryAllowsScrobbling(int seriesId)"
+    },
+    {
+      "n": 22,
+      "from": 21,
+      "what": "reads the library's scrobbling flag",
+      "at": "Kavita.Server/Controllers/ScrobblingController.cs:287",
+      "code": "return Ok(await unitOfWork.LibraryRepository.GetAllowsScrobblingBySeriesId(seriesId, ct));",
+      "end": {
+        "kind": "database",
+        "detail": "Library (LibraryRepository.GetAllowsScrobblingBySeriesId)"
+      }
+    },
+    {
+      "n": 23,
+      "from": null,
+      "what": "ngOnInit: pushes true into loadPageSource, which triggers the first loadSeries(seriesId, true)",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:609",
+      "code": "this.loadPageSource.next(true);"
+    },
+    {
+      "n": 24,
+      "from": 14,
+      "what": "loadSeries: getSeries again",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:645",
+      "code": "this.seriesService.getSeries(seriesId).subscribe(series => {",
+      "end": {
+        "kind": "unknown",
+        "detail": "same GET api/series/{seriesId} and same controller code as the resolver chain (steps for SeriesController.GetSeries); not walked twice"
+      }
+    },
+    {
+      "n": 25,
+      "from": 14,
+      "what": "loadSeries: reading history for the series (loadReadingHistory)",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:649",
+      "code": "this.loadReadingHistory(this.readingHistoryCurrentPage(), READING_HISTORY_PAGE_SIZE);"
+    },
+    {
+      "n": 26,
+      "from": 25,
+      "what": "statisticsService.getReadingHistoryForSeries",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:803",
+      "code": "this.statisticsService.getReadingHistoryForSeries(this.seriesId(), page, pageSize).pipe("
+    },
+    {
+      "n": 27,
+      "from": 26,
+      "what": "GET api/stats/reading-history/series/{seriesId}?tzId=",
+      "at": "UI/Web/src/app/_services/statistics.service.ts:344",
+      "code": "return this.httpClient.get<ReadingHistoryItem[]>(\n`${this.baseUrl}stats/reading-history/series/${seriesId}?tzId=${tzId}`,"
+    },
+    {
+      "n": 28,
+      "from": 27,
+      "what": "controller action GetReadingHistoryItemsForSeries",
+      "at": "Kavita.Server/Controllers/StatsController.cs:487",
+      "code": "public async Task<ActionResult<PagedList<ReadingHistoryItemDto>>> GetReadingHistoryItemsForSeries("
+    },
+    {
+      "n": 29,
+      "from": 28,
+      "what": "statService.GetReadingHistoryItemsForSeries",
+      "at": "Kavita.Server/Controllers/StatsController.cs:491",
+      "code": "var result = await statService.GetReadingHistoryItemsForSeries(UserId, seriesId,"
+    },
+    {
+      "n": 30,
+      "from": 29,
+      "what": "queries the user's reading-session activity rows for the series",
+      "at": "Kavita.Services/StatisticService.cs:1530",
+      "code": "var query = context.AppUserReadingSessionActivityData",
+      "end": {
+        "kind": "database",
+        "detail": "AppUserReadingSessionActivityData"
+      }
+    },
+    {
+      "n": 31,
+      "from": 14,
+      "what": "loadSeries: getMetadata",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:651",
+      "code": "this.seriesService.getMetadata(seriesId).subscribe(metadata => {"
+    },
+    {
+      "n": 32,
+      "from": 31,
+      "what": "GET api/series/metadata?seriesId=",
+      "at": "UI/Web/src/app/_services/series.service.ts:191",
+      "code": "return this.httpClient.get<SeriesMetadata>(this.baseUrl + 'series/metadata?seriesId=' + seriesId);"
+    },
+    {
+      "n": 33,
+      "from": 32,
+      "what": "controller action GetSeriesMetadata",
+      "at": "Kavita.Server/Controllers/SeriesController.cs:449",
+      "code": "public async Task<ActionResult<SeriesMetadataDto>> GetSeriesMetadata(int seriesId)"
+    },
+    {
+      "n": 34,
+      "from": 33,
+      "what": "reads the series metadata",
+      "at": "Kavita.Server/Controllers/SeriesController.cs:452",
+      "code": "return Ok(await unitOfWork.SeriesRepository.GetSeriesMetadataAsync(seriesId, ct));",
+      "end": {
+        "kind": "database",
+        "detail": "SeriesMetadata (SeriesRepository.GetSeriesMetadataAsync)"
+      }
+    },
+    {
+      "n": 35,
+      "from": 31,
+      "what": "when the series is ongoing or ended, asks for the next expected chapter date",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:656",
+      "code": "this.seriesService.getNextExpectedChapterDate(seriesId).subscribe(date => {",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:654",
+          "code": "if (![PublicationStatus.Ended, PublicationStatus.OnGoing].includes(this.seriesMetadata()!.publicationStatus)) return;"
+        }
+      ]
+    },
+    {
+      "n": 36,
+      "from": 35,
+      "what": "GET api/series/next-expected?seriesId=",
+      "at": "UI/Web/src/app/_services/series.service.ts:249",
+      "code": "return this.httpClient.get<NextExpectedChapter>(this.baseUrl + 'series/next-expected?seriesId=' + seriesId);"
+    },
+    {
+      "n": 37,
+      "from": 36,
+      "what": "controller action GetNextExpectedChapter",
+      "at": "Kavita.Server/Controllers/SeriesController.cs:668",
+      "code": "public async Task<ActionResult<NextExpectedChapterDto>> GetNextExpectedChapter(int seriesId)"
+    },
+    {
+      "n": 38,
+      "from": 37,
+      "what": "seriesService.GetEstimatedChapterCreationDate",
+      "at": "Kavita.Server/Controllers/SeriesController.cs:673",
+      "code": "return Ok(await seriesService.GetEstimatedChapterCreationDate(seriesId, userId, ct));"
+    },
+    {
+      "n": 39,
+      "from": 38,
+      "what": "loads the series with metadata and library",
+      "at": "Kavita.Services/SeriesService.cs:794",
+      "code": "var series = await unitOfWork.SeriesRepository.GetSeriesByIdAsync(seriesId, SeriesIncludes.Metadata | SeriesIncludes.Library, ct);",
+      "end": {
+        "kind": "database",
+        "detail": "Series with SeriesMetadata and Library"
+      }
+    },
+    {
+      "n": 40,
+      "from": 38,
+      "what": "reads the chapters (created date, number) to estimate the next release",
+      "at": "Kavita.Services/SeriesService.cs:816",
+      "code": "var chapterData = await unitOfWork.ChapterRepository.GetChaptersForSeries(seriesId)",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/SeriesService.cs:803",
+          "code": "if (series.Metadata.PublicationStatus is not (PublicationStatus.OnGoing or PublicationStatus.Ended) ||"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Chapter (ChapterRepository.GetChaptersForSeries)"
+      }
+    },
+    {
+      "n": 41,
+      "from": 14,
+      "what": "loadSeries: asks if the series is on the user's Want to Read list",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:669",
+      "code": "this.seriesService.isWantToRead(seriesId).subscribe(isWantToRead => {"
+    },
+    {
+      "n": 42,
+      "from": 41,
+      "what": "GET api/want-to-read?seriesId=",
+      "at": "UI/Web/src/app/_services/series.service.ts:154",
+      "code": "return this.httpClient.get<string>(this.baseUrl + 'want-to-read?seriesId=' + seriesId, TextResonse)"
+    },
+    {
+      "n": 43,
+      "from": 42,
+      "what": "controller action IsSeriesInWantToRead",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:60",
+      "code": "public async Task<ActionResult<bool>> IsSeriesInWantToRead([FromQuery] int seriesId)"
+    },
+    {
+      "n": 44,
+      "from": 43,
+      "what": "reads AppUserWantToRead for the user and series",
+      "at": "Kavita.Server/Controllers/WantToReadController.cs:63",
+      "code": "return Ok(await unitOfWork.SeriesRepository.IsSeriesInWantToRead(UserId, seriesId, ct));",
+      "end": {
+        "kind": "database",
+        "detail": "AppUserWantToRead (SeriesRepository.IsSeriesInWantToRead)"
+      }
+    },
+    {
+      "n": 45,
+      "from": 14,
+      "what": "loadSeries: loadReadingLists",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:673",
+      "code": "this.loadReadingLists(seriesId);"
+    },
+    {
+      "n": 46,
+      "from": 45,
+      "what": "readingListService.getReadingListsForSeries",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:767",
+      "code": "this.readingListService.getReadingListsForSeries(seriesId).subscribe(lists => {"
+    },
+    {
+      "n": 47,
+      "from": 46,
+      "what": "GET api/readinglist/lists-for-series?seriesId=",
+      "at": "UI/Web/src/app/_services/reading-list.service.ts:54",
+      "code": "return this.httpClient.get<ReadingList[]>(this.baseUrl + 'readinglist/lists-for-series?seriesId=' + seriesId);"
+    },
+    {
+      "n": 48,
+      "from": 47,
+      "what": "controller action GetListsForSeries",
+      "at": "Kavita.Server/Controllers/ReadingListController.cs:100",
+      "code": "public async Task<ActionResult<IEnumerable<ReadingListDto>>> GetListsForSeries(int seriesId)"
+    },
+    {
+      "n": 49,
+      "from": 48,
+      "what": "reads the reading lists containing the series",
+      "at": "Kavita.Server/Controllers/ReadingListController.cs:103",
+      "code": "return Ok(await unitOfWork.ReadingListRepository.GetReadingListDtosForSeriesAndUserAsync(UserId,",
+      "end": {
+        "kind": "database",
+        "detail": "ReadingList (ReadingListRepository.GetReadingListDtosForSeriesAndUserAsync)"
+      }
+    },
+    {
+      "n": 50,
+      "from": 14,
+      "what": "loadSeries: loadCollections",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:674",
+      "code": "this.loadCollections(seriesId);"
+    },
+    {
+      "n": 51,
+      "from": 50,
+      "what": "collectionTagService.allCollectionsForSeries",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:773",
+      "code": "this.collectionTagService.allCollectionsForSeries(seriesId, false).subscribe(tags => {"
+    },
+    {
+      "n": 52,
+      "from": 51,
+      "what": "GET api/collection/all-series?ownedOnly=&seriesId=",
+      "at": "UI/Web/src/app/_services/collection-tag.service.ts:31",
+      "code": "return this.httpClient.get<UserCollection[]>(this.baseUrl + 'collection/all-series?ownedOnly=' + ownedOnly + '&seriesId=' + seriesId);"
+    },
+    {
+      "n": 53,
+      "from": 52,
+      "what": "controller action GetCollectionsBySeries",
+      "at": "Kavita.Server/Controllers/CollectionController.cs:72",
+      "code": "public async Task<ActionResult<IEnumerable<AppUserCollectionDto>>> GetCollectionsBySeries(int seriesId, bool ownedOnly = false)"
+    },
+    {
+      "n": 54,
+      "from": 53,
+      "what": "reads the collections containing the series",
+      "at": "Kavita.Server/Controllers/CollectionController.cs:75",
+      "code": "return Ok(await unitOfWork.CollectionTagRepository.GetCollectionDtosBySeriesAsync(UserId, seriesId, !ownedOnly, ct));",
+      "end": {
+        "kind": "database",
+        "detail": "AppUserCollection (CollectionTagRepository.GetCollectionDtosBySeriesAsync)"
+      }
+    },
+    {
+      "n": 55,
+      "from": 14,
+      "what": "loadSeries: loadBookmarks",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:675",
+      "code": "this.loadBookmarks(seriesId);"
+    },
+    {
+      "n": 56,
+      "from": 55,
+      "what": "readerService.getBookmarksForSeries",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:779",
+      "code": "this.readerService.getBookmarksForSeries(seriesId).subscribe(bookmarks => {"
+    },
+    {
+      "n": 57,
+      "from": 56,
+      "what": "GET api/reader/series-bookmarks?seriesId=",
+      "at": "UI/Web/src/app/_services/reader.service.ts:168",
+      "code": "return this.httpClient.get<PageBookmark[]>(this.baseUrl + 'reader/series-bookmarks?seriesId=' + seriesId);"
+    },
+    {
+      "n": 58,
+      "from": 57,
+      "what": "controller action GetBookmarksForSeries",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:848",
+      "code": "public async Task<ActionResult<IEnumerable<BookmarkDto>>> GetBookmarksForSeries(int seriesId)"
+    },
+    {
+      "n": 59,
+      "from": 58,
+      "what": "reads the user's bookmarks for the series",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:851",
+      "code": "return Ok(await unitOfWork.UserRepository.GetBookmarkDtosForSeries(UserId, seriesId, ct));",
+      "end": {
+        "kind": "database",
+        "detail": "AppUserBookmark (UserRepository.GetBookmarkDtosForSeries)"
+      }
+    },
+    {
+      "n": 60,
+      "from": 14,
+      "what": "loadSeries: loadRelatedSeries",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:676",
+      "code": "this.loadRelatedSeries(seriesId);"
+    },
+    {
+      "n": 61,
+      "from": 60,
+      "what": "seriesService.getRelatedForSeries",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:745",
+      "code": "this.seriesService.getRelatedForSeries(seriesId).subscribe((relations: RelatedSeries) => {"
+    },
+    {
+      "n": 62,
+      "from": 61,
+      "what": "GET api/series/all-related?seriesId=",
+      "at": "UI/Web/src/app/_services/series.service.ts:214",
+      "code": "return this.httpClient.get<RelatedSeries>(this.baseUrl + 'series/all-related?seriesId=' + seriesId);"
+    },
+    {
+      "n": 63,
+      "from": 62,
+      "what": "controller action GetAllRelatedSeries",
+      "at": "Kavita.Server/Controllers/SeriesController.cs:566",
+      "code": "public async Task<ActionResult<RelatedSeriesDto>> GetAllRelatedSeries(int seriesId)"
+    },
+    {
+      "n": 64,
+      "from": 63,
+      "what": "seriesService.GetRelatedSeries",
+      "at": "Kavita.Server/Controllers/SeriesController.cs:569",
+      "code": "return Ok(await seriesService.GetRelatedSeries(UserId, seriesId, ct));"
+    },
+    {
+      "n": 65,
+      "from": 64,
+      "what": "reads the related series",
+      "at": "Kavita.Services/SeriesService.cs:648",
+      "code": "return await unitOfWork.SeriesRepository.GetRelatedSeriesAsync(userId, seriesId, ct);",
+      "end": {
+        "kind": "database",
+        "detail": "SeriesRelation and Series (SeriesRepository.GetRelatedSeriesAsync)"
+      }
+    },
+    {
+      "n": 66,
+      "from": 14,
+      "what": "loadSeries: loads the user's annotations for the series",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:678",
+      "code": "this.annotationService.getAnnotationsForSeries(seriesId).subscribe(annotationsForSeries => {"
+    },
+    {
+      "n": 67,
+      "from": 66,
+      "what": "GET api/annotation/all-for-series?seriesId=",
+      "at": "UI/Web/src/app/_services/annotation.service.ts:89",
+      "code": "return this.httpClient.get<Array<Annotation>>(this.baseUrl + 'annotation/all-for-series?seriesId=' + seriesId);"
+    },
+    {
+      "n": 68,
+      "from": 67,
+      "what": "controller action GetAnnotationsBySeries",
+      "at": "Kavita.Server/Controllers/AnnotationController.cs:65",
+      "code": "public async Task<ActionResult<AnnotationDto>> GetAnnotationsBySeries(int seriesId)"
+    },
+    {
+      "n": 69,
+      "from": 68,
+      "what": "reads the user's annotations for the series",
+      "at": "Kavita.Server/Controllers/AnnotationController.cs:68",
+      "code": "return Ok(await unitOfWork.UserRepository.GetAnnotationDtosBySeries(UserId, seriesId, ct));",
+      "end": {
+        "kind": "database",
+        "detail": "AppUserAnnotation (UserRepository.GetAnnotationDtosBySeries)"
+      }
+    },
+    {
+      "n": 70,
+      "from": 14,
+      "what": "loadSeries: reading time left",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:682",
+      "code": "this.readerService.getTimeLeft(seriesId).subscribe((timeLeft) => {"
+    },
+    {
+      "n": 71,
+      "from": 70,
+      "what": "GET api/reader/time-left?seriesId=",
+      "at": "UI/Web/src/app/_services/reader.service.ts:266",
+      "code": "return this.httpClient.get<HourEstimateRange>(this.baseUrl + 'reader/time-left?seriesId=' + seriesId);"
+    },
+    {
+      "n": 72,
+      "from": 71,
+      "what": "controller action GetEstimateToCompletion",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:1002",
+      "code": "public async Task<ActionResult<HourEstimateRangeDto>> GetEstimateToCompletion(int seriesId)"
+    },
+    {
+      "n": 73,
+      "from": 72,
+      "what": "loads the series DTO",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:1006",
+      "code": "var series = await unitOfWork.SeriesRepository.GetSeriesDtoByIdAsync(seriesId, userId, ct);",
+      "end": {
+        "kind": "database",
+        "detail": "Series (SeriesRepository.GetSeriesDtoByIdAsync)"
+      }
+    },
+    {
+      "n": 74,
+      "from": 72,
+      "what": "reads the user's progress on the series",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:1010",
+      "code": "var progress = await unitOfWork.AppUserProgressRepository.GetUserProgressForSeriesAsync(seriesId, userId, ct);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Controllers/ReaderController.cs:1007",
+          "code": "if (series == null) return BadRequest(await localizationService.TranslateAsync(UserId, \"series-doesnt-exist\"));"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "AppUserProgress (AppUserProgressRepository.GetUserProgressForSeriesAsync)"
+      }
+    },
+    {
+      "n": 75,
+      "from": 14,
+      "what": "loadSeries: setContinuePoint",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:686",
+      "code": "this.setContinuePoint();"
+    },
+    {
+      "n": 76,
+      "from": 75,
+      "what": "asks if the user has any progress on the series",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:893",
+      "code": "this.readerService.hasSeriesProgress(this.seriesId()).subscribe(hasProgress => {"
+    },
+    {
+      "n": 77,
+      "from": 76,
+      "what": "GET api/reader/has-progress?seriesId=",
+      "at": "UI/Web/src/app/_services/reader.service.ts:258",
+      "code": "return this.httpClient.get<boolean>(this.baseUrl + 'reader/has-progress?seriesId=' + seriesId);"
+    },
+    {
+      "n": 78,
+      "from": 77,
+      "what": "controller action HasProgress",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:718",
+      "code": "public async Task<ActionResult<bool>> HasProgress(int seriesId)"
+    },
+    {
+      "n": 79,
+      "from": 78,
+      "what": "checks progress rows",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:721",
+      "code": "return Ok(await unitOfWork.AppUserProgressRepository.HasAnyProgressOnSeriesAsync(seriesId, UserId, ct));",
+      "end": {
+        "kind": "database",
+        "detail": "AppUserProgress (AppUserProgressRepository.HasAnyProgressOnSeriesAsync)"
+      }
+    },
+    {
+      "n": 80,
+      "from": 75,
+      "what": "asks for the chapter to continue from",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:897",
+      "code": "this.readerService.getCurrentChapter(this.seriesId()).subscribe(chapter => {"
+    },
+    {
+      "n": 81,
+      "from": 80,
+      "what": "GET api/reader/continue-point?seriesId=",
+      "at": "UI/Web/src/app/_services/reader.service.ts:262",
+      "code": "return this.httpClient.get<Chapter>(this.baseUrl + 'reader/continue-point?seriesId=' + seriesId);"
+    },
+    {
+      "n": 82,
+      "from": 81,
+      "what": "controller action GetContinuePoint",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:705",
+      "code": "public async Task<ActionResult<ChapterDto>> GetContinuePoint(int seriesId)"
+    },
+    {
+      "n": 83,
+      "from": 82,
+      "what": "readerService.GetContinuePoint",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:708",
+      "code": "return Ok(await readerService.GetContinuePoint(seriesId, UserId, ct));"
+    },
+    {
+      "n": 84,
+      "from": 83,
+      "what": "reads the first chapter of the series with the user's progress",
+      "at": "Kavita.Services/Reading/ReaderService.cs:529",
+      "code": "var firstChapter = await unitOfWork.ChapterRepository.GetFirstChapterForSeriesAsync(seriesId, userId, ct);",
+      "end": {
+        "kind": "database",
+        "detail": "Chapter with AppUserProgress (ChapterRepository.GetFirstChapterForSeriesAsync)"
+      }
+    },
+    {
+      "n": 85,
+      "from": 83,
+      "what": "reads the chapter currently being read",
+      "at": "Kavita.Services/Reading/ReaderService.cs:532",
+      "code": "var currentlyReading = await unitOfWork.ChapterRepository.GetCurrentlyReadingChapterAsync(seriesId, userId, ct);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/Reading/ReaderService.cs:530",
+          "code": "if (firstChapter is { PagesRead: 0 }) return firstChapter;"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Chapter with AppUserProgress (ChapterRepository.GetCurrentlyReadingChapterAsync)"
+      }
+    },
+    {
+      "n": 86,
+      "from": 83,
+      "what": "reads all volumes and chapters to find the next one",
+      "at": "Kavita.Services/Reading/ReaderService.cs:535",
+      "code": "var volumes = (await unitOfWork.VolumeRepository.GetVolumesDtoAsync(seriesId, userId, VolumeIncludes.Files, ct)).ToList();",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/Reading/ReaderService.cs:533",
+          "code": "if (currentlyReading != null) return currentlyReading;"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/Reading/ReaderService.cs:530",
+          "code": "if (firstChapter is { PagesRead: 0 }) return firstChapter;"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "Volume and Chapter (VolumeRepository.GetVolumesDtoAsync)"
+      }
+    },
+    {
+      "n": 87,
+      "from": 14,
+      "what": "loadSeries: applies the series colours to the theme (local, no request)",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:688",
+      "code": "this.themeService.setColorScape(this.series().primaryColor, this.series().secondaryColor);",
+      "end": {
+        "kind": "unknown",
+        "detail": "ThemeService.setColorScape only passes the colours to ColorTransitionService in the browser; no HTTP call"
+      }
+    },
+    {
+      "n": 88,
+      "from": 14,
+      "what": "loadSeries: loads Kavita+ metadata (reviews, ratings, recommendations) on the first load",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:691",
+      "code": "this.loadPlusMetadata(this.seriesId(), this.library().type);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:690",
+          "code": "if (loadExternal) {"
+        }
+      ]
+    },
+    {
+      "n": 89,
+      "from": 88,
+      "what": "metadataService.getSeriesMetadataFromPlus",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:871",
+      "code": "this.metadataService.getSeriesMetadataFromPlus(seriesId, libraryType).pipe("
+    },
+    {
+      "n": 90,
+      "from": 89,
+      "what": "GET api/metadata/series-detail-plus?seriesId=&libraryType=",
+      "at": "UI/Web/src/app/_services/metadata.service.ts:72",
+      "code": "return this.httpClient.get<SeriesDetailPlus | null>(this.baseUrl + 'metadata/series-detail-plus?seriesId=' + seriesId + '&libraryType=' + libraryType);"
+    },
+    {
+      "n": 91,
+      "from": 90,
+      "what": "controller action GetKavitaPlusSeriesDetailData",
+      "at": "Kavita.Server/Controllers/MetadataController.cs:290",
+      "code": "public async Task<ActionResult<SeriesDetailPlusDto>> GetKavitaPlusSeriesDetailData(int seriesId, LibraryType libraryType)"
+    },
+    {
+      "n": 92,
+      "from": 91,
+      "what": "reads the user's reviews for the series",
+      "at": "Kavita.Server/Controllers/MetadataController.cs:293",
+      "code": "var userReviews = (await unitOfWork.UserRepository.GetUserRatingDtosForSeriesAsync(seriesId, UserId, ct))",
+      "end": {
+        "kind": "database",
+        "detail": "AppUserRating (UserRepository.GetUserRatingDtosForSeriesAsync)"
+      }
+    },
+    {
+      "n": 93,
+      "from": 91,
+      "what": "metadataService.TryMatchAndLoadMetadataForSeries",
+      "at": "Kavita.Server/Controllers/MetadataController.cs:298",
+      "code": "var ret = await metadataService.TryMatchAndLoadMetadataForSeries(seriesId, libraryType, MetadataFetchTrigger.OnDemand, HttpContext.RequestAborted);"
+    },
+    {
+      "n": 94,
+      "from": 93,
+      "what": "returns null at once for library types that are not Plus eligible",
+      "at": "Kavita.Services/Plus/ExternalMetadataService.cs:161",
+      "code": "if (!IsPlusEligible(libraryType)) return null;"
+    },
+    {
+      "n": 95,
+      "from": 93,
+      "what": "returns null without an active license",
+      "at": "Kavita.Services/Plus/ExternalMetadataService.cs:162",
+      "code": "if (!await _licenseService.HasActiveLicense(ct: ct)) return null;",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/Plus/ExternalMetadataService.cs:161",
+          "code": "if (!IsPlusEligible(libraryType)) return null;"
+        }
+      ],
+      "end": {
+        "kind": "hub",
+        "detail": "ILicenseService.HasActiveLicense: 24 lines in non-test .cs (git grep 'HasActiveLicense('), about 22 call sites; not walked into"
+      }
+    },
+    {
+      "n": 96,
+      "from": 93,
+      "what": "when the series already has the external ids, loads the stored or fetched Plus detail (GetSeriesDetailPlus)",
+      "at": "Kavita.Services/Plus/ExternalMetadataService.cs:179",
+      "code": "return await GetSeriesDetailPlus(seriesId, libraryType, trigger, ct: ct);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Services/Plus/ExternalMetadataService.cs:177",
+          "code": "if (HasRequiredId(series, series.GetEffectiveMetadataProvider()))"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/Plus/ExternalMetadataService.cs:162",
+          "code": "if (!await _licenseService.HasActiveLicense(ct: ct)) return null;"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/Plus/ExternalMetadataService.cs:161",
+          "code": "if (!IsPlusEligible(libraryType)) return null;"
+        }
+      ]
+    },
+    {
+      "n": 97,
+      "from": 96,
+      "what": "returns the cached Plus detail from the database when no refresh is needed",
+      "at": "Kavita.Services/Plus/ExternalMetadataService.cs:660",
+      "code": "return await _unitOfWork.ExternalSeriesMetadataRepository.GetSeriesDetailPlusDto(seriesId, ct);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Services/Plus/ExternalMetadataService.cs:657",
+          "code": "if (!needsRefresh || (!series.Library.AllowMetadataMatching && trigger == MetadataFetchTrigger.OnDemand))"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "ExternalSeriesMetadata (ExternalSeriesMetadataRepository.GetSeriesDetailPlusDto)"
+      }
+    },
+    {
+      "n": 98,
+      "from": 96,
+      "what": "otherwise fetches the Plus metadata (FetchExternalMetadataForSeries)",
+      "at": "Kavita.Services/Plus/ExternalMetadataService.cs:671",
+      "code": "return await FetchExternalMetadataForSeries(seriesId, libraryType, data, false, trigger, ct);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/Plus/ExternalMetadataService.cs:663",
+          "code": "if (!series.WillScrobble() || !series.Library.AllowMetadataMatching) return _defaultReturn;"
+        }
+      ]
+    },
+    {
+      "n": 99,
+      "from": 98,
+      "what": "POSTs the series detail request to the Kavita+ API",
+      "at": "Kavita.Services/Plus/ExternalMetadataService.cs:878",
+      "code": "var kPlusResult = await _kavitaPlusApiService.GetSeriesDetailV3Async(data, ct);",
+      "end": {
+        "kind": "outside-call",
+        "detail": "Kavita+ API: KavitaPlusApiService.GetSeriesDetailV3Async (retried once after 3s on 'Too many Requests')"
+      }
+    },
+    {
+      "n": 100,
+      "from": 93,
+      "what": "otherwise tries to match the series against Kavita+",
+      "at": "Kavita.Services/Plus/ExternalMetadataService.cs:201",
+      "code": "var result = await _kavitaPlusApiService.MatchSeriesV3Async(matchRequest, ct);",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/Plus/ExternalMetadataService.cs:177",
+          "code": "if (HasRequiredId(series, series.GetEffectiveMetadataProvider()))"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Services/Plus/ExternalMetadataService.cs:183",
+          "code": "if (!series.WillScrobble() || !series.Library.AllowMetadataMatching) return null;"
+        }
+      ],
+      "end": {
+        "kind": "outside-call",
+        "detail": "Kavita+ API: KavitaPlusApiService.MatchSeriesV3Async"
+      }
+    },
+    {
+      "n": 101,
+      "from": 14,
+      "what": "loadSeries: loads the chapter/volume breakdown",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:694",
+      "code": "this.seriesService.getSeriesDetail(this.seriesId()).pipe(catchError(_ => {"
+    },
+    {
+      "n": 102,
+      "from": 101,
+      "what": "GET api/series/series-detail?seriesId=",
+      "at": "UI/Web/src/app/_services/series.service.ts:233",
+      "code": "return this.httpClient.get<SeriesDetail>(this.baseUrl + 'series/series-detail?seriesId=' + seriesId);"
+    },
+    {
+      "n": 103,
+      "from": 102,
+      "what": "controller action GetSeriesDetailBreakdown",
+      "at": "Kavita.Server/Controllers/SeriesController.cs:530",
+      "code": "public async Task<ActionResult<SeriesDetailDto>> GetSeriesDetailBreakdown(int seriesId)"
+    },
+    {
+      "n": 104,
+      "from": 103,
+      "what": "seriesService.GetSeriesDetail",
+      "at": "Kavita.Server/Controllers/SeriesController.cs:535",
+      "code": "return await seriesService.GetSeriesDetail(seriesId, UserId, ct);"
+    },
+    {
+      "n": 105,
+      "from": 104,
+      "what": "loads the series DTO",
+      "at": "Kavita.Services/SeriesService.cs:539",
+      "code": "var series = await unitOfWork.SeriesRepository.GetSeriesDtoByIdAsync(seriesId, userId, ct);",
+      "end": {
+        "kind": "database",
+        "detail": "Series (SeriesRepository.GetSeriesDtoByIdAsync)"
+      }
+    },
+    {
+      "n": 106,
+      "from": 104,
+      "what": "reads the library ids of the user",
+      "at": "Kavita.Services/SeriesService.cs:542",
+      "code": "var libraryIds = await unitOfWork.LibraryRepository.GetLibraryIdsForUserIdAsync(userId, ct: ct);",
+      "end": {
+        "kind": "database",
+        "detail": "Library / AppUser library access (LibraryRepository.GetLibraryIdsForUserIdAsync)"
+      }
+    },
+    {
+      "n": 107,
+      "from": 104,
+      "what": "reads the user",
+      "at": "Kavita.Services/SeriesService.cs:546",
+      "code": "var user = await unitOfWork.UserRepository.GetUserByIdAsync(userId, ct: ct);",
+      "end": {
+        "kind": "database",
+        "detail": "AppUser (UserRepository.GetUserByIdAsync)"
+      }
+    },
+    {
+      "n": 108,
+      "from": 104,
+      "what": "reads the series metadata for the age rating check",
+      "at": "Kavita.Services/SeriesService.cs:549",
+      "code": "var seriesMetadata = await unitOfWork.SeriesRepository.GetSeriesMetadataAsync(seriesId, ct);",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Services/SeriesService.cs:547",
+          "code": "if (user!.AgeRestriction != AgeRating.NotApplicable)"
+        }
+      ],
+      "end": {
+        "kind": "database",
+        "detail": "SeriesMetadata (SeriesRepository.GetSeriesMetadataAsync)"
+      }
+    },
+    {
+      "n": 109,
+      "from": 104,
+      "what": "reads the library type",
+      "at": "Kavita.Services/SeriesService.cs:555",
+      "code": "var libraryType = await unitOfWork.LibraryRepository.GetLibraryTypeAsync(series.LibraryId, ct);",
+      "end": {
+        "kind": "database",
+        "detail": "Library (LibraryRepository.GetLibraryTypeAsync)"
+      }
+    },
+    {
+      "n": 110,
+      "from": 104,
+      "what": "reads the volumes with their chapters and the user's progress",
+      "at": "Kavita.Services/SeriesService.cs:556",
+      "code": "var volumes = await unitOfWork.VolumeRepository.GetVolumesDtoAsync(seriesId, userId, ct: ct);",
+      "end": {
+        "kind": "database",
+        "detail": "Volume and Chapter (VolumeRepository.GetVolumesDtoAsync)"
+      }
+    },
+    {
+      "n": 111,
+      "from": 101,
+      "what": "when the detail call fails or returns null, goes back to the home screen",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:695",
+      "code": "this.router.navigateByUrl('/home');",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:694",
+          "code": "this.seriesService.getSeriesDetail(this.seriesId()).pipe(catchError(_ => {"
+        }
+      ],
+      "end": {
+        "kind": "screen",
+        "detail": "/home"
+      }
+    },
+    {
+      "n": 112,
+      "from": null,
+      "what": "field initializer: for admins only, loads the media errors of the series",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:385",
+      "code": "private readonly mediaErrorResource = this.serverService.hasMediaErrorsResource(() =>",
+      "conditions": [
+        {
+          "kind": "ternary",
+          "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:386",
+          "code": "this.accountService.hasAdminRole() ? this.seriesId() : undefined"
+        }
+      ]
+    },
+    {
+      "n": 113,
+      "from": 112,
+      "what": "GET api/server/media-errors-for-series?seriesId=",
+      "at": "UI/Web/src/app/_services/server.service.ts:123",
+      "code": "return this.baseUrl + `server/media-errors-for-series?seriesId=${id}`;"
+    },
+    {
+      "n": 114,
+      "from": 113,
+      "what": "controller action GetMediaErrorsForSeries",
+      "at": "Kavita.Server/Controllers/ServerController.cs:312",
+      "code": "public async Task<ActionResult<List<MediaErrorDto>>> GetMediaErrorsForSeries(int seriesId)"
+    },
+    {
+      "n": 115,
+      "from": 114,
+      "what": "reads the media errors of the series",
+      "at": "Kavita.Server/Controllers/ServerController.cs:315",
+      "code": "return Ok(await unitOfWork.MediaErrorRepository.GetErrorDtosForSeriesAsync(seriesId, ct));",
+      "end": {
+        "kind": "database",
+        "detail": "MediaError (MediaErrorRepository.GetErrorDtosForSeriesAsync)"
+      }
+    }
+  ],
+  "exits": [
+    {
+      "what": "404 from the [SeriesAccess] filter on every series endpoint when the user has no access to the series",
+      "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:135",
+      "code": "context.Result = new NotFoundResult();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:133",
+          "code": "if (!hasAccess)"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:115",
+          "code": "if (alwaysAllowAdmin && user.IsInRole(PolicyConstants.AdminRole)) return;"
+        }
+      ]
+    },
+    {
+      "what": "404 from the [SeriesAccess] filter when the request has no seriesId",
+      "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:125",
+      "code": "context.Result = new NotFoundResult();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:123",
+          "code": "if (failOnMissing)"
+        },
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:121",
+          "code": "if (entityId == null)"
+        },
+        {
+          "kind": "unless",
+          "at": "Kavita.Server/Attributes/EntityAccessAttribute.cs:115",
+          "code": "if (alwaysAllowAdmin && user.IsInRole(PolicyConstants.AdminRole)) return;"
+        }
+      ]
+    },
+    {
+      "what": "404 when the series DTO is not found",
+      "at": "Kavita.Server/Controllers/SeriesController.cs:88",
+      "code": "if (series == null) return NotFound();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/SeriesController.cs:88",
+          "code": "if (series == null) return NotFound();"
+        }
+      ]
+    },
+    {
+      "what": "400 when GetSeriesDetail throws KavitaException (series missing)",
+      "at": "Kavita.Server/Controllers/SeriesController.cs:539",
+      "code": "return BadRequest(await localizationService.TranslateAsync(UserId, ex.Message));",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "Kavita.Server/Controllers/SeriesController.cs:537",
+          "code": "catch (KavitaException ex)"
+        }
+      ]
+    },
+    {
+      "what": "throws KavitaException when the series does not exist (series-detail)",
+      "at": "Kavita.Services/SeriesService.cs:540",
+      "code": "if (series == null) throw new KavitaException(await localizationService.TranslateAsync(userId, \"series-doesnt-exist\"));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Services/SeriesService.cs:540",
+          "code": "if (series == null) throw new KavitaException(await localizationService.TranslateAsync(userId, \"series-doesnt-exist\"));"
+        }
+      ]
+    },
+    {
+      "what": "throws UnauthorizedAccessException when the user has no access to the series' library",
+      "at": "Kavita.Services/SeriesService.cs:544",
+      "code": "throw new UnauthorizedAccessException(\"user-no-access-library-from-series\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Services/SeriesService.cs:543",
+          "code": "if (!libraryIds.Contains(series.LibraryId))"
+        }
+      ]
+    },
+    {
+      "what": "throws UnauthorizedAccessException when the series is above the user's age restriction",
+      "at": "Kavita.Services/SeriesService.cs:551",
+      "code": "throw new UnauthorizedAccessException(\"series-restricted-age-restriction\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Services/SeriesService.cs:550",
+          "code": "if (seriesMetadata!.AgeRating > user.AgeRestriction)"
+        },
+        {
+          "kind": "if",
+          "at": "Kavita.Services/SeriesService.cs:547",
+          "code": "if (user!.AgeRestriction != AgeRating.NotApplicable)"
+        }
+      ]
+    },
+    {
+      "what": "throws KavitaException when the series does not exist (next-expected)",
+      "at": "Kavita.Services/SeriesService.cs:795",
+      "code": "if (series == null) throw new KavitaException(await localizationService.TranslateAsync(userId, \"series-doesnt-exist\"));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Services/SeriesService.cs:795",
+          "code": "if (series == null) throw new KavitaException(await localizationService.TranslateAsync(userId, \"series-doesnt-exist\"));"
+        }
+      ]
+    },
+    {
+      "what": "throws UnauthorizedAccessException when the user lacks access (next-expected)",
+      "at": "Kavita.Services/SeriesService.cs:798",
+      "code": "throw new UnauthorizedAccessException(\"user-no-access-library-from-series\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Services/SeriesService.cs:796",
+          "code": "if (!(await unitOfWork.UserRepository.HasAccessToSeries(userId, seriesId, ct)))"
+        }
+      ]
+    },
+    {
+      "what": "400 when the series does not exist (time-left)",
+      "at": "Kavita.Server/Controllers/ReaderController.cs:1007",
+      "code": "if (series == null) return BadRequest(await localizationService.TranslateAsync(UserId, \"series-doesnt-exist\"));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Server/Controllers/ReaderController.cs:1007",
+          "code": "if (series == null) return BadRequest(await localizationService.TranslateAsync(UserId, \"series-doesnt-exist\"));"
+        }
+      ]
+    },
+    {
+      "what": "throws KavitaNotFoundException when the series has no chapters (continue-point)",
+      "at": "Kavita.Services/Reading/ReaderService.cs:549",
+      "code": "throw new KavitaNotFoundException();",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "Kavita.Services/Reading/ReaderService.cs:547",
+          "code": "if (volumeChapters.Count <= 0)"
+        }
+      ]
+    },
+    {
+      "what": "redirects to /home when the library id is not a number (library guard)",
+      "at": "UI/Web/src/app/_guards/library-access.guard.ts:17",
+      "code": "return of(router.parseUrl('/home'));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/_guards/library-access.guard.ts:16",
+          "code": "if (isNaN(libraryId)) {"
+        }
+      ]
+    },
+    {
+      "what": "redirects to /home when the user has no access to the library",
+      "at": "UI/Web/src/app/_guards/library-access.guard.ts:21",
+      "code": "map(hasAccess => hasAccess || router.parseUrl('/home'))"
+    },
+    {
+      "what": "redirects to /home when the library id is missing or 0",
+      "at": "UI/Web/src/app/_resolvers/library.resolver.ts:20",
+      "code": "return of(router.parseUrl('/home'));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/_resolvers/library.resolver.ts:18",
+          "code": "if (!libId || libId === '0') {"
+        }
+      ]
+    },
+    {
+      "what": "redirects to /home when loading the library fails",
+      "at": "UI/Web/src/app/_resolvers/library.resolver.ts:25",
+      "code": "return of(router.parseUrl('/home'));",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "UI/Web/src/app/_resolvers/library.resolver.ts:24",
+          "code": "catchError(() => {"
+        }
+      ]
+    },
+    {
+      "what": "redirects to /home when the series id is missing or 0",
+      "at": "UI/Web/src/app/_resolvers/series.resolver.ts:16",
+      "code": "return of(router.parseUrl('/home'));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/_resolvers/series.resolver.ts:14",
+          "code": "if (!seriesId || seriesId === '0') {"
+        }
+      ]
+    },
+    {
+      "what": "redirects to /home when loading the series fails",
+      "at": "UI/Web/src/app/_resolvers/series.resolver.ts:21",
+      "code": "return of(router.parseUrl('/home'));",
+      "conditions": [
+        {
+          "kind": "catch",
+          "at": "UI/Web/src/app/_resolvers/series.resolver.ts:20",
+          "code": "catchError(() => {"
+        }
+      ]
+    },
+    {
+      "what": "redirects to the login screen when the user is not signed in (auth guard)",
+      "at": "UI/Web/src/app/_guards/auth.guard.ts:25",
+      "code": "};",
+      "conditions": [
+        {
+          "kind": "unless",
+          "at": "UI/Web/src/app/_guards/auth.guard.ts:17",
+          "code": "if (accountService.isLoggedIn()) return true;"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "kind": "screen",
+      "to": "Home screen",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:695",
+      "code": "this.router.navigateByUrl('/home');"
+    },
+    {
+      "kind": "screen",
+      "to": "Home screen",
+      "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:699",
+      "code": "this.router.navigateByUrl('/home');",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:698",
+          "code": "if (detail == null) {"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Route: library/:libraryId (guards authGuard, libraryAccessGuard; resolver libraryResolver) with child series/:seriesId (resolver seriesResolver) in app-routing.module.ts:99. Guards and resolvers run before ngOnInit, so they are steps with no parent.",
+    "ngOnInit also subscribes to MessageHubService.messages$ (series-detail.component.ts:547) and to route.fragment (601); both only react to later events and are not followed. The SignalR events it reacts to (SeriesRemoved, ScanSeries, CoverUpdate, ChapterRemoved, VolumeRemoved, SeriesUpdated, ExternalMetadataUpdate, NotificationProgress) are sent from other flows.",
+    "The constructor (499) registers bulk-selection callbacks and sets routeReuseStrategy.shouldReuseRoute; no requests. ngAfterViewInit only sets the scroll container.",
+    "The first loadSeries runs 300 ms after ngOnInit (debounceTime), with loadExternal true, so loadPlusMetadata runs; later reloads (SignalR events) pass false.",
+    "All [SeriesAccess] endpoints share the filter in EntityAccessAttribute.cs; its HasAccessToSeries check is not repeated as a step per endpoint. Admins skip the check.",
+    "loadSeries also reads the series from the resolver result (getResolvedData); the extra getSeries call at 645 repeats the resolver's request.",
+    "Not followed: LocalizedNamingContext and volume/chapter formatting inside SeriesService.GetSeriesDetail (600-626); BookmarkDto/SeriesRelation mapping details; child components' own requests (cards, tabs, detail drawers) that start after the screen renders.",
+    "Frontend base URL is environment.apiUrl ('.../api/'), so paths are under /api."
+  ]
+}

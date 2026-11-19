@@ -1,0 +1,139 @@
+{
+  "codeTitle": "POST /api/v5/system/backup/restore/{id:int}",
+  "entry": "endpoint:Sonarr.Api.V5|POST /api/v5/system/backup/restore/{id:int}",
+  "generated": {
+    "bundleHash": "1f7917875a3c11ff9b0f644f2077925217006400015d33de1ee9c98891ed1d15",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 14321,
+      "cutOff": 9,
+      "depth": 4,
+      "points": 20
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 9079,
+      "calls": 1,
+      "costUsd": 0.039445,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4739,
+      "outputTokens": 295
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 6963,
+      "calls": 1,
+      "costUsd": 0.042262,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7781,
+      "outputTokens": 1413
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|POST /api/v5/system/backup/restore/{id:int}",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.Restore(System.Int32)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.GetBackupPath(NzbDrone.Core.Backup.Backup)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|POST /api/v5/system/backup/restore/{id:int}"
+        ],
+        "id": "A1",
+        "text": "A caller POSTs to restore/{id} with an integer backup id to restore that backup. The backup is looked up, its file path is built, and the backup service restores from it."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.GetBackupId(NzbDrone.Core.Backup.Backup)",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.GetBackupById(System.Int32)",
+          "Sonarr.Common|M:NzbDrone.Common.Crypto.HashConverter.GetHashInt31(System.String)"
+        ],
+        "id": "R1",
+        "text": "A backup id is a 31-bit hash of the text \"backup-{Type}-{Name}\". The id must match exactly one existing backup across all backup types."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.GetBackupPath(NzbDrone.Core.Backup.Backup)",
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.GetBackupFolder(NzbDrone.Core.Backup.BackupType)"
+        ],
+        "id": "R2",
+        "text": "The backup file path is the backup type's lowercase folder under the backup folder, plus the backup name."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.GetBackups"
+        ],
+        "id": "R3",
+        "text": "Available backups are the files found in each backup type's folder, when that folder exists."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.Restore(System.String)"
+        ],
+        "id": "R4",
+        "text": "A .zip backup is extracted to a temporary folder. If it holds no config or database files, the restore fails with a NotFound 'Unable to restore database file from backup'."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.Restore(System.String)"
+        ],
+        "id": "R5",
+        "text": "Config and database files are validated before any is restored."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.Restore(System.String)"
+        ],
+        "id": "R6",
+        "text": "A .xml file is restored as a config file. Any other file name is restored as a database file."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.Restore(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "On success it returns 200 with a result whose RestartRequired flag is true."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.System.Backup.BackupController.Restore(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "If no backup matches the id, it returns 404 Not Found."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.Restore(System.String)"
+        ],
+        "id": "E1",
+        "text": "Restoring replaces the app's config and/or database files with those from the backup."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Backup.BackupService.Restore(System.String)"
+        ],
+        "id": "E2",
+        "text": "For a zip restore, the temporary folder sonarr_backup_restore is cleared before extraction and deleted afterwards."
+      }
+    ]
+  },
+  "title": "Restore backup by id (API)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,164 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0002"
+doc: "sonarr-fsd"
+section: "2"
+title: "Calendar"
+parent: null
+children: []
+textHash: "f851d4de9ab0b80c73a6f3aa6eb3c4961b28ea588779ea2b6dac39cdae90a189"
+requirements:
+  - id: "R-0006"
+    title: "Calendar shows recent and upcoming episodes"
+    kind: "rule"
+    statement: "The calendar shows episodes that aired recently and those coming up."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "2"
+        text: "The calendar shows episodes that aired recently and those coming up, by month, week, forecast or day."
+        hash: "b33c7e5708c4b5d50fc89970295c058d5aba187577ceaa9517afef847d659403"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "29fd6184eb5586150af67fd67333f0a7a5750956547ffac3374872518414e9d2"
+  - id: "R-0007"
+    title: "Calendar views"
+    kind: "rule"
+    statement: "The calendar can be viewed by month, week, forecast or day."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "2"
+        text: "The calendar shows episodes that aired recently and those coming up, by month, week, forecast or day."
+        hash: "b33c7e5708c4b5d50fc89970295c058d5aba187577ceaa9517afef847d659403"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "92b0472f4283c58f1b8c3e2cede8aa1cc98e7288e947917f20241fee1aa9544d"
+  - id: "R-0008"
+    title: "Show or hide monitored episodes"
+    kind: "rule"
+    statement: "Monitored episodes can be shown or hidden."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "2"
+        text: "Monitored and unmonitored episodes can be shown or hidden, and episodes already downloaded are marked."
+        hash: "e4aa3771fc149eae1a8013df6413ee361e9755945197936baf12f46385d156ca"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "244ae75688a743cce19d59634a69538a9ec80b1a9a7fe8fdaac665b3aa6947c1"
+  - id: "R-0009"
+    title: "Show or hide unmonitored episodes"
+    kind: "rule"
+    statement: "Unmonitored episodes can be shown or hidden."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "2"
+        text: "Monitored and unmonitored episodes can be shown or hidden, and episodes already downloaded are marked."
+        hash: "e4aa3771fc149eae1a8013df6413ee361e9755945197936baf12f46385d156ca"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "d1153cd10c68bfc03bed72e2ef5a3997912bcaab60b2709aaebd0f932422a842"
+  - id: "R-0010"
+    title: "Downloaded episodes are marked"
+    kind: "rule"
+    statement: "Episodes already downloaded are marked on the calendar."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "2"
+        text: "Monitored and unmonitored episodes can be shown or hidden, and episodes already downloaded are marked."
+        hash: "e4aa3771fc149eae1a8013df6413ee361e9755945197936baf12f46385d156ca"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "11f7355f9805cff31664b6ad134033dd4851977524175844db975f7d2d9292b2"
+  - id: "R-0011"
+    title: "Drag episode to change air date"
+    kind: "rule"
+    statement: "Episodes can be dragged to another day to change their air date."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "2"
+        text: "Episodes can be dragged to another day to change their air date."
+        hash: "5d72e55f1e0efc28c461d00241483a55b3d28997b9a27be28a53cff984e04cd9"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "7a5dcc3ca1ff9429d0226966e89cad3b3cc79b1bf7b73848e297871190e68782"
+  - id: "R-0012"
+    title: "Share calendar as iCal feed"
+    kind: "rule"
+    statement: "Sonarr can share the calendar as an iCal feed."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "2"
+        text: "Sonarr can share the calendar as an iCal feed, which covers the previous 14 days and the next 60 days."
+        hash: "725c4c7bd33c8586fcd2c4da8a6c1302155bdf58d0f12cb0183b9532c4940bff"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "0ea266ed378679b4ed2fcf4e1a8de2215e05db080f0c3380deddba0a34977133"
+  - id: "R-0013"
+    title: "iCal feed date range"
+    kind: "rule"
+    statement: "The iCal feed covers the previous 14 days and the next 60 days."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "2"
+        text: "Sonarr can share the calendar as an iCal feed, which covers the previous 14 days and the next 60 days."
+        hash: "725c4c7bd33c8586fcd2c4da8a6c1302155bdf58d0f12cb0183b9532c4940bff"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "51653f09abe9cd7112685af49c2fef46f8c694b4add40bc001868dec20512854"
+  - id: "R-0014"
+    title: "Limit iCal feed by tags"
+    kind: "rule"
+    statement: "The iCal feed can be limited to series with given tags."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "2"
+        text: "The iCal feed can be limited to series with given tags, and to premieres only."
+        hash: "183e2fd5a858d7a4e5ae232a2fe0798613dd916327923155e209ebc0a51f8f81"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "436401e75be58ae31f8b3ed9a2404849f3dfe5ab0d1ed059cf4c39d202eb6a8c"
+  - id: "R-0015"
+    title: "Limit iCal feed to premieres"
+    kind: "rule"
+    statement: "The iCal feed can be limited to premieres only."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "2"
+        text: "The iCal feed can be limited to series with given tags, and to premieres only."
+        hash: "183e2fd5a858d7a4e5ae232a2fe0798613dd916327923155e209ebc0a51f8f81"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "9592e96b92ccf48830bf4f9eef569362607b3b6089f068877f33250220ff6b47"
+definitions: []
+journeys: []
+background: []
+retired: []

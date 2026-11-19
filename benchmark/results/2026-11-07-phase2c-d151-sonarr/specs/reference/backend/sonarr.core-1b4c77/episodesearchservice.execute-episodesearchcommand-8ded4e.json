@@ -1,0 +1,147 @@
+{
+  "codeTitle": "EpisodeSearchService.Execute(EpisodeSearchCommand)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.EpisodeSearchCommand)",
+  "generated": {
+    "bundleHash": "e6b05b42db06e124091e0a33d4a798fda0af94eaa7336a21ab5859f37bf7c7b7",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 23398,
+      "cutOff": 54,
+      "depth": 4,
+      "points": 52
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 13929,
+      "calls": 1,
+      "costUsd": 0.059275,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5152,
+      "outputTokens": 338
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 10707,
+      "calls": 1,
+      "costUsd": 0.067408,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 12798,
+      "outputTokens": 2430
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.EpisodeSearchCommand)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.EpisodeSearchCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.EpisodeSearch(System.Int32,System.Boolean,System.Boolean)"
+        ],
+        "id": "A1",
+        "text": "Runs an episode search for every episode id in the command, one at a time, then processes the resulting download decisions for each."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.EpisodeSearchCommand)"
+        ],
+        "id": "R1",
+        "text": "The search is flagged as user-invoked only when the command trigger is Manual; it is never an interactive search."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.EpisodeSearch(NzbDrone.Core.Tv.Episode,System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Exceptions.SearchFailedException.#ctor(System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.SearchDaily(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.Episode,System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "R2",
+        "text": "A Daily series episode with no air date fails with SearchFailedException \"Air date is missing\"; otherwise it gets a daily search by air date."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.EpisodeSearch(NzbDrone.Core.Tv.Episode,System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.SearchSpecial(NzbDrone.Core.Tv.Series,System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},System.Boolean,System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.SearchAnime(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.Episode,System.Boolean,System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "R3",
+        "text": "For Anime series, a season 0 episode with no scene absolute or absolute number gets a special search; other anime episodes get an anime search."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.EpisodeSearch(NzbDrone.Core.Tv.Episode,System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.SearchSingle(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.Episode,System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "R4",
+        "text": "For other series, season 0 episodes get a special search and all remaining episodes get a single-episode search."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.EpisodeSearch(NzbDrone.Core.Tv.Episode,System.Boolean,System.Boolean)"
+        ],
+        "id": "R5",
+        "text": "Searches started from this command are not limited to monitored episodes (monitoredOnly is false)."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.SearchSingle(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.Episode,System.Boolean,System.Boolean,System.Boolean)"
+        ],
+        "id": "R6",
+        "text": "Search results are de-duplicated before being returned."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.ProcessDownloadDecisions.ProcessDecisions(System.Collections.Generic.List{NzbDrone.Core.DecisionEngine.DownloadDecision})"
+        ],
+        "id": "R7",
+        "text": "Within processing, rejected decisions are set aside; releases are prioritized, and an episode already grabbed is skipped."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.ProcessDownloadDecisions.ProcessDecisions(System.Collections.Generic.List{NzbDrone.Core.DecisionEngine.DownloadDecision})"
+        ],
+        "id": "R8",
+        "text": "Temporarily rejected releases, and releases whose protocol (Usenet or Torrent) already failed in this run, are made pending instead of being grabbed."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.EpisodeSearchService.Execute(NzbDrone.Core.IndexerSearch.EpisodeSearchCommand)",
+          "Sonarr.Common|M:NzbDrone.Common.Instrumentation.Extensions.LoggerExtensions.ProgressInfo(NLog.Logger,System.String,System.Object[])"
+        ],
+        "id": "S1",
+        "text": "After each episode is searched, a progress message is logged: \"Episode search completed. {0} reports downloaded.\" with the number of grabbed releases."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.ProcessDownloadDecisions.ProcessDecisions(System.Collections.Generic.List{NzbDrone.Core.DecisionEngine.DownloadDecision})"
+        ],
+        "id": "E1",
+        "text": "Releases that qualify are grabbed, and pending releases are added to the pending release service in one batch."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.SearchSingle(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.Episode,System.Boolean,System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.IndexerSearch.ReleaseSearchService.EpisodeSearch(NzbDrone.Core.Tv.Episode,System.Boolean,System.Boolean)"
+        ],
+        "id": "E2",
+        "text": "Searches query the indexers for each episode; a missing air date on a daily episode is logged as an error."
+      }
+    ]
+  },
+  "title": "Episode search command handler",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

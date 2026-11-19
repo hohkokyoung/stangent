@@ -1,0 +1,131 @@
+{
+  "codeTitle": "ExtraService.Handle(DownloadsProcessedEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Extras.ExtraService.Handle(NzbDrone.Core.Download.DownloadsProcessedEvent)",
+  "generated": {
+    "bundleHash": "8a09082f54ec4462271a6347bf5b2a501c233f87442c8c0d7cbe439c6725f495",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 17706,
+      "cutOff": 27,
+      "depth": 4,
+      "points": 78
+    },
+    "verifier": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 12563,
+      "calls": 1,
+      "costUsd": 0.052546,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3086,
+      "outputTokens": 229
+    },
+    "writer": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 10250,
+      "calls": 1,
+      "costUsd": 0.061334,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 12691,
+      "outputTokens": 2033
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Extras.ExtraService.Handle(NzbDrone.Core.Download.DownloadsProcessedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Extras.ExtraService.Handle(NzbDrone.Core.Download.DownloadsProcessedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Files.IManageExtraFiles.CreateAfterEpisodesImported(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "A1",
+        "text": "When downloads have been processed, every series that had files imported since the last run is handed to each extra file manager to create extra files after episodes were imported."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Extras.ExtraService.Handle(NzbDrone.Core.Download.DownloadsProcessedEvent)"
+        ],
+        "id": "R1",
+        "text": "The list of series with imported files is copied and then cleared under a lock, so each series is processed only once per event."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Metadata.MetadataService.CreateAfterEpisodesImported(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Common|M:NzbDrone.Common.Disk.IDiskProvider.FolderExists(System.String)"
+        ],
+        "id": "R2",
+        "text": "If the series folder does not exist, metadata creation is skipped and no files are returned."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Metadata.MetadataService.CreateAfterEpisodesImported(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Metadata.MetadataService.GetMetadataFilesForConsumer(NzbDrone.Core.Extras.Metadata.IMetadata,System.Collections.Generic.List{NzbDrone.Core.Extras.Metadata.Files.MetadataFile})"
+        ],
+        "id": "R3",
+        "text": "Metadata is generated only for enabled metadata consumers, using only the existing metadata files that belong to that consumer."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Metadata.MetadataService.ProcessSeriesMetadata(NzbDrone.Core.Extras.Metadata.IMetadata,NzbDrone.Core.Tv.Series,System.Collections.Generic.List{NzbDrone.Core.Extras.Metadata.Files.MetadataFile},NzbDrone.Core.Extras.Metadata.SeriesMetadataReason)"
+        ],
+        "id": "R4",
+        "text": "A series metadata file is written only when its content hash differs from the stored hash. If only the relative path changed, the record is updated without rewriting the file. If nothing changed, nothing is returned."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Metadata.MetadataService.ProcessSeriesMetadata(NzbDrone.Core.Extras.Metadata.IMetadata,NzbDrone.Core.Tv.Series,System.Collections.Generic.List{NzbDrone.Core.Extras.Metadata.Files.MetadataFile},NzbDrone.Core.Extras.Metadata.SeriesMetadataReason)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.EnumerableExtensions.AddIfNotNull``1(System.Collections.Generic.List{``0},``0)"
+        ],
+        "id": "R5",
+        "text": "A consumer that returns no series metadata produces no file."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Others.OtherExtraService.CreateAfterEpisodesImported(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Subtitles.SubtitleService.CreateAfterEpisodesImported(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R6",
+        "text": "The other-extras and subtitle managers create nothing after episodes are imported; they return empty results."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Metadata.MetadataService.CreateAfterEpisodesImported(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Metadata.Files.ICleanMetadataService.Clean(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "E1",
+        "text": "For each series, existing metadata files are cleaned before new metadata is created."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Metadata.MetadataService.ProcessSeriesMetadata(NzbDrone.Core.Extras.Metadata.IMetadata,NzbDrone.Core.Tv.Series,System.Collections.Generic.List{NzbDrone.Core.Extras.Metadata.Files.MetadataFile},NzbDrone.Core.Extras.Metadata.SeriesMetadataReason)"
+        ],
+        "id": "E2",
+        "text": "Changed series metadata is written to disk under the series path at the consumer's relative path."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Metadata.MetadataService.CreateAfterEpisodesImported(NzbDrone.Core.Tv.Series)",
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Files.IExtraFileService`1.Upsert(System.Collections.Generic.List{`0})"
+        ],
+        "id": "E3",
+        "text": "The new or changed metadata file records are saved with an upsert."
+      }
+    ]
+  },
+  "title": "Create extra files after downloads processed",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -41,10 +41,7 @@ public static class Bundles
         var slice = set.Slices[page.Id];
         var source = set.Source;
         var sb = new StringBuilder();
-        sb.Append("# stangent page bundle\n\n");
-        sb.Append("## Instructions\n\n").Append(Instructions("page-writer.md")).Append('\n');
-        sb.Append("## Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText(WriterSchema).TrimEnd('\n')).Append("\n```\n\n");
-
+        sb.Append(SharedHead.Text(true, [SharedHead.WriterInstructions], WriterSchema));
         sb.Append("## Page\n\n");
         sb.Append($"- id: `{page.Id}`\n- kind: {page.Kind}\n- entry point: `{page.Entry}`\n- from the code: {page.CodeTitle()}\n");
         sb.Append($"- slice: the walk from the entry point, at most {slice.Depth} lines deep ({set.Settings.Describe()})\n\n");
@@ -112,11 +109,13 @@ public static class Bundles
 
     static readonly HashSet<string> NamedKinds = [NodeKind.Endpoint, NodeKind.Page, NodeKind.Table, NodeKind.Column, NodeKind.Config];
 
-    static bool Listed(SliceNode n) =>
+    internal static bool ShowsBody(SliceNode n) => WithBody.Contains(n.Node.Kind) && n.Role == "walk";
+
+    internal static bool Listed(SliceNode n) =>
         n.Role is "stop" or "handler" or "table" || WithBody.Contains(n.Node.Kind) && n.Node.Kind is not (NodeKind.Property or NodeKind.Field)
         || NamedKinds.Contains(n.Node.Kind);
 
-    static string Comment(string file) => Path.GetExtension(file) is ".html" or ".cshtml" ? "<!--" : "//";
+    static string Comment(string file) => Path.GetExtension(file) switch { ".html" or ".cshtml" => "<!--", ".py" or ".wsgi" => "#", _ => "//" };
 
     static string Lines(Node n) => n.File is null || n.Line <= 0 ? "" : n.EndLine > n.Line ? $"{n.File}:{n.Line}-{n.EndLine}" : $"{n.File}:{n.Line}";
 
@@ -124,7 +123,7 @@ public static class Bundles
 
     static string Fence(string? file) => Path.GetExtension(file ?? "") switch
     {
-        ".cs" => "csharp", ".ts" => "ts", ".tsx" => "tsx", ".js" or ".jsx" => "js", ".html" => "html", ".cshtml" => "cshtml", _ => "",
+        ".cs" => "csharp", ".ts" => "ts", ".tsx" => "tsx", ".js" or ".jsx" => "js", ".py" or ".wsgi" => "python", ".html" => "html", ".cshtml" => "cshtml", _ => "",
     };
 }
 

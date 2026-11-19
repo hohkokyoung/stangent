@@ -1,0 +1,6 @@
+  Failed Kavita.Services.Tests.PlanterWantToReadTests.FullyReadOngoingSeries_LeavesWantToRead [85 ms]
+  Error Message:
+   Assert.Equal() Failure: Values differ
+Expected: 0
+Actual:   1
+Failed!  - Failed:     1, Passed:     1, Skipped:     0, Total:     2, Duration: 1 s - Kavita.Services.Tests.dll (net10.0)

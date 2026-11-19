@@ -1,0 +1,446 @@
+{
+  "codeTitle": "/series/:titleSlug · SeriesDetailsPage",
+  "entry": "page:tsconfig.json|/series/:titleSlug",
+  "generated": {
+    "bundleHash": "031c2d04000fc9c1566233aae35a627359956267a184a20d9b5ede52d0923292",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 254260,
+      "cutOff": 196,
+      "depth": 6,
+      "points": 1062
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 121978,
+      "calls": 1,
+      "costUsd": 0.494601,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8929,
+      "outputTokens": 651
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 116031,
+      "calls": 1,
+      "costUsd": 0.523864,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 33109,
+      "outputTokens": 5946
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/series/:titleSlug",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails",
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Command",
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/Command"
+        ],
+        "id": "A1",
+        "text": "Refresh & Scan runs the refresh series command for this series."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails",
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Command",
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/Command"
+        ],
+        "id": "A2",
+        "text": "Search Monitored runs the series search command for this series."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails",
+          "ts|frontend/src/Series/useSeries.ts#useToggleSeriesMonitored"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Series",
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/Series"
+        ],
+        "id": "A3",
+        "text": "Clicking the Monitored/Unmonitored chip toggles the series monitored flag and saves the series."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Organize/OrganizePreviewModalContent.tsx#OrganizePreviewModalContentInner",
+          "ts|frontend/src/Organize/OrganizePreviewRow.tsx#OrganizePreviewRow",
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/rename",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/rename",
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Command"
+        ],
+        "id": "A4",
+        "text": "Preview Rename opens a modal listing existing and new file paths. Organize runs the rename files command for the selected files, with all rows selected by default."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails"
+        ],
+        "id": "A5",
+        "text": "Manage Episodes opens an interactive import modal for the series folder."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/History/SeriesHistoryModalContent.tsx#SeriesHistoryModalContent",
+          "ts|frontend/src/Series/History/SeriesHistoryRow.tsx#SeriesHistoryRow"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/History/series",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/History/series"
+        ],
+        "id": "A6",
+        "text": "History opens a modal table of series history events, with a mark-as-failed action on grabbed rows."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/MonitoringOptions/MonitoringOptionsModalContent.tsx#MonitoringOptionsModalContent"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/SeasonPass",
+          "endpoint:Sonarr.Api.V5|POST /api/v5/SeasonPass"
+        ],
+        "id": "A7",
+        "text": "Episode Monitoring opens a modal to choose a monitoring option and Save it. Save does nothing while 'no change' is selected."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Edit/EditSeriesModalContent.tsx#EditSeriesModalContent",
+          "ts|frontend/src/Series/useSeries.ts#useSaveSeries"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Series",
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/Series"
+        ],
+        "id": "A8",
+        "text": "Edit opens a form for monitored, new seasons monitoring, season folder, quality profile, series type, language, season type, path and tags. Save updates the series."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Delete/DeleteSeriesModalContent.tsx#DeleteSeriesModalContent",
+          "ts|frontend/src/Series/useSeries.ts#useDeleteSeries"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|DELETE /api/v3/series/editor",
+          "endpoint:Sonarr.Api.V5|DELETE /api/v5/series/editor"
+        ],
+        "id": "A9",
+        "text": "Delete opens a modal with options to add a list exclusion and delete files. Delete removes the series."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails",
+          "ts|frontend/src/Series/Details/SeriesDetailsSeason.tsx#SeriesDetailsSeason"
+        ],
+        "id": "A10",
+        "text": "Expand All/Collapse All toggles all seasons, and each season has its own expand/collapse button."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetailsSeason.tsx#SeriesDetailsSeason",
+          "ts|frontend/src/Series/useSeries.ts#useToggleSeasonMonitored"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|PUT /api/v5/Series/{id:int}/season"
+        ],
+        "id": "A11",
+        "text": "A season's monitor toggle sets the season monitored state."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetailsSeason.tsx#SeriesDetailsSeason",
+          "ts|frontend/src/Episode/useEpisode.ts#useToggleEpisodesMonitored",
+          "ts|frontend/src/Utilities/Table/getToggledRange.ts#getToggledRange"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|PUT /api/v3/Episode/monitor",
+          "endpoint:Sonarr.Api.V5|PUT /api/v5/Episode/monitor"
+        ],
+        "id": "A12",
+        "text": "An episode's monitor toggle sets that episode's monitored state. Shift-click also sets the range back to the last toggled episode."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetailsSeason.tsx#SeriesDetailsSeason",
+          "ts|frontend/src/Series/Search/SeasonInteractiveSearchModalContent.tsx#SeasonInteractiveSearchModalContent"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/Command",
+          "endpoint:Sonarr.Api.V5|ANY /api/v5/Command"
+        ],
+        "id": "A13",
+        "text": "A season's search button runs the season search command. Season buttons also open interactive search, preview rename, manage episodes and history for that season."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails"
+        ],
+        "id": "R1",
+        "text": "Search Monitored is disabled when the series is unmonitored, has no monitored episodes, or has no episodes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails"
+        ],
+        "id": "R2",
+        "text": "Preview Rename is disabled without episode files. History is disabled without episodes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetailsPage.tsx#SeriesDetailsPage"
+        ],
+        "id": "R3",
+        "text": "If the series disappears and an item with its previous id exists, the page redirects to the new slug; otherwise it redirects to '/'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetailsSeason.tsx#SeriesDetailsSeason",
+          "ts|frontend/src/Series/Details/EpisodeRow.tsx#EpisodeRow"
+        ],
+        "id": "R4",
+        "text": "Season and episode monitor toggles are disabled when the series is unmonitored."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetailsSeason.tsx#SeriesDetailsSeason"
+        ],
+        "id": "R5",
+        "text": "A season's search is disabled while searching, with no monitored episodes, or when the series is unmonitored. Interactive search and history need episodes; rename and manage need episode files."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetailsSeason.tsx#getSeasonStatistics"
+        ],
+        "id": "R6",
+        "text": "A season counts an episode when it has a file or is monitored and aired in the past."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetailsSeason.tsx#SeriesDetailsSeason"
+        ],
+        "id": "R7",
+        "text": "A season starts expanded if it is season 1 or later and an episode airs in the future or within the last 30 days, or no episode has an air date. Otherwise it starts collapsed."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R8",
+        "text": "Running the same command within 5 seconds is ignored."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Delete/DeleteSeriesModalContent.tsx#DeleteSeriesModalContent"
+        ],
+        "id": "R9",
+        "text": "The Delete files option defaults to unchecked; the delete modal warns with the path and file count when it is checked."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Edit/EditSeriesModalContent.tsx#EditSeriesModalContent"
+        ],
+        "id": "R10",
+        "text": "The season type field is disabled when there are no season types or episode files exist. Saving a changed path first asks to confirm moving files."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Edit/EditSeriesModalContent.tsx#EditSeriesModalContent"
+        ],
+        "id": "R11",
+        "text": "The Edit modal closes after a successful save."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetailsPage.tsx#SeriesDetailsPage",
+          "ts|frontend/src/Components/NotFound.tsx#NotFound"
+        ],
+        "id": "S1",
+        "text": "If no series matches the URL title slug, the page shows a Page Not Found screen with the message 'SeriesCannotBeFound' translation."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails"
+        ],
+        "id": "S2",
+        "text": "The page title is the series title. A toolbar offers Refresh & Scan, Search Monitored, Preview Rename, Manage Episodes, History, Episode Monitoring, Edit, Delete and Expand All/Collapse All."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails",
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#getFanartUrl",
+          "ts|frontend/src/Series/Details/SeriesAlternateTitles.tsx#SeriesAlternateTitles"
+        ],
+        "id": "S3",
+        "text": "The header shows the series poster, a fanart backdrop when a fanart image exists, the title, and an alternate titles popover when there are alternate titles."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails",
+          "ts|frontend/src/Utilities/Array/sortByProp.ts#sortByProp"
+        ],
+        "id": "S4",
+        "text": "Previous and next series arrow buttons link to the neighbouring series in sortTitle order, wrapping around at the ends."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails",
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#getRunningYears",
+          "ts|frontend/src/Components/HeartRating.tsx#HeartRating",
+          "ts|frontend/src/Series/SeriesGenres.tsx#SeriesGenres"
+        ],
+        "id": "S5",
+        "text": "The header shows runtime, a heart rating with vote count tooltip, genres, and running years when present. Years show as 'year-' or 'year-endYear' when the series has ended with a last aired date. Nothing shows when year is 0."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails",
+          "ts|frontend/src/Settings/Profiles/Quality/QualityProfileName.tsx#QualityProfileName",
+          "ts|frontend/src/Series/SeriesStatus.ts#getSeriesStatusDetails"
+        ],
+        "id": "S6",
+        "text": "Chips show Monitored/Unmonitored, a Links tooltip, a Tags tooltip (only when the series has tags), episode progress, size on disk, quality profile, season type, language, status, and original language, original country and network when present."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetailsLinks.tsx#SeriesDetailsLinks"
+        ],
+        "id": "S7",
+        "text": "The Links tooltip lists The TVDB, TV Maze, IMDB, Trakt, MDBList and TMDB links depending on which ids exist, with a copy-id button for entries that have an external id."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesProgressLabel.tsx#SeriesProgressLabel",
+          "ts|frontend/src/Series/Details/SeriesProgressLabel.tsx#getEpisodeCountKind",
+          "ts|frontend/src/Series/Details/SeriesProgressLabel.tsx#getEpisodeCountIcon"
+        ],
+        "id": "S8",
+        "text": "Progress shows 'files / episodes', or 'files + newDownloads / episodes' when downloads are queued. Its colour and icon depend on state: downloading, complete, unmonitored, or missing."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetailsPath.tsx#SeriesDetailsPath",
+          "ts|frontend/src/Components/MetadataAttribution.tsx#MetadataAttribution"
+        ],
+        "id": "S9",
+        "text": "The series path is shown with a pending-move icon when a pending path exists. A metadata attribution link to the metadata source settings is also shown."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails"
+        ],
+        "id": "S10",
+        "text": "The overview text is clamped, with a More/Less toggle shown when it is clamped or expanded."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails"
+        ],
+        "id": "S11",
+        "text": "A loading indicator shows until episodes and episode files are loaded. Separate error alerts show if either fails to load. A warning shows when the series has no seasons."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails",
+          "ts|frontend/src/Series/Details/SeriesDetailsSeason.tsx#SeriesDetailsSeason",
+          "ts|frontend/src/Series/Details/SeasonInfo.tsx#SeasonInfo"
+        ],
+        "id": "S12",
+        "text": "Seasons are listed newest first. Each shows a monitor toggle, 'Specials' for season 0 or a season number, an optional title, a progress label with a season information popover, and size on disk when non-zero."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetailsSeason.tsx#SeriesDetailsSeason",
+          "ts|frontend/src/Series/Details/EpisodeRow.tsx#EpisodeRow"
+        ],
+        "id": "S13",
+        "text": "An expanded season shows an episodes table, or 'NoEpisodesInThisSeason' message when it has none. Episode rows show configurable columns such as monitored, number, title, air date, runtime, formats, languages, media info, size, release group, indexer flags, status and search actions."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetailsSeason.tsx#SeriesDetailsSeason"
+        ],
+        "id": "S14",
+        "text": "On small screens season actions appear in a menu; otherwise they appear as icon buttons."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Series/useSeries.ts#useSeries",
+          "ts|frontend/src/Episode/useEpisodes.ts#useEpisodes",
+          "ts|frontend/src/EpisodeFile/useEpisodeFiles.ts#useEpisodeFiles",
+          "ts|frontend/src/Commands/useCommands.ts#useCommands"
+        ],
+        "id": "E1",
+        "text": "Series, episodes, episode files and commands are fetched from the API. Commands are refreshed on an interval."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/Details/SeriesDetails.tsx#SeriesDetails",
+          "ts|frontend/src/Utilities/pagePopulator.ts#registerPagePopulator"
+        ],
+        "id": "E2",
+        "text": "Episodes and files are refetched when a refresh or rename command finishes, and when the page populator reports 'seriesUpdated'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/useSeries.ts#useDeleteSeries"
+        ],
+        "id": "E3",
+        "text": "Deleting a series removes it from the cached series list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Series/useSeries.ts#useUpdateSeriesMonitor",
+          "ts|frontend/src/Series/MonitoringOptions/MonitoringOptionsModalContent.tsx#MonitoringOptionsModalContent"
+        ],
+        "id": "E4",
+        "text": "Saving monitoring options refetches the series' episodes."
+      }
+    ]
+  },
+  "title": "Series details page",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Settings/useProviderSettings.ts",
+      "in": "ts|frontend/src/Settings/useProviderSettings.ts#useProviderSettings",
+      "line": 78,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

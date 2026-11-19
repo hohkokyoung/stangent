@@ -1,11 +1,11 @@
 import ts from "typescript";
 import type { Context } from "./extract.ts";
-import { stringValue } from "./values.ts";
+import { RUNTIME, BASE, stringValue } from "./values.ts";
 
 /**
  * Pages: the frontend's entry points (D31). Angular Router and object-style React Router routes
  * (`{ path, component | loadComponent | loadChildren | element | Component, children }`), and JSX
- * `<Route path element>` trees. Each page routes to the component it shows (✅ when the checker
+ * `<Route path element>` trees; with `route-render` on, `<Route path render|children>` too. Each page routes to the component it shows (✅ when the checker
  * resolves it). Child paths are joined to their parents'.
  */
 export function pages(ctx: Context, sf: ts.SourceFile) {
@@ -47,15 +47,17 @@ function isRouteArray(arr: ts.ArrayLiteralExpression): boolean {
 }
 
 function referencedByLoadChildren(ctx: Context, arr: ts.ArrayLiteralExpression): boolean {
-  // export const SERIES_ROUTES = [...] — also reachable from some loadChildren; walked from there when it is.
+  // export const routes = [...] in a lazy module — reachable from some loadChildren, so walked from there, under its
+  // parent's path and guards; never also as a root (F7: Kavita's lazy arrays are named `routes` too).
   const decl = arr.parent;
-  return ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && /routes?$/i.test(decl.name.text)
-    && !/^(app)?routes?$/i.test(decl.name.text) && loadChildrenTargets(ctx).has(decl);
+  return ts.isVariableDeclaration(decl) && loadChildrenTargets(ctx).has(decl);
 }
 
-let loadChildrenCache: Set<ts.Node> | null = null;
+// Per program: a test runs several extracts in one process.
+const loadChildrenCache = new WeakMap<ts.Program, Set<ts.Node>>();
 function loadChildrenTargets(ctx: Context): Set<ts.Node> {
-  if (loadChildrenCache) return loadChildrenCache;
+  const cached = loadChildrenCache.get(ctx.program);
+  if (cached) return cached;
   const targets = new Set<ts.Node>();
   for (const sf of ctx.program.getSourceFiles().filter(ctx.isOwn)) {
     const visit = (n: ts.Node) => {
@@ -67,10 +69,11 @@ function loadChildrenTargets(ctx: Context): Set<ts.Node> {
     };
     visit(sf);
   }
-  return (loadChildrenCache = targets);
+  loadChildrenCache.set(ctx.program, targets);
+  return targets;
 }
 
-function routeArray(ctx: Context, arr: ts.ArrayLiteralExpression, prefix: string, visiting: Set<ts.Node>) {
+function routeArray(ctx: Context, arr: ts.ArrayLiteralExpression, prefix: string, visiting: Set<ts.Node>, inherited: Guard[] = [], loads: Guard[] = []) {
   if (visiting.has(arr)) return;
   visiting.add(arr);
   for (const el of arr.elements) {
@@ -79,16 +82,94 @@ function routeArray(ctx: Context, arr: ts.ArrayLiteralExpression, prefix: string
     const own = isIndex ? "" : stringValue(prop(el, "path") ?? undefined, ctx.checker);
     const full = join(prefix, own ?? "");
     const target = componentOf(ctx, el);
-    if (own !== null && (target.ids.length > 0 || target.unresolved)) addPage(ctx, el, full, target);
+    // A parent's guards hold for its children too (G8): Kavita puts canActivate on a path-less parent.
+    const guards = [...inherited, ...guardsOf(ctx, el)];
+    // D171: a parent's resolvers and loaders run as its children open, too.
+    const loaders = [...loads, ...loadersOf(ctx, el)];
+    if (own !== null && (target.ids.length > 0 || target.unresolved)) {
+      addPage(ctx, el, full, target);
+      routeTitle(ctx, el, pageId(ctx, full));
+      for (const g of guards) ctx.out.fact("routes", "guard", pageId(ctx, full), g.file, g.line, { guard: g.id, name: g.name, via: g.via });
+      for (const l of loaders) {
+        if (l.id) ctx.out.fact("on-load", "on-load", pageId(ctx, full), l.file, l.line, { framework: "router", hook: l.via, handler: l.id, deps: "", runs: "before the screen opens", key: l.name });
+        else ctx.out.blind(pageId(ctx, full), l.file, l.line, `route ${l.via} the graph can't follow: ${l.name}`, "on-load");
+      }
+    }
     const children = prop(el, "children");
-    if (children && ts.isArrayLiteralExpression(children)) routeArray(ctx, children, full, visiting);
+    if (children && ts.isArrayLiteralExpression(children)) routeArray(ctx, children, full, visiting, guards, loaders);
     const load = prop(el, "loadChildren");
     if (load) {
       for (const d of lazyTarget(ctx, load)?.declarations ?? [])
-        if (ts.isVariableDeclaration(d) && d.initializer && ts.isArrayLiteralExpression(d.initializer)) routeArray(ctx, d.initializer, full, visiting);
+        if (ts.isVariableDeclaration(d) && d.initializer && ts.isArrayLiteralExpression(d.initializer)) routeArray(ctx, d.initializer, full, visiting, guards, loaders);
     }
   }
 }
+
+/**
+ * D333: a screen's title written on its route, a `screen-title` fact on the page (`via` `route`): the route's own `title` (Angular),
+ * else `title` under `data` or `handle` (the usual place in other routers), when it is a constant. `title` holds it as written:
+ * a text key or words; layer 3 looks it up. A title resolver or one made at runtime gives none.
+ */
+function routeTitle(ctx: Context, route: ts.ObjectLiteralExpression, page: string) {
+  let e = prop(route, "title");
+  for (const holder of ["data", "handle"]) {
+    if (e) break;
+    const h = prop(route, holder);
+    if (h && ts.isObjectLiteralExpression(h)) e = prop(h, "title");
+  }
+  const v = e ? stringValue(e, ctx.checker) : null;
+  if (!e || v === null || v.includes(RUNTIME) || v.includes(BASE) || !v.trim()) return;
+  ctx.out.fact("routes", "screen-title", page, ctx.rel(e.getSourceFile().fileName), ctx.line(e), { via: "route", title: v.trim() });
+}
+
+interface Guard { id: string; name: string; via: string; file: string; line: number }
+
+/** `canActivate: [authGuard]`, `canMatch`, `canActivateChild`, `canLoad`: each guard, by id when it resolves. */
+function guardsOf(ctx: Context, route: ts.ObjectLiteralExpression): Guard[] {
+  const out: Guard[] = [];
+  for (const via of ["canActivate", "canMatch", "canActivateChild", "canLoad"]) {
+    const list = prop(route, via);
+    if (!list || !ts.isArrayLiteralExpression(list)) continue;
+    for (const e of list.elements) {
+      const head = ts.isCallExpression(e) ? e.expression : e;   // roleGuard('admin') → roleGuard
+      let symbol = ctx.checker.getSymbolAtLocation(ts.isPropertyAccessExpression(head) ? head.name : head);
+      if (symbol && symbol.flags & ts.SymbolFlags.Alias) {
+        try { symbol = ctx.checker.getAliasedSymbol(symbol); } catch { /* keep the alias */ }
+      }
+      out.push({ id: ctx.symbolId(symbol) ?? "", name: e.getText(), via, file: ctx.rel(e.getSourceFile().fileName), line: ctx.line(e) });
+    }
+  }
+  return out;
+}
+
+/**
+ * Angular's `resolve: { series: SeriesResolver }` (a class: its `resolve` method; a function: itself) and React Router's
+ * `loader: seriesLoader`: code that runs before the screen opens. `name` holds the resolver's key, or the loader's text.
+ */
+function loadersOf(ctx: Context, route: ts.ObjectLiteralExpression): Guard[] {
+  const out: Guard[] = [];
+  const point = (e: ts.Expression, via: string, name: string) => {
+    let symbol = ctx.checker.getSymbolAtLocation(ts.isPropertyAccessExpression(e) ? e.name : e);
+    if (symbol && symbol.flags & ts.SymbolFlags.Alias) {
+      try { symbol = ctx.checker.getAliasedSymbol(symbol); } catch { /* keep the alias */ }
+    }
+    let id = ctx.symbolId(symbol) ?? "";
+    const cls = symbol?.declarations?.find(ts.isClassDeclaration);
+    const resolve = cls?.members.find((m) => ts.isMethodDeclaration(m) && m.name.getText() === "resolve");
+    if (resolve) id = ctx.declId(resolve) ?? id;
+    if (ts.isArrowFunction(e) || ts.isFunctionExpression(e)) id = "";
+    out.push({ id, name, via, file: ctx.rel(e.getSourceFile().fileName), line: ctx.line(e) });
+  };
+  const resolve = prop(route, "resolve");
+  if (resolve && ts.isObjectLiteralExpression(resolve))
+    for (const p of resolve.properties)
+      if (ts.isPropertyAssignment(p)) point(p.initializer, "resolve", p.name.getText());
+  const loader = prop(route, "loader");
+  if (loader) point(loader, "loader", loader.getText());
+  return out;
+}
+
+const pageId = (ctx: Context, route: string) => `page:${ctx.o.projectId.replace(/^project:/, "")}|${route}`;
 
 interface Target { ids: string[]; unresolved: boolean }
 
@@ -128,7 +209,7 @@ function jsxComponents(ctx: Context, e: ts.Node): Target {
 }
 
 /** `() => import('./x').then(m => m.Thing)` → the Thing symbol; `() => import('./x')` → the module's default export. */
-function lazyTarget(ctx: Context, e: ts.Expression): ts.Symbol | undefined {
+export function lazyTarget(ctx: Context, e: ts.Expression): ts.Symbol | undefined {
   let found: ts.Symbol | undefined;
   const visit = (n: ts.Node) => {
     if (found) return;
@@ -153,6 +234,7 @@ function jsxRoute(ctx: Context, el: ts.JsxElement | ts.JsxSelfClosingElement, pr
   let own: string | null = null;
   let target: Target = { ids: [], unresolved: false };
   let index = false;
+  let shown: ts.Node | undefined;
   for (const a of attrs.properties) {
     if (!ts.isJsxAttribute(a) || !ts.isIdentifier(a.name)) continue;
     const v = a.initializer;
@@ -164,21 +246,44 @@ function jsxRoute(ctx: Context, el: ts.JsxElement | ts.JsxSelfClosingElement, pr
       const id = ctx.symbolId(ctx.checker.getSymbolAtLocation(expr));
       target = { ids: id ? [id] : [], unresolved: !id };
     }
+    if ((a.name.text === "render" || a.name.text === "children") && expr) shown = expr;
   }
   const full = own === null ? prefix : join(prefix, own);
+  if (ctx.o.routeRender && own !== null && target.ids.length === 0 && !target.unresolved) {
+    // `render={props => <X/>}`, `children={<X/>}` or `<Route path="/x"><X/></Route>`: read only when the route names nothing else.
+    const children = ts.isJsxElement(el) ? el.children.filter((c) => !ts.isJsxText(c) && !isRouteElement(c)) : [];
+    if (shown || children.length > 0) {
+      const named = shown ? renderedBy(ctx, shown) : mergeTargets(children.map((c) => jsxComponents(ctx, c)));
+      addPage(ctx, el, full, { ids: named.ids, unresolved: named.ids.length === 0 }, ROUTE_RENDER);
+    }
+  }
   if ((own !== null || index) && (target.ids.length > 0 || target.unresolved)) addPage(ctx, el, full, target);
   if (ts.isJsxElement(el))
     for (const child of el.children)
       if ((ts.isJsxElement(child) || ts.isJsxSelfClosingElement(child)) && tagName(child) === "Route") jsxRoute(ctx, child, full);
 }
 
-function addPage(ctx: Context, at: ts.Node, route: string, target: Target) {
-  const id = `page:${ctx.o.projectId.replace(/^project:/, "")}|${route}`;
+const ROUTE_RENDER = "route-render";
+
+const isRouteElement = (c: ts.Node) => (ts.isJsxElement(c) || ts.isJsxSelfClosingElement(c)) && tagName(c) === "Route";
+
+const mergeTargets = (all: Target[]): Target => ({ ids: [...new Set(all.flatMap((t) => t.ids))], unresolved: all.some((t) => t.unresolved) });
+
+/** What a `render` or `children` value shows: the JSX in it, or in the function it names. A prop or variable with no JSX to read names nothing. */
+function renderedBy(ctx: Context, e: ts.Expression): Target {
+  if (!ts.isIdentifier(e) && !ts.isPropertyAccessExpression(e)) return jsxComponents(ctx, e);
+  let symbol = ctx.checker.getSymbolAtLocation(e);
+  if (symbol && symbol.flags & ts.SymbolFlags.Alias) symbol = ctx.checker.getAliasedSymbol(symbol);
+  return mergeTargets((symbol?.declarations ?? []).filter((d) => ts.isFunctionLike(d) || ts.isVariableDeclaration(d)).map((d) => jsxComponents(ctx, d)));
+}
+
+export function addPage(ctx: Context, at: ts.Node, route: string, target: Target, detector = "routes") {
+  const id = pageId(ctx, route);
   const file = ctx.rel(at.getSourceFile().fileName);
   const line = ctx.line(at);
   ctx.out.node({ id, kind: "page", name: route, project: ctx.o.projectId, file, line, endLine: line, isTest: false });
-  for (const t of target.ids) ctx.out.edge(id, t, "routes-to", 0, "routes");
-  if (target.ids.length === 0) ctx.out.blind(id, file, line, `page ${route}: its component couldn't be resolved`, "routes");
+  for (const t of target.ids) ctx.out.edge(id, t, "routes-to", 0, detector);
+  if (target.ids.length === 0) ctx.out.blind(id, file, line, `page ${route}: its component couldn't be resolved`, detector);
 }
 
 function join(prefix: string, own: string): string {

@@ -1,0 +1,68 @@
+{
+  "codeTitle": "LocalizationService.HandleAsync(ConfigSavedEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Localization.LocalizationService.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)",
+  "generated": {
+    "bundleHash": "f9a990a1a5f84584029b087b53be51bd1cce8c09dd4df7245100d353b89ffae7",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 6951,
+      "cutOff": 0,
+      "depth": 4,
+      "points": 3
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 4651,
+      "calls": 1,
+      "costUsd": 0.019313,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3842,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 3456,
+      "calls": 1,
+      "costUsd": 0.018124,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3565,
+      "outputTokens": 402
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Localization.LocalizationService.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Localization.LocalizationService.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)"
+        ],
+        "id": "A1",
+        "text": "When a configuration-saved event is received, the localization service handles it by clearing its cache."
+      }
+    ],
+    "rules": [],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Localization.LocalizationService.HandleAsync(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)",
+          "Sonarr.Common|M:NzbDrone.Common.Cache.ICached.Clear"
+        ],
+        "id": "E1",
+        "text": "All entries in the localization service's cache are removed whenever the configuration is saved."
+      }
+    ]
+  },
+  "title": "Localization cache reset on config save",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

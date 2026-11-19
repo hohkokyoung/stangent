@@ -1,0 +1,143 @@
+# One line per item (D99): read this first, then `stangent req show <id>`. Written by code.
+version: 1
+items:
+  - {"id": "F-0001", "type": "feature", "section": "1", "title": "Library", "parent": null}
+  - {"id": "R-0001", "type": "requirement", "feature": "F-0001", "section": "1", "title": "Library holds all added series", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0002", "type": "requirement", "feature": "F-0001", "section": "1", "title": "Series has a root folder", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0003", "type": "requirement", "feature": "F-0001", "section": "1", "title": "Series has a quality profile", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0004", "type": "requirement", "feature": "F-0001", "section": "1", "title": "Series has a series type", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0005", "type": "requirement", "feature": "F-0001", "section": "1", "title": "Series has a set of tags", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "F-0007", "type": "feature", "section": "1.1", "title": "Adding a series", "parent": "F-0001"}
+  - {"id": "R-0042", "type": "requirement", "feature": "F-0007", "section": "1.1", "title": "Search for a series by name", "kind": "flow", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0043", "type": "requirement", "feature": "F-0007", "section": "1.1", "title": "Add a series to the library", "kind": "flow", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0044", "type": "requirement", "feature": "F-0007", "section": "1.1", "title": "Pick options before adding", "kind": "flow", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0045", "type": "requirement", "feature": "F-0007", "section": "1.1", "title": "Root Folder option", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0046", "type": "requirement", "feature": "F-0007", "section": "1.1", "title": "Monitor option", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0047", "type": "requirement", "feature": "F-0007", "section": "1.1", "title": "Quality Profile option", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0048", "type": "requirement", "feature": "F-0007", "section": "1.1", "title": "Series Type option", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0049", "type": "requirement", "feature": "F-0007", "section": "1.1", "title": "Tags option", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0050", "type": "requirement", "feature": "F-0007", "section": "1.1", "title": "Search for missing episodes after adding", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0051", "type": "requirement", "feature": "F-0007", "section": "1.1", "title": "Add up to 10 series together", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0052", "type": "requirement", "feature": "F-0007", "section": "1.1", "title": "Existing series marked in results", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0053", "type": "requirement", "feature": "F-0007", "section": "1.1", "title": "Can't add a series twice", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "F-0005", "type": "feature", "section": "1.2", "title": "Series details", "parent": "F-0001"}
+  - {"id": "R-0025", "type": "requirement", "feature": "F-0005", "section": "1.2", "title": "Series details shows series information", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0026", "type": "requirement", "feature": "F-0005", "section": "1.2", "title": "Episodes listed under each season", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0027", "type": "requirement", "feature": "F-0005", "section": "1.2", "title": "Monitor or unmonitor whole series", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0028", "type": "requirement", "feature": "F-0005", "section": "1.2", "title": "Monitor or unmonitor a season", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0029", "type": "requirement", "feature": "F-0005", "section": "1.2", "title": "Monitor or unmonitor an episode", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0030", "type": "requirement", "feature": "F-0005", "section": "1.2", "title": "Search monitored episodes of series", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0031", "type": "requirement", "feature": "F-0005", "section": "1.2", "title": "Search one season", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0032", "type": "requirement", "feature": "F-0005", "section": "1.2", "title": "Search one episode", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0033", "type": "requirement", "feature": "F-0005", "section": "1.2", "title": "Edit series", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0034", "type": "requirement", "feature": "F-0005", "section": "1.2", "title": "Export episode list as CSV", "kind": "flow", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0035", "type": "requirement", "feature": "F-0005", "section": "1.2", "title": "Deleting a series deletes files", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0036", "type": "requirement", "feature": "F-0005", "section": "1.2", "title": "Refresh series", "kind": "flow", "status": "proposed", "check": "confirmed"}
+  - {"id": "F-0002", "type": "feature", "section": "2", "title": "Calendar", "parent": null}
+  - {"id": "R-0006", "type": "requirement", "feature": "F-0002", "section": "2", "title": "Calendar shows recent and upcoming episodes", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0007", "type": "requirement", "feature": "F-0002", "section": "2", "title": "Calendar views", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0008", "type": "requirement", "feature": "F-0002", "section": "2", "title": "Show or hide monitored episodes", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0009", "type": "requirement", "feature": "F-0002", "section": "2", "title": "Show or hide unmonitored episodes", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0010", "type": "requirement", "feature": "F-0002", "section": "2", "title": "Downloaded episodes are marked", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0011", "type": "requirement", "feature": "F-0002", "section": "2", "title": "Drag episode to change air date", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0012", "type": "requirement", "feature": "F-0002", "section": "2", "title": "Share calendar as iCal feed", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0013", "type": "requirement", "feature": "F-0002", "section": "2", "title": "iCal feed date range", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0014", "type": "requirement", "feature": "F-0002", "section": "2", "title": "Limit iCal feed by tags", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0015", "type": "requirement", "feature": "F-0002", "section": "2", "title": "Limit iCal feed to premieres", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "F-0003", "type": "feature", "section": "3", "title": "Activity", "parent": null}
+  - {"id": "R-0016", "type": "requirement", "feature": "F-0003", "section": "3", "title": "Activity shows current downloads", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0017", "type": "requirement", "feature": "F-0003", "section": "3", "title": "Activity shows past actions", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "F-0004", "type": "feature", "section": "3.1", "title": "Queue", "parent": "F-0003"}
+  - {"id": "R-0018", "type": "requirement", "feature": "F-0004", "section": "3.1", "title": "Queue lists downloading releases", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0019", "type": "requirement", "feature": "F-0004", "section": "3.1", "title": "Queue read from download clients", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0020", "type": "requirement", "feature": "F-0004", "section": "3.1", "title": "Warning for non-importable release", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0021", "type": "requirement", "feature": "F-0004", "section": "3.1", "title": "User can remove a release", "kind": "permission", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0022", "type": "requirement", "feature": "F-0004", "section": "3.1", "title": "Removal always blocklists release", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0023", "type": "requirement", "feature": "F-0004", "section": "3.1", "title": "Queue item has priority", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0024", "type": "requirement", "feature": "F-0004", "section": "3.1", "title": "User can change priority to reorder", "kind": "permission", "status": "proposed", "check": "confirmed"}
+  - {"id": "F-0006", "type": "feature", "section": "3.2", "title": "History", "parent": "F-0003"}
+  - {"id": "R-0037", "type": "requirement", "feature": "F-0006", "section": "3.2", "title": "History lists episode events", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0038", "type": "requirement", "feature": "F-0006", "section": "3.2", "title": "Filter by event type", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0039", "type": "requirement", "feature": "F-0006", "section": "3.2", "title": "Show more columns", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0040", "type": "requirement", "feature": "F-0006", "section": "3.2", "title": "Open grabbed release details", "kind": "flow", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0041", "type": "requirement", "feature": "F-0006", "section": "3.2", "title": "Undo any history entry", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "F-0010", "type": "feature", "section": "Settings", "title": "Settings", "parent": null}
+  - {"id": "F-0016", "type": "feature", "section": "Settings / General", "title": "General", "parent": "F-0010"}
+  - {"id": "F-0017", "type": "feature", "section": "Settings / General / Backups", "title": "Backups", "parent": "F-0016"}
+  - {"id": "R-0085", "type": "requirement", "feature": "F-0017", "section": "Settings / General / Backups", "title": "Backup folder setting", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0086", "type": "requirement", "feature": "F-0017", "section": "Settings / General / Backups", "title": "Relative backup path", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0087", "type": "requirement", "feature": "F-0017", "section": "Settings / General / Backups", "title": "Backup interval setting", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0088", "type": "requirement", "feature": "F-0017", "section": "Settings / General / Backups", "title": "Interval range 1 to 30 days", "kind": "validation", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0089", "type": "requirement", "feature": "F-0017", "section": "Settings / General / Backups", "title": "Backup retention setting", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0090", "type": "requirement", "feature": "F-0017", "section": "Settings / General / Backups", "title": "Retention up to 365 days", "kind": "validation", "status": "proposed", "check": "confirmed"}
+  - {"id": "F-0021", "type": "feature", "section": "Settings / General / Logging", "title": "Logging", "parent": "F-0016"}
+  - {"id": "R-0106", "type": "requirement", "feature": "F-0021", "section": "Settings / General / Logging", "title": "Log level can be info", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0107", "type": "requirement", "feature": "F-0021", "section": "Settings / General / Logging", "title": "Log level can be debug", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0108", "type": "requirement", "feature": "F-0021", "section": "Settings / General / Logging", "title": "Log level can be trace", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0109", "type": "requirement", "feature": "F-0021", "section": "Settings / General / Logging", "title": "Log file size limit 50 MB", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "F-0018", "type": "feature", "section": "Settings / Interface", "title": "Interface", "parent": "F-0010"}
+  - {"id": "R-0091", "type": "requirement", "feature": "F-0018", "section": "Settings / Interface", "title": "Set first day of the week", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0092", "type": "requirement", "feature": "F-0018", "section": "Settings / Interface", "title": "Set calendar column headers", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0093", "type": "requirement", "feature": "F-0018", "section": "Settings / Interface", "title": "Choose short date format", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0094", "type": "requirement", "feature": "F-0018", "section": "Settings / Interface", "title": "Choose long date format", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0095", "type": "requirement", "feature": "F-0018", "section": "Settings / Interface", "title": "Choose time format", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0096", "type": "requirement", "feature": "F-0018", "section": "Settings / Interface", "title": "Show dates relative to today", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0097", "type": "requirement", "feature": "F-0018", "section": "Settings / Interface", "title": "Choose theme", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0098", "type": "requirement", "feature": "F-0018", "section": "Settings / Interface", "title": "Choose interface language", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0099", "type": "requirement", "feature": "F-0018", "section": "Settings / Interface", "title": "Set font size", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "F-0011", "type": "feature", "section": "Settings / Profiles", "title": "Profiles", "parent": "F-0010"}
+  - {"id": "F-0013", "type": "feature", "section": "Settings / Profiles / Delay profiles", "title": "Delay profiles", "parent": "F-0011"}
+  - {"id": "R-0066", "type": "requirement", "feature": "F-0013", "section": "Settings / Profiles / Delay profiles", "title": "Delay profile makes Sonarr wait", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0067", "type": "requirement", "feature": "F-0013", "section": "Settings / Profiles / Delay profiles", "title": "Preferred protocol", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0068", "type": "requirement", "feature": "F-0013", "section": "Settings / Profiles / Delay profiles", "title": "Delays in minutes", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0069", "type": "requirement", "feature": "F-0013", "section": "Settings / Profiles / Delay profiles", "title": "Delays can't be negative", "kind": "validation", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0070", "type": "requirement", "feature": "F-0013", "section": "Settings / Profiles / Delay profiles", "title": "Profile applies by matching tags", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0071", "type": "requirement", "feature": "F-0013", "section": "Settings / Profiles / Delay profiles", "title": "Default profile can have tags", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "F-0012", "type": "feature", "section": "Settings / Profiles / Quality profiles", "title": "Quality profiles", "parent": "F-0011"}
+  - {"id": "R-0061", "type": "requirement", "feature": "F-0012", "section": "Settings / Profiles / Quality profiles", "title": "Profile lists wanted qualities in order", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0062", "type": "requirement", "feature": "F-0012", "section": "Settings / Profiles / Quality profiles", "title": "Profile has an upgrade cutoff", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0063", "type": "requirement", "feature": "F-0012", "section": "Settings / Profiles / Quality profiles", "title": "Profile name is required", "kind": "validation", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0064", "type": "requirement", "feature": "F-0012", "section": "Settings / Profiles / Quality profiles", "title": "Upgrades replace files until cutoff", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0065", "type": "requirement", "feature": "F-0012", "section": "Settings / Profiles / Quality profiles", "title": "Upgrade Until is the cutoff quality", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "F-0015", "type": "feature", "section": "Settings / Quality definitions", "title": "Quality definitions", "parent": "F-0010"}
+  - {"id": "R-0083", "type": "requirement", "feature": "F-0015", "section": "Settings / Quality definitions", "title": "Screen lists every quality with sizes", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0084", "type": "requirement", "feature": "F-0015", "section": "Settings / Quality definitions", "title": "Quality can have max episode runtime", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "F-0014", "type": "feature", "section": "Settings / Tags", "title": "Tags", "parent": "F-0010"}
+  - {"id": "R-0072", "type": "requirement", "feature": "F-0014", "section": "Settings / Tags", "title": "Tags link to delay profiles", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0073", "type": "requirement", "feature": "F-0014", "section": "Settings / Tags", "title": "Tags link to release profiles", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0074", "type": "requirement", "feature": "F-0014", "section": "Settings / Tags", "title": "Tags link to indexers", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0075", "type": "requirement", "feature": "F-0014", "section": "Settings / Tags", "title": "Tags link to import lists", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0076", "type": "requirement", "feature": "F-0014", "section": "Settings / Tags", "title": "Tags link to notifications", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0077", "type": "requirement", "feature": "F-0014", "section": "Settings / Tags", "title": "Tags link to download clients", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0078", "type": "requirement", "feature": "F-0014", "section": "Settings / Tags", "title": "Tags screen lists tags with usage counts", "kind": "flow", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0079", "type": "requirement", "feature": "F-0014", "section": "Settings / Tags", "title": "Allowed characters in tag labels", "kind": "validation", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0080", "type": "requirement", "feature": "F-0014", "section": "Settings / Tags", "title": "Deleting a tag removes it everywhere", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0081", "type": "requirement", "feature": "F-0014", "section": "Settings / Tags", "title": "Tag colour from 12-colour palette", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0082", "type": "requirement", "feature": "F-0014", "section": "Settings / Tags", "title": "Tag colour shown wherever tag appears", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "F-0019", "type": "feature", "section": "System", "title": "System", "parent": null}
+  - {"id": "F-0020", "type": "feature", "section": "System / Backups", "title": "Backups", "parent": "F-0019"}
+  - {"id": "R-0100", "type": "requirement", "feature": "F-0020", "section": "System / Backups", "title": "Backups list shows made backups", "kind": "data", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0101", "type": "requirement", "feature": "F-0020", "section": "System / Backups", "title": "Backups listed newest first", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0102", "type": "requirement", "feature": "F-0020", "section": "System / Backups", "title": "Take a backup now", "kind": "flow", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0103", "type": "requirement", "feature": "F-0020", "section": "System / Backups", "title": "Restore from a listed backup", "kind": "flow", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0104", "type": "requirement", "feature": "F-0020", "section": "System / Backups", "title": "Restore from an uploaded backup file", "kind": "flow", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0105", "type": "requirement", "feature": "F-0020", "section": "System / Backups", "title": "Backups can be copied to S3", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "F-0008", "type": "feature", "section": "Wanted", "title": "Wanted", "parent": null}
+  - {"id": "F-0009", "type": "feature", "section": "Wanted / Missing episodes", "title": "Missing episodes", "parent": "F-0008"}
+  - {"id": "R-0054", "type": "requirement", "feature": "F-0009", "section": "Wanted / Missing episodes", "title": "Missing screen lists aired monitored episodes without files", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0055", "type": "requirement", "feature": "F-0009", "section": "Wanted / Missing episodes", "title": "Below-cutoff episodes are not listed", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0056", "type": "requirement", "feature": "F-0009", "section": "Wanted / Missing episodes", "title": "Search selected episodes", "kind": "flow", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0057", "type": "requirement", "feature": "F-0009", "section": "Wanted / Missing episodes", "title": "Search all missing episodes", "kind": "flow", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0058", "type": "requirement", "feature": "F-0009", "section": "Wanted / Missing episodes", "title": "Search All starts without confirmation", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0059", "type": "requirement", "feature": "F-0009", "section": "Wanted / Missing episodes", "title": "Toggle monitored/unmonitored missing episodes", "kind": "flow", "status": "proposed", "check": "confirmed"}
+  - {"id": "R-0060", "type": "requirement", "feature": "F-0009", "section": "Wanted / Missing episodes", "title": "Weekly email digest of missing episodes", "kind": "rule", "status": "proposed", "check": "confirmed"}
+  - {"id": "Q-0001", "type": "question", "section": "3.2", "title": "What does undoing a history entry do when the entry is not an upgrade (e.g. grabbed, deleted, renamed or failed), given that only the restoring of an upgraded file is described?", "status": "open"}
+  - {"id": "Q-0002", "type": "question", "section": "1.1", "title": "What happens when the user selects more than 10 series: is the selection blocked or is an error shown?", "status": "open"}
+  - {"id": "Q-0003", "type": "question", "section": "Wanted / Missing episodes", "title": "The missing screen lists only monitored episodes, yet the user can toggle to unmonitored missing episodes; which is the default view, and does the first sentence apply only to the default?", "status": "open"}
+  - {"id": "Q-0004", "type": "question", "section": "Wanted / Missing episodes", "title": "Does the weekly email digest list every missing episode including unmonitored ones, or only those the missing screen lists as monitored?", "status": "open"}
+  - {"id": "Q-0005", "type": "question", "section": "Settings / Tags", "title": "When a tag is deleted, is it also removed from import lists, notifications and download clients, which are linked by tags but not named in the deletion sentence?", "status": "open"}
+  - {"id": "Q-0006", "type": "question", "section": "Settings / Tags", "title": "Does 'profile' in the deletion sentence cover both delay profiles and release profiles?", "status": "open"}
+  - {"id": "Q-0007", "type": "question", "section": "Settings / General / Backups", "title": "Is there a minimum value for Retention, since only an upper limit of 365 days is stated?", "status": "open"}
+  - {"id": "Q-0008", "type": "question", "section": "Settings / Interface", "title": "What does setting the column headers of the calendar mean, and what options are available for them?", "status": "open"}
+  - {"id": "Q-0009", "type": "question", "section": "Settings / Interface", "title": "What formats are available for the short date, long date and time formats?", "status": "open"}
+  - {"id": "Q-0010", "type": "question", "section": "System / Backups", "title": "Is the S3 copy optional or configurable, and what settings (bucket, schedule, credentials) control it?", "status": "open"}

@@ -1,0 +1,606 @@
+{
+  "doc": "sonarr-fsd",
+  "note": "Phase 2b (D56, D57): findings in specs/trace.yaml scored against the frozen answer key. 'found' lets a gap be reported as a conflict and back; 'foundAsKind' needs the planted kind.",
+  "found": {
+    "overall": {
+      "found": 26,
+      "of": 30,
+      "share": 0.867,
+      "range95": [
+        0.733,
+        0.967
+      ]
+    },
+    "gap": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 6,
+      "of": 10,
+      "share": 0.6,
+      "range95": [
+        0.3,
+        0.9
+      ]
+    }
+  },
+  "foundAsKind": {
+    "overall": {
+      "found": 25,
+      "of": 30,
+      "share": 0.833,
+      "range95": [
+        0.7,
+        0.933
+      ]
+    },
+    "gap": {
+      "found": 9,
+      "of": 10,
+      "share": 0.9,
+      "range95": [
+        0.7,
+        1
+      ]
+    },
+    "conflict": {
+      "found": 10,
+      "of": 10,
+      "share": 1,
+      "range95": [
+        1,
+        1
+      ]
+    },
+    "undocumented": {
+      "found": 6,
+      "of": 10,
+      "share": 0.6,
+      "range95": [
+        0.3,
+        0.9
+      ]
+    }
+  },
+  "noise": {
+    "findings": 54,
+    "unplanted": 28,
+    "worstCaseShare": 0.519,
+    "sample": 20,
+    "handChecked": 20,
+    "realInSample": 17,
+    "falseAlarmShare": 0.078,
+    "falseAlarmRange95": [
+      0,
+      0.156
+    ]
+  },
+  "bars": {
+    "finds": true,
+    "notTooNoisy": true
+  },
+  "finerVerdicts": null,
+  "candidates": {
+    "sections": 0,
+    "byCode": 0,
+    "byAi": 0,
+    "aiFoundNone": 0
+  },
+  "cost": {
+    "finder": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "judge": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "checker": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    },
+    "disprover": {
+      "calls": 0,
+      "sections": 0,
+      "inputTokensPerSection": 0,
+      "outputTokensPerSection": 0,
+      "secondsPerSection": 0,
+      "costUsd": 0
+    }
+  },
+  "requirements": {
+    "features": 0,
+    "requirements": 0,
+    "withAcceptance": 0,
+    "byCheck": {
+      "confirmed": 0,
+      "disputed": 0,
+      "unchecked": 0
+    },
+    "background": 0,
+    "backgroundDisputed": 0,
+    "questions": 0,
+    "plantedCited": {
+      "cited": 0,
+      "of": 20,
+      "missed": [
+        "Up to 10 series can be selected from the search results and added together in one step.",
+        "The episode list of a series can be exported as a CSV file.",
+        "Episodes can be dragged to another day to change their air date.",
+        "Each queue item has a priority (High, Normal or Low) that the user can change to reorder the downloads.",
+        "Any history entry can be undone, which restores the episode file that an upgrade replaced.",
+        "A weekly email digest lists every missing episode.",
+        "Each tag has a colour, chosen from a palette of 12 colours, which is shown wherever the tag appears.",
+        "Each quality can be limited to a maximum episode runtime.",
+        "The font size can be set to small, medium or large.",
+        "Backups can be copied automatically to an S3 bucket.",
+        "Deleting a series always deletes its folder and all its files from disk.",
+        "Sonarr can share the calendar as an iCal feed, which covers the previous 14 days and the next 60 days.",
+        "Removing an item from the queue always adds the release to the blocklist.",
+        "Search All starts straight away, without asking the user to confirm.",
+        "Tag labels may contain letters, numbers, spaces and underscores.",
+        "Deleting a tag removes it from every series, profile and indexer that uses it.",
+        "The default delay profile can be given tags like any other.",
+        "Each log file can grow up to 50 megabytes before a new one is started.",
+        "Interval: how often an automatic backup is taken, from 1 to 30 days.",
+        "Retention: how long backups are kept, up to 365 days."
+      ]
+    },
+    "findingsWithRequirement": 0,
+    "failedSections": 0,
+    "retries": 0,
+    "fixes": 0,
+    "spentUsd": 0
+  },
+  "items": [
+    {
+      "id": "G1",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S001",
+      "state": "gap"
+    },
+    {
+      "id": "G2",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S004",
+      "state": "gap"
+    },
+    {
+      "id": "G3",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S007",
+      "state": "gap"
+    },
+    {
+      "id": "G4",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S010",
+      "state": "gap"
+    },
+    {
+      "id": "G5",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": false,
+      "by": "S013",
+      "state": "conflict"
+    },
+    {
+      "id": "G6",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S016",
+      "state": "gap"
+    },
+    {
+      "id": "G7",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S020",
+      "state": "gap"
+    },
+    {
+      "id": "G8",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S027",
+      "state": "gap"
+    },
+    {
+      "id": "G9",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S031",
+      "state": "gap"
+    },
+    {
+      "id": "G10",
+      "kind": "gap",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S033",
+      "state": "gap"
+    },
+    {
+      "id": "C1",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S005",
+      "state": "conflict"
+    },
+    {
+      "id": "C2",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S008",
+      "state": "conflict"
+    },
+    {
+      "id": "C3",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S011",
+      "state": "conflict"
+    },
+    {
+      "id": "C4",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S015",
+      "state": "conflict"
+    },
+    {
+      "id": "C5",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S018",
+      "state": "conflict"
+    },
+    {
+      "id": "C6",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S019",
+      "state": "conflict"
+    },
+    {
+      "id": "C7",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S025",
+      "state": "conflict"
+    },
+    {
+      "id": "C8",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S028",
+      "state": "conflict"
+    },
+    {
+      "id": "C9",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S029",
+      "state": "conflict"
+    },
+    {
+      "id": "C10",
+      "kind": "conflict",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S030",
+      "state": "conflict"
+    },
+    {
+      "id": "U1",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S014",
+      "state": "undocumented"
+    },
+    {
+      "id": "U2",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S017",
+      "state": "undocumented"
+    },
+    {
+      "id": "U3",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S050",
+      "state": "undocumented"
+    },
+    {
+      "id": "U4",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S002",
+      "state": "undocumented"
+    },
+    {
+      "id": "U5",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U6",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U7",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    },
+    {
+      "id": "U8",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S034",
+      "state": "undocumented"
+    },
+    {
+      "id": "U9",
+      "kind": "undocumented",
+      "found": true,
+      "foundAsKind": true,
+      "by": "S032",
+      "state": "undocumented"
+    },
+    {
+      "id": "U10",
+      "kind": "undocumented",
+      "found": false,
+      "foundAsKind": false,
+      "by": null,
+      "state": null
+    }
+  ],
+  "handCheckSample": [
+    {
+      "id": "S043",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/indexers",
+      "pageQuote": "Indexers settings is a screen in the app that the FSD does not describe.",
+      "note": "Indexers settings is a screen in the app that the FSD does not describe."
+    },
+    {
+      "id": "S053",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/system/logs/files",
+      "pageQuote": "Log Files is a screen in the app that the FSD does not describe.",
+      "note": "Log Files is a screen in the app that the FSD does not describe."
+    },
+    {
+      "id": "S048",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/metadatasource",
+      "pageQuote": "Metadata Source settings is a screen in the app that the FSD does not describe.",
+      "note": "Metadata Source settings is a screen in the app that the FSD does not describe."
+    },
+    {
+      "id": "S009",
+      "state": "undocumented",
+      "section": "2",
+      "fsdQuote": "",
+      "page": "page:/calendar",
+      "pageQuote": "Calendar also has an Agenda view (besides month, week, forecast, day), plus calendar options and an iCal 'show as all-day events' option.",
+      "note": "Calendar also has an Agenda view (besides month, week, forecast, day), plus calendar options and an iCal 'show as all-day events' option."
+    },
+    {
+      "id": "S006",
+      "state": "undocumented",
+      "section": "1.2",
+      "fsdQuote": "",
+      "page": "page:/series/:titleSlug",
+      "pageQuote": "Series details toolbar also has Preview Rename, Manage Episodes (files), History and Expand/Collapse All actions not described.",
+      "note": "Series details toolbar also has Preview Rename, Manage Episodes (files), History and Expand/Collapse All actions not described."
+    },
+    {
+      "id": "S047",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/metadata",
+      "pageQuote": "Metadata settings is a screen in the app that the FSD does not describe.",
+      "note": "Metadata settings is a screen in the app that the FSD does not describe."
+    },
+    {
+      "id": "S021",
+      "state": "undocumented",
+      "section": "Settings / Tags",
+      "fsdQuote": "",
+      "page": "page:/settings/tags",
+      "pageQuote": "Tags screen also manages auto-tagging rules, which the FSD does not mention.",
+      "note": "Tags screen also manages auto-tagging rules, which the FSD does not mention."
+    },
+    {
+      "id": "S026",
+      "state": "undocumented",
+      "section": "Settings / Profiles / Delay profiles",
+      "fsdQuote": "",
+      "page": "page:/settings/profiles",
+      "pageQuote": "Delay profiles have bypass options: bypass if highest quality, and bypass if above a custom format score (with minimum score).",
+      "note": "Delay profiles have bypass options: bypass if highest quality, and bypass if above a custom format score (with minimum score)."
+    },
+    {
+      "id": "S036",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/add/import",
+      "pageQuote": "Import existing series: choose root folder to import is a screen in the app that the FSD does not describe.",
+      "note": "Import existing series: choose root folder to import is a screen in the app that the FSD does not describe."
+    },
+    {
+      "id": "S037",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/add/import/:rootFolderId",
+      "pageQuote": "Import series from a root folder is a screen in the app that the FSD does not describe.",
+      "note": "Import series from a root folder is a screen in the app that the FSD does not describe."
+    },
+    {
+      "id": "S041",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/mediamanagement",
+      "pageQuote": "Media Management settings is a screen in the app that the FSD does not describe.",
+      "note": "Media Management settings is a screen in the app that the FSD does not describe."
+    },
+    {
+      "id": "S022",
+      "state": "undocumented",
+      "section": "Settings / Profiles / Quality profiles",
+      "fsdQuote": "",
+      "page": "page:/settings/profiles",
+      "pageQuote": "Quality profiles also have custom format scoring: minimum custom format score, upgrade until score and minimum score increment.",
+      "note": "Quality profiles also have custom format scoring: minimum custom format score, upgrade until score and minimum score increment."
+    },
+    {
+      "id": "S039",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/serieseditor",
+      "pageQuote": "Series editor (bulk edit) is a screen in the app that the FSD does not describe.",
+      "note": "Series editor (bulk edit) is a screen in the app that the FSD does not describe."
+    },
+    {
+      "id": "S040",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/statistics",
+      "pageQuote": "Statistics screen is a screen in the app that the FSD does not describe.",
+      "note": "Statistics screen is a screen in the app that the FSD does not describe."
+    },
+    {
+      "id": "S046",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/connect",
+      "pageQuote": "Connections (notifications) settings is a screen in the app that the FSD does not describe.",
+      "note": "Connections (notifications) settings is a screen in the app that the FSD does not describe."
+    },
+    {
+      "id": "S038",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/seasonpass",
+      "pageQuote": "Season Pass screen is a screen in the app that the FSD does not describe.",
+      "note": "Season Pass screen is a screen in the app that the FSD does not describe."
+    },
+    {
+      "id": "S024",
+      "state": "conflict",
+      "section": "Settings / Profiles / Delay profiles",
+      "fsdQuote": "Preferred Protocol: Usenet or Torrent.",
+      "page": null,
+      "pageQuote": null,
+      "note": "Protocol choices are four: prefer Usenet, prefer Torrent, only Usenet, only Torrent."
+    },
+    {
+      "id": "S042",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/settings/customformats",
+      "pageQuote": "Custom Formats settings is a screen in the app that the FSD does not describe.",
+      "note": "Custom Formats settings is a screen in the app that the FSD does not describe."
+    },
+    {
+      "id": "S012",
+      "state": "undocumented",
+      "section": "3.1",
+      "fsdQuote": "",
+      "page": "page:/activity/queue",
+      "pageQuote": "Removal also lets the user choose remove from download client, change category, or ignore the download.",
+      "note": "Removal also lets the user choose remove from download client, change category, or ignore the download."
+    },
+    {
+      "id": "S052",
+      "state": "undocumented",
+      "section": null,
+      "fsdQuote": null,
+      "page": "page:/system/events",
+      "pageQuote": "System Log Events is a screen in the app that the FSD does not describe.",
+      "note": "System Log Events is a screen in the app that the FSD does not describe."
+    }
+  ]
+}

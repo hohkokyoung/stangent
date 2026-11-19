@@ -1,0 +1,311 @@
+{
+  "codeTitle": "/wanted/cutoffunmet · CutoffUnmet",
+  "entry": "page:tsconfig.json|/wanted/cutoffunmet",
+  "generated": {
+    "bundleHash": "6f80996acc7c76e68aaed90ffbe6629871f02c6c526fcf85095721e081fe50da",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 60266,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 351
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 33614,
+      "calls": 1,
+      "costUsd": 0.138965,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5107,
+      "outputTokens": 433
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 29805,
+      "calls": 1,
+      "costUsd": 0.15273,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 18025,
+      "outputTokens": 3323
+    }
+  },
+  "group": "tsconfig.json",
+  "id": "page:/wanted/cutoffunmet",
+  "kind": "screen",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent"
+        ],
+        "id": "A1",
+        "text": "Search Selected runs an episode search for the selected episode ids, then refetches the list."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent",
+          "ts|frontend/src/Wanted/toWantedSearchCommandBody.ts#toWantedSearchCommandBody"
+        ],
+        "id": "A2",
+        "text": "Search All opens a confirmation dialog showing the total record count and a mass-search cancel warning; confirming runs a cutoff-unmet episode search using the active filters, then refetches."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent",
+          "ts|frontend/src/Episode/useEpisode.ts#useToggleEpisodesMonitored"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|PUT /api/v3/Episode/monitor",
+          "endpoint:Sonarr.Api.V5|PUT /api/v5/Episode/monitor"
+        ],
+        "id": "A3",
+        "text": "Monitor/Unmonitor Selected toggles the monitored state of the selected episodes."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/useCutoffUnmet.tsx#useCutoffUnmet",
+          "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/wanted/cutoff",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/wanted/cutoff"
+        ],
+        "id": "A4",
+        "text": "The list is loaded from the wanted/cutoff endpoint with page, page size, sort and filters."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent",
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmetRow.tsx#CutoffUnmetRow"
+        ],
+        "id": "A5",
+        "text": "Users can select all or unselect all rows with the header checkbox, and select individual rows."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent",
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmetFilterModal.tsx#CutoffUnmetFilterModal"
+        ],
+        "id": "A6",
+        "text": "Users can choose a filter or a custom filter, sort by a column, and open table options to change columns and page size."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/EpisodeFile/useEpisodeFiles.ts#useEpisodeFiles"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/EpisodeFile",
+          "endpoint:Sonarr.Api.V5|GET /api/v5/EpisodeFile"
+        ],
+        "id": "A7",
+        "text": "Episode file details are loaded for the listed episode file ids."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent",
+          "ts|frontend/src/Commands/useCommands.ts#useCommandExecuting"
+        ],
+        "id": "R1",
+        "text": "The Search button is disabled and spinning while a cutoff-unmet or episode search command is queued or started."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent"
+        ],
+        "id": "R2",
+        "text": "The monitor toggle button is disabled unless at least one row is selected."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent"
+        ],
+        "id": "R3",
+        "text": "Changing the page size returns the list to page 1."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery"
+        ],
+        "id": "R4",
+        "text": "Total pages is the total records divided by page size, rounded up, with a minimum of 1."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmetRow.tsx#CutoffUnmetRow"
+        ],
+        "id": "R5",
+        "text": "A row is not shown if its series is unknown or it has no episode file id."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "R6",
+        "text": "The same command run again within 5 seconds is ignored."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/toWantedSearchCommandBody.ts#toWantedSearchCommandBody"
+        ],
+        "id": "R7",
+        "text": "Search All filters sent to the command are limited to seriesIds, qualityProfileIds, seriesType, seriesTags and quality."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/usePage.ts#usePage"
+        ],
+        "id": "R8",
+        "text": "The page number resets to 1 on browser back/forward navigation."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/EpisodeFile/useEpisodeFiles.ts#useEpisodeFiles"
+        ],
+        "id": "R9",
+        "text": "Episode files are fetched only when episode file ids are present."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent"
+        ],
+        "id": "S1",
+        "text": "The page is titled \"Cutoff Unmet\" with the scope \"Wanted\" in the heading."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent"
+        ],
+        "id": "S2",
+        "text": "A loading indicator shows while the list is fetching and loading."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent"
+        ],
+        "id": "S3",
+        "text": "When loading fails and the list is not fetching, an error alert shows the message for CutoffUnmetLoadError."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent"
+        ],
+        "id": "S4",
+        "text": "When there is no error and no records, a message for CutoffUnmetNoItems shows."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent"
+        ],
+        "id": "S5",
+        "text": "When records exist, they show in a selectable table with a pager showing page, total pages and total records."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmetRow.tsx#CutoffUnmetRow"
+        ],
+        "id": "S6",
+        "text": "Each row can show these columns when visible: series title, episode number, episode title, air date, last search time, languages, quality, status, and an actions/search cell."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/EpisodeFile/EpisodeFileQuality.tsx#EpisodeFileQuality"
+        ],
+        "id": "S7",
+        "text": "The file quality shows as \"Unknown\" when the episode file has no quality."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent"
+        ],
+        "id": "S8",
+        "text": "The toolbar shows Search, Monitor/Unmonitor, Options and Filter items."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent"
+        ],
+        "id": "S9",
+        "text": "The search button reads \"Search Selected\" when any row is selected, otherwise \"Search All\"."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent",
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#getMonitoredValue"
+        ],
+        "id": "S10",
+        "text": "The monitor button reads \"Unmonitor Selected\" when the current filter shows monitored items, otherwise \"Monitor Selected\"."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/Commands/useCommands.ts#useExecuteCommand"
+        ],
+        "id": "E1",
+        "text": "Search actions send a command to the command endpoint, which is a POST to /command."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Episode/useEpisode.ts#useToggleEpisodesMonitored"
+        ],
+        "id": "E2",
+        "text": "Toggling monitored sends PUT /episode/monitor and updates the cached episodes on success."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/CutoffUnmet.tsx#CutoffUnmetContent",
+          "ts|frontend/src/Utilities/pagePopulator.ts#registerPagePopulator"
+        ],
+        "id": "E3",
+        "text": "The list refetches when seriesUpdated, episodeFileUpdated or episodeFileDeleted events occur."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Wanted/CutoffUnmet/useCutoffUnmet.tsx#useCutoffUnmet",
+          "ts|frontend/src/Episode/useEpisode.ts#setEpisodeQueryKey"
+        ],
+        "id": "E4",
+        "text": "The page's query key is stored as the cutoff-unmet episode query key."
+      }
+    ]
+  },
+  "title": "Wanted: Cutoff Unmet",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiMutation.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiMutation.ts#useApiMutation",
+      "line": 42,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Helpers/Hooks/usePagedApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/usePagedApiQuery.ts#usePagedApiQuery",
+      "line": 79,
+      "reason": "HTTP GET to a URL built at runtime"
+    },
+    {
+      "file": "frontend/src/Utilities/Fetch/fetchJson.ts",
+      "in": "ts|frontend/src/Utilities/Fetch/fetchJson.ts#fetchJson",
+      "line": 56,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,1 @@
+src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrentProxyV2.cs · Sonarr.Core|M:NzbDrone.Core.Download.Clients.QBittorrent.QBittorrentProxyV2.AuthenticateClient(NzbDrone.Common.Http.HttpRequestBuilder,NzbDrone.Core.Download.Clients.QBittorrent.QBittorrentSettings,System.Boolean)

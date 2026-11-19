@@ -1,0 +1,1 @@
+src/NzbDrone.Core/Extras/Metadata/Consumers/Xbmc/XbmcMetadata.cs · Sonarr.Core|M:NzbDrone.Core.Extras.Metadata.Consumers.Xbmc.XbmcMetadata.EpisodeMetadata(NzbDrone.Core.Tv.Series,NzbDrone.Core.MediaFiles.EpisodeFile)

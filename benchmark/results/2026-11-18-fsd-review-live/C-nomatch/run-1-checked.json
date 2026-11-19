@@ -1,0 +1,69 @@
+{
+  "commit": "f4abc65c5e04bf2ccdbd681550c92a3ed1b50893",
+  "doc": "kavita-fsd",
+  "dropped": [],
+  "findings": [
+    {
+      "evidence": [
+        "Kavita.Server/Extensions/IdentityServiceExtensions.cs:59",
+        "UI/Web/src/app/registration/_components/register/register.component.ts:41"
+      ],
+      "fsdQuote": "A new password must be at least 8 characters long.",
+      "note": "The minimum password length is 6 characters, set both on the server and in the client forms.",
+      "screen": null,
+      "section": "9.1",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/shared/_services/download.service.ts:74-76"
+      ],
+      "fsdQuote": "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB.",
+      "note": "The download confirmation threshold is 100 MB (SIZE_WARNING = 104,857,600 bytes), not 500 MB.",
+      "screen": null,
+      "section": "9.2",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:91-98"
+      ],
+      "fsdQuote": "Days of Backups and Days of Logs each accept a value from 1 to 30 and both default to 30.",
+      "note": "Backups and logs are validated to a range of 1 to 30. I did not check the default of 30.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:95"
+      ],
+      "fsdQuote": "Cache Size must be at least 50 MB",
+      "note": "Cache size has a minimum of 50.",
+      "screen": null,
+      "section": "10.1",
+      "state": "match"
+    }
+  ],
+  "fsdVersion": "781973da1378f7804d05e38d0ccaf8693e6c1c86b3de76d65d0638a9e9c3df66",
+  "inputs": "sha256:a0e4131613af0691497869951f1ee765225ccf69e68ac40182b151ad93f7de97",
+  "retried": false,
+  "run": 1,
+  "usage": {
+    "cacheReadTokens": 147175,
+    "cacheWriteTokens": 12943,
+    "calls": 1,
+    "costUsd": 0.118021,
+    "inputTokens": 22,
+    "model": "claude-sonnet-5-5",
+    "ms": 34490,
+    "outputTokens": 3677,
+    "settings": {
+      "agent": "stangent-fsd-reviewer",
+      "claudeVersion": "2.1.292 (Claude Code)",
+      "effort": "medium",
+      "mode": "agentic",
+      "model": "claude-sonnet-5-5"
+    }
+  }
+}

@@ -15,18 +15,27 @@ the named files (D79's right place, at the file level).
 In held-out mode the ticket is the issue's title, body and the comments before the fix (select.py), the code is the
 merge commit's first parent, and the fix files are what the merge commit changed (its own paths, not traced forward).
 
+The hard stop (T.2): STANGENT_MAX_COST (dollars, or `none`) must be set, or nothing runs (exit 2). A ticket starts only if
+its whole cap is left. A usage limit stops the run (exit 5); what's done is saved in the output file, and the same command
+resumes from it.
 Env: CLAUDE (default `claude`), MODEL (default sonnet), WORK (export folder, default a temp folder; removed after).
+D339's side B: IMPACT_GRAPHS=<dir of <issue>.sqlite> and STANGENT_DLL=<stangent.dll> add one tool, `stangent graph impact`
+(the only Bash command allowed), on a graph built at the same parent (`parent_graphs.sh`); the prompt gains IMPACT_LINE.
+Without them the run is the 2026-11-02 baseline, unchanged apart from recording tokens and impact calls.
 Transcripts are kept beside out.json (`<out>.transcripts/KEY.jsonl`) to check the agent only read the export.
 """
 import json
 import os
 import shutil
+import re
 import subprocess
 import sys
 import tempfile
 
 TURNS, BUDGET, MAX_FILES = 30, 1.0, 10
+IMPACT_GRAPHS, STANGENT_DLL = os.environ.get("IMPACT_GRAPHS"), os.environ.get("STANGENT_DLL")
 HOME = os.path.expanduser("~")
+LIMIT_WORDS = re.compile(r"usage limit|limit reached|limit exceeded|hit your( [a-z-]+)* limit|reached your( [a-z-]+)* limit|out of( extra)? usage|rate.?limit|weekly limit|session limit|quota", re.I)
 
 SCHEMA = {
     "type": "object", "additionalProperties": False, "required": ["files"],
@@ -41,6 +50,12 @@ relative to the current folder, most likely first, each with a one-line reason.
 
 {ticket}"""
 
+# D339: the one line side B gets, saying what the tool lists and nothing about how to use it.
+IMPACT_LINE = """
+You can also run `stangent graph impact --file <path>` or `stangent graph impact --symbol <Type.Member>` in the current
+folder: from a code graph of this exact code, it lists who else runs the code you name (callers, endpoints, event
+handlers, tests) and the files that usually change with it."""
+
 
 def ticket_text(t):
     parts = [f"Summary: {t['ticket']['summary']}", "", t.get("description") or ""]
@@ -54,16 +69,32 @@ def run_one(clone, key, number, parent, fix, text, out_dir, work_root):
     try:
         archive = subprocess.run(["git", "-C", clone, "archive", parent], capture_output=True, check=True).stdout
         subprocess.run(["tar", "-x", "-C", work], input=archive, check=True)
+        tools, allowed, env, prompt = "Read,Grep,Glob", ["Read", "Grep", "Glob"], dict(os.environ), PROMPT + (IMPACT_LINE if IMPACT_GRAPHS else "")
+        if IMPACT_GRAPHS:
+            graph = os.path.join(IMPACT_GRAPHS, f"{number}.sqlite")
+            if not os.path.exists(graph):
+                return {"key": key, "issue": number, "failure": f"no graph at {graph}"}
+            os.makedirs(os.path.join(work, ".stangent"))
+            shutil.copy(graph, os.path.join(work, ".stangent", "graph.sqlite"))
+            with open(os.path.join(work, "stangent.yaml"), "w") as f:
+                f.write("version: 1\nstore:\n  root: .stangent/store\n")
+            bindir = os.path.join(work_root, "bin")
+            os.makedirs(bindir, exist_ok=True)
+            with open(os.path.join(bindir, "stangent"), "w") as f:
+                f.write(f'#!/bin/sh\nexec dotnet "{STANGENT_DLL}" "$@"\n')
+            os.chmod(os.path.join(bindir, "stangent"), 0o755)
+            env["PATH"] = bindir + os.pathsep + env.get("PATH", "")
+            tools, allowed = tools + ",Bash", allowed + ["Bash(stangent graph impact:*)"]
         denied = [f"Read(/{p}/**)" for p in (os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")),
                                              clone, os.path.join(HOME, "stangent-bench"), os.path.join(HOME, "Projects"),
                                              os.path.join(HOME, ".claude"), "/private/tmp/claude-501")]
         args = [os.environ.get("CLAUDE", "claude"), "-p", "--model", os.environ.get("MODEL", "sonnet"),
-                "--tools", "Read,Grep,Glob", "--allowedTools", "Read", "Grep", "Glob", "--disallowedTools", *denied,
+                "--tools", tools, "--allowedTools", *allowed, "--disallowedTools", *denied,
                 "--permission-mode", "dontAsk", "--setting-sources", "", "--strict-mcp-config", "--disable-slash-commands",
                 "--no-session-persistence", "--max-turns", str(TURNS), "--max-budget-usd", str(BUDGET),
                 "--json-schema", json.dumps(SCHEMA), "--output-format", "stream-json", "--verbose",
-                PROMPT.format(n=MAX_FILES, ticket=text)]
-        proc = subprocess.run(args, cwd=work, capture_output=True, text=True)
+                prompt.format(n=MAX_FILES, ticket=text)]
+        proc = subprocess.run(args, cwd=work, capture_output=True, text=True, env=env)
         transcript = os.path.join(out_dir, f"{key.strip('#')}.jsonl")
         with open(transcript, "w") as f:
             f.write(proc.stdout)
@@ -71,11 +102,17 @@ def run_one(clone, key, number, parent, fix, text, out_dir, work_root):
         result = next((e for e in reversed(events) if e.get("type") == "result"), {})
         named = [f["path"].removeprefix("./") for f in (result.get("structured_output") or {}).get("files", [])][:MAX_FILES]
         # Every path the agent's tools touched must be inside the export (isolation check).
-        touched, calls = [], 0
+        touched, calls, impact_calls, bash_other = [], 0, 0, []
         for e in events:
             for c in (e.get("message") or {}).get("content") or []:
                 if isinstance(c, dict) and c.get("type") == "tool_use" and c.get("name") != "StructuredOutput":
                     calls += 1
+                    if c.get("name") == "Bash":
+                        cmd = str(c.get("input", {}).get("command", ""))
+                        if cmd.startswith("stangent graph impact"):
+                            impact_calls += 1
+                        else:
+                            bash_other.append(cmd)
                     for k in ("file_path", "path"):
                         if isinstance(c.get("input", {}).get(k), str):
                             touched.append(c["input"][k])
@@ -84,7 +121,10 @@ def run_one(clone, key, number, parent, fix, text, out_dir, work_root):
         return {
             "key": key, "issue": number, "hit": rank is not None, "rank": rank, "named": named, "fix": fix,
             "status": result.get("subtype"), "turns": result.get("num_turns"), "costUsd": result.get("total_cost_usd"),
-            "toolCalls": calls, "outsideExport": outside,
+            "toolCalls": calls, "impactCalls": impact_calls, "bashOther": bash_other, "outsideExport": outside,
+            "usage": result.get("usage"), "tokens": sum((result.get("usage") or {}).get(k) or 0 for k in
+                ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens")),
+            "failure": (str(result.get("result") or "") + " " + proc.stderr) if result.get("is_error") or not result else None,
         }
     finally:
         shutil.rmtree(work, ignore_errors=True)
@@ -112,20 +152,43 @@ def main(clone, out, cases):
     out_dir = out + ".transcripts"
     os.makedirs(out_dir, exist_ok=True)
     work_root = os.environ.get("WORK") or tempfile.mkdtemp(prefix="agent-baseline-")
-    rows = []
+    cap = os.environ.get("STANGENT_MAX_COST")
+    if not cap:
+        print("STOPPED (no_cap): set STANGENT_MAX_COST to dollars, or to none. Nothing was run.", file=sys.stderr)
+        sys.exit(2)
+    rows = json.load(open(out))["cases"] if os.path.exists(out) else []
+    done, why = {r["key"] for r in rows}, None
     for key, n, parent, fix, text in cases:
+        if key in done:
+            continue
+        spent = sum(r["costUsd"] or 0 for r in rows)
+        if cap != "none" and spent + BUDGET > float(cap):
+            why = f"cap_reached: --max-cost ${cap}: ${spent:.2f} spent and the next ticket could take ${BUDGET}"
+            break
         row = run_one(clone, key, n, parent, fix, text, out_dir, work_root)
+        if "hit" not in row:  # not run (side B with no graph at this parent): reported, not saved, so a re-run retries it
+            print(f"{key}: not run: {row['failure']}", file=sys.stderr)
+            continue
+        limit = row["failure"]
+        if limit and LIMIT_WORDS.search(limit):
+            why = f"usage_limit: Claude Code said: {limit[:300]}"
+            break
+        del row["failure"]
         rows.append(row)
         print(f"{key}: hit={row['hit']} rank={row['rank']} turns={row['turns']} cost={row['costUsd']} outside={len(row['outsideExport'])}", file=sys.stderr)
     cost = sum(r["costUsd"] or 0 for r in rows)
     summary = {
-        "what": "agent baseline: headless Claude Code, ticket text + code at the fix's parent (no history), Read/Grep/Glob only, up to 10 files",
+        "what": "agent baseline: headless Claude Code, ticket text + code at the fix's parent (no history), Read/Grep/Glob only, up to 10 files"
+                + ("; D339 side B: plus `stangent graph impact` on a graph at the same parent" if IMPACT_GRAPHS else ""),
         "model": os.environ.get("MODEL", "sonnet"), "turns": TURNS, "budgetUsd": BUDGET,
         "tickets": len(rows), "hits": sum(r["hit"] for r in rows), "costUsd": round(cost, 4),
         "isolationBreaches": sum(len(r["outsideExport"]) for r in rows), "cases": rows,
     }
     json.dump(summary, open(out, "w"), indent=1)
     print(json.dumps({k: v for k, v in summary.items() if k != "cases"}), file=sys.stderr)
+    if why:
+        print(f"STOPPED ({why})\n{len(rows)} tickets are saved in {out}. To resume, run the same command again.", file=sys.stderr)
+        sys.exit(5)
 
 
 if __name__ == "__main__":

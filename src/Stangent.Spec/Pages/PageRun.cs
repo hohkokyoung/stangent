@@ -1,6 +1,8 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using Stangent.Core;
+using Stangent.Core.State;
+using Stangent.Graph;
 
 namespace Stangent.Spec.Pages;
 
@@ -21,7 +23,7 @@ public sealed class SpecPaths(string root)
 
 /// <summary>The next thing a driver (the plugin command, CI, the benchmark) does for a page.</summary>
 public sealed record RunStep(string Status, string Action, string? Agent = null, string? Prompt = null, string? Output = null,
-    IReadOnlyList<string>? Errors = null, Usage? Usage = null)
+    IReadOnlyList<string>? Errors = null, Usage? Usage = null, string? Warning = null, string? Schema = null, JsonArray? Unanswered = null)
 {
     public JsonObject ToJson(string page)
     {
@@ -30,9 +32,12 @@ public sealed record RunStep(string Status, string Action, string? Agent = null,
         if (Agent is not null) next["agent"] = Agent;
         if (Prompt is not null) next["prompt"] = Prompt;
         if (Output is not null) next["output"] = Output;
-        if (Agent is not null && SchemaOf(Agent) is { } schema) next["schema"] = schema;
+        if (Agent is not null && (Schema ?? SchemaOf(Agent)) is { } schema) next["schema"] = schema;
         o["next"] = next;
         if (Errors is { Count: > 0 }) o["errors"] = new JsonArray([.. Errors.Select(e => (JsonNode)e)]);
+        if (Warning is not null) o["warning"] = Warning;
+        // Claims no link names (D145). Reported, and never a failure in this slice.
+        if (Unanswered is not null) { o["unanswered"] = Unanswered.DeepClone(); o["unansweredCount"] = Unanswered.Count; }
         return o;
     }
 
@@ -41,13 +46,15 @@ public sealed record RunStep(string Status, string Action, string? Agent = null,
     {
         PageRun.Writer => Bundles.WriterSchema,
         PageRun.Verifier => Bundles.VerifierSchema,
-        Stangent.Spec.Fsd.LinkRun.Finder => "candidate-finder-output.v1.json",
-        Stangent.Spec.Fsd.LinkRun.Judge => "link-judge-output.v1.json",
-        Stangent.Spec.Fsd.LinkRun.Checker => "agree-checker-output.v1.json",
+        Stangent.Spec.Fsd.FsdReview.Reviewer => Stangent.Spec.Fsd.FsdReview.OutputSchema,
+        Stangent.Spec.Fsd.FsdReview.Lister => Stangent.Spec.Fsd.FsdReview.ListOutputSchema,
+        Stangent.Spec.Fsd.FsdWrite.Writer => Stangent.Spec.Fsd.FsdWrite.OutputSchema,
         // Phase 3's ticket steps (Stangent.Tickets.StepSpec).
         "stangent-file-finder" => "file-finder-output.v1.json",
-        "stangent-bug-reproducer" => "bug-reproducer-output.v1.json",
+        "stangent-bug-reproducer" => "bug-reproducer-output.v1.json",   // with truth-verdict on, the step names v2 itself (StepSpec.ProveTruth)
         "stangent-question-writer" or "stangent-summary-writer" => "draft-output.v2.json",
+        // Phase 4's fix agent (Stangent.Tickets.Fix.FixLoop).
+        "stangent-fixer" => "fixer-output.v1.json",
         _ => null,
     };
 }
@@ -64,10 +71,24 @@ public static class PageRun
 
     public static RunStep Prepare(PageSet set, PageDef page, StangentRepo repo, bool retryFailed = false)
     {
+        // Pages don't depend on the links: a broken trace file costs its page-wrong marks, is said, and stops nothing.
+        var wrong = Staleness.ReportedWrong(repo.Root, out var problem).GetValueOrDefault(page.Id);
+        var step = Prepare(set, page, repo, retryFailed, wrong);
+        return problem is null ? step : step with { Warning = problem };
+    }
+
+    static RunStep Prepare(PageSet set, PageDef page, StangentRepo repo, bool retryFailed, List<JsonObject>? wrong)
+    {
         var paths = new SpecPaths(repo.Root);
         var previous = LoadJson(paths.PageJson(page)) as JsonObject;
         var bundle = Bundles.Build(set, page, previous);
-        if ((string?)previous?["generated"]?["bundleHash"] == bundle.InputHash) return new RunStep("current", "none");
+        if (wrong is null && previous is not null && PageMoves.OnlyMoved(set, paths, page, previous, bundle.InputHash))
+        {
+            PageMoves.Follow(set, repo.Config, paths, page, previous, bundle);
+            return new RunStep("current", "none", Warning: "the code only moved: the page's citations followed it, with no AI.");
+        }
+        // A person said this page is wrong (D119): it runs again though its inputs didn't change.
+        if (wrong is null && (string?)previous?["generated"]?["bundleHash"] == bundle.InputHash) return new RunStep("current", "none");
         var failed = Failed(paths);
         if (!retryFailed && failed.FirstOrDefault(f => (string?)f!["id"] == page.Id) is { } known && (string?)known["bundleHash"] == bundle.InputHash)
             return new RunStep("failed", "none", Errors: [(string)known["reason"]!]);
@@ -82,13 +103,16 @@ public static class PageRun
         var work = paths.Work(page);
         if (Directory.Exists(work)) Directory.Delete(work, recursive: true);
         Directory.CreateDirectory(work);
-        File.WriteAllText(Path.Combine(work, "bundle.md"), bundle.Text);
+        var keep = StatementUpdate.Plan(set, repo.Config, paths, page, previous, wrong is not null);
+        File.WriteAllText(Path.Combine(work, "bundle.md"), SharedHead.Store(bundle.Text + Staleness.ReportedWrongNote(wrong) + StatementUpdate.Note(keep)));
         var state = new JsonObject
         {
-            ["page"] = page.Id, ["inputHash"] = bundle.InputHash, ["stage"] = "write", ["attempts"] = 0,
+            ["keep"] = keep,
+            ["page"] = page.Id, ["inputHash"] = bundle.InputHash, ["attempts"] = 0,
             ["checkRetryUsed"] = false, ["fixUsed"] = false, ["checkRetries"] = 0,
             ["writer"] = Usage.None.ToJson(), ["verifier"] = Usage.None.ToJson(),
         };
+        Stage(paths, page, state, "write", "prepared");
         Save(work, state);
         return WriteStep(paths, page, state, null);
     }
@@ -114,6 +138,8 @@ public static class PageRun
                 var attempt = (int)state["attempts"]!;
                 var errors = new List<string>();
                 var output = PageChecks.Parse(ReadOrEmpty(Path.Combine(work, $"writer-{attempt}.json")), errors);
+                // I.2: what code kept goes back, word for word, before any check. Off, there's nothing kept.
+                if (output is JsonObject written && state["keep"] is JsonArray kept) output = StatementUpdate.Merge(written, kept);
                 var findings = stage == "fix" ? FindingsFrom(state) : null;
                 if (errors.Count == 0) errors = PageChecks.CheckWriter(output, slice, set.Builder, bundle, findings);
                 if (errors.Count > 0)
@@ -126,10 +152,14 @@ public static class PageRun
                     return WriteStep(paths, page, state, Feedback(errors, findings)) with { Status = "retry", Errors = errors };
                 }
                 state["staged"] = output!.DeepClone();
-                if (stage == "fix") return Record(set, paths, page, state, work, bundle);
-                state["stage"] = "verify";
+                if (stage == "fix") return Record(set, repo.Config, paths, page, state, work, bundle);
+                // I.2: nothing new to check, so nothing for a verifier to read. It isn't "off": what's kept was checked when it was written.
+                var keptWords = StatementUpdate.KeptWords(state["keep"] as JsonArray);
+                if (keptWords.Count > 0 && PageChecks.Statements((JsonObject)output).All(s => keptWords.Contains(Quotes.Normalize((string)s.Statement["text"]!))))
+                    return Record(set, repo.Config, paths, page, state, work, bundle);
+                Stage(paths, page, state, "verify", "the writer's output passed the code check");
                 Save(work, state);
-                File.WriteAllText(Path.Combine(work, "verify.md"), VerifyPage(page, (JsonObject)output));
+                File.WriteAllText(Path.Combine(work, "verify.md"), SharedHead.Store(VerifyPage(page, (JsonObject)output, keptWords)));
                 return new RunStep("verify", "verify", Verifier,
                     $"Bundle: {paths.Relative(Path.Combine(work, "bundle.md"))}\nPage to check: {paths.Relative(Path.Combine(work, "verify.md"))}\n" +
                     $"Write your findings as JSON to: {paths.Relative(Path.Combine(work, "verifier.json"))}",
@@ -159,8 +189,9 @@ public static class PageRun
                 }
                 state["dropped"] = dropped;
                 state["findings"] = new JsonArray([.. kept.Select(f => (JsonNode)FindingJson(f))]);
-                if (kept.Count == 0) return Record(set, paths, page, state, work, bundle);
-                state["stage"] = "fix";
+                if (kept.Count == 0) return Record(set, repo.Config, paths, page, state, work, bundle);
+                state["verified"] = staged.DeepClone();
+                Stage(paths, page, state, "fix", "the verifier found problems");
                 state["fixUsed"] = true;
                 Save(work, state);
                 return WriteStep(paths, page, state, Feedback([], kept)) with { Status = "fix" };
@@ -214,16 +245,14 @@ public static class PageRun
         return sb.ToString();
     }
 
-    static string VerifyPage(PageDef page, JsonObject output)
+    static string VerifyPage(PageDef page, JsonObject output, IReadOnlySet<string> kept)
     {
-        var sb = new StringBuilder();
-        sb.Append("# Instructions\n\n").Append(Bundles.Instructions("page-verifier.md"));
-        sb.Append("\n# Output schema\n\n```json\n").Append(SchemaRegistry.EmbeddedText(Bundles.VerifierSchema).TrimEnd('\n')).Append("\n```\n");
-        sb.Append($"\n# The page\n\n- id: `{page.Id}`\n- title: {(string?)output["title"]}\n");
+        var sb = new StringBuilder(SharedHead.Step(SharedHead.VerifierInstructions, Bundles.VerifierSchema));
+        sb.Append($"# The page\n\n- id: `{page.Id}`\n- title: {(string?)output["title"]}\n");
         foreach (var section in PageChecks.Sections)
         {
             sb.Append($"\n## {section}\n\n");
-            var list = PageChecks.Statements(output).Where(s => s.Section == section).ToList();
+            var list = PageChecks.Statements(output).Where(s => s.Section == section && !kept.Contains(Quotes.Normalize((string)s.Statement["text"]!))).ToList();
             if (list.Count == 0) sb.Append("(none)\n");
             foreach (var (_, id, s) in list)
                 sb.Append($"- **{id}** {(string)s["text"]!} (cites {string.Join(", ", (s["cites"] as JsonArray ?? []).Select(c => $"`{c}`"))})\n");
@@ -231,19 +260,25 @@ public static class PageRun
         return sb.ToString();
     }
 
-    static RunStep Record(PageSet set, SpecPaths paths, PageDef page, JsonObject state, string work, Bundle bundle)
+    static RunStep Record(PageSet set, StangentConfig config, SpecPaths paths, PageDef page, JsonObject state, string work, Bundle bundle)
     {
         var staged = (JsonObject)state["staged"]!;
         var findings = FindingsFrom(state);
         var resolutions = (staged["resolutions"] as JsonArray ?? []).OfType<JsonObject>().ToDictionary(r => (string)r["finding"]!, r => r);
+        // Ids stay with their statements (2.3). The ledger only changes here, when a page is recorded.
+        var fresh = StatementRef.Of(staged);
+        // A corrected statement goes back to the writer's words for matching (T.1), so it keeps its id as it would have with no correction.
+        var ids = StatementIds.Assign(PageCorrections.BeforeCorrections(LoadJson(paths.PageJson(page)) as JsonObject, PageCorrections.Approved(config, paths.Root, page.Id)), fresh, StatementIds.Ledger(paths.Root, paths.PageJson(page))).Ids;
+        var place = PageChecks.Statements(staged).Select((s, i) => (s.Statement, i)).ToDictionary(x => x.Statement, x => x.i);
         var sections = new JsonObject();
         foreach (var section in PageChecks.Sections)
             sections[section] = new JsonArray([.. PageChecks.Statements(staged).Where(s => s.Section == section).Select(s =>
             {
-                var st = new JsonObject { ["id"] = s.Id, ["text"] = s.Statement["text"]!.DeepClone(), ["cites"] = s.Statement["cites"]!.DeepClone() };
+                var st = new JsonObject { ["id"] = ids[place[s.Statement]], ["text"] = s.Statement["text"]!.DeepClone(), ["cites"] = s.Statement["cites"]!.DeepClone() };
                 if (s.Statement["endpoints"] is JsonArray { Count: > 0 } eps) st["endpoints"] = eps.DeepClone();
                 return (JsonNode)st;
             })]);
+        var findingOn = FindingStatements(state, fresh, ids);
         var slice = set.Slices[page.Id];
         var record = new JsonObject
         {
@@ -257,6 +292,7 @@ public static class PageRun
                 {
                     var r = resolutions[f.Id];
                     var o = FindingJson(f);
+                    o["statement"] = findingOn.GetValueOrDefault(f.Statement) ?? RemovedInFix;
                     o["outcome"] = r["outcome"]!.DeepClone();
                     o["reason"] = r["reason"]!.DeepClone();
                     if (r["quote"] is { } q && (string)r["outcome"]! == "rejected") o["supportQuote"] = q.DeepClone();
@@ -271,22 +307,56 @@ public static class PageRun
                 ["checkRetries"] = (int)state["checkRetries"]!,
             },
         };
+        if ((bool?)state["verifierOff"] == true) record["verification"]!["off"] = true;
+        var lostCorrection = PageCorrections.Reapply(config, paths.Root, page.Id, record);
         var errors = SchemaRegistry.Embedded.Validate("reference-page.v1.json", record.ToJsonString());
         if (errors.Count > 0)
             throw new StangentException("invalid_page", "The recorded page broke reference-page v1 (a stangent bug).", ExitCodes.Failed, errors);
         Directory.CreateDirectory(Path.GetDirectoryName(paths.PageJson(page))!);
         Quotes.WriteAtomic(paths.PageJson(page), CanonicalJson.Serialize(record));
-        Quotes.WriteAtomic(paths.PageMarkdown(page), PageRender.Markdown(record, id => set.Find(id) is { } p && p.Id == id ? p.Path : null));
+        var citing = WriteRendered(set, config, paths, page, record);
+        if (set.Settings.KeepShape) PageMoves.WriteFile(paths, page, set);
+        var traceProblem = Staleness.ClearReportedWrong(paths.Root, page.Id);
         ClearFailed(paths, page);
-        state["stage"] = "done";
+        Stage(paths, page, state, "done", "recorded");
         Save(work, state);
-        return new RunStep("recorded", "none");
+        var off = (string?)null;
+        if ((bool?)state["verifierOff"] == true) off = "page-verifier is off: no one checked this page.";
+        if (!citing) off = $"{off} line-citations is off: this page has no path:lines.".TrimStart();
+        if (lostCorrection is not null) off = $"{off} {lostCorrection}".TrimStart();
+        return new RunStep("recorded", "none", Warning: traceProblem is null ? off : off is null ? traceProblem : $"{traceProblem} {off}");
     }
+
+    /// <summary>A page's lines and Markdown from its JSON. Says whether it has line citations. Off (D121): no lines file, not even an old one that would read as this page's.</summary>
+    internal static bool WriteRendered(PageSet set, StangentConfig config, SpecPaths paths, PageDef page, JsonObject record)
+    {
+        var citing = true;
+        var lines = citing ? PageLines.Build(record, set.Graph, SymbolLines.Lookup(set.Graph)) : null;
+        if (lines is not null) PageLines.Write(paths.PageJson(page), lines);
+        else File.Delete(PageLines.FileFor(paths.PageJson(page)));
+        Quotes.WriteAtomic(paths.PageMarkdown(page), PageRender.Markdown(record, id => set.Find(id) is { } p && p.Id == id ? p.Path : null, lines, PageCorrections.Marks(paths.Root, page.Id, config)));
+        PageNavigation.Write(paths);
+        return citing;
+    }
+
+    /// <summary>What a verifier's finding says when its statement went in the writer's fix: a number here could be another statement's.</summary>
+    const string RemovedInFix = "(removed in the fix)";
+
+    /// <summary>The verifier saw statements numbered by place, and the writer may then have changed them: each number it saw, to the id
+    /// its statement was recorded under, by the same matching ids use.</summary>
+    static Dictionary<string, string> FindingStatements(JsonObject state, IReadOnlyList<StatementRef> fresh, IReadOnlyList<string> ids)
+    {
+        var seen = state["verified"] as JsonObject ?? (JsonObject)state["staged"]!;
+        return StatementIds.Match(StatementRef.Of(seen), fresh).Kept.ToDictionary(k => k.Value, k => ids[k.Key], StringComparer.Ordinal);
+    }
+
+    static void Stage(SpecPaths paths, PageDef page, JsonObject state, string to, string reason) =>
+        StateChanges.Apply(paths.Root, state, StateKinds.PageRun, page.Id, to, StateActor.Code("stangent spec"), reason);
 
     static RunStep Fail(SpecPaths paths, PageDef page, JsonObject state, string work, string reason, IReadOnlyList<string> errors)
     {
         MarkFailed(paths, page, (string)state["inputHash"]!, reason, errors);
-        state["stage"] = "failed";
+        Stage(paths, page, state, "failed", reason);
         Save(work, state);
         return new RunStep("failed", "none", Errors: errors);
     }
@@ -330,7 +400,7 @@ public static class PageRun
     }
 
     /// <summary>Drivers run pages side by side; failed.json is the one file they share.</summary>
-    static FileStream Lock(SpecPaths paths)
+    internal static FileStream Lock(SpecPaths paths)
     {
         Directory.CreateDirectory(Path.Combine(paths.Root, ".stangent", "spec"));
         var path = Path.Combine(paths.Root, ".stangent", "spec", "failed.lock");

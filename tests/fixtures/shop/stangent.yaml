@@ -6,3 +6,5 @@ detectorSettings:
     entityBaseTypes: [Shop.Core.Entity]
   http-services:
     services: [stock-api=Shop.Stock]
+  jobs:
+    jobInterfaces: [Shop.Core.IExecute`1, Shop.Core.IScheduleTask]

@@ -1,0 +1,154 @@
+{
+  "codeTitle": "GET /content/{**path:regex(^(?!api/).*)}",
+  "entry": "endpoint:Sonarr.Http|GET /content/{**path:regex(^(?!api/).*)}",
+  "generated": {
+    "bundleHash": "cbffdf2dab8e47c66332c3d44384b723b4fd595027f5c4f27fb4d3ca6b0bc046",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 14143,
+      "cutOff": 22,
+      "depth": 4,
+      "points": 14
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 9363,
+      "calls": 1,
+      "costUsd": 0.040341,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4691,
+      "outputTokens": 271
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 6864,
+      "calls": 1,
+      "costUsd": 0.045886,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 10065,
+      "outputTokens": 1815
+    }
+  },
+  "group": "Sonarr.Http",
+  "id": "endpoint:Sonarr.Http|GET /content/{**path:regex(^(?!api/).*)}",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.IndexContent(System.String)",
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.MapResource(System.String)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Http|GET /content/{**path:regex(^(?!api/).*)}"
+        ],
+        "id": "A1",
+        "text": "A caller requests GET /content/{path}; the path is prefixed with \"Content/\" and resolved to a resource."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.IndexContent(System.String)"
+        ],
+        "id": "R1",
+        "text": "The endpoint allows anonymous access and applies the \"AllowGet\" CORS policy."
+      },
+      {
+        "cites": [
+          "endpoint:Sonarr.Http|GET /content/{**path:regex(^(?!api/).*)}"
+        ],
+        "id": "R2",
+        "text": "The route does not match paths beginning with \"api/\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.MapResource(System.String)",
+          "Sonarr.Http|M:Sonarr.Http.Frontend.Mappers.IMapHttpRequestsToDisk.CanHandle(System.String)"
+        ],
+        "id": "R3",
+        "text": "Exactly one mapper is chosen among those whose CanHandle accepts the path."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.MapResource(System.String)"
+        ],
+        "id": "R4",
+        "text": "A path matching the invalid-path pattern returns Not Found without invoking any mapper."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.MapResource(System.String)",
+          "Sonarr.Http|M:Sonarr.Http.Extensions.RequestExtensions.DisableCache(Microsoft.AspNetCore.Http.IHeaderDictionary)"
+        ],
+        "id": "R5",
+        "text": "When the result is a file of type \"text/html\", caching is disabled via Cache-Control \"no-cache, no-store\", Expires \"-1\" and Pragma \"no-cache\", and Last-Modified is removed."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.Mappers.MediaCoverProxyMapper.GetResponse(Microsoft.AspNetCore.Http.HttpContext,System.String)"
+        ],
+        "id": "R6",
+        "text": "A MediaCoverProxy path that does not match the expected pattern returns Not Found."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.Mappers.StaticResourceMapperBase.GetResponse(Microsoft.AspNetCore.Http.HttpContext,System.String)"
+        ],
+        "id": "S1",
+        "text": "Returns the requested file under Content/ as a file response, with a content type derived from the file name, or \"application/octet-stream\" if unknown."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.Mappers.StaticResourceMapperBase.GetResponse(Microsoft.AspNetCore.Http.HttpContext,System.String)"
+        ],
+        "id": "S2",
+        "text": "For files of type \"text/plain\" the response is encoded as UTF-8."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.Mappers.MediaCoverProxyMapper.GetResponse(Microsoft.AspNetCore.Http.HttpContext,System.String)",
+          "Sonarr.Http|M:Sonarr.Http.Frontend.Mappers.MediaCoverProxyMapper.CanHandle(System.String)"
+        ],
+        "id": "S3",
+        "text": "For paths starting with /MediaCoverProxy/, returns the cover image data fetched by hash, with a content type based on the file name or \"application/octet-stream\" if unknown."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.MapResource(System.String)",
+          "Sonarr.Http|M:Sonarr.Http.Frontend.Mappers.StaticResourceMapperBase.GetResponse(Microsoft.AspNetCore.Http.HttpContext,System.String)"
+        ],
+        "id": "S4",
+        "text": "Returns Not Found when the path is invalid, no mapper handles it, the mapper returns nothing, or the file is not found."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.StaticResourceController.MapResource(System.String)"
+        ],
+        "id": "E1",
+        "text": "A warning is logged when no handler is found for the path."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.Frontend.Mappers.StaticResourceMapperBase.GetResponse(Microsoft.AspNetCore.Http.HttpContext,System.String)"
+        ],
+        "id": "E2",
+        "text": "A warning \"File {0} not found\" is logged when the mapped file does not exist."
+      }
+    ]
+  },
+  "title": "Static content file request",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

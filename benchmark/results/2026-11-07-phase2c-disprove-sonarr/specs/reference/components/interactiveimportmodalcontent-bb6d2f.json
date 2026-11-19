@@ -1,0 +1,138 @@
+{
+  "codeTitle": "InteractiveImportModalContent",
+  "entry": "ts|frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx#InteractiveImportModalContent",
+  "generated": {
+    "bundleHash": "4eaaefe86b497489bd651f5e8fd7f3687e6628038db1c0f1ccf76c411d0ae2c4",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 23222,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 102
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 12588,
+      "calls": 1,
+      "costUsd": 0.052191,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2815,
+      "outputTokens": 166
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 22689,
+      "calls": 2,
+      "costUsd": 0.114496,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 13793,
+      "outputTokens": 2318
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx#InteractiveImportModalContent",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx#filterExistingFilesStore",
+          "ts|frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx#InteractiveImportModalContent"
+        ],
+        "id": "R1",
+        "text": "The filter-existing-files setting defaults to false and is sent as a query parameter on the request."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/useInteractiveImport.ts#useInteractiveImport"
+        ],
+        "id": "R2",
+        "text": "Sorting by series uses the series title, by quality uses the quality name, and by languages uses the language names joined by commas. Missing values sort as an empty string."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/useInteractiveImport.ts#useInteractiveImport"
+        ],
+        "id": "R3",
+        "text": "Fetched data is not kept after the modal closes, and it is not refetched when the window regains focus."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Helpers/Hooks/useOptionsStore.ts#createOptionsStore"
+        ],
+        "id": "R4",
+        "text": "Sort key and direction can only be changed through the dedicated sort setter, and setting them through the general option setters throws an error."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/useInteractiveImport.ts#useInteractiveImport",
+          "ts|frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx#InteractiveImportModalContent"
+        ],
+        "id": "S1",
+        "text": "The list of importable files shown is loaded from the manual import API for the given download ids, series, season number and folder."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/useInteractiveImport.ts#useInteractiveImport",
+          "ts|frontend/src/InteractiveImport/interactiveImportOptionsStore.ts#createInteractiveImportOptionsStore"
+        ],
+        "id": "S2",
+        "text": "The loaded items are sorted on the client by the stored sort key and direction. The default sort key is relative path."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/interactiveImportOptionsStore.ts#createInteractiveImportOptionsStore"
+        ],
+        "id": "S3",
+        "text": "The stored options default to the 'all' filter, import mode 'chooseImportMode', and a default column set."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/Interactive/InteractiveImportModalContent.tsx#InteractiveImportModalContent"
+        ],
+        "id": "S4",
+        "text": "The sorted items are given to a selection provider that wraps the modal's inner content."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "ts|frontend/src/InteractiveImport/useInteractiveImport.ts#useInteractiveImport",
+          "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery"
+        ],
+        "id": "E1",
+        "text": "Opening the modal sends a GET request to the manual import endpoint with the API key header."
+      }
+    ]
+  },
+  "title": "Interactive Import modal content",
+  "unknowns": [
+    {
+      "file": "frontend/src/Helpers/Hooks/useApiQuery.ts",
+      "in": "ts|frontend/src/Helpers/Hooks/useApiQuery.ts#useApiQuery",
+      "line": 44,
+      "reason": "HTTP GET to a URL built at runtime"
+    }
+  ],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "The default sort key 'relativePath' is in the options store (sortKey: 'relativePath'), so that part holds. But sort direction is passed in as a parameter, and the default direction isn't shown. This is minor; the statement says only 'default sort is by relative path', which is supported.",
+        "id": "F1",
+        "kind": "unsupported",
+        "outcome": "fixed",
+        "reason": "Reworded to say only the default sort key is relative path, since the default direction is passed in and not shown.",
+        "statement": "S2",
+        "statementText": "The loaded items are sorted on the client by the stored sort key and direction, and the default sort is by relative path."
+      }
+    ]
+  }
+}

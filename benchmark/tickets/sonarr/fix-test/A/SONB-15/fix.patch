@@ -1,0 +1,13 @@
+diff --git a/src/NzbDrone.Core/CustomFormats/Specifications/ResolutionSpecification.cs b/src/NzbDrone.Core/CustomFormats/Specifications/ResolutionSpecification.cs
+index 1eb90b9532..a50c93af2b 100644
+--- a/src/NzbDrone.Core/CustomFormats/Specifications/ResolutionSpecification.cs
++++ b/src/NzbDrone.Core/CustomFormats/Specifications/ResolutionSpecification.cs
+@@ -9,7 +9,7 @@ public class ResolutionSpecificationValidator : AbstractValidator<ResolutionSpec
+     {
+         public ResolutionSpecificationValidator()
+         {
+-            RuleFor(c => c.Value).NotEmpty();
++            RuleFor(c => c.Value).Must(v => System.Enum.IsDefined(typeof(Resolution), v));
+         }
+     }
+ 

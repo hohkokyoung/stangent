@@ -1,0 +1,159 @@
+{
+  "codeTitle": "GET /api/v3/ManualImport",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/ManualImport",
+  "generated": {
+    "bundleHash": "2e5cdd762e3d600a9ea0e370180dda2d492910efb77ff1257a93a549fd2ed857",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 39896,
+      "cutOff": 200,
+      "depth": 4,
+      "points": 106
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 20965,
+      "calls": 1,
+      "costUsd": 0.088599,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4748,
+      "outputTokens": 456
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 17884,
+      "calls": 1,
+      "costUsd": 0.095586,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 12817,
+      "outputTokens": 2377
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/ManualImport",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportController.GetMediaFiles(System.String,System.String,System.Nullable{System.Int32},System.Nullable{System.Int32},System.Boolean)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/ManualImport"
+        ],
+        "id": "A1",
+        "text": "Caller requests manual import items by folder, downloadId, seriesId, seasonNumber and filterExistingFiles."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportController.GetMediaFiles(System.String,System.String,System.Nullable{System.Int32},System.Nullable{System.Int32},System.Boolean)"
+        ],
+        "id": "R1",
+        "text": "filterExistingFiles defaults to true."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportController.GetMediaFiles(System.String,System.String,System.Nullable{System.Int32},System.Nullable{System.Int32},System.Boolean)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.StringExtensions.IsNullOrWhiteSpace(System.String)"
+        ],
+        "id": "R2",
+        "text": "When seriesId is given and downloadId is blank, the series' existing files (optionally limited to seasonNumber) are listed; otherwise the folder/download is scanned."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.GetMediaFiles(System.Int32,System.Nullable{System.Int32})",
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.MediaFileService.FilterExistingFiles(System.Collections.Generic.List{System.String},System.Collections.Generic.List{NzbDrone.Core.MediaFiles.EpisodeFile},NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R3",
+        "text": "In series mode with no season number, video files in the series folder not already tracked are added as items with Unknown quality, Unknown language, no episodes and no rejections."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.GetMediaFiles(System.String,System.String,System.Nullable{System.Int32},System.Boolean)"
+        ],
+        "id": "R4",
+        "text": "When a downloadId is given, the path comes from the tracked download's output path; an unknown download or one without an import item gives an empty list."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.GetMediaFiles(System.String,System.String,System.Nullable{System.Int32},System.Boolean)"
+        ],
+        "id": "R5",
+        "text": "If the path is a single file, only that file is processed; if it is a folder, the folder is processed."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.ProcessFolder(System.String,System.String,System.String,System.Nullable{System.Int32},System.Boolean)"
+        ],
+        "id": "R6",
+        "text": "If the series is unknown for a folder and it has more than 100 video files, the files are not parsed."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.ProcessFile(System.String,System.String,System.String,System.String,NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R7",
+        "text": "A file whose series cannot be determined gets a rejection \"Unknown Series\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportResourceMapper.ToResource(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportItem)",
+          "Sonarr.Core|M:NzbDrone.Core.Profiles.Qualities.QualityProfile.CalculateCustomFormatScore(System.Collections.Generic.List{NzbDrone.Core.CustomFormats.CustomFormat})"
+        ],
+        "id": "R8",
+        "text": "Custom format score is the profile's score for the item's custom formats, or 0 when the series has no quality profile."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportResourceMapper.ToResource(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportItem)"
+        ],
+        "id": "S1",
+        "text": "Returns a list of manual import items, each with id, path, relative path, folder name, name, size, series, season number, episodes, episode file id, release group, quality, languages, custom formats, custom format score, download id, indexer flags, release type and rejections."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportResourceMapper.ToResource(NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportItem)",
+          "Sonarr.Common|M:NzbDrone.Common.Crypto.HashConverter.GetHashInt31(System.String)"
+        ],
+        "id": "S2",
+        "text": "Each item's id is a non-negative 31-bit hash of its file path."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ImportRejectionResourceMapper.ToResource(NzbDrone.Core.MediaFiles.EpisodeImport.ImportRejection)"
+        ],
+        "id": "S3",
+        "text": "Each rejection is shown with a reason (the rejection message) and a type."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.ManualImport.ManualImportController.AddQualityWeight(Sonarr.Api.V3.ManualImport.ManualImportResource)"
+        ],
+        "id": "S4",
+        "text": "Each item includes a quality weight computed from the quality definition weight plus the revision."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.EpisodeImport.Manual.ManualImportService.GetMediaFiles(System.String,System.String,System.Nullable{System.Int32},System.Boolean)"
+        ],
+        "id": "S5",
+        "text": "When the folder or download yields nothing (unknown download, or path is neither a folder nor a file), an empty list is returned."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "List manual import candidates (GET /api/v3/ManualImport)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

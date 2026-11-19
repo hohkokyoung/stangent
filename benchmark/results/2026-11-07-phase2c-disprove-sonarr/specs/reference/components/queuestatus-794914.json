@@ -1,0 +1,162 @@
+{
+  "codeTitle": "QueueStatus",
+  "entry": "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus",
+  "generated": {
+    "bundleHash": "b7ed406035e7e29f0869b75e0821bc00e60635198cc9d28cc9bc87cb66ee470b",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 10961,
+      "cutOff": 0,
+      "depth": 6,
+      "points": 44
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 7719,
+      "calls": 1,
+      "costUsd": 0.035085,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4397,
+      "outputTokens": 403
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 5351,
+      "calls": 1,
+      "costUsd": 0.037814,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8875,
+      "outputTokens": 1613
+    }
+  },
+  "group": "sonarr",
+  "id": "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus",
+  "kind": "component",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [],
+    "rules": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus"
+        ],
+        "id": "R1",
+        "text": "Tracked download status defaults to 'ok', tracked download state defaults to 'downloading', status messages default to an empty list, and canFlip defaults to false."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus"
+        ],
+        "id": "R2",
+        "text": "A tracked download status of 'warning' sets the icon kind to warning, overriding any state-based kind."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#getDetailedPopoverBody"
+        ],
+        "id": "R3",
+        "text": "A status message group with no messages is given a distinct 'no messages' style."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "R4",
+        "text": "Titles are translated; a missing key falls back to the key itself, and {token} placeholders are replaced from the supplied values."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus",
+          "ts|frontend/src/Components/Tooltip/Popover.tsx#Popover",
+          "ts|frontend/src/Components/Icon.tsx#Icon"
+        ],
+        "id": "S1",
+        "text": "Shows a status icon for a queue item, with a popover that opens to give a title and body."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus",
+          "ts|frontend/src/Utilities/String/translate.ts#translate"
+        ],
+        "id": "S2",
+        "text": "By default the title is 'Downloading' with a downloading icon in the default kind."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus"
+        ],
+        "id": "S3",
+        "text": "Status 'paused' shows the paused icon with title 'Paused'; 'queued' shows the queued icon with 'Queued'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus"
+        ],
+        "id": "S4",
+        "text": "Status 'completed' shows the downloaded icon with title 'Downloaded'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus"
+        ],
+        "id": "S5",
+        "text": "For a completed item, the title gets a suffix by tracked download state: importBlocked adds 'Unable to import automatically' (warning), importPending adds 'Waiting to import' (purple), importing adds 'Importing' (primary), failedPending adds 'Waiting to process' (danger)."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus"
+        ],
+        "id": "S6",
+        "text": "Status 'delay' shows the pending icon with title 'Pending'. Status 'downloadClientUnavailable' shows the pending icon in warning kind with title 'Pending download client unavailable'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus"
+        ],
+        "id": "S7",
+        "text": "Status 'failed' shows the downloading icon in danger kind with title 'Download failed'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus"
+        ],
+        "id": "S8",
+        "text": "Status 'warning' shows the downloading icon in warning kind. The title is a download warning built from the error message, or from 'Check download client for details' when there is no error message."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus"
+        ],
+        "id": "S9",
+        "text": "When the tracked download status is error, a completed item shows the download icon in danger kind with an 'Import failed' title that includes the source title. Other statuses show the downloading icon in danger kind with 'Download failed'."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus",
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#getDetailedPopoverBody"
+        ],
+        "id": "S10",
+        "text": "When the tracked download status is warning or error, the popover body lists each status message group's title with its messages as a bulleted list. Otherwise the body is the source title."
+      },
+      {
+        "cites": [
+          "ts|frontend/src/Activity/Queue/QueueStatus.tsx#QueueStatus"
+        ],
+        "id": "S11",
+        "text": "The title is also used as the accessible label of the popover."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "Queue Status Icon",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

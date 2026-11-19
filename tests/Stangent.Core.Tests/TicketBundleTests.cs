@@ -1,3 +1,4 @@
+using Stangent.Spec.Trace;
 using System.Text.Json.Nodes;
 using Stangent.Core;
 using Stangent.Spec.Fsd;
@@ -56,19 +57,29 @@ public class TicketBundleTests
     /// <summary>An FSD section linked to the orders page: one agree link, and one conflict (a finding).</summary>
     static void Fsd(SpecApp app)
     {
-        var dir = Path.Combine(app.Root, "specs", "fsd", "shop");
-        Directory.CreateDirectory(dir);
-        File.WriteAllText(Path.Combine(dir, "document.json"), new JsonObject
-        {
-            ["schemaVersion"] = 1, ["id"] = "shop", ["title"] = "Shop FSD",
-            ["sections"] = new JsonArray(new JsonObject { ["id"] = "4.1", ["title"] = "Placing an order", ["text"] = "The user places an order with the Place order button. Orders over 50 need approval.", ["parent"] = null }),
-        }.ToJsonString());
+        FsdFixture.Write(app.Root, "shop", "Shop FSD", ("4.1", "Placing an order", "The user places an order with the Place order button. Orders over 50 need approval."));
         var section = new JsonObject { ["id"] = "4.1", ["title"] = "Placing an order", ["text"] = "" };
-        LinkRun.ApplyEntries(app.Root, "shop", "4.1",
+        TraceStore.ApplyEntries(app.Root, "shop", "4.1",
         [
-            LinkRun.Entry("agree", "shop", section, "The user places an order with the Place order button.", Orders, "S1", "The orders screen shows a Place order button.", "judge", "confirmed", null),
-            LinkRun.Entry("conflict", "shop", section, "Orders over 50 need approval.", Orders, "A1", "Pressing Place order posts the order to the orders endpoint.", "judge", null, "50 vs 100"),
+            TraceStore.Entry("agree", "shop", section, "The user places an order with the Place order button.", Orders, "S1", "The orders screen shows a Place order button.", "judge", "confirmed", null),
+            TraceStore.Entry("conflict", "shop", section, "Orders over 50 need approval.", Orders, "A1", "Pressing Place order posts the order to the orders endpoint.", "judge", null, "50 vs 100"),
         ]);
+    }
+
+    [Fact]
+    public async Task An_attachment_that_cannot_be_converted_is_listed_in_a_valid_bundle()
+    {
+        using var app = App();
+        TicketFixtures.Make(Path.Combine(app.Root, "replay"), "SHOP-20", "Bug", "Orders are wrong", "See broken.docx", files:
+        [
+            new("1", "broken.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", [1, 2, 3]),
+        ]);
+        await using var tracker = Trackers.Open(app.Repo, new MemorySecretStore(), TextWriter.Null, null);
+        await TicketPull.RunAsync(app.Repo, tracker, "SHOP-20", TestContext.Current.CancellationToken);
+        TicketPoints.Update(app.Repo, TicketContext.Load(app.Repo), "SHOP-20", [], [], "Pat Developer");
+        var b = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-20");
+        Assert.Empty(SchemaRegistry.Embedded.Validate("ticket-bundle.v3.json", b.ToJsonString()));
+        Assert.Equal("broken.docx", (string)b["ticket"]!["attachments"]![0]!["fileName"]!);
     }
 
     [Fact]
@@ -180,7 +191,7 @@ public class TicketBundleTests
         Page(app, Cart, false, ("shows", "The cart screen lists what the user is about to buy, with a total.", ["ts|web/src/Other.tsx#CartPage"]));
         var b = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-20");
 
-        Assert.Equal(2, (int)b["schemaVersion"]!);
+        Assert.Equal(3, (int)b["schemaVersion"]!);
         var point = Assert.Single(b["points"]!.AsArray())!;
         Assert.Equal(("file", "web/src/Orders.tsx"), ((string)point["kind"]!, (string)point["id"]!));
         var first = b["pointers"]![0]!;
@@ -244,16 +255,65 @@ public class TicketBundleTests
     }
 
     [Fact]
-    public void Findings_appear_only_when_fsd_findings_is_on_and_are_marked_unconfirmed()
+    public void The_old_routes_findings_are_never_shown_even_with_an_old_setting()
     {
-        using var app = App("fsd:\n  findings: true\n");
+        using var app = App("fsd:\n  findings: true\n");   // ignored since D388, with a warning
         OrdersPage(app);
         Fsd(app);
         Ticket(app, "SHOP-6", "On /orders the total is wrong.");
         var b = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-6");
-        var conflict = b["sections"]![0]!["links"]!.AsArray().Single(l => (string?)l!["state"] == "conflict")!;
-        Assert.True((bool)conflict["unconfirmed"]!);
-        Assert.True((bool)b["findings"]!);
+        Assert.DoesNotContain(b["sections"]!.AsArray().SelectMany(s => s!["links"]!.AsArray()), l => (string?)l!["state"] == "conflict");
+        Assert.False((bool)b["findings"]!);
+    }
+
+    // ---- a security flag (D148) ----
+
+    /// <summary>The conflict with a flag code wrote, and with what else it takes.</summary>
+    static void FlagTheConflict(SpecApp app, Action<JsonObject>? more = null)
+    {
+        var trace = TraceFile.Load(app.Root);
+        var e = trace["entries"]!.AsArray().OfType<JsonObject>().Single(x => (string?)x["state"] == "conflict");
+        var flag = new JsonObject
+        {
+            ["why"] = "The server trusts an id sent in the request.", ["path"] = "web/src/Orders.tsx", ["start"] = 3, ["end"] = 3, ["quote"] = "post(order)",
+            ["symbol"] = SpecApp.Save, ["commit"] = new string('a', 40), ["inputs"] = new string('b', 64),
+        };
+        e["security"] = flag;
+        e["security_hash"] = TraceFile.SecurityHash(flag);
+        e["security_state"] = "unanswered";
+        more?.Invoke(e);
+        TraceFile.Save(app.Root, trace);
+    }
+
+    static JsonNode? Conflict(JsonObject b) => b["sections"]![0]?["links"]!.AsArray().SingleOrDefault(l => (string?)l!["state"] == "conflict");
+
+    static string Md(SpecApp app, string key) => File.ReadAllText(new TicketPaths(app.Root, key).BundleMarkdown);
+
+    [Fact]
+    public void An_unanswered_flag_is_marked_plainly_in_the_bundle()
+    {
+        using var app = App("fsd:\n  findings: true\n");
+        OrdersPage(app);
+        Fsd(app);
+        FlagTheConflict(app);
+        Ticket(app, "SHOP-30", "On /orders the total is wrong.");
+        var b = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-30");
+        var flag = Conflict(b)!["security"]!;
+        Assert.Equal("unanswered", (string?)flag["answer"]);
+        Assert.Equal("The server trusts an id sent in the request.", (string?)flag["why"]);
+        Assert.Contains("**SECURITY FLAG, UNANSWERED:** The server trusts an id sent in the request. (`web/src/Orders.tsx:3-3`", Md(app, "SHOP-30"));
+    }
+
+    [Fact]
+    public void With_findings_switched_off_an_unanswered_flag_still_shows()
+    {
+        using var app = App();
+        OrdersPage(app);
+        Fsd(app);
+        FlagTheConflict(app);
+        Ticket(app, "SHOP-33", "On /orders the total is wrong.");
+        var b = TicketBundle.Build(app.Repo, TicketContext.Load(app.Repo), "SHOP-33");
+        Assert.Equal("unanswered", (string?)Conflict(b)!["security"]!["answer"]);
     }
 
     [Fact]

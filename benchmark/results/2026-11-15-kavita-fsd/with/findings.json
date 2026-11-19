@@ -1,0 +1,1896 @@
+{
+ "findings": [
+  {
+   "state": "gap",
+   "section": "1",
+   "fsdQuote": "Each row on the Home screen can be collapsed, and Kavita remembers the choice on the next visit.",
+   "screen": null,
+   "note": "Home rows are carousels with a clickable title and next/prev buttons only; there is no collapse control and no stored collapsed state.",
+   "evidence": [
+    "UI/Web/src/app/carousel/_components/carousel-reel/carousel-reel.component.html:11"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "1",
+   "fsdQuote": "The On Deck row shows up to 50 series.",
+   "screen": null,
+   "note": "The On Deck row is loaded as pages of 20 (getOnDeck(1, 20)) and the carousel fetches further pages as the user scrolls; there is no cap of 50.",
+   "evidence": [
+    "UI/Web/src/app/dashboard/_components/dashboard.component.ts:194"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "2.1",
+   "fsdQuote": "A Random button on the library screen opens a randomly chosen series from that library.",
+   "screen": null,
+   "note": "The library screen header has the name, actions menu and series count only; no Random button exists.",
+   "evidence": [
+    "UI/Web/src/app/library-detail/library-detail.component.html:4"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "3.1",
+   "fsdQuote": "Manga series open on the Volumes tab by default.",
+   "screen": null,
+   "note": "For Manga (and other non-Comic, non-Book libraries) the default tab is Storyline; Volumes is the default only for some Book or Comic cases.",
+   "evidence": [
+    "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:822",
+    "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.ts:857"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "3.1",
+   "fsdQuote": "Users can keep a private note on a series that only they can see.",
+   "screen": null,
+   "note": "The series screen has no private note field; no such feature exists in the frontend or the models.",
+   "evidence": [
+    "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:238"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "3.3",
+   "fsdQuote": "A chapter's screen shows its release date, writers, cover artists, genres and tags, always has a Reviews tab, and has a Related tab listing the reading lists that contain the chapter when there are any.",
+   "screen": null,
+   "note": "The release date is shown only in Comic and Comic (Flexible) libraries when it is set; otherwise the same slot shows cover artists, so the two are not shown together.",
+   "evidence": [
+    "UI/Web/src/app/chapter-detail/chapter-detail.component.html:117"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "4.1",
+   "fsdQuote": "Brightness can be set anywhere from 0% to 100%.",
+   "screen": null,
+   "note": "The brightness slider is validated from 10 to 100, so 0% cannot be set.",
+   "evidence": [
+    "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:328",
+    "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:329"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "4.1",
+   "fsdQuote": "A slideshow mode turns the page automatically after a set number of seconds.",
+   "screen": null,
+   "note": "The image reader settings have no slideshow or auto-advance option.",
+   "evidence": [
+    "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.html:282"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "4.2",
+   "fsdQuote": "Font size can be set from 50% to 200%.",
+   "screen": null,
+   "note": "The font size is validated from 50 to 300, so the upper limit is 300%.",
+   "evidence": [
+    "UI/Web/src/app/_services/epub-reader-settings.service.ts:79",
+    "UI/Web/src/app/_services/epub-reader-settings.service.ts:80"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "4.2",
+   "fsdQuote": "Selected text can be read aloud using the device's text-to-speech voice.",
+   "screen": null,
+   "note": "The book reader's text selection overlay offers bookmark and annotation modes only; no text-to-speech code exists.",
+   "evidence": [
+    "UI/Web/src/app/book-reader/_components/book-line-overlay/book-line-overlay.component.html:25"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "5",
+   "fsdQuote": "Kavita removes a series from Want to Read automatically as soon as the user finishes reading it.",
+   "screen": null,
+   "note": "Removal is a daily scheduled cleanup, not immediate, and it only removes series that are fully read and whose publication status is Completed or Cancelled.",
+   "evidence": [
+    "Kavita.Services/TaskScheduler.cs:229",
+    "Kavita.Services/CleanupService.cs:332"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "6.2",
+   "fsdQuote": "The series in a collection can be exported to a CSV file.",
+   "screen": null,
+   "note": "The collection actions menu offers Edit, Download, Delete, Promote and Unpromote only; there is no CSV export (the only export actions are for reading lists and annotations).",
+   "evidence": [
+    "UI/Web/src/app/_services/action-factory.service.ts:401",
+    "UI/Web/src/app/collections/_components/collection-detail/collection-detail.component.ts:130"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "7.2",
+   "fsdQuote": "A filter box for finding items appears once a list has more than 25 items.",
+   "screen": null,
+   "note": "The filter box appears once a list has more than 10 items.",
+   "evidence": [
+    "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:204"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "7.2",
+   "fsdQuote": "The owner can share a reading list through a public link that opens without signing in.",
+   "screen": null,
+   "note": "No share or public-link feature exists on the reading list screen or its actions.",
+   "evidence": [
+    "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:73"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "9.1",
+   "fsdQuote": "A new password must be at least 8 characters long.",
+   "screen": null,
+   "note": "The server requires a minimum password length of 6.",
+   "evidence": [
+    "Kavita.Server/Extensions/IdentityServiceExtensions.cs:59"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "9.1",
+   "fsdQuote": "Users can turn on two-factor sign-in with an authenticator app.",
+   "screen": null,
+   "note": "The Account page has no two-factor setting and no two-factor code exists in the app.",
+   "evidence": [
+    "UI/Web/src/app/user-settings/account-settings/account-settings.component.html:3"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "9.2",
+   "fsdQuote": "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB.",
+   "screen": null,
+   "note": "The warning size is 100 MB (200 MB on iOS).",
+   "evidence": [
+    "UI/Web/src/app/shared/_services/download.service.ts:76",
+    "UI/Web/src/app/shared/_services/download.service.ts:80"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "10.1",
+   "fsdQuote": "Changes on this page are stored only when the administrator presses Save.",
+   "screen": null,
+   "note": "The page has no Save button; changes are sent to the server automatically 300 ms after any valid edit.",
+   "evidence": [
+    "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:115",
+    "UI/Web/src/app/admin/manage-settings/manage-settings.component.html:163"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "10.1",
+   "fsdQuote": "A maintenance mode switch blocks all non-admin users from signing in until it is turned off.",
+   "screen": null,
+   "note": "The General page has no maintenance mode switch; only OPDS, folder watching and stats switches exist.",
+   "evidence": [
+    "UI/Web/src/app/admin/manage-settings/manage-settings.component.html:163"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "gap",
+   "section": "10.2",
+   "fsdQuote": "An invite can be given an expiry date, after which its link stops working.",
+   "screen": null,
+   "note": "The invite form and the invite request have no expiry field.",
+   "evidence": [
+    "UI/Web/src/app/admin/invite-user/invite-user.component.html:18",
+    "Kavita.Models/DTOs/Account/InviteUserDto.cs:6"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "conflict",
+   "section": "10.3",
+   "fsdQuote": "Manage Collections is turned on by default for a new library.",
+   "screen": null,
+   "note": "A new library starts with Manage Collections off.",
+   "evidence": [
+    "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:157"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/browse/genres",
+   "note": "Browse Genres screen (lists genres, opens All Series filtered) is not described; the FSD covers People and Tags only.",
+   "evidence": [
+    "UI/Web/src/app/_routes/browse-routing.module.ts:23"
+   ],
+   "checklist": [
+    "K178"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/browse/annotations",
+   "note": "Annotations browse screen with a filter panel and an Export button is not described.",
+   "evidence": [
+    "UI/Web/src/app/_routes/browse-routing.module.ts:25",
+    "UI/Web/src/app/all-annotations/all-annotations.component.html:30"
+   ],
+   "checklist": [
+    "K158",
+    "K159",
+    "K160"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": null,
+   "fsdQuote": null,
+   "screen": "/library/:libraryId/series/:seriesId/pdf/:chapterId",
+   "note": "A PDF reader screen exists for PDF files; the FSD only names the image reader and the book reader.",
+   "evidence": [
+    "UI/Web/src/app/_routes/pdf-reader.router.module.ts:6"
+   ],
+   "checklist": [
+    "K204"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "9.2",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "Preferences also hold On Deck Last Progress (days) and On Deck Last Chapter Add (days), which decide what appears on the Home On Deck row; not mentioned.",
+   "evidence": [
+    "UI/Web/src/app/user-settings/manga-user-preferences/manage-user-preferences.component.html:113",
+    "UI/Web/src/app/user-settings/manga-user-preferences/manage-user-preferences.component.html:126"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "undocumented",
+   "section": "8.2",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "A person's actions menu lets administrators edit the person and merge people; neither is described.",
+   "evidence": [
+    "UI/Web/src/app/person-detail/person-detail.component.html:9",
+    "UI/Web/src/app/person-detail/_modal/edit-person-modal/edit-person-modal.component.html:9",
+    "UI/Web/src/app/person-detail/_modal/merge-person-modal/merge-person-modal.component.html:65"
+   ],
+   "checklist": [
+    "K206",
+    "K209",
+    "K210",
+    "K211"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "3.2",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "Volume screen has an actions menu and an administrator Edit modal (with its tasks) that are not described.",
+   "evidence": [
+    "UI/Web/src/app/volume-detail/volume-detail.component.html:75",
+    "UI/Web/src/app/volume-detail/volume-detail.component.html:86",
+    "UI/Web/src/app/_single-module/edit-volume-modal/edit-volume-modal.component.html:11"
+   ],
+   "checklist": [
+    "K245",
+    "K246",
+    "K248",
+    "K249"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "3.3",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "Chapter screen has a Read button, an actions menu and an administrator Edit modal (with its tasks) that are not described.",
+   "evidence": [
+    "UI/Web/src/app/chapter-detail/chapter-detail.component.html:12",
+    "UI/Web/src/app/chapter-detail/chapter-detail.component.html:76",
+    "UI/Web/src/app/chapter-detail/chapter-detail.component.html:87",
+    "UI/Web/src/app/_single-module/edit-chapter-modal/edit-chapter-modal.component.html:10"
+   ],
+   "checklist": [
+    "K181",
+    "K183",
+    "K184",
+    "K185",
+    "K186"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "3.1",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "Users can rate a series and write or delete a review (rating modal, review modal, external ratings, and a rate-and-review prompt in the reader); only the Reviews tab is named.",
+   "evidence": [
+    "UI/Web/src/app/_single-module/review-modal/review-modal.component.html:22",
+    "UI/Web/src/app/series-detail/_components/rating-modal/rating-modal.component.html:8",
+    "UI/Web/src/app/series-detail/_components/external-rating/external-rating.component.html:59",
+    "UI/Web/src/app/manga-reader/_components/rate-and-review-series-modal/rate-and-review-series-modal.component.html:24"
+   ],
+   "checklist": [
+    "K200",
+    "K203",
+    "K230",
+    "K237",
+    "K241",
+    "K242"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "3.1",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "A scrobbling toggle button on the series screen turns scrobbling on or off for the series; not described.",
+   "evidence": [
+    "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:116"
+   ],
+   "checklist": [
+    "K240"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "3.1",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "Series screen also has an Annotations tab and an Activity tab (reading history); the tab list omits them.",
+   "evidence": [
+    "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:325",
+    "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:413",
+    "UI/Web/src/app/series-detail/_components/series-detail/series-detail.component.html:424"
+   ],
+   "checklist": [
+    "K234"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "5",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "Clicking a series card can open a series preview drawer with its own add/remove Want to Read button; not described.",
+   "evidence": [
+    "UI/Web/src/app/_single-module/series-preview-drawer/series-preview-drawer.component.html:102",
+    "UI/Web/src/app/cards/series-card/series-card.component.ts:92"
+   ],
+   "checklist": [
+    "K157"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "6.2",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "The collection Edit action opens a modal to change the collection (its series list is paged); editing is not described.",
+   "evidence": [
+    "UI/Web/src/app/cards/_modals/edit-collection-tags/edit-collection-tags-modal.component.html:9",
+    "UI/Web/src/app/cards/_modals/edit-collection-tags/edit-collection-tags-modal.component.html:66"
+   ],
+   "checklist": [
+    "K022",
+    "K023"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "7.2",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "In reorder mode a Remove Read button removes read items from the list; not described.",
+   "evidence": [
+    "UI/Web/src/app/reading-list/_components/reading-list-detail/reading-list-detail.component.html:176"
+   ],
+   "checklist": [
+    "K152"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "7.2",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "A reading list's actions menu also offers Refresh Metadata, Download and Export as CBL (v1 or v2); not described.",
+   "evidence": [
+    "UI/Web/src/app/_services/action-factory.service.ts:1048",
+    "UI/Web/src/app/_services/action-factory.service.ts:1103",
+    "UI/Web/src/app/_services/action-factory.service.ts:1113"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "undocumented",
+   "section": "4.2",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "Annotations can be deleted, liked and given a highlight colour in the book reader; the FSD only says annotations are shown and created.",
+   "evidence": [
+    "UI/Web/src/app/book-reader/_components/_drawers/view-edit-annotation-drawer/view-edit-annotation-drawer.component.html:75",
+    "UI/Web/src/app/book-reader/_components/_annotations/annotation-card/annotation-card.component.html:54",
+    "UI/Web/src/app/book-reader/_components/_drawers/view-annotations-drawer/view-annotations-drawer.component.html:40",
+    "UI/Web/src/app/book-reader/_components/_annotations/annotation-likes/annotation-likes.component.html:3",
+    "UI/Web/src/app/book-reader/_components/_annotations/highlight-bar/highlight-bar.component.html:30"
+   ],
+   "checklist": [
+    "K167",
+    "K168",
+    "K170",
+    "K171",
+    "K172"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "4.2",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "Bookmarks can be removed from the bookmarks drawer and personal table of contents, and bookmarked images can be viewed; not described.",
+   "evidence": [
+    "UI/Web/src/app/book-reader/_components/_drawers/view-bookmarks-drawer/view-bookmark-drawer.component.html:40",
+    "UI/Web/src/app/book-reader/_components/personal-table-of-contents/personal-table-of-contents.component.html:15",
+    "UI/Web/src/app/book-reader/_components/book-reader/book-reader.component.html:108"
+   ],
+   "checklist": [
+    "K169",
+    "K174",
+    "K176"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "4.2",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "Book reader settings have Update Parent Profile and Create New Profile buttons; the FSD only describes saving to a reading profile for the image reader.",
+   "evidence": [
+    "UI/Web/src/app/book-reader/_components/reader-settings/reader-settings.component.html:209",
+    "UI/Web/src/app/book-reader/_components/reader-settings/reader-settings.component.html:215"
+   ],
+   "checklist": [
+    "K165",
+    "K175"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "9.1",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "An Unlink OpenID Connect button on the Account page (shown for linked accounts) is not described.",
+   "evidence": [
+    "UI/Web/src/app/user-settings/account-settings/account-settings.component.html:21"
+   ],
+   "checklist": [
+    "K039"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "10.1",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "Reset buttons beside Base URL and IP Addresses restore those single values; not described.",
+   "evidence": [
+    "UI/Web/src/app/admin/manage-settings/manage-settings.component.html:41",
+    "UI/Web/src/app/admin/manage-settings/manage-settings.component.html:61"
+   ],
+   "checklist": [
+    "K106",
+    "K107"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "10.1",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "The General page also has a Logging Level option that is not mentioned.",
+   "evidence": [
+    "UI/Web/src/app/admin/manage-settings/manage-settings.component.html:128"
+   ],
+   "checklist": []
+  },
+  {
+   "state": "undocumented",
+   "section": "10.2",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "The user Edit form saves changed roles, libraries and age restriction for a user; the form is not described.",
+   "evidence": [
+    "UI/Web/src/app/admin/edit-user/edit-user.component.html:87"
+   ],
+   "checklist": [
+    "K116"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "10.2",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "A change-password key button on each active user row opens a reset password modal; not described.",
+   "evidence": [
+    "UI/Web/src/app/admin/manage-users/manage-users.component.html:199",
+    "UI/Web/src/app/admin/_modals/reset-password-modal/reset-password-modal.component.html:16"
+   ],
+   "checklist": [
+    "K122"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "10.3",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "The Libraries page has a bulk action menu (copy settings to other libraries, with include-type switch and Apply); not described.",
+   "evidence": [
+    "UI/Web/src/app/admin/manage-library/manage-library.component.html:5",
+    "UI/Web/src/app/admin/manage-library/manage-library.component.html:25"
+   ],
+   "checklist": [
+    "K032",
+    "K068"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "10.3",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "The library form lets the admin add folders through a directory picker and remove them; not described.",
+   "evidence": [
+    "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.html:84",
+    "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.html:77"
+   ],
+   "checklist": [
+    "K094",
+    "K102"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "10.3",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "An existing library's settings have a Tasks tab with Force Scan and Reset actions; not described.",
+   "evidence": [
+    "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.html:299",
+    "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.html:301"
+   ],
+   "checklist": [
+    "K066",
+    "K105"
+   ]
+  },
+  {
+   "state": "undocumented",
+   "section": "1",
+   "fsdQuote": null,
+   "screen": null,
+   "note": "The Customize page also customizes the side navigation (hide, reorder, delete, add smart filters and external sources); the FSD only mentions Home rows.",
+   "evidence": [
+    "UI/Web/src/app/sidenav/_components/customize-sidenav-streams/customize-sidenav-streams.component.html:27",
+    "UI/Web/src/app/sidenav/_components/customize-sidenav-streams/customize-sidenav-streams.component.html:35",
+    "UI/Web/src/app/sidenav/_components/customize-sidenav-streams/customize-sidenav-streams.component.html:53",
+    "UI/Web/src/app/sidenav/_components/customize-sidenav-streams/customize-sidenav-streams.component.html:76",
+    "UI/Web/src/app/sidenav/_components/edit-external-source-item/edit-external-source-item.component.html:61"
+   ],
+   "checklist": [
+    "K029",
+    "K031",
+    "K041",
+    "K042",
+    "K099",
+    "K126",
+    "K141"
+   ]
+  }
+ ],
+ "checklist": [
+  {
+   "id": "K001",
+   "verdict": "covered",
+   "section": "2.3",
+   "quote": "All Series lists the series from every library the user can access, with the same filter panel and bulk selection as a library screen."
+  },
+  {
+   "id": "K002",
+   "verdict": "not-for-fsd",
+   "reason": "pagination control, not a behaviour the FSD needs to describe"
+  },
+  {
+   "id": "K003",
+   "verdict": "covered",
+   "section": "2.2",
+   "quote": "a filter can be named and saved as a smart filter."
+  },
+  {
+   "id": "K004",
+   "verdict": "covered",
+   "section": "2.2",
+   "quote": "The filter panel builds rules on fields such as genre, tag, people, read progress, rating and publication status, and the rules can match all or any of them."
+  },
+  {
+   "id": "K005",
+   "verdict": "not-for-fsd",
+   "reason": "global search typeahead in the app header, not one of the in-scope screens"
+  },
+  {
+   "id": "K006",
+   "verdict": "not-for-fsd",
+   "reason": "global search typeahead in the app header, not one of the in-scope screens"
+  },
+  {
+   "id": "K007",
+   "verdict": "not-for-fsd",
+   "reason": "global search typeahead in the app header, not one of the in-scope screens"
+  },
+  {
+   "id": "K008",
+   "verdict": "not-for-fsd",
+   "reason": "side navigation drag-reorder in the app frame, not an in-scope screen"
+  },
+  {
+   "id": "K009",
+   "verdict": "not-for-fsd",
+   "reason": "activity panel job rows in the app frame, not an in-scope screen"
+  },
+  {
+   "id": "K010",
+   "verdict": "not-for-fsd",
+   "reason": "activity panel job rows in the app frame, not an in-scope screen"
+  },
+  {
+   "id": "K011",
+   "verdict": "not-for-fsd",
+   "reason": "global search typeahead in the app header, not one of the in-scope screens"
+  },
+  {
+   "id": "K012",
+   "verdict": "not-for-fsd",
+   "reason": "/bookmarks is outside the route prefixes in scope"
+  },
+  {
+   "id": "K013",
+   "verdict": "not-for-fsd",
+   "reason": "/bookmarks is outside the route prefixes in scope"
+  },
+  {
+   "id": "K014",
+   "verdict": "covered",
+   "section": "8.1",
+   "quote": "The People screen lists people with the number of series and issues each appears in, along with a filter panel and a jump bar, and clicking a person opens that person's page."
+  },
+  {
+   "id": "K015",
+   "verdict": "covered",
+   "section": "8.1",
+   "quote": "The People screen lists people with the number of series and issues each appears in, along with a filter panel and a jump bar, and clicking a person opens that person's page."
+  },
+  {
+   "id": "K016",
+   "verdict": "covered",
+   "section": "6.1",
+   "quote": "The Collections screen shows every collection the user can see, with the name of the user who created it and a mark on promoted collections."
+  },
+  {
+   "id": "K017",
+   "verdict": "covered",
+   "section": "6.2",
+   "quote": "A collection's screen shows its title, number of series and actions menu, and a collection synced from an outside service also shows how many of the source's series are on this server and when it last synced."
+  },
+  {
+   "id": "K018",
+   "verdict": "covered",
+   "section": "6.2",
+   "quote": "A collection's screen shows its title, number of series and actions menu, and a collection synced from an outside service also shows how many of the source's series are on this server and when it last synced."
+  },
+  {
+   "id": "K019",
+   "verdict": "not-for-fsd",
+   "reason": "MAL import-stack modal lives on a settings page the FSD declares outside this document"
+  },
+  {
+   "id": "K020",
+   "verdict": "not-for-fsd",
+   "reason": "pagination control, not a behaviour the FSD needs to describe"
+  },
+  {
+   "id": "K021",
+   "verdict": "not-for-fsd",
+   "reason": "pagination control, not a behaviour the FSD needs to describe"
+  },
+  {
+   "id": "K022",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K023",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K024",
+   "verdict": "covered",
+   "section": "6.2",
+   "quote": "Its series can be filtered and selected in bulk."
+  },
+  {
+   "id": "K025",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K026",
+   "verdict": "not-for-fsd",
+   "reason": "folder browser inside the directory picker modal, internal navigation"
+  },
+  {
+   "id": "K027",
+   "verdict": "not-for-fsd",
+   "reason": "placeholder text, not an action"
+  },
+  {
+   "id": "K028",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K029",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K030",
+   "verdict": "covered",
+   "section": "1",
+   "quote": "Users without the Read Only role can choose which rows appear, and in what order, from the Customize page in their settings."
+  },
+  {
+   "id": "K031",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K032",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K033",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K034",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K035",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K036",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K037",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K038",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K039",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K040",
+   "verdict": "covered",
+   "section": "1",
+   "quote": "Users without the Read Only role can choose which rows appear, and in what order, from the Customize page in their settings."
+  },
+  {
+   "id": "K041",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K042",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K043",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K044",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K045",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K046",
+   "verdict": "covered",
+   "section": "10.3",
+   "quote": "The Libraries page lists each library with its type, shared folders and last scan time, and each row can scan, edit or delete its library, with a confirmation before deleting."
+  },
+  {
+   "id": "K047",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K048",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K049",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K050",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K051",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K052",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K053",
+   "verdict": "covered",
+   "section": "10.2",
+   "quote": "Every row except the administrator's own has buttons to edit or delete the user, and pending users also get buttons to resend the invite or finish setting up the account."
+  },
+  {
+   "id": "K054",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K055",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K056",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K057",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K058",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K059",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K060",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K061",
+   "verdict": "not-for-fsd",
+   "reason": "statistics page export, a settings page outside this document"
+  },
+  {
+   "id": "K062",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K063",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K064",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K065",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K066",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K067",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K068",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K069",
+   "verdict": "covered",
+   "section": "10.3",
+   "quote": "Adding a library walks through four steps, General, Folder, Cover Image and Advanced, and the library type can be Manga, Comic, Comic (Flexible), Book, Light Novel or Image."
+  },
+  {
+   "id": "K070",
+   "verdict": "covered",
+   "section": "10.2",
+   "quote": "The Invite button opens a form for the new user's email address, libraries, roles and age restriction."
+  },
+  {
+   "id": "K071",
+   "verdict": "covered",
+   "section": "10.2",
+   "quote": "The Invite button opens a form for the new user's email address, libraries, roles and age restriction."
+  },
+  {
+   "id": "K072",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K073",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K074",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K075",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K076",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K077",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K078",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K079",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K080",
+   "verdict": "not-for-fsd",
+   "reason": "folder browser inside the directory picker modal, internal navigation"
+  },
+  {
+   "id": "K081",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K082",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K083",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K084",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K085",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K086",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K087",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K088",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K089",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K090",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K091",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K092",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K093",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K094",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K095",
+   "verdict": "covered",
+   "section": "10.2",
+   "quote": "Every row except the administrator's own has buttons to edit or delete the user, and pending users also get buttons to resend the invite or finish setting up the account."
+  },
+  {
+   "id": "K096",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K097",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K098",
+   "verdict": "covered",
+   "section": "1",
+   "quote": "Users without the Read Only role can choose which rows appear, and in what order, from the Customize page in their settings."
+  },
+  {
+   "id": "K099",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K100",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K101",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K102",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K103",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K104",
+   "verdict": "covered",
+   "section": "10.2",
+   "quote": "Every row except the administrator's own has buttons to edit or delete the user, and pending users also get buttons to resend the invite or finish setting up the account."
+  },
+  {
+   "id": "K105",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K106",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K107",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K108",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K109",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K110",
+   "verdict": "covered",
+   "section": "10.1",
+   "quote": "A Reset to Default button restores these settings after a confirmation."
+  },
+  {
+   "id": "K111",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K112",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K113",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K114",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K115",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K116",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K117",
+   "verdict": "covered",
+   "section": "10.3",
+   "quote": "The library name must be unique, and a library cannot be saved without at least one folder and at least one file type."
+  },
+  {
+   "id": "K118",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K119",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K120",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K121",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K122",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K123",
+   "verdict": "covered",
+   "section": "9.1",
+   "quote": "The age restriction can only be changed by users with the Change Restriction role."
+  },
+  {
+   "id": "K124",
+   "verdict": "covered",
+   "section": "9.1",
+   "quote": "Changing the email address requires the current password, and the page shows whether the email has been confirmed."
+  },
+  {
+   "id": "K125",
+   "verdict": "covered",
+   "section": "9.1",
+   "quote": "The Account page shows the user's username, email address, password and age restriction, and users with the Read Only role cannot change their username or email address."
+  },
+  {
+   "id": "K126",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K127",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K128",
+   "verdict": "covered",
+   "section": "9.1",
+   "quote": "Changing the password requires the current password and is only open to administrators and users with the Change Password role."
+  },
+  {
+   "id": "K129",
+   "verdict": "covered",
+   "section": "10.3",
+   "quote": "The Libraries page lists each library with its type, shared folders and last scan time, and each row can scan, edit or delete its library, with a confirmation before deleting."
+  },
+  {
+   "id": "K130",
+   "verdict": "not-for-fsd",
+   "reason": "folder browser inside the directory picker modal, internal navigation"
+  },
+  {
+   "id": "K131",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K132",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K133",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K134",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K135",
+   "verdict": "covered",
+   "section": "10.2",
+   "quote": "Every row except the administrator's own has buttons to edit or delete the user, and pending users also get buttons to resend the invite or finish setting up the account."
+  },
+  {
+   "id": "K136",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K137",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K138",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K139",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K140",
+   "verdict": "covered",
+   "section": "1",
+   "quote": "Users without the Read Only role can choose which rows appear, and in what order, from the Customize page in their settings."
+  },
+  {
+   "id": "K141",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K142",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K143",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K144",
+   "verdict": "not-for-fsd",
+   "reason": "settings page the FSD says is outside this document (only Account, Preferences, General, Users and Libraries are covered)"
+  },
+  {
+   "id": "K145",
+   "verdict": "covered",
+   "section": "1",
+   "quote": "Clicking the title of one of these rows opens All Series with a matching filter and sort order."
+  },
+  {
+   "id": "K146",
+   "verdict": "covered",
+   "section": "7.1",
+   "quote": "The Reading Lists screen shows every reading list the user can see, with a filter panel and a jump bar."
+  },
+  {
+   "id": "K147",
+   "verdict": "covered",
+   "section": "7.2",
+   "quote": "A reading list's screen shows its summary, writers, cover artists, tags and number of items, with a Read button whose menu also offers incognito reading."
+  },
+  {
+   "id": "K148",
+   "verdict": "covered",
+   "section": "7.2",
+   "quote": "The list's owner sees an Edit button and, on larger screens, a Reorder button."
+  },
+  {
+   "id": "K149",
+   "verdict": "not-for-fsd",
+   "reason": "pagination control, not a behaviour the FSD needs to describe"
+  },
+  {
+   "id": "K150",
+   "verdict": "covered",
+   "section": "7.2",
+   "quote": "In reorder mode each item gets a remove button, and an Order Numbers switch adds a box to each item for typing its new position."
+  },
+  {
+   "id": "K151",
+   "verdict": "covered",
+   "section": "7.2",
+   "quote": "In reorder mode each item gets a remove button, and an Order Numbers switch adds a box to each item for typing its new position."
+  },
+  {
+   "id": "K152",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K153",
+   "verdict": "covered",
+   "section": "7.2",
+   "quote": "The edit dialog holds the title, which is required and must be unique, the summary, the starting and ending month and year, tags and the cover image, and only administrators see its Promote switch."
+  },
+  {
+   "id": "K154",
+   "verdict": "covered",
+   "section": "7.1",
+   "quote": "The Reading Lists screen shows every reading list the user can see, with a filter panel and a jump bar."
+  },
+  {
+   "id": "K155",
+   "verdict": "covered",
+   "section": "5",
+   "quote": "The Want to Read screen lists the series the user has starred, with a count and the same filter panel and bulk selection as a library screen."
+  },
+  {
+   "id": "K156",
+   "verdict": "covered",
+   "section": "5",
+   "quote": "The Want to Read screen lists the series the user has starred, with a count and the same filter panel and bulk selection as a library screen."
+  },
+  {
+   "id": "K157",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K158",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K159",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K160",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K161",
+   "verdict": "not-for-fsd",
+   "reason": "/all-filters is outside the route prefixes in scope"
+  },
+  {
+   "id": "K162",
+   "verdict": "not-for-fsd",
+   "reason": "/all-filters is outside the route prefixes in scope"
+  },
+  {
+   "id": "K163",
+   "verdict": "covered",
+   "section": "4.2",
+   "quote": "The settings drawer sets the font family, font size, line spacing and margin, along with reading direction, writing style, tap pagination, immersive mode and fullscreen."
+  },
+  {
+   "id": "K164",
+   "verdict": "covered",
+   "section": "4.2",
+   "quote": "selecting text offers to copy, bookmark or annotate it."
+  },
+  {
+   "id": "K165",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K166",
+   "verdict": "covered",
+   "section": "4.2",
+   "quote": "selecting text offers to copy, bookmark or annotate it."
+  },
+  {
+   "id": "K167",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K168",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K169",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K170",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K171",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K172",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K173",
+   "verdict": "not-for-fsd",
+   "reason": "reading navigation and progress saving inside the reader, not a separate option or screen"
+  },
+  {
+   "id": "K174",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K175",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K176",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K177",
+   "verdict": "covered",
+   "section": "8.1",
+   "quote": "The People screen lists people with the number of series and issues each appears in, along with a filter panel and a jump bar, and clicking a person opens that person's page."
+  },
+  {
+   "id": "K178",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K179",
+   "verdict": "covered",
+   "section": "8.3",
+   "quote": "The Tags screen lists every tag with the number of series and issues that carry it, and clicking a tag opens All Series filtered to that tag, though tags that no series uses cannot be clicked."
+  },
+  {
+   "id": "K180",
+   "verdict": "covered",
+   "section": "3.3",
+   "quote": "A chapter's screen shows its release date, writers, cover artists, genres and tags, always has a Reviews tab, and has a Related tab listing the reading lists that contain the chapter when there are any."
+  },
+  {
+   "id": "K181",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K182",
+   "verdict": "not-for-fsd",
+   "reason": "internal refresh of related content"
+  },
+  {
+   "id": "K183",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K184",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K185",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K186",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K187",
+   "verdict": "covered",
+   "section": "2.1",
+   "quote": "The library screen shows the library's name, its actions menu and the number of series it holds."
+  },
+  {
+   "id": "K188",
+   "verdict": "not-for-fsd",
+   "reason": "pagination control, not a behaviour the FSD needs to describe"
+  },
+  {
+   "id": "K189",
+   "verdict": "covered",
+   "section": "2.2",
+   "quote": "The filter panel builds rules on fields such as genre, tag, people, read progress, rating and publication status, and the rules can match all or any of them."
+  },
+  {
+   "id": "K190",
+   "verdict": "covered",
+   "section": "4.1",
+   "quote": "The top bar shows a back button, the chapter title and how far through the series the user is."
+  },
+  {
+   "id": "K191",
+   "verdict": "covered",
+   "section": "4.1",
+   "quote": "The top bar shows a back button, the chapter title and how far through the series the user is."
+  },
+  {
+   "id": "K192",
+   "verdict": "covered",
+   "section": "4.1",
+   "quote": "Users with the Bookmark role, and administrators, can bookmark the current page from the top bar or by double-clicking the page."
+  },
+  {
+   "id": "K193",
+   "verdict": "covered",
+   "section": "4.1",
+   "quote": "Settings changed in the reader can be saved to the reading profile they came from or turned into a new reading profile."
+  },
+  {
+   "id": "K194",
+   "verdict": "not-for-fsd",
+   "reason": "reading navigation and progress saving inside the reader, not a separate option or screen"
+  },
+  {
+   "id": "K195",
+   "verdict": "not-for-fsd",
+   "reason": "reading navigation and progress saving inside the reader, not a separate option or screen"
+  },
+  {
+   "id": "K196",
+   "verdict": "not-for-fsd",
+   "reason": "reading navigation and progress saving inside the reader, not a separate option or screen"
+  },
+  {
+   "id": "K197",
+   "verdict": "not-for-fsd",
+   "reason": "reading navigation and progress saving inside the reader, not a separate option or screen"
+  },
+  {
+   "id": "K198",
+   "verdict": "not-for-fsd",
+   "reason": "reading navigation and progress saving inside the reader, not a separate option or screen"
+  },
+  {
+   "id": "K199",
+   "verdict": "not-for-fsd",
+   "reason": "reading navigation and progress saving inside the reader, not a separate option or screen"
+  },
+  {
+   "id": "K200",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K201",
+   "verdict": "not-for-fsd",
+   "reason": "reading navigation and progress saving inside the reader, not a separate option or screen"
+  },
+  {
+   "id": "K202",
+   "verdict": "covered",
+   "section": "4.1",
+   "quote": "Settings changed in the reader can be saved to the reading profile they came from or turned into a new reading profile."
+  },
+  {
+   "id": "K203",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K204",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K205",
+   "verdict": "covered",
+   "section": "8.2",
+   "quote": "A person's page shows their description, the other names they are known by and their roles."
+  },
+  {
+   "id": "K206",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K207",
+   "verdict": "covered",
+   "section": "8.2",
+   "quote": "A Known For row lists their works, followed by a row for each role they have held."
+  },
+  {
+   "id": "K208",
+   "verdict": "covered",
+   "section": "8.2",
+   "quote": "A Known For row lists their works, followed by a row for each role they have held."
+  },
+  {
+   "id": "K209",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K210",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K211",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K212",
+   "verdict": "not-for-fsd",
+   "reason": "/profile is outside the route prefixes in scope"
+  },
+  {
+   "id": "K213",
+   "verdict": "not-for-fsd",
+   "reason": "/profile is outside the route prefixes in scope"
+  },
+  {
+   "id": "K214",
+   "verdict": "not-for-fsd",
+   "reason": "/profile is outside the route prefixes in scope"
+  },
+  {
+   "id": "K215",
+   "verdict": "not-for-fsd",
+   "reason": "/profile is outside the route prefixes in scope"
+  },
+  {
+   "id": "K216",
+   "verdict": "not-for-fsd",
+   "reason": "/profile is outside the route prefixes in scope"
+  },
+  {
+   "id": "K217",
+   "verdict": "not-for-fsd",
+   "reason": "/profile is outside the route prefixes in scope"
+  },
+  {
+   "id": "K218",
+   "verdict": "not-for-fsd",
+   "reason": "/registration is outside the route prefixes in scope"
+  },
+  {
+   "id": "K219",
+   "verdict": "not-for-fsd",
+   "reason": "/registration is outside the route prefixes in scope"
+  },
+  {
+   "id": "K220",
+   "verdict": "not-for-fsd",
+   "reason": "/registration is outside the route prefixes in scope"
+  },
+  {
+   "id": "K221",
+   "verdict": "not-for-fsd",
+   "reason": "/registration is outside the route prefixes in scope"
+  },
+  {
+   "id": "K222",
+   "verdict": "not-for-fsd",
+   "reason": "/registration is outside the route prefixes in scope"
+  },
+  {
+   "id": "K223",
+   "verdict": "not-for-fsd",
+   "reason": "/registration is outside the route prefixes in scope"
+  },
+  {
+   "id": "K224",
+   "verdict": "not-for-fsd",
+   "reason": "/registration is outside the route prefixes in scope"
+  },
+  {
+   "id": "K225",
+   "verdict": "not-for-fsd",
+   "reason": "/registration is outside the route prefixes in scope"
+  },
+  {
+   "id": "K226",
+   "verdict": "covered",
+   "section": "3.1",
+   "quote": "The series screen shows the cover, summary and ratings, with a Read button labelled Read, Continue or Re-Read depending on the user's progress."
+  },
+  {
+   "id": "K227",
+   "verdict": "covered",
+   "section": "3.1",
+   "quote": "The actions menu marks the series as read or unread, adds it to a reading list or collection, or sends it to a device; administrators also get actions such as scan, refresh metadata and delete."
+  },
+  {
+   "id": "K228",
+   "verdict": "covered",
+   "section": "3.1",
+   "quote": "A star button adds the series to Want to Read or removes it."
+  },
+  {
+   "id": "K229",
+   "verdict": "covered",
+   "section": "3.1",
+   "quote": "The actions menu marks the series as read or unread, adds it to a reading list or collection, or sends it to a device; administrators also get actions such as scan, refresh metadata and delete."
+  },
+  {
+   "id": "K230",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K231",
+   "verdict": "not-for-fsd",
+   "reason": "cover image picker inside the edit series modal, a form option"
+  },
+  {
+   "id": "K232",
+   "verdict": "not-for-fsd",
+   "reason": "internal refresh of related content"
+  },
+  {
+   "id": "K233",
+   "verdict": "not-for-fsd",
+   "reason": "cover image picker inside the edit series modal, a form option"
+  },
+  {
+   "id": "K234",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K235",
+   "verdict": "covered",
+   "section": "3.1",
+   "quote": "The series screen shows the cover, summary and ratings, with a Read button labelled Read, Continue or Re-Read depending on the user's progress."
+  },
+  {
+   "id": "K236",
+   "verdict": "covered",
+   "section": "3.1",
+   "quote": "The Edit button is shown only to administrators, and the Download button only to administrators and users with the Download role."
+  },
+  {
+   "id": "K237",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K238",
+   "verdict": "covered",
+   "section": "3.1",
+   "quote": "The actions menu marks the series as read or unread, adds it to a reading list or collection, or sends it to a device; administrators also get actions such as scan, refresh metadata and delete."
+  },
+  {
+   "id": "K239",
+   "verdict": "not-for-fsd",
+   "reason": "cover image picker inside the edit series modal, a form option"
+  },
+  {
+   "id": "K240",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K241",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K242",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K243",
+   "verdict": "covered",
+   "section": "3.2",
+   "quote": "A volume's screen shows its cover, writers, cover artists, genres and tags, with its own Read and Download buttons and a Chapters tab listing its chapters."
+  },
+  {
+   "id": "K244",
+   "verdict": "not-for-fsd",
+   "reason": "internal refresh of related content"
+  },
+  {
+   "id": "K245",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K246",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K247",
+   "verdict": "covered",
+   "section": "3.2",
+   "quote": "A volume's screen shows its cover, writers, cover artists, genres and tags, with its own Read and Download buttons and a Chapters tab listing its chapters."
+  },
+  {
+   "id": "K248",
+   "verdict": "left-out"
+  },
+  {
+   "id": "K249",
+   "verdict": "left-out"
+  }
+ ]
+}

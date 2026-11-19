@@ -1,0 +1,150 @@
+{
+  "codeTitle": "POST /api/v3/SeasonPass",
+  "entry": "endpoint:Sonarr.Api.V3|POST /api/v3/SeasonPass",
+  "generated": {
+    "bundleHash": "b2b19b58767cc7d954cc1040874e6fb4a4933cefcdec21002210496989eed980",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 12511,
+      "cutOff": 4,
+      "depth": 4,
+      "points": 46
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 8574,
+      "calls": 1,
+      "costUsd": 0.038325,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4367,
+      "outputTokens": 385
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 5977,
+      "calls": 1,
+      "costUsd": 0.043168,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 10451,
+      "outputTokens": 1898
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|POST /api/v3/SeasonPass",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.SeasonPass.SeasonPassController.UpdateAll(Sonarr.Api.V3.SeasonPass.SeasonPassResource)",
+          "endpoint:Sonarr.Api.V3|POST /api/v3/SeasonPass"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|POST /api/v3/SeasonPass"
+        ],
+        "id": "A1",
+        "text": "Accepts a JSON body listing series and optional monitoring options, and updates monitoring for each listed series."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.SeasonPass.SeasonPassController.UpdateAll(Sonarr.Api.V3.SeasonPass.SeasonPassResource)"
+        ],
+        "id": "R1",
+        "text": "A series' monitored flag is changed only when the request supplies a Monitored value for it."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.SeasonPass.SeasonPassController.UpdateAll(Sonarr.Api.V3.SeasonPass.SeasonPassResource)"
+        ],
+        "id": "R2",
+        "text": "When seasons are supplied for a series, each existing season whose number matches gets the supplied monitored value; non-matching seasons are unchanged."
+      },
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.SeasonPass.SeasonPassController.UpdateAll(Sonarr.Api.V3.SeasonPass.SeasonPassResource)"
+        ],
+        "id": "R3",
+        "text": "If the monitoring option is None, the series is set to not monitored."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeMonitoredService.SetEpisodeMonitoredStatus(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.MonitoringOptions)"
+        ],
+        "id": "R4",
+        "text": "If no monitoring options are given, the series is saved without changing its episodes."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeMonitoredService.SetEpisodeMonitoredStatus(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.MonitoringOptions)"
+        ],
+        "id": "R5",
+        "text": "If the monitor type is Skip, nothing further is done and episode monitoring is left as is."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeMonitoredService.SetEpisodeMonitoredStatus(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.MonitoringOptions)"
+        ],
+        "id": "R6",
+        "text": "If the monitor type is Unknown, the legacy monitoring routine is used."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeMonitoredService.SetEpisodeMonitoredStatus(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.MonitoringOptions)"
+        ],
+        "id": "R7",
+        "text": "The last season (number above 0) is monitored when the monitor type is All, or Future with a Continuing or Upcoming series."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeMonitoredService.SetEpisodeMonitoredStatus(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.MonitoringOptions)"
+        ],
+        "id": "R8",
+        "text": "With the Pilot monitor type, the first season (lowest number above 0) is not monitored."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeMonitoredService.SetEpisodeMonitoredStatus(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.MonitoringOptions)"
+        ],
+        "id": "R9",
+        "text": "Any other season is monitored only if it has monitored episodes after the episode update; otherwise it is not monitored."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.SeasonPass.SeasonPassController.UpdateAll(Sonarr.Api.V3.SeasonPass.SeasonPassResource)"
+        ],
+        "id": "S1",
+        "text": "Returns an Accepted response with an empty object body after processing all series."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeMonitoredService.SetEpisodeMonitoredStatus(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.MonitoringOptions)"
+        ],
+        "id": "E1",
+        "text": "Episode monitored flags are set for each series according to the chosen monitor type and the first and last season."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeMonitoredService.SetEpisodeMonitoredStatus(NzbDrone.Core.Tv.Series,NzbDrone.Core.Tv.MonitoringOptions)"
+        ],
+        "id": "E2",
+        "text": "Each series, with its season monitoring changes, is saved through the series service."
+      }
+    ]
+  },
+  "title": "Season Pass bulk update",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

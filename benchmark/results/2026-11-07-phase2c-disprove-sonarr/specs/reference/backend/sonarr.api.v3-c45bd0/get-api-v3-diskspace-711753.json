@@ -1,0 +1,126 @@
+{
+  "codeTitle": "GET /api/v3/diskspace",
+  "entry": "endpoint:Sonarr.Api.V3|GET /api/v3/diskspace",
+  "generated": {
+    "bundleHash": "11be270e25ca2d7257eebc24e466460db4effcac961f040c6251ffb462cff691",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 12130,
+      "cutOff": 17,
+      "depth": 4,
+      "points": 20
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 7992,
+      "calls": 1,
+      "costUsd": 0.032677,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2448,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 5879,
+      "calls": 1,
+      "costUsd": 0.037836,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 8177,
+      "outputTokens": 1404
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|GET /api/v3/diskspace",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/diskspace",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.DiskSpace.DiskSpaceController.GetFreeSpace"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|GET /api/v3/diskspace"
+        ],
+        "id": "A1",
+        "text": "A caller sends GET /api/v3/diskspace to get free and total space for the relevant disks."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DiskSpace.DiskSpaceService.GetSeriesRootPaths"
+        ],
+        "id": "R1",
+        "text": "Series root paths are found by taking each series path that is valid for the current OS, finding its best root folder, keeping only root folders that exist, and using their path roots, with duplicates removed."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DiskSpace.DiskSpaceService.GetFixedDisksRootPaths",
+          "Sonarr.Core|M:NzbDrone.Core.DiskSpace.DiskSpaceService.GetFreeSpace"
+        ],
+        "id": "R2",
+        "text": "Additional disks are only those mounts of type Fixed or Network whose root directory does not match the special-drive pattern, and which are not already series roots."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DiskSpace.DiskSpaceService.GetDiskSpace(System.Collections.Generic.IEnumerable{System.String},System.Boolean)"
+        ],
+        "id": "R3",
+        "text": "A path is skipped if its available space or total size cannot be determined."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DiskSpace.DiskSpaceService.GetDiskSpace(System.Collections.Generic.IEnumerable{System.String},System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.DiskSpace.DiskSpaceService.GetFreeSpace"
+        ],
+        "id": "R4",
+        "text": "If reading a path fails, that path is omitted. A warning \"Unable to get free space for: <path>\" is logged for series roots but not for the additional fixed disks."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.DiskSpace.DiskSpaceController.GetFreeSpace",
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.DiskSpace.DiskSpaceResourceMapper.MapToResource(NzbDrone.Core.DiskSpace.DiskSpace)"
+        ],
+        "id": "S1",
+        "text": "Returns a JSON list of disk space entries, each with Path, Label, FreeSpace and TotalSpace."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DiskSpace.DiskSpaceService.GetFreeSpace",
+          "Sonarr.Core|M:NzbDrone.Core.DiskSpace.DiskSpaceService.GetFixedDisksRootPaths"
+        ],
+        "id": "S2",
+        "text": "The list covers the path roots of folders holding series, plus the root directories of fixed or network drives that are not already included."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DiskSpace.DiskSpaceService.GetFreeSpace"
+        ],
+        "id": "S3",
+        "text": "Entries are sorted by path, ignoring case."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.DiskSpace.DiskSpaceService.GetDiskSpace(System.Collections.Generic.IEnumerable{System.String},System.Boolean)"
+        ],
+        "id": "E1",
+        "text": "Failures reading a series root path write a warning to the log. Otherwise the call only reads data."
+      }
+    ]
+  },
+  "title": "Disk Space (GET /api/v3/diskspace)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

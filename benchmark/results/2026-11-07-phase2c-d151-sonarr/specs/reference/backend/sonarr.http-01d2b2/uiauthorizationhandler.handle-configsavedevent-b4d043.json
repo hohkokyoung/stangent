@@ -1,0 +1,106 @@
+{
+  "codeTitle": "UiAuthorizationHandler.Handle(ConfigSavedEvent)",
+  "entry": "Sonarr.Http|M:NzbDrone.Http.Authentication.UiAuthorizationHandler.Handle(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)",
+  "generated": {
+    "bundleHash": "159a4c1830b3a48a008e4832244cf8233c5aebf19950997c7563af94be37db58",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 8688,
+      "cutOff": 5,
+      "depth": 4,
+      "points": 11
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 5732,
+      "calls": 1,
+      "costUsd": 0.027777,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 4725,
+      "outputTokens": 467
+    },
+    "writer": {
+      "cacheReadTokens": 2756,
+      "cacheWriteTokens": 9216,
+      "calls": 2,
+      "costUsd": 0.054134,
+      "inputTokens": 4,
+      "model": "claude-sonnet-5-5",
+      "ms": 10733,
+      "outputTokens": 1671
+    }
+  },
+  "group": "Sonarr.Http",
+  "id": "Sonarr.Http|M:NzbDrone.Http.Authentication.UiAuthorizationHandler.Handle(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Http|M:NzbDrone.Http.Authentication.UiAuthorizationHandler.Handle(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)"
+        ],
+        "id": "A1",
+        "text": "When a config-saved event is received, the handler re-reads the authentication-required setting from the config service and stores it as the current value."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.GetValue(System.String,System.Object,System.Boolean)"
+        ],
+        "id": "R1",
+        "text": "Config values are read through a cache; on a cache miss the value comes from the config file's element with that key."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.GetValue(System.String,System.Object,System.Boolean)"
+        ],
+        "id": "R2",
+        "text": "If the key is not found exactly once in the config file, the default value is returned, and it is also saved to the config file when persist is true (the default)."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.GetValueEnum``1(System.String,``0,System.Boolean)"
+        ],
+        "id": "R3",
+        "text": "Enum config values are parsed from the stored text, ignoring case."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Http|M:NzbDrone.Http.Authentication.UiAuthorizationHandler.Handle(NzbDrone.Core.Configuration.Events.ConfigSavedEvent)"
+        ],
+        "id": "E1",
+        "text": "The handler's stored authentication-required field is overwritten with the value read from the config service."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Configuration.ConfigFileProvider.GetValue(System.String,System.Object,System.Boolean)"
+        ],
+        "id": "E2",
+        "text": "If the authentication-required setting is missing from the config file, the default value may be written to the config file."
+      }
+    ]
+  },
+  "title": "UI authorization refresh on config save",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": [
+      {
+        "explanation": "The handler only assigns the field. The slice doesn't show where the field is read, so it can't show that later authorization decisions use it.",
+        "id": "F1",
+        "kind": "unsupported",
+        "outcome": "fixed",
+        "reason": "Removed the claim about later authorization decisions; the statement now says only that the field is overwritten.",
+        "statement": "E1",
+        "statementText": "The handler's cached authentication-required flag is updated, so later authorization decisions use the newly saved setting."
+      }
+    ]
+  }
+}

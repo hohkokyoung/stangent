@@ -1,0 +1,118 @@
+{
+  "codeTitle": "DELETE /api/v3/series/editor",
+  "entry": "endpoint:Sonarr.Api.V3|DELETE /api/v3/series/editor",
+  "generated": {
+    "bundleHash": "ddf6ec89ccffcc5cb1050fec7ace7c4bd86118d74d192f9c9368636262e79ff2",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 21875,
+      "cutOff": 8,
+      "depth": 4,
+      "points": 30
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 15025,
+      "calls": 1,
+      "costUsd": 0.060809,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 1980,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 12104,
+      "calls": 1,
+      "costUsd": 0.070546,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 11398,
+      "outputTokens": 2185
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|DELETE /api/v3/series/editor",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesEditorController.DeleteSeries(Sonarr.Api.V3.Series.SeriesEditorResource)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.DeleteSeries(System.Collections.Generic.List{System.Int32},System.Boolean,System.Boolean)"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|DELETE /api/v3/series/editor"
+        ],
+        "id": "A1",
+        "text": "Deletes the series listed in the request body's series ids, passing along the delete-files and add-import-list-exclusion flags."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.DeleteSeries(System.Collections.Generic.List{System.Int32},System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.Get(System.Collections.Generic.IEnumerable{System.Int32})",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.DeleteMany(System.Collections.Generic.IEnumerable{System.Int32})"
+        ],
+        "id": "R1",
+        "text": "The series records are loaded by id first, then all of the given ids are deleted in one repository call."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V3|M:Sonarr.Api.V3.Series.SeriesEditorController.DeleteSeries(Sonarr.Api.V3.Series.SeriesEditorResource)"
+        ],
+        "id": "S1",
+        "text": "Returns an empty JSON object after the deletion call completes."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.DeleteSeries(System.Collections.Generic.List{System.Int32},System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Datastore.IBasicRepository`1.DeleteMany(System.Collections.Generic.IEnumerable{System.Int32})"
+        ],
+        "id": "E1",
+        "text": "Removes the series records from the datastore."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesService.DeleteSeries(System.Collections.Generic.List{System.Int32},System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.Events.SeriesDeletedEvent.#ctor(System.Collections.Generic.List{NzbDrone.Core.Tv.Series},System.Boolean,System.Boolean)",
+          "Sonarr.Core|M:NzbDrone.Core.Messaging.Events.IEventAggregator.PublishEvent``1(``0)"
+        ],
+        "id": "E2",
+        "text": "Publishes a SeriesDeletedEvent carrying the deleted series, the delete-files flag and the add-import-list-exclusion flag."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.MediaFileDeletionService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaFiles.MediaFileService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Extras.Files.ExtraFileService`1.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.EpisodeService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Tv.SeriesTranslationService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.History.HistoryService.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Blocklisting.BlocklistService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.ImportLists.Exclusions.ImportListExclusionService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.MediaCover.MediaCoverService.HandleAsync(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.History.DownloadHistoryService.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.Pending.PendingReleaseService.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.TrackedDownloadService.Handle(NzbDrone.Core.Tv.Events.SeriesDeletedEvent)"
+        ],
+        "id": "E3",
+        "text": "Handlers of the deletion event include media file deletion, media files, extra files, episodes, translations, history, blocklist, import list exclusions, media covers, notifications, download history, pending releases and tracked downloads."
+      }
+    ]
+  },
+  "title": "Bulk delete series (series editor)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,1 @@
+Sonarr.Core|M:NzbDrone.Core.Extras.Metadata.Consumers.Plex.PlexMetadata.SeriesMetadata(NzbDrone.Core.Tv.Series,NzbDrone.Core.Extras.Metadata.SeriesMetadataReason): 1715 test(s), the proof's test among them (Sonarr.Core.Test|M:NzbDrone.Core.Test.Extras.Metadata.Consumers.Plex.SeriesMetadataFixture.should_use_special_episode_number_in_plexmatch_for_specials)

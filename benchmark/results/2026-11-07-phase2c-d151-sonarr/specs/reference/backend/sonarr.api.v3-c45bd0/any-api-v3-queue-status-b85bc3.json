@@ -1,0 +1,122 @@
+{
+  "codeTitle": "ANY /api/v3/queue/status",
+  "entry": "endpoint:Sonarr.Api.V3|ANY /api/v3/queue/status",
+  "generated": {
+    "bundleHash": "b2a09f5b42a0cfcd6307c9cf25b3fa820643c2e454dbd08df430c8bb01487786",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 9892,
+      "cutOff": 0,
+      "depth": 4,
+      "points": 3
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 6647,
+      "calls": 1,
+      "costUsd": 0.028627,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2735,
+      "outputTokens": 186
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4731,
+      "calls": 1,
+      "costUsd": 0.031384,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 7461,
+      "outputTokens": 1218
+    }
+  },
+  "group": "Sonarr.Api.V3",
+  "id": "endpoint:Sonarr.Api.V3|ANY /api/v3/queue/status",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)",
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/queue/status"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V3|ANY /api/v3/queue/status"
+        ],
+        "id": "A1",
+        "text": "A caller requests a single resource by id; the call is answered with the resource or a Not Found result."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R1",
+        "text": "For POST and PUT requests, every resource in the action arguments (single or a collection) is validated before the action runs."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R2",
+        "text": "On a PUT, if the body resource has Id 0 and the route has an id, the route id is used as the resource Id."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R3",
+        "text": "The id argument is validated when the action carries an id-validation attribute and validation is not skipped."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "R4",
+        "text": "Validation can be skipped (including shared validation) through a skip-validation attribute on the action."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S1",
+        "text": "Returns the resource for the given id as JSON with HTTP 200 when it is found."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.GetResourceByIdWithErrorHandler(System.Int32)"
+        ],
+        "id": "S2",
+        "text": "Returns HTTP 404 Not Found when no resource exists for the id (a model-not-found error is raised)."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "E1",
+        "text": "If the controller or action is marked deprecated, a warning \"API call made to deprecated endpoint from {user agent}\" is logged."
+      },
+      {
+        "cites": [
+          "Sonarr.Http|M:Sonarr.Http.REST.RestController`1.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)"
+        ],
+        "id": "E2",
+        "text": "For deprecated endpoints the response gets a header \"Deprecation: true\"."
+      }
+    ]
+  },
+  "title": "Queue status endpoint (generic REST get-by-id handling)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

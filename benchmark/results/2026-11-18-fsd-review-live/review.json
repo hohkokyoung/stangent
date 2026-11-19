@@ -1,0 +1,382 @@
+{
+  "commit": "f4abc65c5e04bf2ccdbd681550c92a3ed1b50893",
+  "contract": "fsd-review",
+  "costUsd": 0.400235,
+  "counts": {
+    "conflict": 5,
+    "gap": 6,
+    "match": 9,
+    "undocumented": 0
+  },
+  "doc": "kavita-fsd",
+  "dropped": [],
+  "effort": "medium",
+  "findings": [
+    {
+      "evidence": [
+        "UI/Web/src/app/library-detail"
+      ],
+      "fsdQuote": "A Random button on the library screen opens a randomly chosen series from that library.",
+      "id": "F-001",
+      "note": "No random-series button exists in the library detail screen.",
+      "runs": [
+        2
+      ],
+      "screen": null,
+      "section": "2.1",
+      "sectionId": "S-0003",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/manga-reader"
+      ],
+      "fsdQuote": "A slideshow mode turns the page automatically after a set number of seconds.",
+      "id": "F-002",
+      "note": "No slideshow feature is found in the UI code.",
+      "runs": [
+        2
+      ],
+      "screen": null,
+      "section": "4.1",
+      "sectionId": "S-0011",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/manga-reader/_components/manga-reader/manga-reader.component.ts:328-329"
+      ],
+      "fsdQuote": "Brightness can be set anywhere from 0% to 100%.",
+      "id": "F-003",
+      "note": "The brightness (darkness) value is validated with a minimum of 10 and a maximum of 100.",
+      "runs": [
+        2
+      ],
+      "screen": null,
+      "section": "4.1",
+      "sectionId": "S-0011",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/book-reader"
+      ],
+      "fsdQuote": "Selected text can be read aloud using the device's text-to-speech voice.",
+      "id": "F-004",
+      "note": "No text-to-speech or speechSynthesis usage exists in the UI.",
+      "runs": [
+        2
+      ],
+      "screen": null,
+      "section": "4.2",
+      "sectionId": "S-0012",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/reading-list"
+      ],
+      "fsdQuote": "The owner can share a reading list through a public link that opens without signing in.",
+      "id": "F-005",
+      "note": "No public sharing link for reading lists exists in the code.",
+      "runs": [
+        2
+      ],
+      "screen": null,
+      "section": "7.2",
+      "sectionId": "S-0019",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "Kavita.Server/Extensions/IdentityServiceExtensions.cs:59",
+        "Kavita.Models/DTOs/Account/ResetPasswordDto.cs:16"
+      ],
+      "fsdQuote": "A new password must be at least 8 characters long.",
+      "id": "F-006",
+      "note": "The minimum password length is 6, set in the Identity options and in the DTOs.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "9.1",
+      "sectionId": "S-0025",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "Kavita.Server/Controllers/AccountController.cs:130-136"
+      ],
+      "fsdQuote": "Changing the password requires the current password and is only open to administrators and users with the Change Password role.",
+      "id": "F-007",
+      "note": "The server allows a self password change only for the ChangePassword role or admin, and requires the old password for non-admins.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "9.1",
+      "sectionId": "S-0025",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/shared/_services/download.service.ts:74-76"
+      ],
+      "fsdQuote": "When Prompt on Download is on, Kavita asks for confirmation before any download larger than 500 MB.",
+      "id": "F-008",
+      "note": "The download size warning threshold is 100 MB (104,857,600 bytes), not 500 MB.",
+      "runs": [
+        2
+      ],
+      "screen": null,
+      "section": "9.2",
+      "sectionId": "S-0026",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/user-settings/manga-user-preferences/manage-user-preferences.component.ts:109"
+      ],
+      "fsdQuote": "Prompt for Re-Reads sets after how many days without progress Kavita offers to re-read, and 0 turns the prompt off.",
+      "id": "F-009",
+      "note": "A promptForRereadsAfter field exists with minimum 0.",
+      "runs": [
+        2
+      ],
+      "screen": null,
+      "section": "9.2",
+      "sectionId": "S-0026",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "Kavita.Server/Controllers/ServerController.cs:79",
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:60-79"
+      ],
+      "fsdQuote": "A maintenance mode switch blocks all non-admin users from signing in until it is turned off.",
+      "id": "F-010",
+      "note": "I found no maintenance mode setting or switch. The only 'maintenance' hit in the server code is a comment about nightly maintenance work.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:114-133"
+      ],
+      "fsdQuote": "Changes on this page are stored only when the administrator presses Save.",
+      "id": "F-011",
+      "note": "The General settings page has no Save step: form changes are auto-saved after a 300 ms debounce whenever the form is valid.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:91-98"
+      ],
+      "fsdQuote": "Days of Backups and Days of Logs each accept a value from 1 to 30",
+      "id": "F-012",
+      "note": "Total backups and total logs are validated with min 1 and max 30.",
+      "runs": [
+        1
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:95"
+      ],
+      "fsdQuote": "Cache Size must be at least 50 MB",
+      "id": "F-013",
+      "note": "Cache size has a minimum validator of 50.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:159-169",
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:159-168"
+      ],
+      "fsdQuote": "A Reset to Default button restores these settings after a confirmation.",
+      "id": "F-014",
+      "note": "resetToDefaults asks for confirmation and then calls the server reset.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/manage-settings/manage-settings.component.ts:92-98",
+        "Kavita.Database/Seed.cs:174-175"
+      ],
+      "fsdQuote": "Days of Backups and Days of Logs each accept a value from 1 to 30 and both default to 30.",
+      "id": "F-015",
+      "note": "Both fields are validated min 1 / max 30 and seeded with 30.",
+      "runs": [
+        2
+      ],
+      "screen": null,
+      "section": "10.1",
+      "sectionId": "S-0028",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/admin/invite-user",
+        "Kavita.Server/Controllers/AccountController.cs:1326"
+      ],
+      "fsdQuote": "An invite can be given an expiry date, after which its link stops working.",
+      "id": "F-016",
+      "note": "The invite user form has no expiry date field.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "10.2",
+      "sectionId": "S-0029",
+      "state": "gap"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:157"
+      ],
+      "fsdQuote": "Manage Collections is turned on by default for a new library.",
+      "id": "F-017",
+      "note": "The new library form defaults manageCollections to false.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "10.3",
+      "sectionId": "S-0030",
+      "state": "conflict"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:152-154"
+      ],
+      "fsdQuote": "Include in Dashboard and Include in Search are turned on by default.",
+      "id": "F-018",
+      "note": "The new library form defaults both includeInDashboard and includeInSearch to true.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "10.3",
+      "sectionId": "S-0030",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:266-280"
+      ],
+      "fsdQuote": "Each type starts with its own file types:",
+      "id": "F-019",
+      "note": "The default file types per library type are Manga: Archive and Images; Comic and ComicVine: Archive; Book: Pdf and Epub; Images: Images; Light Novel: Epub. This matches the table.",
+      "runs": [
+        1,
+        2
+      ],
+      "screen": null,
+      "section": "10.3",
+      "sectionId": "S-0030",
+      "state": "match"
+    },
+    {
+      "evidence": [
+        "UI/Web/src/app/sidenav/_modals/library-settings-modal/library-settings-modal.component.ts:186-187"
+      ],
+      "fsdQuote": "a library cannot be saved without at least one folder and at least one file type.",
+      "id": "F-020",
+      "note": "Validation checks both folders and file types are non-empty.",
+      "runs": [
+        2
+      ],
+      "screen": null,
+      "section": "10.3",
+      "sectionId": "S-0030",
+      "state": "match"
+    }
+  ],
+  "fsdVersion": "781973da1378f7804d05e38d0ccaf8693e6c1c86b3de76d65d0638a9e9c3df66",
+  "model": "claude-sonnet-5-5",
+  "runs": [
+    {
+      "dropped": 0,
+      "findings": 11,
+      "retried": false,
+      "run": 1,
+      "usage": {
+        "cacheReadTokens": 126911,
+        "cacheWriteTokens": 23459,
+        "calls": 1,
+        "costUsd": 0.16515,
+        "inputTokens": 16,
+        "model": "claude-sonnet-5-5",
+        "ms": 37158,
+        "outputTokens": 4590,
+        "settings": {
+          "agent": "stangent-fsd-reviewer",
+          "claudeVersion": "2.1.292 (Claude Code)",
+          "effort": "medium",
+          "mode": "agentic",
+          "model": "claude-sonnet-5-5"
+        }
+      }
+    },
+    {
+      "dropped": 0,
+      "findings": 18,
+      "retried": false,
+      "run": 2,
+      "usage": {
+        "cacheReadTokens": 233347,
+        "cacheWriteTokens": 26541,
+        "calls": 1,
+        "costUsd": 0.235085,
+        "inputTokens": 26,
+        "model": "claude-sonnet-5-5",
+        "ms": 68777,
+        "outputTokens": 8220,
+        "settings": {
+          "agent": "stangent-fsd-reviewer",
+          "claudeVersion": "2.1.292 (Claude Code)",
+          "effort": "medium",
+          "mode": "agentic",
+          "model": "claude-sonnet-5-5"
+        }
+      }
+    }
+  ],
+  "tokens": 423110,
+  "version": 2
+}

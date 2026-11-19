@@ -1,9 +1,9 @@
 ---
 phase: 2b
 name: fsd
-status: done
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3, impact-report: 5, reference-page: 1 }
-provides: { source-document: 1, trace-links: 1 }
+status: needs review
+consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4, impact-report: 5, reference-page: 1, reference-lines: 1, evidence: 2 }
+provides: { source-document: 4, trace-links: 4, table-map: 1 }
 ---
 
 # Phase 2b · FSD and discrepancies
@@ -230,3 +230,198 @@ unsupported or misleading, all fixed: a "judgement call" remark with no evidence
 writer-model decision missing from decisions.md (D66 refined), what most false alarms are (6 of 9 are disputed
 agrees, not "a field without its meaning"), the hand-read's verifier comparison (A3's error is an endpoint link,
 which the verifier isn't asked to judge), and 0.70 × 9/20 written for 62/89 × 9/20. It also confirmed 121 tests pass.
+
+### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
+v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.
+Checked 2026-11-04 (D20): by grep, `Stangent.Spec` reads none of the new values. All tests pass, so this now consumes `code-graph: 4`.
+
+## Overhaul (2026-11-04)
+
+Slice 2.1 of the overhaul, D116: the Word importer stops failing silently. Code only, no AI, and the same file gives the same bytes.
+
+**Built.** Details are in `docs/spec.md`.
+- Tracked changes stop the import with `docx_tracked_changes` and a count. `--accept-changes` imports the accepted view, and moved text comes in once.
+- Hidden text and hidden table rows are left out and listed. A hidden paragraph mark alone hides no words, so its text stays and is listed.
+- Comments are listed one per line, with section, author and state, in a shape `DocxComment.Parse` reads back.
+- Footnotes and endnotes come in labelled at the end of their section.
+- Embedded files, charts, SmartArt, text boxes, content controls, fields, equations and symbols are named by kind and section; readable text stays.
+- A nested table keeps its words and is listed. A cell merged down rows repeats its value and is listed.
+- A completeness check runs on every import: the file's words, read apart from the converter, per section, against the words rendered.
+- Causes the check would have flagged, fixed: rows and cells inside a content control were lost, a text box in a table cell doubled, and a text box's words ran into the words around it. Also fixed: a row starting part-way across the grid slid its cells left.
+- Leftovers: a dangling `*.spec.ts` link no longer crashes `AppSession.RelatedSpecs`, and a command name with a hyphen no longer loses its telemetry event.
+
+**Byte check.** Sonarr's planted FSD, against `HEAD` (9580ebd) before the change: `document.md` and `document.json` are byte-identical, `problems` is still empty, and a test pins the hash. The completeness check flags nothing on it, and nothing on any `DocxWriter` file in the tests. There's no other `.docx` in the repo.
+
+**Tested.** Each rule has a hand-built file in `FsdDocxTests`. With the rules removed together in a temporary build, 22 tests failed, at least one for each rule removed. The accepted view's handling of moved text wasn't part of that run.
+
+**Known gaps.**
+- No file saved by Word itself has been through this: Sonarr's was written by a script. A real one may flag something new.
+- A merge across columns leaves blanks, not its value. The brief assumed it repeats; changing it would change imported text, so it stays.
+- `w:cellMerge` counts as a tracked change but isn't applied. White text isn't listed. Table styles aren't read for hidden or struck text.
+- A file imported earlier stays `unchanged` with no new lines until its bytes change, even if tracked changes had been resolved silently.
+- Ticket attachments read the accepted view with nothing listed: the bundle has no place for it without a contract change.
+
+**Impact on other phases.** `source-document` stays v1, with only its `problems` description widened, so no phase goes to `needs review`. `ticket pull` passes `acceptChanges`, so a tracked change can't stop a pull, and an attachment's text now follows these rules too: moved text once, hidden text out, footnotes in. 2.2 can match against the same text. 2.5 can read comments through `DocxComment.Parse`. Telemetry's event name for `graph screen-tests` is now `stangent.graph.screen_tests`; `stangent.command` keeps the hyphen.
+
+### Slice 2.2: stable section ids and a version diff (D117)
+
+Code only, no AI. Details are in `docs/spec.md`.
+
+**Built.**
+- Each section gets a permanent id (`S-0001`) beside its number, from a ledger per document. `id` stays what it was, because saved hashes use it. Never reused; a removed id stays marked removed.
+- A document imported earlier gets its ids on its next import, the same file included, which stays `unchanged`. There's no first-read change: a read never writes.
+- A changed file waits in `specs/fsd/<doc>/candidate/` with `SECTION_DIFF.md` and `section-diff.json`, and the current version keeps serving. A first import goes straight in.
+- Matching uses exact signals only, with no scores. A shared sentence never matches anything: it makes a section doubtful. A sentence counts with at least 4 words, the same floor `Sentences.Cited` uses.
+- `fsd diff`, `fsd resolve` and `fsd promote`. `decided_by` comes from git, and `promote` refuses with `doubtful_sections_remain`. Two new lifecycles are on the state module, `fsd-candidate` and `fsd-section-match`, with history in `specs/fsd/history.jsonl`.
+- Promotion carries by code: trace entries (with their new id, decision kept), feature files, quotes, questions, parents, run keys. Each removed section's items are listed and kept. The existing drop-back (D58) runs at once.
+- `TraceCheck` and `Attribute` find a moved entry's copy in the base file by its link without the section, so a promotion doesn't look like a typed `decided_by` or a new decision.
+- `resolve --removed` is beyond the brief: in a merge, a section of the current version has no candidate section to settle it from.
+
+**The hash bar.** Met. Against the build before this slice (6b3c9d4), on Sonarr's FSD: `document.md` byte-identical, `document.json` identical once the ids are taken off, all 15 requirement input hashes the same, measured by running both builds. A test pins the two file hashes, upgrades a saved document in place, and shows the saved run, link id and judge hash all unchanged and `req prepare` answering `current`.
+
+**The measure.** A planted edit of `benchmark/fsd/sonarr/`, **not a real version change**, so "proven on a real version change" stays open (D56). Planted: one chapter inserted, one section moved, one reworded, one split in two.
+
+| Outcome | Planted | Found |
+|---|---|---|
+| Unchanged | 18 | 18 |
+| Moved | 1 | 1 |
+| Renamed | 0 | 0 |
+| Modified | 1 | 1 |
+| Added | 1 | 1 |
+| Removed | 0 | 0 |
+| Doubtful | 3 (the split: its old section and two new ones) | 3 |
+
+7 sections changed number. The numbers follow from the edit script, written before the first run, so it's a check that the rules do what they say, not of how a real editor's changes look.
+
+**Tested.** 41 tests in `FsdVersionTests`, including one reviewed pair pinned whole. 22 single changes to the code, each removing a rule or leaking the new id into a bundle, each failed at least one test.
+
+**Known gaps.**
+- No real document with two versions has been through it.
+- Body text is compared exactly. A section whose text mentions another section's number ("see 4.2") counts as modified after a renumbering, and so does one whose image file name shifted. That's a person's read and possibly a paid re-run, never a wrong match.
+- A sentence repeated across a document makes a new section doubtful with each section holding it. That's noise for a person, never a wrong match.
+- A renamed section's links and items follow it, but its runs go again at the next prepare, because the AI read its title. `runAgain` lists them.
+- `finderInputs` isn't carried: working it out needs the page set, which promotion doesn't load. A renumbered section with no candidates by name runs the finder again.
+- A promotion isn't one atomic write. A crash part-way leaves references moved and the old document in place, and running it again would move them twice. The files are committed, so `git checkout` undoes it.
+- A `same_as` keeps the id, so a split's second half is a new section. Its share of the old section's links isn't told apart.
+- D15's version dates and draft or approved status aren't built: a candidate is promoted by a person, whichever is newer.
+- Trace history is by entry id, so a moved entry's old lines stay under the old id. `promotions.jsonl` holds the pairs.
+- `S-0001` shares its shape with a requirement scenario's id. They live in different files per document and no command takes both.
+- A deleted ledger catches up with the live ids only, as requirement ids do. Don't delete it.
+
+**Impact on other phases.** `source-document` went to v2 in this file. 2c and 3 were each checked by grep and moved to `source-document: 2`, each with its line. Neither reads what changed, and neither goes to `needs review`. `fsd import`'s `replacedSections` and `replaced` status are gone; nothing outside the tests read them. Later slices can cite the permanent id; links and requirements still cite the number.
+
+### Fix round after the fresh check (2026-11-04)
+
+**Found, one line each, all fixed.**
+- A removed section's trace entry kept its old number, so it read as the new section with that number, and promotion's `trace check` then dropped its decision. Now it takes the removed mark, keeps its decision and `decided_by`, is reported in `carried.removed[].decisions`, and is flagged by `trace check`. While there: a resolution draft crashed on a section it couldn't find, and a removed section's link made a screen count as documented.
+- Text in an `mc:Fallback` with no `mc:Choice` was dropped with `problems` empty. Now the converter and the completeness check read it, inline and as blocks.
+- A candidate couldn't be thrown away, and re-importing the current file left it waiting silently. Now there's `stangent fsd discard <doc>`, through the state module, and the `unchanged` result says plainly that a candidate is waiting and how to discard it.
+- A rewritten section under a repeated heading came out as `added` plus `removed`, setting its id aside silently. Now a section left on both sides with the same heading path is doubtful, even with no sentence shared; a unique path is still `modified`.
+- A `.docx` ticket attachment with no headings stopped the whole pull, as the note above said: confirmed by a test. Now it reads flat, and a damaged one is listed with `notConverted`. A PDF attachment never stopped it: it's listed by name, type and size (D72).
+
+**Still untested.** No file saved by Word itself has been through any of this, the `mc:Fallback` rule included.
+
+### Reopened 2026-11-04 · Findings carry evidence and a severity (overhaul 2.4, D118)
+
+**Built.** `TraceFindings`: `trace check` gives each finding an `X-0001`, a first severity of `ungraded`, and `evidence` records filled by code, then validates them with `EvidenceValidator` and the rules it can't know. `Severity` in Core, one scale. `finding-severity` on the state module: only a person grades, seen at `trace attribute`, with `severity_by` from git. `trace check` lists ids and severity in `findings`.
+
+**Separation (D53).** Checked, and it held: a page statement comes from the page's JSON only, and a writer can't cite `X-0001`, because it isn't in the graph. New: `trace check` rejects evidence citing a finding. Each has a test.
+
+**The hash bar.** `SavedWorkTests` passes with a finding stamped and graded in the file. The judge's input files for that section hold no `X-` id, severity or note. An entry's id is unchanged. Tickets reads named fields of an entry only, none of them new.
+
+**Measures, no AI.** A plain `trace check` on a temp copy of Sonarr's real `trace.yaml`, written by v2 (never written to that clone): 134 entries, 90 findings, each issued an id and valid evidence on the first try, no problems. All 134 ids, decisions and `decided_by` unchanged. A second check passes. The old build and this one give the same 755 input hashes on that copy.
+
+**Contracts (D20).** `trace-links` v2 → v3, additive. This file still said v1, though v2 shipped with 2c; it says v3 now. 2c and 3 were checked by grep and moved, each with its line. This phase now consumes `evidence` v1 and `reference-lines` v1.
+
+**Fresh check (2.4).** Found: evidence was written once and never refreshed, hand-typed evidence passed as fact, a partial type's note was lost, and a decision survived a rephrase that reversed its statement.
+
+**This round fixed them (D118).** Evidence is derived again on every check and refused by name when typed, it carries the partial type's note, and `decided_on` drops a decision whose statement's text changed. No input hash moved.
+
+**Known gaps.**
+- Every finding is `ungraded` until a person edits the file. There's no command for it, and no AI suggestion until 2.5.
+- Findings are still off by default (D68), and the false-alarm rate behind that hasn't changed.
+- ~~Evidence isn't refreshed.~~ Fixed in this slice's fix round. As first built: a code citation stays at the commit it was stamped with, and a document's `contentHash` at the version read, after a page or a document moves on. A new record is added only where one is missing.
+- `fsd undocumented` and `fsd check` write findings with no id: the id comes at the next `trace check`. `fsd undocumented` still returns a count, with no ids.
+- A finding whose link is judged again with other quotes has a new entry id, so it's a new finding with a new `X-` id and `ungraded`, as a decision drops back today.
+- No per-chapter report: on `roadmap.md`'s list, still to do.
+- `severity_by` shows who merged it, the same limit `decided_by` has.
+
+**Impact on other phases.** 2c and 3 read entries by field and ignore what's new, so both move to `trace-links: 3` with no `needs review`.
+
+### 2.5 The disprove step · 2.6 Leftovers (2026-11-04, D119)
+**Built.** Details are in `docs/spec.md`; the re-score, its estimate and 2.6's outcomes are in `phases/2c-spec.md`.
+- `fsd disprove prepare|check|estimate`, `finding-disprover-output` v1, `stangent-finding-disprover`, a stage in `spec-run.sh --fsd` and `spec-run.sh --disprove`. Off unless `fsd.disprove` is on, set like `findings` (D68).
+- A bundle built by code: the claim in a fixed sentence, the section, the page's statements, the code at numbered lines, what couldn't be shown, the entry points. No finder, no note, no check (D61).
+- Five verdicts, moved only by code on the state module, each routed: `developer-confirm` (then `closed` once a person confirms), `developer`, `ba`.
+- `page-wrong`, `suggestedSeverity`, and the listing's `goesTo`, `verdict`, `label`, `quote`, `at` and `queues`.
+
+**The hash bar: met.** `SavedWorkTests.Saved` has the same 25 values, and `DisproveTests` compares them again after a verdict is written. On a temp copy of Sonarr's real data, all 16 sections read `current` to `fsd prepare`, with no AI. A `trace.yaml` from before this step reads and checks, and `trace check` passes on the real 134 entries.
+
+**It isn't shown to help.** No paid run has happened. 2c's numbers (24 of 30, 44%) still stand as the only measured ones.
+
+**Contracts (D20).** `trace-links` v3 grew in place, unshipped, so no bump. New: `finding-disprover-output` v1, `finding-verdict`, `finding-review` and `disprove-run` on the state module. Readers of `decision` were checked by grep: `Bundle`, `Drafts` and `FsdCarry` carry it as text; `FsdImpact.verified` now reads `page-wrong` as not verified; `trace approve` skips anything decided. A closed finding leaves the ticket bundle, a draft and impact, only when the setting has made one, so Phase 3 has no `needs review`.
+
+**Known gaps.**
+- The step can only remove findings, so it can't raise found to 27.
+- `undocumented` screens found by code can't be tested: 23 of Sonarr's 90.
+- A verdict can be older than the code until the next `disprove prepare`. `trace check` doesn't see that, and a closed finding stays closed meanwhile.
+- A person who works out `disproof_hash` for a typed verdict passes, on the terms of `evidence_hash` (D118).
+- `graph where` gives a type's first part only, and 44 of Sonarr's 62 bundles hit the code limit, so a refuting line can be out of sight. The bundle names what it left out, and the likely answer is then `cant-tell`.
+- Regenerating a `page-wrong` page sends the finding back even if the page came out the same.
+- Sonarr's saved graph is too old to cite lines, so the real run needs `graph build` first.
+
+**Fresh check of 2.5 and 2.6 (2026-11-04).** What it found, and what this round did:
+- A `refuted` quote only proved the text exists, so any real line closed a finding. Now `refuted` and `unreachable` wait in `developer-confirm` until a person confirms or sends them back (D119's note).
+- A dropped decision let the old verdict close the finding again, for good with `fsd.disprove` off. Now the finding goes to the BA, labelled with why.
+- `"verdict":"weird"` twice wrote a `claimed` outside the schema and broke `trace check`. Now `claimed` is kept only if it's a verdict.
+- `[]`, `5`, `null` and `{"verdict":5}` crashed `disprove check`. Now each is a failed answer: one retry, then `cant-tell`.
+- A broken `trace.yaml` stopped page generation, and `spec stale` the same way. Now each reports it and carries on.
+- The scorer counted decided and `page-owner` findings as lost. Now only what the step took out counts, including `developer-confirm`.
+- `counts.undecided` included closed findings. Now it holds only the BA's.
+- Two graph tests that failed in a copy without `.git` pass in the real tree: only the missing `.git`.
+
+## §8 batch 1, under D120 (2026-11-04): what this phase's contracts gained
+
+**Not checked, under D120:** no fresh check of any of this. `dotnet test`, the whole-flow test and `phases check` pass.
+
+**S.2 · `source-document` v2 → v3 (D121).** `problems` become objects: `kind`, `detail`, and `sectionNumber`, `section`, `page`, `line`, `author`, `state`, `text` where they apply. `ConvertedDocument.Problems` stays lines, so the converters and their tests didn't move, and `ImportProblems` reads lines for old documents and new imports alike. Sonarr's `document.md` keeps its hash, and `document.json` with its ids taken off keeps its hash too, since it has no problems. 2c and 3 were checked by grep (they read sections by field, never `problems` or `schemaVersion`) and moved, each with its line.
+
+**S.3 · One set of import steps.** `IImportFormat` and `ImportPipeline` (D121); `fsd import`'s result has `steps`. Word's and Sonarr's `document.md` are byte-identical (the pinned hash) and the PDF tests didn't change.
+
+**S.1 · `trace-links` v3 → v4.** `fsd.sectionId`, by code at `trace check`. 2c and 3 were checked by grep and moved, each with its line. A build before this one can't read a v4 file. `requirements` v1 grew `sectionId` in place: 2c is still being built, and it has provided nothing.
+
+Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions` v2 → v3. By grep, nothing here reads telemetry, and results are read by name, so `components` beside `result` changes nothing. Moved.
+
+## §8 batch 2, under D120 (2026-11-04)
+
+**Not checked, under D120:** no fresh check of any of this. `dotnet test`, the whole-flow test and `phases check` pass. Sensitivity labels and locked files have only been run on hand-built files, never one saved by Word or a real labelling tool. `fsd reread`'s candidate path has only been run by making the saved text look older, never with two real builds.
+
+**`source-document` v3 grew in place (D20, D122).** `tables`, each picture's `id` and `section`, and `labels`, all optional, all in no hash. v3 is on this branch only, not on `main`, so it isn't shipped and takes no bump. A document without them gets `tables` and picture ids on its next import.
+
+**A.10, A.11, E.3.** `fsd outline`, `fsd show`, `fsd export` and `--chapter` are read-only over `document.json` and `document.md`. They've only run on hand-built documents and the fake `claude`. Export's 1500 lines isn't measured against a real FSD.
+
+**C.1, C.3, C.5, E.1.** `trace-links` v4 grew in place (`accepted`, `not-a-difference`, `standing`, `standing_note`, `standing_hash`), as it's on this branch only. No reader's answer changes for a file without them, and no input hash reads them. `recheck` and `gone` have never met a real re-judge: they've only run on hand-built entries through `ApplyEntries`, so how many findings a real re-run marks `gone` because the judge reworded a quote isn't known. That's the first thing to look at in the test phase. `fsd status`'s order of what comes next is the assistant's reading of what a person would want, not something a person has tried.
+
+## §8 batch 3, under D120 (2026-11-04)
+
+**Not checked, under D120:** no fresh check of any of this. `dotnet test`, the whole-flow test and `phases check` pass. **No real Excel FSD has been seen,** and no file saved by Excel or Word with an embedded workbook: every workbook, OLE container and zip here was built by hand, and PDF attachment reading was only run on a hand-written PDF. With `attachments-in-checks` on, only canned answers have been through; no real AI has seen an attachment, so whether it helps or does harm is untested. The limits and settings (`fsd.excel.*`, `fsd.attachmentChars`, `ImportLimits`, `MaxSheetCells`) are stated, not measured.
+
+**A.5, A.6, A.7, A.8.** See D123 and `docs/spec.md`. Sonarr's planted FSD has no embedded files: `document.md` still hashes to `b546bb24…` and `document.json` to `c18cbded…` with `contentHash` set aside, and every saved hash test passes.
+
+**Contracts (D20).** `source-document` v3 and `trace-links` v4 grew in place, as neither is on `main`: `attachments`, section `contentHash`, `attachments`, `attachmentLines`, new problem kinds; `fsd.attachment`, `attachmentFile`, `attachmentSheet`, `attachmentRow`. `evidence` v1 → v2, additive: by grep, only `TraceFindings` and `EvidenceValidator` read a citation, by field, in this phase, so 0 provides v2 and 2b consumes it, with no `needs review`. `Stangent.Tickets` doesn't use the evidence shape. Ticket `ticket-bundle` v2 didn't change: `converted` is left out of it, as `format` and `problems` are.
+
+**Found while building.** A part in an Office file can be called anything, as the SDK's `package.bin` showed, so a file whose name says nothing goes by what it holds. `trace.yaml` reads numbers in evidence by key, so `row` had to be added beside `start` and `end`, or a citation's row came back as a string and broke `evidence`.
+
+**Impact on other phases.** 2c reads `source-document` by field, and 3 reads it only through `ImportPipeline.Attachment`, whose results for `.docx` and `.pdf` are the same. Neither goes to `needs review`.
+
+## §8 batch 4, under D120 (2026-11-04): built off, not checked
+
+C.2, C.4, C.6 and E.2, each behind a switch that's off (D124). `dotnet test`, the whole-flow test and `phases check` ran. **Nothing here has had a fresh check, or a run on a real AI, or a real document, and nothing here has been shown to help.**
+
+**C.2, comparing tables.** Not checked: any real FSD (there's none on a C# project), so how often a table's column really lines up with a type is unknown; a real Word table with merged cells or a cell holding a bar; a real CI sharing an exported graph, which won't have enums. **Not done:** constants and SQL seed data. `trace-links` v4 grew in place (`table-fact`, `table_fact`). New contract: `table-map` v1. `code-graph` stays v4, as the enums are in a file of their own. Consumers of `trace-links` were checked by grep: a table fact has no page, so ticket bundles, drafts, impact and coverage don't see it; 2c and 3 aren't `needs review`.
+
+**C.4, finer verdicts.** Not checked: any real AI reading the new prompts, so whether a judge overuses `unclear` to avoid a call is unknown; the effect on the 44% is unknown until the paid re-score. `trace-links` v4 grew in place (`partial`, `unclear`, `partial`'s fields) and `ticket-bundle` v2 grew in place (`partial` on a link), neither being on `main`. `impact-report` v5 didn't change. 2c and 3 read link state: checked by grep and tests, not `needs review`.
+
+**C.6, grouping.** Not checked: any real AI reading a unit, so whether a rule split across sections is really caught, and whether a long bundle costs quality, are unknown. The limit, 4000 characters, has no measurement behind it. The benchmark's `Cost` reads a section's own usage and not a unit's, so a scored grouped run would understate its cost. No contract moved: `trace-runs.json` has no schema, and `trace-links` didn't change for this.
+
+**E.2, asking.** It belongs to 2a's pages; it's noted here with its batch. Not checked: any real AI's answers, so whether a sentence says what its citation says (code proves the id exists, not that it supports the sentence); how often picking by words misses the right page; the plugin command in a real Claude Code session. New contract: `page-asker-output` v1. No existing contract moved.

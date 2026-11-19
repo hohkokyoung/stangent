@@ -1,0 +1,252 @@
+{
+  "codeTitle": "NotificationService.Handle(UntrackedDownloadCompletedEvent)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)",
+  "generated": {
+    "bundleHash": "9c39fc533389953d6f8816574ac3339911d2bac31c012eef5a6026d730d6252a",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 89792,
+      "cutOff": 174,
+      "depth": 4,
+      "points": 291
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 47604,
+      "calls": 1,
+      "costUsd": 0.194635,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5046,
+      "outputTokens": 404
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 42358,
+      "calls": 1,
+      "costUsd": 0.214502,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 23220,
+      "outputTokens": 4479
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationFactory.OnImportCompleteEnabled(System.Boolean)"
+        ],
+        "id": "A1",
+        "text": "When an untracked download completes, the handler builds an import-complete message and sends it to every enabled notification that is configured for import complete."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationFactory.OnImportCompleteEnabled(System.Boolean)"
+        ],
+        "id": "R1",
+        "text": "A notification is sent only if it has the OnImportComplete option on and passes the series tag check."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.ShouldHandleSeries(NzbDrone.Core.ThingiProvider.ProviderDefinition,NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R2",
+        "text": "A notification with no tags always handles the series."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.ShouldHandleSeries(NzbDrone.Core.ThingiProvider.ProviderDefinition,NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "R3",
+        "text": "A notification with tags is skipped when the series is unknown or shares no tag with the notification."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationFactory.FilterBlockedNotifications(System.Collections.Generic.IEnumerable{NzbDrone.Core.Notifications.INotification})",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationFactory.OnImportCompleteEnabled(System.Boolean)"
+        ],
+        "id": "R4",
+        "text": "Notifications that are temporarily blocked because of recent failures are skipped."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)"
+        ],
+        "id": "R5",
+        "text": "A failure in one notification is logged as a warning and does not stop the others."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Synology.SynologyIndexer.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)"
+        ],
+        "id": "R6",
+        "text": "Synology Indexer updates the series folder only when its UpdateLibrary setting is on."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Emby.MediaBrowser.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Emby.MediaBrowser.UpdateIfEnabled(NzbDrone.Core.Tv.Series,System.String)"
+        ],
+        "id": "R7",
+        "text": "Emby/Jellyfin sends a notification only if Notify is on, and schedules a library update only if UpdateLibrary is on."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.GetFullSeasonMessage(NzbDrone.Core.Tv.Series,System.Int32,NzbDrone.Core.Qualities.QualityModel)"
+        ],
+        "id": "S1",
+        "text": "The import-complete message text for a full-season download is \"<series title> - Season <n> [<quality>]\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.GetMessage(NzbDrone.Core.Tv.Series,System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},NzbDrone.Core.Qualities.QualityModel)"
+        ],
+        "id": "S2",
+        "text": "For other downloads with no episodes the message is \"<series title> - [<quality>]\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.GetMessage(NzbDrone.Core.Tv.Series,System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},NzbDrone.Core.Qualities.QualityModel)"
+        ],
+        "id": "S3",
+        "text": "For daily series the message is \"<series title> - <air date> - <episode title> [<quality>]\", using the first episode."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.GetMessage(NzbDrone.Core.Tv.Series,System.Collections.Generic.List{NzbDrone.Core.Tv.Episode},NzbDrone.Core.Qualities.QualityModel)"
+        ],
+        "id": "S4",
+        "text": "For other series the message is \"<series title> - <season>x<nn>... - <titles joined by ' + '> [<quality>]\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.GetQualityString(NzbDrone.Core.Tv.Series,NzbDrone.Core.Qualities.QualityModel)"
+        ],
+        "id": "S5",
+        "text": "The quality text is the quality name. When the revision version is above 1, anime series add \" v<version>\" and other series add \" Proper\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)"
+        ],
+        "id": "S6",
+        "text": "The message carries series, episodes, episode files, source path, release title, release group, release quality, and a destination path."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)",
+          "Sonarr.Common|M:NzbDrone.Common.Extensions.PathExtensions.GetLongestCommonPath(System.Collections.Generic.List{System.String})"
+        ],
+        "id": "S7",
+        "text": "The destination path is the longest common folder path of the imported episode files, each built from the series path plus the file's relative path."
+      }
+    ],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.Handle(NzbDrone.Core.Download.UntrackedDownloadCompletedEvent)"
+        ],
+        "id": "E1",
+        "text": "After a notification is sent, success is recorded for it. On an exception, a failure is recorded."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Apprise.Apprise.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Join.Join.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Telegram.Telegram.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Twitter.Twitter.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Gotify.Gotify.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)"
+        ],
+        "id": "E2",
+        "text": "Message-based notification types send the import-complete text through their own channel, such as Apprise, Join, Mailgun, Ntfy, Prowl, PushBullet, Pushover, SendGrid, Signal, Simplepush, Twitter, Telegram, Pushcut and Gotify."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Email.Email.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)"
+        ],
+        "id": "E3",
+        "text": "Email sends a message with the body \"All expected episode files in <message> downloaded and sorted.\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Discord.Discord.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)"
+        ],
+        "id": "E4",
+        "text": "Discord posts an embed titled with the series and episodes, with description \"Import Complete\" and optional fields from its import field settings."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Slack.Slack.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)"
+        ],
+        "id": "E5",
+        "text": "Slack posts \"Imported all expected episodes: <message>\" with a green attachment."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.CustomScript.CustomScript.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.CustomScript.CustomScript.ExecuteScript(System.Collections.Specialized.StringDictionary)"
+        ],
+        "id": "E6",
+        "text": "Custom Script runs the configured script with environment variables describing the series, episodes, files, release, download and paths, with event type \"Download\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Webhook.Webhook.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Notifiarr.Notifiarr.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Webhook.WebhookBase`1.BuildOnImportCompletePayload(NzbDrone.Core.Notifications.ImportCompleteMessage)"
+        ],
+        "id": "E7",
+        "text": "Webhook and Notifiarr send an import-complete payload built from the message."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Trakt.Trakt.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Trakt.Trakt.AddEpisodeToCollection(NzbDrone.Core.Notifications.Trakt.TraktSettings,NzbDrone.Core.Tv.Series,NzbDrone.Core.MediaFiles.EpisodeFile)"
+        ],
+        "id": "E8",
+        "text": "Trakt refreshes its token if needed and adds each imported episode file to the Trakt collection."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Plex.Server.PlexServer.UpdateIfEnabled(NzbDrone.Core.Tv.Series)"
+        ],
+        "id": "E9",
+        "text": "Plex Server pings Plex.tv and schedules a library update for the series when UpdateLibrary is on."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Xbmc.Xbmc.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Xbmc.Xbmc.Notify(NzbDrone.Core.Notifications.Xbmc.XbmcSettings,System.String,System.String)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Xbmc.Xbmc.UpdateAndClean(NzbDrone.Core.Tv.Series,System.Boolean)"
+        ],
+        "id": "E10",
+        "text": "Kodi (Xbmc) shows a \"Sonarr - Imported\" notice if Notify is on, and schedules a library update and clean if UpdateLibrary or CleanLibrary is on."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.Synology.SynologyIndexer.OnImportComplete(NzbDrone.Core.Notifications.ImportCompleteMessage)"
+        ],
+        "id": "E11",
+        "text": "Synology Indexer asks the indexer to update the series folder when UpdateLibrary is on."
+      }
+    ]
+  },
+  "title": "Untracked download completed: import-complete notifications",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

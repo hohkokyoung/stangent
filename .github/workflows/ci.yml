@@ -22,3 +22,5 @@ jobs:
       - run: dotnet build --configuration Release
       - run: dotnet test --configuration Release --no-build
       - run: dotnet run --project src/Stangent.Cli --configuration Release --no-build -- phases check
+      # No terms file here (it's kept outside the repo), so this runs the tracked-documents part (D113).
+      - run: dotnet run --project src/Stangent.Cli --configuration Release --no-build -- data check

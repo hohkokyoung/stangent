@@ -1,0 +1,666 @@
+---
+phase: r3
+name: flows
+status: needs review
+consumes: { code-graph: 6 }
+provides: { flows: 6, areas: 1 }
+---
+
+# Rebuild layer 3: areas → flows (D154, D156, D170–D180)
+
+Designed with the owner on 2026-11-09, one question at a time. Nothing built yet.
+
+## Bottom line
+
+A **flow** is one thing a person or the system does, laid out by code from the graph: who starts it, what they
+enter, what's checked, the steps with their conditions, where each branch ends, and the flows it leads to.
+An **area** is a group of flows, made by a fixed folder rule and confirmed once by a person. **Layer 3 uses no
+AI.** It starts with a return to layer 2, because the graph doesn't yet know what runs when a screen opens, what
+a job is, what queues a job, or the conditions around a call.
+
+## The design, by decision
+
+| | Decision |
+|---|---|
+| Order | flows first, areas grouped from them afterwards; a screen change ends a flow and links to that screen's opening flow (D170) |
+| Starts | a click or submit (one flow per handler), a screen opening, a system job; event handlers are linked, not starts (D171) |
+| Ends | per branch: the database, an outside call, a message sent (handlers linked through `triggered-by`, never through the bus), another screen, a hub (10+ callers), a ❓, 8 real calls (D172); early exits (D174) |
+| Links | every out-of-bounds end is a link to another flow, explained by a code-made sentence with its proof line; jobs marked "runs later" (D173) |
+| Conditions | each step carries the condition it sits under, quoted from the code; validation rules are a checks step (D174) |
+| Labels | a URL, form or generated-client match is ✅ when constant and unique; other guesses 🟡 per step with their reason, listed at the top (D175) |
+| Determinism | source-line order then id; loops "go back to step N"; names from translation files; every React effect on open; a fixed early-exit list; a display-only rule; byte-for-byte rebuilds (D176) |
+| Contents | name, start, actor, inputs, checks, steps, ends, scenarios (main path plus one per early exit), links, guesses, settings (D179) |
+| Areas | start flows only (D218); the app's parts as its users name them, read from its menu, each top-level item an area, its children the split over 40 (D220, D221); screens no menu reaches join the menu area holding a screen in their home folder, else their folder (D219); clicks take their screen's area, walking up through dialogs, tables and services, the app's frame its own area (D219, D222); jobs to an area with more than half the flows leading to them, else their backend folder (D223); over 40 with nothing to split by flagged (D224); ties listed for a person, never merged by code (D178) |
+| Disk | each flow's `<id>.json` + `.md` flat in `specs/flows/` until `specs/areas.yaml` exists, then under its area in `specs/areas/<area>/`, shared flows used by one area with it and the rest in `specs/areas/shared/`, tied or unplaced start flows in `specs/areas/unplaced/` (D230, D232); `specs/flows/index.json` maps every id to its `file`; `specs/areas.yaml` (by menu items and folders, `large`, `ties`; D225), code-made `specs/areas.json` and `specs/areas/<area>/page.md` (D233), all committed; contracts `flows` v1, `areas` v1 (D180) |
+
+Worked example (Sonarr, D172–D173): **Add {title}** (signed-in user clicks) → `useAddSeries` → `POST /api/v5/Series` →
+`SeriesController.AddSeries` → `AddSeriesService` → `SeriesService.AddSeries` → saves `Series`, sends SeriesAdded →
+**SeriesAdded handler** queues `RefreshSeriesCommand` (runs later) → **Refresh series** (system) asks SkyHook, saves `Episodes`.
+
+## Build order
+
+Each step is code only unless it says otherwise. The cost of every agent is said before it starts, and the
+assistant stops and asks before a second round (D158).
+
+1. **Layer 2 additions** (row r2, report section 17), each written for any stack, with fixtures on React, Angular and Razor:
+   - **runs on load:** React effects (every effect runs on first render; with dependencies, "runs again when X changes"), Angular `ngOnInit` and route resolvers, an MVC GET action returning a view (D171, D176);
+   - **is a job:** command handlers (`IExecute<T>`), scheduled tasks (`IScheduleTask`), recurring-job registrations (Hangfire `RecurringJob`) (D171);
+   - **queues:** a queued command's type → the handler of that type; a background-job lambda → its method; a type made at runtime → ❓ (D173);
+   - **conditions and early exits:** the innermost `if`/`else`/`switch` case/`catch`/loop around each call, quoted, with the outer ones; returns of `BadRequest`, `NotFound`, `Unauthorized`, `Forbid`, `Challenge`, `Redirect…`, `StatusCode(4xx/5xx)`, and `throw` (D174, D176);
+   - **✅ URL rule:** constant verb, constant path (route values excepted), constant API root, exactly one endpoint, else 🟡 naming the failed test (D175).
+   Graphs rebuilt on Sonarr, Kavita and nopCommerce; counts before and after. Then a **narrow fresh check (D158)** of these
+   additions only, estimated at 60–100K tokens.
+2. **The frozen key (D177):** a fresh agent reads only the source of the three repos and writes the 15 flows' steps, ends
+   and conditions, each with its code line, into `benchmark/expected/flows/`. Estimated at 100–150K tokens. Committed before
+   step 3; the owner approves three (one per repo).
+3. **Flows:** `stangent flows build|show|check`, contract `flows` v1, `docs/flows.md`; built on the three repos; scored against
+   the key by code (a flows scorer in `Stangent.Benchmark`). The bar below decides.
+4. **A narrow fresh check (D158) of the flows**, estimate said first.
+5. **Areas** (grilled 2026-11-11, D218–D225): first layer 2 `menu-item` facts (TypeScript extractor, C#/Razor detectors, fixtures on React, Angular and Razor; D221), graphs rebuilt, then a narrow fresh check of them (D158, 60–100K tokens, asked first); then `stangent areas propose|check`, contract `areas` v1, `docs/areas.md`; proposed on the three repos with counts (areas, flows per area, ties, large); the owner confirms Sonarr's `areas.yaml` (the others proposed and listed).
+6. **Then D166:** the guesses and blind spots that sit on a flow, and only those, are sorted by cause and checked. Then layer 4 (pages, P1).
+
+## The bar (D177), frozen 2026-11-09
+
+The 15 starts:
+
+| | Sonarr | Kavita | nopCommerce |
+|---|---|---|---|
+| Click / submit | Add series; Delete series; save an indexer | the Want to Read star; Login | Register; Add to cart; Confirm order |
+| Screen opens | Series details | Series detail; the manga reader | the product page |
+| System job | Refresh series | the scan-libraries recurring job (`ScanLibrariesTaskId`) | `QueuedMessagesSendTask` |
+
+1. **No wrong ✅:** a certain step the code doesn't do fails the bar outright.
+2. **At least 95%** of the key's steps, ends and conditions found; a key step counts only if it quotes a code line.
+3. **Every 🟡 has a reason and every ❓ says why:** 100%, checked by code.
+4. **Byte for byte:** two builds from the same commit and settings are identical, on all three repos.
+5. **No silent skips:** every start code finds in a whole repo becomes a flow or a stated reason.
+
+When Stangent and the key disagree, the quoted code line decides, and the ruling is written here.
+
+### Rulings (step 3)
+
+Each is brought to the owner one at a time, with a recommendation; none is applied until the owner rules.
+
+- **R1, ruled 2026-11-09 (owner: "Yes, count it", on the recommendation; D185): the key stops a branch one call earlier than
+  the code does.** The key ends many branches at a service or repository call (`_episodeService.GetEpisodeBySeries(series.Id)` →
+  `database`), or at a call it didn't follow (`unknown`, "not walked"), where the code touches the table one or more calls down.
+  The code line decides: such a key end counts as found when Stangent's step on that line leads, through its own steps (and
+  `sameAs`), to an end of the same kind (`database`, `outside-call`, `message`); a key `unknown`/`depth` counts when Stangent walks
+  on from that step. The key isn't edited. Effect on item 2: Sonarr 62% → 66%, Kavita 69% → 78%, nopCommerce 77% → 84%.
+  **Tightened 2026-11-09 (owner: "sure", after a review found it too loose; D185 amended):** a key `database` end counts through
+  Stangent's steps below only when they reach a table the key names (read through the graph's entity→table map, since the key
+  names entities); a key `unknown`/`depth` that only says the key didn't follow the call ("not walked", "same … as", a depth
+  stop) leaves the count where Stangent walks on (`endsLeftOut`), instead of counting as found. 44 such ends left out (Sonarr 5,
+  Kavita 3, nopCommerce 36); 6 credits lost that reach another table (1, 4, 1). Item 2: Sonarr 66% → 64.9%, Kavita 84% →
+  82.7%, nopCommerce 88% → 87.1% (on the flows built before D189).
+- **R2, ruled 2026-11-09 (owner: "Yes, leave it", on the recommendation): Kavita's `unitOfWork.CommitAsync` stays `hub`.**
+  Its body saves through the database context and names no table on that line, so Stangent ends it `hub` (289 callers), as the
+  key does; the key's detail "writes AppUserWantToRead" isn't scored. No change to the key or the scorer.
+- **R3, ruled 2026-11-09 (owner: "Yes, keep it", on the recommendation): confirm-order is the multi-step checkout.** The key
+  follows `CheckoutController.ConfirmOrder`; the one-page `OpcConfirmOrder` is its own flow by D171, built but not scored. No
+  change to the key or the scorer.
+- **R4, ruled 2026-11-09 (owner: "Yes, make it an exit", on the recommendation; D186): `return InvokeHttp404()` is an early
+  exit.** Its body sets `Response.StatusCode = 404` and returns, so the code ends the request there. D176's list grows by one
+  general rule: a returned call to an app's own helper that sets a constant 4xx/5xx status, or returns only listed results, is an
+  exit. Built in layer 2 (18 such exits on nopCommerce); the key's 2 product-page exits and their 2 conditions are now found
+  (nopCommerce item 2: 84.2% → 84.7%). No change to the key.
+- **R5, ruled 2026-11-09 (owner: "Yes, an exit", on the recommendation; D187): a filter setting `context.Result` to a refusal is
+  an early exit**, changing D181. Setting it stops the request before the action runs. Built in layer 2; flows already walk the
+  filters first (D184). The key's 7 such exits (Kavita `EntityAccessAttribute` ×4, nopCommerce `CheckAccessPublicStore` ×2,
+  `ValidateHoneypot`) and their conditions are now found: Kavita 77.9% → 80.6%, nopCommerce 84.7% → 85.9%. No change to the key.
+- **R6, ruled 2026-11-09 (owner: "Yes, show them", on the recommendation; D188): a call into a package is a step, not
+  walked.** C# calls into packages (not `System.*`, EF Core or logging) are `call-site` facts with no target (Sonarr 24,852,
+  Kavita 8,908, nopCommerce 12,940); a flow shows each as "calls X in the package Y", ending `unknown`, "a package's code, not
+  walked". TypeScript's aren't recorded; SMTP as an `outside-call` is a separate question. Kavita 80.6% → 83.6%, nopCommerce
+  85.9% → 87.9%. No change to the key.
+- **R8, ruled 2026-11-10 (owner: "Leave it out", on the recommendation; D194): a key item quoting no code leaves the count.**
+  Kavita's login-guard exit (both screen flows) quotes `auth.guard.ts:25` `};`, the line after the redirect on line 24. The
+  scorer leaves any key step or exit whose quote holds no letter or digit out, with its conditions (2 exits, 2 conditions).
+- **R9, ruled 2026-11-10 (owner: "Yes, extend R1", on the recommendation; D194): R1 credits `screen` ends.** Navigation
+  through the app's own helper (`navService.handleLogin()`, `closeReader()`) ends one call below the key's end; found when
+  Stangent's steps below reach a `screen` end (2 items). Kavita 91.9% → 93.0%.
+- **R10, ruled 2026-11-10 (owner: "Yes, count it", on the recommendation; D195): an exit's condition counts when it's on a
+  step on the way to the exit.** Sonarr's `OnActionExecuting` wraps `ValidateResource(…)` (whose `throw` is the exit) in an
+  `if` and a loop; Stangent records them on that call's step. Sonarr 85.8% → 89.5%, nopCommerce 91.4% → 92.2%.
+- **R11, ruled 2026-11-10 (owner: "Yes, count it", on the recommendation; D197): a key `hub` end counts on a step that runs
+  that hub and ends `database`.** The same shared code; Stangent names the table it reads first (D172). 11 items: Sonarr
+  92.4% → 93.8%, Kavita 93.0% → 93.6%, nopCommerce 92.5% → 93.0%.
+- **R12, ruled 2026-11-12 (owner: "Yes, count it", on the recommendation; D247): a key `hub` end counts where Stangent walks
+  into that call instead, its own steps continuing below it.** The same shared code, followed further. Found in step 6:
+  Sonarr's `GetSeriesFolder` (`AddSeriesService.cs:146`) had 10+ callers only with test helpers counted (D245). Items: Sonarr
+  +1, Kavita +1, nopCommerce +2.
+- **R7, withdrawn 2026-11-09: a Stangent bug, fixed by D189.** The key walks into code the graph counts as a hub and lists steps
+  inside it; Stangent stopped there with a `continues` link to a shared walk D173 promised but never built. Now each hub and
+  depth stop a flow continues into is a `shared` flow, and the scorer follows the links into them (D189); a field or property
+  read (an Angular signal) is no longer a step or a hub. Recount, by item: 25 key items now found in shared code (Sonarr 4 steps,
+  4 ends; Kavita 3 steps, 4 ends, 2 conditions; nopCommerce 7 ends, 1 condition), 3 more "not walked" ends left out (Kavita 1,
+  nopCommerce 2), none lost. Item 2: Sonarr 64.9% → 67.7%, Kavita 82.7% → 84.4%, nopCommerce 87.1% → 88.2%. Most of R7's
+  ~40 items by line were not separate misses: what's left in shared code is a key `hub` where Stangent ends `database` (the hub
+  reads a table, D172's order: Sonarr 4, Kavita 3, nopCommerce 4), and nopCommerce reads written as LINQ over a repository's
+  `Table` (`_customerRepository.Table.Where(…)`), which layer 2 records as no read, so the shared flow stops at
+  `FirstOrDefaultAsync` (a hub) instead of `Customer` (about 5 ends).
+
+## Step 2: the key — done 2026-11-09 (15 flows, three approved, one per repo)
+
+- Format: `benchmark/expected/flows/README.md` (D183). Every counted item is `at` + exact `code`.
+- **Sonarr** (commit `0bffefe7c8`), written 2026-11-09 by a fresh Sonnet agent from git-tracked source only (~230K tokens):
+
+  | Flow | Steps | Ends | Conditions | Exits | Links | Checks |
+  |---|---|---|---|---|---|---|
+  | add-series | 16 | 6 | 13 | 6 | 5 | 10 |
+  | delete-series | 7 | 3 | 3 | 1 | 15 | 1 |
+  | save-indexer | 30 | 13 | 18 | 5 | 12 | 14 |
+  | series-details-opens | 35 | 12 | 11 | 0 | 0 | 0 |
+  | refresh-series | 38 | 24 | 40 | 3 | 13 | 0 |
+
+  Checked by code: 306 items, every `at` a tracked line whose text holds its `code`. Spot-read by hand: add-series's
+  controller → add service → insert → `SeriesAddedEvent` (3 handlers) → `RefreshSeriesCommand` queued. **Owner approved `add-series` (2026-11-09, "Approve add-series")**: Sonarr's approved key (D177).
+  The agent's own caveats: V5 controllers only (the frontend's root is `/api/v5`); delete's options act in event
+  handlers, so they sit as extra `conditions` on two links; save-indexer's connection test stops at the depth limit and
+  only Newznab's settings rules are listed; series-details leaves four `GET /series` mappers unwalked.
+- **Kavita** (commit `2d225367f0`), written 2026-11-09 by a fresh Sonnet agent from git-tracked source only (~260K tokens):
+
+  | Flow | Steps | Ends | Conditions | Exits | Links | Checks |
+  |---|---|---|---|---|---|---|
+  | want-to-read | 13 | 5 | 19 | 5 | 2 | 0 |
+  | login | 21 | 13 | 38 | 5 | 2 | 2 |
+  | series-detail-opens | 115 | 37 | 44 | 18 | 2 | 0 |
+  | manga-reader-opens | 74 | 23 | 48 | 18 | 3 | 0 |
+  | scan-libraries-job | 5 | 4 | 6 | 0 | 3 | 0 |
+
+  Checked by code: 453 items; 2 quotes of `auth.guard.ts:16` (an empty line) moved to `:17`, where the quoted `if` is,
+  before commit; then 0 problems. Spot-read by hand: want-to-read's toggle (add or remove), both endpoints, their
+  `Unauthorized`/`NotFound`/`BadRequest` exits and the Hangfire scrobble queued after the commit hold. **Owner approved `want-to-read` (2026-11-09, "Approve want-to-read")**: Kavita's approved key (D177).
+  Open for a ruling when scored: saves through `unitOfWork.CommitAsync` (289 callers) are ended `hub` "writes
+  `AppUserWantToRead`", where D172's order puts `database` before `hub`. The scan job stops where it queues
+  `ScannerService.ScanLibraries` (a `runs-later` link, D173), so the scan's own work isn't in the key. Agent's caveats:
+  route guards and resolvers are first steps of the screen flows; login's `apiKey` path, series-detail's SignalR and
+  fragment subscriptions and the reader's settings auto-save aren't walked; Identity calls end as `database`.
+- **nopCommerce** (commit `77d112f365`), written 2026-11-09 by a fresh Sonnet agent from git-tracked source only (~250K tokens):
+
+  | Flow | Steps | Ends | Conditions | Exits | Links | Checks |
+  |---|---|---|---|---|---|---|
+  | register | 56 | 46 | 134 | 11 | 12 | 39 |
+  | add-to-cart | 45 | 34 | 50 | 1 | 15 | 10 |
+  | confirm-order | 63 | 42 | 134 | 23 | 15 | 11 |
+  | product-page-opens | 29 | 25 | 24 | 7 | 4 | 0 |
+  | queued-messages-send-task | 17 | 12 | 13 | 1 | 0 | 0 |
+
+  Checked by code: 724 items, 0 problems. Spot-read by hand: the email task's two loops, SMTP send, `catch` that logs
+  and `finally` that saves `SentTries` hold. **Owner approved `queued-messages-send-task` (2026-11-09, "Approve the email job")**: nopCommerce's approved key (D177).
+  Open for a ruling when scored: (a) confirm-order follows the multi-step `CheckoutController.ConfirmOrder`, whose first
+  exit sends the shopper to one-page checkout when `OnePageCheckoutEnabled` (the installer sets it true,
+  `InstallRequiredData.cs:1870`); the one-page `OpcConfirmOrder` is its own flow by D171 and isn't in the key.
+  (b) 2 product-page exits are `return InvokeHttp404()`, an app helper that sets 404, not on D176's fixed list.
+  (c) 2 exits are access filters setting `context.Result` (register's redirect, add-to-cart's `Challenge`), not results
+  the action returns (D181). Agent's caveats: add-to-cart's redirects are JSON values the page script follows (`screen`
+  ends, not exits); terms-of-service is a page-script check; repository-level entity-event consumers aren't listed;
+  model-factory sub-builders, `PrepareAndValidate*`, OAuth helpers and payment plugins end `unknown`.
+
+## Step 3: the flow code — built 2026-11-09, scored; the bar is not passed (rescored after D185's amendment, D189–D193, D196, D198–D202 and rulings R8–R11)
+
+`stangent flows build|show|check` (contract `flows` v1, `docs/flows.md`, D184), a flows scorer in `Stangent.Benchmark`
+(`--score-flows <clone> <key-dir>`), built on the three clones at the key's commits. Layer 2 grew for it (D184): `call-site`
+facts (each call's line), a hook's own functions as points, `filterType` on access filters; graphs rebuilt. Builds take ~4 s; with shared flows (D189) 6 s on Sonarr, 12 s on nopCommerce.
+
+| Bar item | Sonarr | Kavita | nopCommerce |
+|---|---|---|---|
+| Flows built (click / screen / job / handler / shared) | 1,654 (116 / 31 / 38 / 182 / 1,287) | 531 | 1,378 |
+| 1. No wrong ✅ (code check: a ✅ call's statement names what it calls, D211) | 2 flagged of 88,443 (both right, read: the checker's limit) | 0 of 25,169 | 0 of 90,731 |
+| — before D211 (11 lines read), after D210 | 39 | 0 | 8 |
+| — before D210 (a call through a function's result) | 69 of 87,666 | 0 of 25,771 | 8 of 90,728 |
+| 2. Key steps, ends and conditions found (≥95%), after R1 (tightened), R4–R6, R8–R11, D189–D193, D196, D198–D201 | **262 / 275 = 95.3% ✓** | **483 / 503 = 96.0% ✓** | **697 / 729 = 95.6% ✓** |
+| — before D201 (step 4's fixes) | 262 / 275 = 95.3% | 481 / 503 = 95.6% | 696 / 729 = 95.5% |
+| — before D200 (ASP.NET Identity's store) | 262 / 275 = 95.3% | 473 / 503 = 94.0% | 696 / 729 = 95.5% |
+| — before D199 (query reads, mail clients, MVC results, self-calls; Sonarr and Kavita unchanged by it) | 262 / 275 = 95.3% | 473 / 503 = 94.0% | 678 / 729 = 93.0% |
+| — before D198 (outside calls with runtime URLs, else-if guards) | 258 / 275 = 93.8% | 471 / 503 = 93.6% | 678 / 729 = 93.0% |
+| — before R11 | 254 / 275 = 92.4% | 468 / 503 = 93.0% | 674 / 729 = 92.5% |
+| — before D196 (table-reading hubs continue into shared flows) | 246 / 275 = 89.5% | 468 / 503 = 93.0% | 672 / 729 = 92.2% |
+| — before R10 | 236 / 275 = 85.8% | 468 / 503 = 93.0% | 666 / 729 = 91.4% |
+| — before R8, R9 | 236 / 275 = 85.8% | 466 / 507 = 91.9% | 666 / 729 = 91.4% |
+| — before D193 (requests made another way; Sonarr and nopCommerce unchanged by it) | 236 / 275 = 85.8% | 453 / 507 = 89.4% | 666 / 729 = 91.4% |
+| — before D192 (navigation, error callbacks) | 236 / 275 = 85.8% | 428 / 507 = 84.4% | 664 / 729 = 91.1% |
+| — before D191 (a view's onclick into its script; Sonarr and Kavita unchanged by it) | 236 / 275 = 85.8% | 428 / 507 = 84.4% | 643 / 729 = 88.2% |
+| — before D190 (URLs callers give; Kavita and nopCommerce unchanged by it) | 189 / 279 = 67.7% | 428 / 507 = 84.4% | 643 / 729 = 88.2% |
+| — before D189 (R1 tightened, old flows) | 181 / 279 = 64.9% | 420 / 508 = 82.7% | 637 / 731 = 87.1% |
+| — before R1 was tightened | 187 / 284 = 66% | 427 / 511 = 84% | 674 / 767 = 88% |
+| — before any ruling | 175 / 284 = 62% | 354 / 511 = 69% | 590 / 767 = 77% |
+| — steps | 126 / 126 | 223 / 228 | 204 / 210 |
+| — ends (incl. exits) | 53 / 64 | 111 / 122 | 144 / 164 |
+| — conditions | 83 / 85 | 149 / 153 | 349 / 355 |
+| (key ends left out: they only say the key didn't follow a call, R1) | 9 | 4 | 38 |
+| (links, not in item 2) | 35 / 45 | 8 / 12 | 25 / 46 |
+| — before D204 (screen links) | 35 / 45 | 4 / 12 | 17 / 46 |
+| (checks, not in item 2) | 12 / 25 | 0 / 2 | 45 / 60 |
+| — before D203 (guards that reject the input) | 11 / 25 | 0 / 2 | 26 / 60 |
+| 3. Every 🟡 and ❓ with a reason | pass (16,228 🟡, 1,051 ❓) | pass (1,441, 150) | pass (9,910, 312) |
+| 4. Byte for byte (two builds, and disk) | pass | pass | pass |
+| 5. No silent skips (starts → flows or stated reasons) | pass (2,678 starts) | pass (1,305) | pass (1,244) |
+
+**Bottom line: items 2–5 pass on all three (item 2: Sonarr 95.3%, Kavita 96.0%, nopCommerce 95.6%, after R1 tightened,
+R4–R6, R8–R11, D189–D193, D196 and D198–D201); item 1: the step 4 fresh check's 3 wrong ✅ are fixed (D201), not re-checked
+by a fresh agent** (more ✅ steps to check now that shared flows are written: Sonarr's flags rose 51 → 71) — the samples read
+are the checker's limits (a hook's function returned under another name, `goToPage: handleGoToPage`; a chain over 10 lines) plus
+one extractor quirk (Kavita's route resolvers' `on-load` lines point at a blank line). Steps are mostly found (72%, 91%, 89%);
+ends are what fail. Where the misses sit: the key stopping a branch one call earlier than the code does (R1, ruled: counted);
+filter and helper exits (ruled exits, R4, R5); navigation, which the graph doesn't hold (`screen` ends: none built; package calls now steps, R6); a URL built at runtime (Sonarr's save-indexer stops at a ❓ before the server, 3 of
+30 steps, now followed by D190: save-indexer's steps 30 of 30); inside shared code, a key `hub` where the hub reads a table (Stangent ends `database`, D172) and nopCommerce's LINQ
+reads over a repository's `Table`, which layer 2 doesn't record (R7's recount). Per-flow numbers: `--score-flows` output (`flows[].items`, `flows[].missed`).
+
+## Step 4: the narrow fresh check — run 2026-11-10 (one fresh agent, ~194K tokens against a 100–150K estimate)
+
+**Bottom line: item 1 fails.** ~145 ✅ steps checked against the code (Sonarr 47, Kavita 46, nopCommerce 52): 0 wrong on
+Sonarr and nopCommerce, 3 wrong on Kavita, each from a general cause (confirmed by reading the code):
+
+1. **A function passed as an argument is walked as if called there.** `action-factory.service.ts:75`
+   `(action, entity) => this.actionService.handleSeriesAction(action, entity),` is a menu callback; the series-detail screen
+   flow shows ✅ `DELETE /api/series/{*}` and other menu actions as happening on open (321 of its 1,416 steps). Same shape:
+   login's `connection.on(event, (resp) => …)`.
+2. **Any `src =` that isn't a URL is read as a GET** (D193): `this.canvasImage.src = '';` (manga reader step 92) is ✅
+   "HTTP GET to a URL built at runtime".
+3. **A parent route's resolver on a lazy child route gets the child file with the parent's line:** step 48 at
+   `manga-reader.router.module.ts:91` (a 22-line file); the resolver is at `app-routing.module.ts:91`.
+
+The tool's own flags read: Sonarr `goToPage(1)` and nopCommerce `ForeignKey` (statement's first line) are the checker's
+limits; Kavita step 48 is real (3 above). All 12 rules added in step 3 (D189–D200) hold, with: rule 5 too wide (cause 2);
+D198 misses a plain `HttpClient.GetAsync` with a runtime URL (ends `unknown`); self-call loops also come from `base.` calls.
+Other general findings (no wrong ✅): guards inside a `lock` block don't reach code after it; `base.X()` dispatched to every
+override (false loops, Mono code calling Windows code); a generic controller's type not narrowing dispatch (save-indexer
+fans out to 32 `Test` implementations, 🟡); `shared-eventaggregator-publishevent` walks all 156 handlers (3,724 steps,
+against "the bus is never walked"); an overload 🟡 reason used for two same-named JS globals; HTTP step text with no path
+("calls *"); `location.href = …` missing its `if`; Kavita repository reads listed twice on one line. Full report: the
+session's notes folder, `step4-fresh-check.md`.
+
+**Fixed 2026-11-10 (owner: "2"; D201):** all three wrong-✅ causes and seven of the eight others; the generic controller
+narrowing needs layer 2 first. Re-read by code on the spots the check named: Kavita's series page has no menu action on
+open (1,416 → 744 steps, no `DELETE`), `canvasImage.src = ''` is no step, the resolver sits at `app-routing.module.ts:91`,
+`HttpClient` runtime calls end `outside-call`, no `GetMount` loops, the publish flows stop at the handlers (Sonarr 3,724 → 9
+steps, nopCommerce 2,188 → 7), script globals have their own reason, HTTP steps name their endpoint, `location.href` has its
+`if`, no read twice on a line, the scan job's guards inside `lock` hold. The code check of item 1 now flags Sonarr 69 of
+87,666, Kavita 0 of 25,771, nopCommerce 8 of 90,728 (the samples read are the checker's limits). Item 2: Sonarr 95.3%,
+Kavita 96.0%, nopCommerce 95.6%.
+
+**Short re-check by a fresh agent (2026-11-10, ~109K tokens against a 40–60K estimate):** 8 of the 9 fixed spots hold.
+The ninth holds only in part: the menu callbacks handed to `applyCallbackToList` are gone, but the same cause has a second
+shape, **a function stored as a property of an object** (`readFunc: (v) => { this.readerService.readVolume(…) }` in
+`card-config-factory.service.ts:292`, and `:233`), walked as if it ran when the screen opens (its subtree sends
+`mark-volume-unread` and deletes progress). Of 24 ✅ re-checked on Kavita, 3 are wrong: those two, and
+`manga-reader.component.ts:803`, a `switchMap` in a stream after `skip(1)` that runs only when a reader setting changes.
+Doubtful, not counted: other card-config functions (`coverFunc`, `actionableFunc`, `downloadItemFunc`) that run when a card
+draws. Report: notes folder `step4-recheck.md`. Item 1 still fails. Not fixed: waits for the owner.
+
+**Fixed 2026-11-11 (owner: "Yes, fix both"; D202):** a function written as an object's property is stored, unless the
+object goes straight to a library call; a stream's callback runs now only when the stream starts with a request, any other
+is 🟡 "runs when the stream sends a value". A first build also stored a top-level script object's own functions
+(`var AjaxCart = { … }`, D191) and dropped nopCommerce to 92.3%; they're points of their own, so they're now left alone.
+Re-read by code: `card-config-factory.service.ts:233` and `:292` are no step, the series page has no `readVolume` or
+mark-unread step, `manga-reader.component.ts:803` is 🟡 with the stream reason (255 such steps on Kavita). The other
+card-config functions (`coverFunc`, …) are stored the same way. Item 1's code check: Sonarr 69, Kavita 0, nopCommerce 8
+flagged (unchanged, the checker's limits). Item 2 unchanged: 95.3%, 96.0%, 95.6%. Not re-checked by a fresh agent.
+
+**Links and checks (not on the bar), 2026-11-11.** The 97 missed were sorted by cause: checks C1 an `if` that rejects the input
+shown only as a condition (~26), C2 request filter attributes (`[ValidateCaptcha]`, 5), C3 FluentValidation rules not tied to
+the flow (rules in a controller's constructor, a provider's settings validator; 13, Sonarr), C4 Angular signal-form rules (2),
+other (4); links L1 a redirect's screen not linked to its opening flow (~16), L2 queued work a job picks up later (~9), L3 a
+generic repository's entity events (11, needs layer 2's type narrowing), L4 handlers registered by an attribute (`[CheckOn]`, 8),
+other (3). C1 built (D203, owner: "Yes, list them"): checks Sonarr 12/25, nopCommerce 45/60; 874 distinct guard checks on the
+three; the scorer now takes checks from the shared flows a flow continues into, as it does steps. Left of C1 on purpose:
+redirect-only guards, `return Challenge()`, and `if`s that add an error and carry on.
+L1 built (D204, owner: "Yes, L1 next"): no code made `screen` links before. Now each redirect and navigation links to its screen's
+opening flow: links Kavita 8/12, nopCommerce 25/46. Distinct screen links: nopCommerce 868 to a flow ✅, 1 🟡 (two screens fit),
+54 to an action that opens no flow, 27 to no screen (made at runtime); Kavita 15 to a flow, 29 to display-only screens (skipped
+by D176 item 5, the link says so), 17 to no screen (runtime values, or `login`, an Angular `redirectTo` route). A first build
+ignored area (109 🟡 on nopCommerce, Admin and public controllers sharing names) and read router paths without a leading
+slash as relative; both fixed. Left of L1: the four key links at a call whose callee navigates (`handleLogin()`,
+`closeReader()`), and `Url.RouteUrl` handed back in a JSON answer for the page script (add-to-cart).
+L2 built (D205, owner: "do em all"): a save to a queue-named table that a job reads before saving anything links `runs-later` to the
+job, on the call that made the save. Links nopCommerce 25 → 33/46 (all 8 queued-email sends). Made: nopCommerce 87 distinct link
+sites, all `QueuedEmail` inserts → QueuedMessagesSendTask (a sample of 14 read right: each call sends an email); Sonarr 2 sites
+(search jobs saving `PendingReleases` → RSS sync, which re-checks them); Kavita none. Tried first and dropped: any table a job reads
+(nopCommerce's jobs read Customer, Language, Currency…: 324 links, AutoCancelOrdersTask among the targets because it deletes a
+cancelled order's queued emails), read-and-written-back (Series, Order, Customer), the job's first read (missed RSS sync). Left:
+the Sonarr key's `RefreshSeriesCommand` link is in `SeriesAddedHandler`'s own flow (built there before D205); add-series links
+`message` to that handler, and the scorer doesn't take a handler's links into the flow that sends to it.
+L4 built (D206): a class an attribute registers for an event (`[CheckOn(typeof(E))]`) handles it when E is an event the message
+system carries (a handler takes E or a type E is), through the one method it overrides. Links Sonarr 35 → 43/45 (all 8). A send
+whose event class writes no constructor was dropped by the walk before (the implicit constructor isn't on the map); fixed with it,
+which brought the 8th (`SeriesRefreshCompleteEvent`). Made on Sonarr: 25 new handler flows (health checks), 573 message links at 81
+distinct sites; most are generic provider events in shared `ProviderFactory` (`new ProviderUpdatedEvent<TProvider>`) linking to the
+checks of every provider kind, the type-argument gap L3 waits on (existing interface handlers on those events already did the same).
+Kavita, nopCommerce: none. Impact answers now name these handlers too.
+C2 built (D207): request filters on an action or its controller that check the request before it runs are checks, at the
+attribute's line (layer 2 `request-check` facts). Checks nopCommerce 45 → 50/60 (all 5). Made on nopCommerce: 170 distinct
+(antiforgery 905 flow checks, CheckLanguageSeoCode 197, WwwRequirement 196, HttpsRequirement 136, ValidatePassword 135,
+ForceMultiFactorAuthentication 135, ValidateCaptcha 13, ValidateHoneypot 1); the redirect-only ones (Www, Https, language code)
+read as infrastructure more than input checks, kept as D207's cost. A first build listed `[ParameterBasedOnFormName]` (92), which
+writes the action's argument only to say which button was pressed; dropped by requiring a checking word in the filter's name.
+Sonarr, Kavita: none.
+C3 built (D208): validators run outside the request body's own validator. Checks Sonarr 12 → 25/25 (all 13: ProviderControllerBase's
+`SharedValidator`/`PostValidator` rules, RestController's `IdValidator`, NewznabSettings' validator, AddSeriesValidator). A first build
+gave each Sonarr screen ~555 validator checks: a walked `SharedValidator.Validate` in the generic RestController took rules every
+subclass writes; now subclass rules come only through the action the subclass serves, and only for actions taking a body (GETs list
+none). Left: provider edit flows list every provider kind's settings rules (~257 checks each; `FreeboxDownloadSettings`,
+`QBittorrentSettings`, … reached through `IProviderConfig.Validate`), the type-argument gap. nopCommerce and Kavita: unchanged.
+C4 built (D209): Angular signal-form rules as checks. Checks Kavita 0 → 2/2. Made: 84 distinct rules on 34 Kavita flows (required,
+min/max, minLength, pattern, custom `validate`), a sample all on real forms the flow submits or saves. Sonarr, nopCommerce: none.
+Round total (D203–D209): links Sonarr 35 → 43/45, Kavita 8/12, nopCommerce 25 → 33/46; checks Sonarr 12 → 25/25, Kavita 0 → 2/2,
+nopCommerce 45 → 50/60; bar items 1–5 unchanged on all three after each fix. Not fresh-checked.
+
+**Item 1's code check settled (2026-11-11, D210, D211).** The check flagged Sonarr 69, nopCommerce 8. Read in the code, two causes:
+30 real wrong ✅ on Sonarr, a call through a value taken from another function's result stated as a call to that function
+(`predicate(…)` after `const predicate = getFilterTypePredicate(type)`, `store(…)` from `createPersist`, `useOption(…)` from
+`createOptionsStore`), fixed generally (D210: 🟡 for any function, layer 2's `call-site` says `fromResult`); and the checker's
+own limits (long chains past its 11 lines, a renamed default import), fixed in the scorer (D211). Code check now: **Sonarr 2,
+Kavita 0, nopCommerce 0**; the 2 are `goToPage(1)` (`History.tsx:95,102`), right ("calls useHistory.handleGoToPage": the hook
+returns `goToPage: handleGoToPage`). Item 2 unchanged: 95.3%, 96.0%, 95.6%; items 3–5 pass; links and checks unchanged. Item 1
+still needs a fresh agent's read of a sample of ✅ steps (D202 was never re-checked either): put to the owner, not started.
+
+**Item 1's fresh check (2026-11-11, one Sonnet agent, ~116K tokens against a 40–60K estimate; owner: "Yes, run it"). Item 1
+fails.** 36 ✅ steps picked by code (seed 20261111, 12 per repo, mixed kinds, from the 15 scored flows and the shared flows they
+continue into), each with its caller chain: 24 right, **6 wrong**, 6 minor (right on their line, under a 🟡 parent). All 6 read
+again in the code and confirmed; three general causes, all frontend:
+1. **A component's children shown though it renders nothing until a prop is set** (3: Sonarr items 3, 6, 9). `Modal` returns
+   `null` when `!isOpen` (`Components/Modal/Modal.tsx:159`), so `<EpisodeDetailsModalContent>` inside `<Modal isOpen={isOpen}>`
+   isn't shown when the series page opens, yet its hooks and requests are ✅ steps of the screen opening.
+2. **A mutation hook's request taken as sent when the hook runs** (1: Sonarr item 10). `useApiMutation` (react-query's
+   `useMutation`) only sets up `mutationFn`; `POST /command` (`useCommands.ts:45`) goes out when `executeCommand` calls `mutate`,
+   not on open (step 113 and the backend steps under it).
+3. **Timer callbacks walked as running now** (2: Kavita items 13, 18). `setInterval(() => this.refreshToken()…, 600000)`
+   (`account.service.ts:504`) is ✅ at login; `setTimeout(() => this.closeReader(), 200)` in a subscribe's error callback
+   (`manga-reader.component.ts:1252`).
+Minor: a 🟡 "one of 2" candidate that can't be the runtime type (`CachedDictionary` for an `ICached<string>` field); a read that
+runs only on a cache miss. The fixed spots hold: D202's `card-config-factory.service.ts:233`/`:292` are no step and the reader's
+settings stream is 🟡; D210's `predicate(…)` steps are 🟡, line 70 ✅. Report: notes folder `item1-check.md`; sample
+`item1-sample.md`.
+
+**Fixed 2026-11-11 (owner: "Fix all three"; D212–D214), all three graphs rebuilt.** Timer callbacks are 🟡 "runs later … after its
+delay" (D212: Kavita 86 steps, Sonarr 16); an element inside one of the repo's components that draws nothing while a prop is
+unset is 🟡 "shown only when Modal draws it" (D213: Sonarr 44); a mutation hook's request and code are 🟡 "sent when the mutation
+is started" (D214: Sonarr 311). Re-read by code on the six spots: Sonarr steps 505, 611, 947 (the modal contents) and 113
+(`POST /command`) are 🟡 with those reasons; Kavita's `refreshToken` in `setInterval` (`account.service.ts:507`, step 126) and
+`closeReader` in `setTimeout` (step 309) are 🟡. ✅ steps: Sonarr 88,443 → 88,178, Kavita 25,169 → 25,083, nopCommerce 90,731
+(unchanged). Code check of item 1: Sonarr 2 (the known `goToPage`), Kavita 0, nopCommerce 0. Item 2 unchanged: 95.3%, 96.0%,
+95.6%; items 3–5 pass. Not re-checked by a fresh agent (the one-check-one-fix cap, D61: a second check needs the owner).
+
+**Second fresh check (2026-11-11, one Sonnet agent, ~113K tokens against a 100–120K estimate; owner: "Yes, run it").** 36 new
+✅ steps picked by code (seed 20261112, none from the first sample) and the six fixed spots. The agent: 20 right, 2 wrong,
+14 minor; the six spots hold, each reason true of its code; no case found where D212–D214 turn a step that runs into 🟡. Both
+wrong read again in the code: **neither is a step the code doesn't do.** Item 31 (`InvoiceDocument.cs:212`,
+`CreateInvoiceHeader` inside `events.MainTableCreated(events => …)`) runs during `Generate`: the callback is registered in a
+builder chain that ends `.Generate(…)` in the same method (`:226`): rejected. Item 26 (`CustomerService.cs:1430`, reads
+`CustomerPassword` under `GetCurrentPasswordAsync` at `:1546`) runs, but only on a cache miss: the call is in the function given
+to `_shortTermCacheManager.GetAsync(…)`; the `PasswordLifetime == 0` guard the agent named is shown (`unless` on steps 71–72).
+Counted as a condition not shown, not a wrong ✅. Same kind among the minor: `this.doubleRenderer()?.renderPage(…)` (Kavita
+`manga-reader.component.ts:1669`) runs only when the renderer is set. **On this sample item 1 holds: 0 wrong ✅ of 36.** Gaps
+found (not fixed, owner's call): a cache's get-or-create function runs only on a miss, and an optional call (`a?.b()`) only when
+`a` is set, neither shown as a condition; an element's own modal wrapper with `isOpen` false is still ✅ "shows X" (it runs and
+draws nothing); RxJS `debounceTime`/`delay` operators aren't read as later. Report: notes folder `item1-check2.md`.
+
+**Condition gaps fixed (2026-11-11, owner: "Fix the gaps first"; D215, D216), all three graphs rebuilt after each.** Code in a
+function given to a cache's get-or-create call carries a `cache-miss` condition quoting the call (D215, read by the method's name:
+`GetOr…`, or `Get`/`GetAsync` on a type naming a cache): Sonarr 381 steps, nopCommerce 1,498, Kavita 1 (its other cache functions
+are handed to a package and no flow walks them); nopCommerce's `GetCurrentPasswordAsync` (`CustomerService.cs:1546`) now reads
+"only if `_shortTermCacheManager.GetAsync` finds nothing stored for the key". A call written after `?.`, with its arguments,
+carries a `set` condition quoting the chain up to it (D216): Sonarr 915 steps, Kavita 59, nopCommerce 356; Kavita's
+`renderPage` (`manga-reader.component.ts:1669`, step 272 of the swipe-end flow) is "only if `this.doubleRenderer()` is set".
+The walker no longer gives a call with no conditions of its own another call's from the same line. Three `set` steps read in
+the code, all right. Bar before → after, both fixes: code check Sonarr 2 → 2 (the known `goToPage`), Kavita 0 → 0, nopCommerce
+0 → 0; item 2 95.3% → 95.3%, 96.0% → 96.0%, 95.6% → 95.6%; items 3–5 pass; ✅ counts unchanged (conditions don't change labels).
+Not re-checked by a fresh agent (D61: another check needs the owner; about 100–120K tokens on Sonnet).
+
+**Item 1 counted passed (2026-11-11, D217; owner: "ur call").** Two fresh checks (6 wrong of 36, three causes fixed; then 0 of
+36) and the code check (only the known `goToPage`). No third check: D215/D216 change no label. A sample can't prove zero (0 of
+36 still allows about 1 in 12); passed means every cause found is fixed. Small item left: RxJS `debounceTime`/`delay` read as
+later, 🟡 like D212's timers. Next: step 5, areas.
+
+## Step 5: areas — grilled 2026-11-11 (D218–D225), built 2026-11-11 (D226–D228)
+
+D178's folder rule was laid over the real flows first (probe: index.json plus the graph). Where it didn't hold, and what was decided:
+
+| Found | Decided |
+|---|---|
+| Shared flows are most flows (Sonarr 1,287 of 1,679) and most are reached from several areas | areas hold start flows only; each area lists the shared flows it uses, by code (D218) |
+| The index's `home` is the route file's or `Controllers` folder for a screen opening | a screen's home from the graph: the routed component or the action's view, display-only screens too; runtime view paths by MVC's controller-name convention (D219) |
+| "Shown on two or more other homes" made Sonarr's Series, Settings, Activity, AddSeries shared (4 homes left) | a folder holding a screen is a home; the catch-all route makes none; a dialog belongs to the screen opening it (D219, replaced clause) |
+| The owner: folders feel too simple; areas serve readers and requirement matching, both in users' words | areas are the app's parts as users name them, read from its menu; folders are the fallback (D220, D221) |
+| 24 clicks on no screen (a lookup table, the app's frame, dialogs opened by services) | walk up through non-component code; frame-only clicks to App frame; the rest a tie with every area (D222) |
+| "Most links" gave nopCommerce 97 even ties and Kavita's jobs to its login screens | more than half, else the backend folder; an interface's job by its one implementation (D223) |
+| nopCommerce's Products (64), Customer (49), Order (44) have nothing to split by | stay whole, flagged (D224) |
+| — | `areas.yaml` by menu items and folders with `large` and `ties`; code-made `areas.json` (D225) |
+
+Folder-only measurements (before the menu rule): homes Sonarr 8, Kavita 21, nopCommerce 117; clicks placed 89 / 210 / 320, ties 19 / 10 / 2, on no screen 8 / 13 / 3.
+
+### Built (2026-11-11)
+
+Layer 2 `menu-item` facts (D221): the TypeScript extractor (data objects, JSX and Angular markup, transloco prefixes), a C#
+`menu` detector (object initialisers, URLs through ASP.NET's builders or the repo's own helper with constants) and Razor links
+in `razor-views`. Fixtures on React, Angular and Razor plus C# data. Graphs rebuilt; every flow file unchanged byte for byte.
+
+| Repo | Menus found (items) | Taken (D226) |
+|---|---|---|
+| Sonarr | sidebar (35; Media, Activity, Settings, System), the settings page's index (13), outside links (11) | the sidebar |
+| Kavita | side nav (8; libraries are runtime), user menu (`nav.service.ts`, 5+, D229), outside links (7) | side nav, user menu |
+| nopCommerce | AdminMenu.cs (106; 10 top-level), the installer's seeded store menus (main 6, footer columns 5 and 7, D229), "My account" built by `Add` calls (5), header links (7), four in-page lists (3–4) | AdminMenu, main menu, footer My account, header links |
+
+`stangent areas propose|check`, contract `areas` v1, `docs/areas.md`. Proposed (`specs/areas.proposed.yaml` in each clone):
+
+| Repo | Start flows | Areas | Menu / folder (homes, backend) / App frame | Ties | Large (over 40, nothing to split by) |
+|---|---|---|---|---|---|
+| Sonarr | 392 | 60 | 21 / 38 / 1 | 25 (22 two-way: Episode, InteractiveImport, Series dialogs; 6 eight-way: shared form inputs) | Media › Series 71, Settings 77 |
+| Kavita | 282 | 28 | 12 / 15 / 1 | 32 (24 sixteen-way: modals opened through shared services) | Customize (its `/settings`) 114 |
+| nopCommerce | 944 | 142 | 52 / 90 / 0 | 9 | Admin › Catalog 61, Nop.Web › Infrastructure 48 |
+
+Built-in decisions, not yet put to the owner: D226 (which lists are the menu; menu areas split by children only), D227 (parts
+of a split area count for it: jobs, clicks, homes; empty parts fold back), D228 (area names read `{{key}}` references and
+.NET XML resources). Found in passing: Sonarr's backend areas are many and small (38, most 1–2 jobs), as D223 says; Kavita's
+Settings is one screen with tabs, so no menu children split it; nopCommerce's product edit pages sit under Admin › Catalog
+because Products and Product tags share the Product folder; nopCommerce has handlers in `Nop.Tests` among its start flows
+(a flows matter, not areas). The menu facts' fresh check (D229, owner's OK; ~113K tokens): 29 of 30 right; three shapes added (`Add` call lists, `routeName`,
+key-named properties), resources looked up ignoring case, homes join a menu area only by majority. Graphs rebuilt, flows
+unchanged byte for byte, Sonarr's proposal unchanged. Sonarr's `areas.yaml` confirmed (D231, `benchmark/expected/areas/sonarr.yaml`): 63 areas, 392 of 392 start flows placed, `areas check` passes; D226–D229 accepted. Then decided: flows and pages under their area (D230), built below. Next: step 6 (D166).
+
+### Flows and pages under their area: built (2026-11-11, D230, D232–D234)
+
+`flows build` reads `specs/areas.yaml` and writes each flow under its area (`docs/flows.md`, "Files"); `areas check` writes
+`areas.json` and one `page.md` per area (`docs/areas.md`, "Pages"); flows' links are relative Markdown links; `index.json`
+maps every id to its `file`. Settled while building: the slug rule, `unplaced/`, shared flows' users counted by folder (D232);
+the page's shape and layer 4's kept place (D233); `areas propose` builds on a confirmed file (D234, D231's small item).
+Kavita and nopCommerce have no confirmed file yet, so a copy of each proposal (ties unanswered) served as `areas.yaml` to
+exercise the layout, then was deleted and the flows rebuilt flat.
+
+| Repo | `areas.yaml` | Flows | Area folders (files: median, largest) | Shared flows: with their one area / in `shared/` | `unplaced/` |
+|---|---|---|---|---|---|
+| Sonarr | confirmed (D231) | 1,679 | 62 of 63 areas (2, Series 233); NzbDrone.Host holds no start flow, so only its page | 283 / 1,004 | 0 |
+| Kavita | proposal copy | 530 | 28 (5, Customize 135) | 89 / 157 (2 more used only by tied starts sit in `unplaced/`) | 32 tied starts + 2 shared |
+| nopCommerce | proposal copy | 1,378 | 142 (3, Admin › Sales 63) | 87 / 347 | 9 tied starts |
+
+On all three: every flow's `.json` is byte for byte what it was flat, every `.md` the same once its links are unwrapped, and
+`index.json` the same apart from `file`; no link in a flow or a page points at a missing file; `flows check` passes; a second
+`flows build` and `areas check` write nothing. `areas check` passes on Sonarr (392 of 392 placed, 63 pages) and fails on the
+two copies only for their unanswered ties. `areas propose` on Sonarr's confirmed file adds nothing and drops no answer. Fewer
+shared flows sit with one area than D230's 407 estimate for Sonarr (283), since jobs and handlers in backend-folder areas count
+as users of their own. `dotnet test` 2216 pass; extractor 75 pass.
+
+## Step 6: the guesses and blind spots on a flow (D166) — measured and grilled 2026-11-11 (D235–D240)
+
+Counted by a script (no AI) over every flow in `specs/flows/index.json` on the three clones (each flow's file through its
+`file`), every 🟡 `reason` and ❓ `why` put in a cause family by a fixed table of patterns. The unit D166 checks is a **code
+line** (a guess in the graph), not an occurrence: one line sits on many flows. Columns: distinct code lines (occurrences on
+flows; start flows touched).
+
+| 🟡 cause | Sonarr | Kavita | nopCommerce |
+|---|---|---|---|
+| Save or read read off a name (repository method, navigation collection, Identity store) | 326 (1,409; 205) | 171 (802; 89) | 2,278 (7,944; 823) |
+| One of several implementations ("one of N") | 316 (13,661; 158) | 16 (449; 60) | 247 (1,507; 98) |
+| Runs later or maybe (mutation, stream, timer, listener, a function's result, a component that draws nothing) | 269 (610; 143) | 139 (364; 64) | 0 |
+| Handlers or jobs found by type (events, queued commands, queue tables) | 101 (1,701; 122) | 22 (55; 47) | 157 (3,550; 726) |
+| URL or target match (several endpoints, URL a parameter, onclick, MVC view's folder) | 2 (61; 8) | 10 (158; 38) | 102 (112; 99) |
+| Actor: no guard found | 8 | 1 | 3 |
+| **All 🟡** | **1,022 lines** (17,450) | **359** (1,829) | **2,787** (13,116) |
+
+| ❓ cause | Sonarr | Kavita | nopCommerce |
+|---|---|---|---|
+| Outside call's address set at runtime (HTTP, SMTP, base address) | 100 (932; 87) | 36 (141; 52) | 82 (197; 81) |
+| View not found (89 are plugin views compiled at runtime) or chosen at runtime | 0 | 0 | 96 (96; 93) |
+| Frontend URL built at runtime | 13 (42; 17) | 2 (8; 4) | 0 |
+| Reflection | 5 (82; 29) | 1 | 8 (19; 8) |
+| Queued command's type known only at runtime | 1 (17; 16) | 0 | 0 |
+| **All ❓** | **119 lines** (1,073) | **39** (150) | **186** (312) |
+
+- "One of N" is concentrated: Sonarr's 13,661 come from 316 lines and its top 6 lines hold 32% (the generic provider
+  controller's `Settings.Validate()`, one of 76, and `ProviderFactory.Test()`, one of 32: the L3 gap); Kavita's 449 are 93%
+  one line (`EntityAccessAttribute.CheckAccess`, one of 6).
+- Against the whole graph: nopCommerce has 760 blind spots and ~7,246 guessed lines; 186 and 2,787 of them sit on a flow.
+- **Bug found:** a guessed link that isn't a message is given the reason "a queued command matched to its job by type"
+  (`Walker.cs:613`), so redirects that match no screen carry the wrong reason: nopCommerce 3,038 of its 3,038 such
+  occurrences (32 of 34 lines), Kavita all 55. Bar item 3 passes by code (a reason exists) though the reason is wrong.
+- Kavita's flows walk into test files (`Kavita.Services.Tests/…`, one of N on shared flows): the same cause as nopCommerce's
+  `Nop.Tests` handlers counted as start flows.
+
+Script and full tables: shared notes `step6-causes.py`, `step6-counts.txt`.
+
+Settled: counted and sorted by code line into D166's four buckets by a fixed table, printed by a `stangent` report (D235). Checked by code first (every cause with a general rule fixed), then one narrow fresh agent on a sample of what's left, ~110–120K tokens, asked first (D236).
+
+**Step 6's bar (D237), frozen 2026-11-11:** (1) every 🟡/❓ line on a flow in a bucket, by code; (2) every reason true to its
+cause (code, plus the fresh agent's sample); (3) no several-answer guess missing what the code really runs (the sample);
+(4) D177's items 1–5 still pass. No cut target; before and after counts per bucket reported.
+
+**Known gaps that join (D238):** only those touching a 🟡/❓ line on a flow: L3, X2, X4, W2, and test projects walked as app
+code. X3, X5, W3, V6–V10 and RxJS `debounceTime`/`delay` stay listed (nothing on a flow).
+
+**Runtime evidence (D239):** stays opt-in, not built in step 6; run-time-only lines stay 🟡/❓ saying what they depend on.
+
+**"Runs later" is a condition (D240):** mutation hooks, timers, streams, listeners and components that draw nothing until a
+prop is set show "only when …" on the step instead of 🟡; a call through another function's result stays 🟡.
+
+### Build order (grilled 2026-11-11, D235–D240), one commit each
+
+1. The `Walker.cs:613` reason bug: a guessed link carries its own reason (a redirect to no known screen says so).
+2. `stangent flows guesses`: every 🟡/❓ line on a flow by cause and bucket (D235), ranked by start flows touched; checks
+   bar items 1–2 by code (D237).
+3. "Runs later" as conditions (D240).
+4. A repository's save or read followed into the database library's own call, table from the entity type (D236).
+5. Plugin views found through the build's copy of a plugin's views (D236).
+6. L3: layer 2 records a generic base's type arguments; dispatch narrowed by them (D236, D238).
+7. X2, X4, W2 (D238).
+8. Test projects marked as tests in layer 2, not walked as app code (D238).
+9. Run-time-only and app-specific lines name what they depend on; app-specific questions written for a person (D237, D239).
+10. Graphs and flows rebuilt on the three clones; counts per bucket before and after; D177 items 1–5 rescored.
+11. One narrow fresh agent on ~30 sampled lines, ~110–120K tokens, asked first (D236); bar items 2–3 (D237).
+
+### Built (2026-11-12, D241–D250): pieces 1–5 and 7–11; 6 not built (D248); closed 2026-11-12 (owner confirmed D241–D246)
+
+`stangent flows guesses` on the three clones rebuilt from scratch, by code line, before → after (the "before" is the build of
+`a8dfbe0`'s graph with the piece-1 reason fix; files in the shared notes `step6-build/`):
+
+| Bucket | Sonarr 🟡 | Kavita 🟡 | nopCommerce 🟡 | Sonarr ❓ | Kavita ❓ | nopCommerce ❓ |
+|---|---|---|---|---|---|---|
+| missing general rule | 696 → 298 | 340 → 107 | 2,427 → 160 | 1 → 1 | 1 → 1 | 102 → 13 |
+| app-specific | 10 → 10 | 1 → 8 | 90 → 90 | 0 → 0 | 3 → 3 | 2 → 2 |
+| unknowable | 0 | 0 | 0 | 5 → 5 | 1 → 1 | 8 → 8 |
+| only known at run time | 316 → 304 | 18 → 12 | 269 → 230 | 113 → 113 | 34 → 36 | 74 → 74 |
+| **All** | **1,022 → 612** | **359 → 127** | **2,786 → 480** | **119 → 119** | **39 → 41** | **186 → 97** |
+
+What moved: repository saves proved through the database library's own call (nopCommerce 2,270 → 0, Sonarr 323 → 13, Kavita
+92 → 0, D242); runs-later code now a condition (Sonarr 131, Kavita 139 lines, D240); plugin views compiled (nopCommerce ❓ 89 →
+0, D243); X2 (Kavita 2 lines from 🟡 to ❓), W2 (nopCommerce's onclicks matched by the verb their script sends), test projects
+as tests (D245: Kavita's 7 shared flows into tests gone; nopCommerce's `Nop.Tests` handlers no longer starts); the dispatch fix
+under D242 added real candidates (nopCommerce one-of-N lines 247 → 207 after tests left). Kavita's app-specific 1 → 8 are actor
+guesses on flows whose calls X2 made ❓.
+
+**Bar (D237):** item 1 by code: every line on a flow sorted, 0 unsorted, on all three. Item 2 by code: every reason on a kind
+of step its cause can have, 0 problems (the piece-1 bug would fail it); every run-time line names a dependency, every
+app-specific line a question. Item 4, D177's items 1–5 rescored: Kavita and nopCommerce pass all five (item 2 96.0%, 95.6%,
+unchanged); Sonarr passes 1, 3, 4, 5 (item 1's 2 flagged steps are the checker limit ruled right in step 4) and item 2 is
+94.9% (261 of 275, was 95.3%): the one item lost is a key `hub` end (`AddSeriesService.cs:146`) on code that had 10+ callers
+only with test helpers counted (D245). After ruling R12 (D247): item 2 Sonarr 95.3%, Kavita 96.2%, nopCommerce 95.9%; D177's
+items 1–5 pass on all three. Items 2–3 by the fresh agent: piece 11, waits for the owner's OK.
+
+**Waiting, listed (D237's "fixed or listed with why it waits"):** L3 (D248: its largest line, `Settings.Validate()`, can't be narrowed by type arguments; it would narrow only `ProviderFactory.Test()` and generic repository events); X4
+(the value's type isn't carried by the TypeScript extractor's URL builders, 2–3 lines); handlers and queued commands found by
+type (the bus's registration is a framework scan); navigation Add and the Identity store (a later SaveChanges, a package's own
+store); a function returned by another (D210); a library-kept callback; the MVC view-folder rule; the 13 nopCommerce ❓ (11
+outside calls whose request a client builds, 2 views not found).
+
+### Step 6's fresh check (piece 11), run 2026-11-12 (owner: "Yes, run it"; one fresh agent, ~125K tokens against a 110–120K estimate)
+
+A sample of 30 drawn by code (`flows guesses --cause`, the lines touching the most start flows per cause, round robin across
+repos): 28 🟡/❓ lines over 20 causes, plus 2 D240 conditions. Sample and verdicts in the shared notes `step6-build/`.
+Verdicts read against the code before acting (D18); the claims below were checked.
+
+- **Bar item 3 (no missing candidate): 8 of 9 complete; the one miss fixed.** Sonarr's `ProviderFactory.SetProviderCharacteristics`
+  (one of 4) left out the base method, which `MetadataFactory` doesn't override: the walk read "has a body" off call and save
+  facts, and a body that only sets properties has none. Now a C# declaration with `{` or `=>` counts (`78f1207`).
+- **Bar item 2 (every reason true): fails on the sample, reasons true 21 of 28, buckets right 21 of 28.** Each with the general
+  rule it suggests:
+  - S22, nopCommerce `CheckPermissionAttribute.cs:152`, "no screen matches Security/AccessDenied" (550 start flows): a
+    `RedirectToAction` with no area keeps the request's area (`[Area]` on the controller or its base), and Admin's
+    `SecurityController.AccessDenied` exists.
+  - S21, nopCommerce `HttpsRequirementAttribute.cs:124`, "the page is chosen at runtime" (730 start flows): the redirect goes to
+    the current page with its scheme switched; only whether it redirects is run-time. A redirect built from the request's own
+    URL is the same page, certain, under its condition.
+  - S7 (and S4), Sonarr: "reaches no server work itself" said of a function that calls `mutate(…)` from the same hook; a
+    mutation hook's `mutate` runs that hook's `mutationFn` (D214 applies it across hooks, not inside one).
+  - S13, Sonarr `CaptchaInput.tsx`: "calls no endpoint" is wrong: `requestAction` → `$.ajax` POSTs `/{provider}/action/{name}`;
+    follow the app's ajax wrappers before asking who may run it.
+  - S27, Sonarr `SchemaBuilder.cs:258`: `Activator.CreateInstance(t)` guarded by `IsAssignableFrom` and cast `as I` is one of
+    I's implementations, not unknowable.
+  - S25, Kavita `KavitaPlusApiService.cs:226`: the base URL is one of two literals by an environment check: one of N, not ❓.
+  - S1, S2: a virtual call on `this` whose class the flow entered through is known (the filter attribute on the endpoint, the
+    factory injected): narrowing by the receiver the walk came through (L3's kind, D248).
+  - S15 (and S12): a URL parameter whose value is a constant from the flow's own caller isn't run-time: carry it down the walk.
+- **Conditions (D240): 1 of 2 right.** Kavita's stream step also needs `filter(confirmed => confirmed)`: a stream's condition
+  must include every gating operator before the step (`filter`, `takeWhile`, `first(pred)`).
+- Smaller, not counted wrong: S11 lists 14 endpoints a numeric id can't match (X4); S16/S17's queue question could be settled
+  by code (the job reads rows by a done-flag it sets); S24's verb and path are readable; S5's handler list should include
+  global `IHandleAsync<IEvent>` handlers.
+
+**Bar (D237) after the check:** item 1 passes (by code), item 3 passes (the one miss fixed), item 4 passes (D177 items 1–5 on
+all three); item 2 fails on the sample. D236: no second round without the owner's OK.
+
+**Fixed after the check (D250, owner: "Yes, fix the six"), each checked on the rebuilt clones:** S22, nopCommerce's
+`CheckPermissionAttribute` redirect now links certainly to Admin's `SecurityController.AccessDenied` (a redirect written outside
+a controller keeps the request's area); S21, `HttpsRequirementAttribute` "Sends the user back to the page they asked for"
+(a method returning a URL built from `Request.Path` gets a `request-url` fact); S4, S7, `mutate` from the app's own mutation
+hook is "calls useApiMutation.mutate", certain, and the hook's own request is walked under the call (a first try dropped the
+fallback and lost 15 Sonarr clicks; caught by the rebuild, fixed); S13, Sonarr's captcha flows reach `POST …/action/…` through
+`requestAction` → `createAjaxRequest` (`$.ajax({ ...options })` follows the spread to its callers' url and verb), so their actor
+comes from the endpoint's guard; S27, `Activator.CreateInstance(t) as ISelectOptionsConverter` is "one of 3: LanguageFieldConverter, …"; S30, Kavita's
+unlink step reads "only when the stream sends a value (`from(…)`) that passes `filter(confirmed => confirmed)`". Listed,
+waiting: S1/S2's receiver, S15's constant arguments, S25's one-of-literals.
+
+After the fixes, 🟡/❓ lines: Sonarr 629/115, Kavita 127/41, nopCommerce 481/96 (Sonarr's 🟡 rose by 17: requests it now reaches
+carry their own guesses, as S13's `{*}/action/{*}`). `flows guesses` passes on all three; D177 rescored: items 1–5 pass on all
+three (item 2 95.3%, 96.2%, 95.9%; Sonarr's item 1 flags only the 2 steps ruled right in step 4). No second agent (D250).
+
+## D310 built (2026-11-14, layer 3 part; `flows` v3 → v4)
+Layer 2's C# `call-site` facts carry `self: "1"` for a call on the object itself (`M()`, `this.M()`); graphs rebuilt with `--full`
+on all three. The walk carries the class each point runs on (its own class, or the caller's through a call on `this`) and
+narrows a virtual call on `this` to that class's nearest override plus those of classes built on it; nothing narrows it → every
+override, 🟡 "…; it is called on `this`, and which class the object is isn't known here". A shared flow whose own walk leaves such
+a call open is walked once per receiving class: id `<shared id>--<class>` (full name on a clash), name "X on Class"; the walk over
+every override is written only when a flow enters it with no receiving class. Sonarr: `RestController.TypedCreated` (582 steps,
+19 stops) is now 12 walks, `--seriescontroller` 84 steps and 1 stop, the largest 84; 35 split shared flows from 5 points (Kavita
+0, nopCommerce 7 from 2 points: `BaseDataProvider.CreateDataConnection`); start flows reaching `NamingConfigService.cs:30` 106 →
+35 of 392, the 35 all real (`FileNameBuilder` → `NamingConfigService.GetConfig` saves a default config when none exists).
+Tests: `ReceiverTests` (C# fixture added to a Shop copy). `pages verify` passes every area on all three.
+
+## D316 built (2026-11-14, layer 3 part; `flows` v4 → v5)
+A request a mutation hook declares (D214's `mutation:` deferral; React Query's `useMutation`, Sonarr's `useApiMutation`) is
+followed only where a mutation was started on the way: a step above it calls a value taken from a function's result (`mutate(…)`,
+`deleteEpisodeFile()`), a hook's handed-back function that calls `mutate` (S7), or D184's 🟡 "runs X's own work, through a library
+callback". Elsewhere (a screen's opening, a modal a click renders) it is one `waits` step "declares POST {base}/api/v5/command,
+sent only when a click (or other code) calls `mutate(…)`, so not followed here", nothing under it; a mutation's own function and
+a runtime-URL request on a line handing a hook its function are cut the same way. The rule is any walk that reaches the hook
+without such a start, not only on-load walks (the assistant's call: a click that opens a modal whose hooks declare saves doesn't
+send them either). A point walked declared is walked again where a start reaches it. A shared flow entered where no mutation
+was started, whose walk followed one only because its entry started it, gets its own walk `<id>--declared` (Sonarr: 4,
+`useApiMutation`, `useDeleteProvider`, `useManageProviderSettings`, `useSaveSettings`). Sonarr: `/series/:titleSlug` 1,231 →
+913 steps, 31 → 19 requests (all GETs left); 27 of 31 screen flows changed, 8,576 steps fewer (Settings › Import Lists 1,836 →
+203); click flows byte for byte unchanged in steps and endpoints (Delete series → `DELETE /api/v5/Series/{id:int}`, the
+Monitored toggle → `PUT /api/v5/Series/{id:int?}` and its saves); shared flows 1,336 → 1,212. Kavita and nopCommerce: no flow
+changed (no mutation hooks). Found, not fixed: 16 Sonarr endpoints (provider settings' POST/PUT/DELETE, `POST
+/api/v5/System/restart`) were reached only through those wrong screen walks; their clicks are no flows (e.g. the Save
+`SpinnerErrorButton` at `EditIndexerModalContent.tsx:313` has no `ui-event`), so they now read "no start flow calls it" on
+"Elsewhere". Tests: `FlowFixesTests` (declared vs started, `--declared` shared walk), `FlowsTests` (Shop `ShelfEditor.tsx`:
+opening only declares, the Save click sends PUT). `pages verify` passes every area on all three.

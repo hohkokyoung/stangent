@@ -1,0 +1,226 @@
+{
+  "repo": "sonarr",
+  "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+  "id": "delete-series",
+  "name": "Delete series",
+  "kind": "click",
+  "start": {
+    "what": "the Delete button's handler in the delete modal",
+    "at": "frontend/src/Series/Delete/DeleteSeriesModalContent.tsx:143",
+    "code": "<Button kind={kinds.DANGER} onPress={handleDeleteSeriesConfirmed}>"
+  },
+  "actor": {
+    "who": "signed-in user (API fallback policy requires an authenticated user)",
+    "why": "no [AllowAnonymous] on SeriesController; fallback policy requires auth",
+    "at": "src/NzbDrone.Host/Startup.cs:232",
+    "code": "options.FallbackPolicy = new AuthorizationPolicyBuilder(\"API\")\n.RequireAuthenticatedUser()\n.Build();"
+  },
+  "checks": [
+    {
+      "what": "id must be > 0 (ValidateId, run for [RestDeleteById] actions in OnActionExecuting)",
+      "at": "src/Sonarr.Http/REST/RestController.cs:35",
+      "code": "if (id <= 0)\n{\nthrow new BadRequestException(id + \" is not a valid ID\");\n}"
+    }
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "from": null,
+      "what": "confirm handler calls deleteSeries() (the mutation built from the modal's deleteFiles state and the addImportListExclusion store option), then closes the modal",
+      "at": "frontend/src/Series/Delete/DeleteSeriesModalContent.tsx:57",
+      "code": "deleteSeries();"
+    },
+    {
+      "n": 2,
+      "from": 1,
+      "what": "mutation sends DELETE /series/{seriesId}?deleteFiles=..&addImportListExclusion=.. (options go as query params)",
+      "at": "frontend/src/Series/useSeries.ts:825",
+      "code": "const { mutate, isPending, error } = useApiMutation<unknown, void>({\npath: `/series/${seriesId}`,\nqueryParams: {\n...options,\n},\nmethod: 'DELETE',"
+    },
+    {
+      "n": 3,
+      "from": 2,
+      "what": "controller action DeleteSeries(id, deleteFiles, addImportListExclusion)",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:244",
+      "code": "public NoContent DeleteSeries(int id, bool deleteFiles = false, bool addImportListExclusion = false)"
+    },
+    {
+      "n": 4,
+      "from": 3,
+      "what": "calls SeriesService.DeleteSeries with the single id and both options",
+      "at": "src/Sonarr.Api.V5/Series/SeriesController.cs:246",
+      "code": "_seriesService.DeleteSeries(new List<int> { id }, deleteFiles, addImportListExclusion);"
+    },
+    {
+      "n": 5,
+      "from": 4,
+      "what": "loads the series about to be deleted",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:174",
+      "code": "var series = _seriesRepository.Get(seriesIds).ToList();",
+      "end": {
+        "kind": "database",
+        "detail": "Series table (read by id)"
+      }
+    },
+    {
+      "n": 6,
+      "from": 4,
+      "what": "deletes the series row",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:175",
+      "code": "_seriesRepository.DeleteMany(seriesIds);",
+      "end": {
+        "kind": "database",
+        "detail": "Series table (DeleteMany)"
+      }
+    },
+    {
+      "n": 7,
+      "from": 4,
+      "what": "publishes SeriesDeletedEvent carrying deleteFiles and addImportListExclusion",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));",
+      "end": {
+        "kind": "message",
+        "detail": "SeriesDeletedEvent"
+      }
+    }
+  ],
+  "exits": [
+    {
+      "what": "throws BadRequestException when the id is 0 or negative",
+      "at": "src/Sonarr.Http/REST/RestController.cs:37",
+      "code": "throw new BadRequestException(id + \" is not a valid ID\");",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Http/REST/RestController.cs:35",
+          "code": "if (id <= 0)"
+        },
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Http/REST/RestController.cs:111",
+          "code": "if (context.ActionArguments.TryGetValue(\"id\", out var idObj))"
+        },
+        {
+          "kind": "if",
+          "at": "src/Sonarr.Http/REST/RestController.cs:109",
+          "code": "if (validateId && !skipValidate)"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "kind": "message",
+      "to": "BlocklistService.HandleAsync",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));"
+    },
+    {
+      "kind": "message",
+      "to": "DownloadHistoryService.Handle",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));"
+    },
+    {
+      "kind": "message",
+      "to": "PendingReleaseService.Handle",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));"
+    },
+    {
+      "kind": "message",
+      "to": "TrackedDownloadService.Handle",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));"
+    },
+    {
+      "kind": "message",
+      "to": "ExtraFileService.HandleAsync",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));"
+    },
+    {
+      "kind": "message",
+      "to": "HistoryService.Handle",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));"
+    },
+    {
+      "kind": "message",
+      "to": "ImportListExclusionService.HandleAsync (adds exclusions only when message.AddImportListExclusion)",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/ImportLists/Exclusions/ImportListExclusionService.cs:72",
+          "code": "if (!message.AddImportListExclusion)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "MediaCoverService.HandleAsync",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));"
+    },
+    {
+      "kind": "message",
+      "to": "MediaFileDeletionService.HandleAsync (deletes files only when message.DeleteFiles)",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));",
+      "conditions": [
+        {
+          "kind": "if",
+          "at": "src/NzbDrone.Core/MediaFiles/MediaFileDeletionService.cs:179",
+          "code": "if (message.DeleteFiles)"
+        }
+      ]
+    },
+    {
+      "kind": "message",
+      "to": "MediaFileService.HandleAsync",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));"
+    },
+    {
+      "kind": "message",
+      "to": "NotificationService.Handle",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));"
+    },
+    {
+      "kind": "message",
+      "to": "EpisodeService.HandleAsync",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));"
+    },
+    {
+      "kind": "message",
+      "to": "SeriesTranslationService.HandleAsync",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));"
+    },
+    {
+      "kind": "message",
+      "to": "Sonarr.Api.V5 SeriesController.Handle (SignalR broadcast)",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));"
+    },
+    {
+      "kind": "message",
+      "to": "Sonarr.Api.V3 SeriesController.Handle (SignalR broadcast)",
+      "at": "src/NzbDrone.Core/Tv/SeriesService.cs:176",
+      "code": "_eventAggregator.PublishEvent(new SeriesDeletedEvent(series, deleteFiles, addImportListExclusion));"
+    }
+  ],
+  "notes": [
+    "Options: deleteFiles is the modal's local state (useState(false), line 42); addImportListExclusion is read from the persisted seriesOptionsStore (line 40). Both are passed as query params to DELETE /series/{id}.",
+    "Server side the two options are only carried on SeriesDeletedEvent; their effect happens in the event handlers (links). File deletion: 'if (message.DeleteFiles)' in MediaFileDeletionService.HandleAsync; exclusion: 'if (!message.AddImportListExclusion) { return; }' in ImportListExclusionService.HandleAsync, which inserts ImportListExclusion rows (table ImportListExclusions) via _repo.InsertMany.",
+    "Health checks RemovedSeriesCheck, ImportListRootFolderCheck and RootFolderCheck also run on SeriesDeletedEvent via [CheckOn(typeof(SeriesDeletedEvent))]; not listed as links.",
+    "Controller returns TypedResults.NoContent() (204) on success. Frontend onSuccess removes the series from the ['/series'] query cache; the modal is closed by onModalClose() in the same handler (no screen change in this file).",
+    "SeriesRepository.Get(seriesIds) failure modes (missing ids) not followed.",
+    "Links carry an extra 'conditions' field for the two option-gated handlers."
+  ]
+}

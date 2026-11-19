@@ -1,0 +1,89 @@
+# A feature of the structured spec (requirements v1, D99): built from the FSD, written by code. The BA approves in a spec-only PR.
+version: 1
+id: "F-0006"
+doc: "sonarr-fsd"
+section: "3.2"
+title: "History"
+parent: "F-0003"
+children: []
+textHash: "579fa9bb72a23784c4639de12fa68203a1b57b3785bdffe66496aa7dc2f87144"
+requirements:
+  - id: "R-0037"
+    title: "History lists episode events"
+    kind: "data"
+    statement: "History lists everything that has happened to episodes: grabbed, imported, upgraded, deleted, renamed and failed."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "3.2"
+        text: "History lists everything that has happened to episodes: grabbed, imported, upgraded, deleted, renamed and failed."
+        hash: "35210e9fcc412afdfc7132c2b3aa9fa9f2214d0a2fbc7eceef9cb1dba86c6671"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "8a6d506018f195b4bfd2c03d6819abf9c4b9d6a332681fc9d1c2e1c8308d8263"
+  - id: "R-0038"
+    title: "Filter by event type"
+    kind: "rule"
+    statement: "The history list can be filtered by event type."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "3.2"
+        text: "The list can be filtered by event type, and more columns can be shown from the options."
+        hash: "314ea4c1718d6cbcc901c6b20ccdca124a110662a442298dae3214f707593b9b"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "a84a69215eb9b386fcc53439f320089e0d1428f7f24ac66b8c6a74b8f172a5fc"
+  - id: "R-0039"
+    title: "Show more columns"
+    kind: "rule"
+    statement: "More columns can be shown in the history list from the options."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "3.2"
+        text: "The list can be filtered by event type, and more columns can be shown from the options."
+        hash: "314ea4c1718d6cbcc901c6b20ccdca124a110662a442298dae3214f707593b9b"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "574b2322c8f2e174d484acfd40e0224b8e48024aa896ab5c058576acedd02cfc"
+  - id: "R-0040"
+    title: "Open grabbed release details"
+    kind: "flow"
+    statement: "For a grabbed release the user can open its details: the indexer it came from, its age and the release title."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "3.2"
+        text: "For a grabbed release the user can open its details: the indexer it came from, its age and the release title."
+        hash: "f2e6f9669bff61c5b93f8e5add7c1593ba34213a949b27f11b107f9858a36980"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "abece3a5cedce8984b24dfec106d5892166c475c41f2354bbc8009708e3c58b4"
+  - id: "R-0041"
+    title: "Undo any history entry"
+    kind: "rule"
+    statement: "Any history entry can be undone, which restores the episode file that an upgrade replaced."
+    quotes:
+      - doc: "sonarr-fsd"
+        section: "3.2"
+        text: "Any history entry can be undone, which restores the episode file that an upgrade replaced."
+        hash: "5750091a578935b5e642243d2d4200279213effd6a4f5c6c1aab63ef9fba03d8"
+    acceptance: []
+    refers: []
+    status: "proposed"
+    check: "confirmed"
+    note: null
+    hash: "65eb9d5152d382e4c2ea6cfa4d3c70fa1967007a697723f083ef415cd6ec437a"
+definitions: []
+journeys: []
+background: []
+retired: []

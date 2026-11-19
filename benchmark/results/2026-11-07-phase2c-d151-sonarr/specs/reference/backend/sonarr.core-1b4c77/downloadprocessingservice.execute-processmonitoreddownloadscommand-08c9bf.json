@@ -1,0 +1,179 @@
+{
+  "codeTitle": "DownloadProcessingService.Execute(ProcessMonitoredDownloadsCommand)",
+  "entry": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadProcessingService.Execute(NzbDrone.Core.Download.ProcessMonitoredDownloadsCommand)",
+  "generated": {
+    "bundleHash": "e0e05a234bf5ac487056ee696d5a40e06de39adf8984137300c186e1687df2c3",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 31355,
+      "cutOff": 14,
+      "depth": 4,
+      "points": 119
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 18583,
+      "calls": 1,
+      "costUsd": 0.078121,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 5751,
+      "outputTokens": 361
+    },
+    "writer": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 16289,
+      "calls": 1,
+      "costUsd": 0.09397,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 14956,
+      "outputTokens": 2881
+    }
+  },
+  "group": "Sonarr.Core",
+  "id": "Sonarr.Core|M:NzbDrone.Core.Download.DownloadProcessingService.Execute(NzbDrone.Core.Download.ProcessMonitoredDownloadsCommand)",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadProcessingService.Execute(NzbDrone.Core.Download.ProcessMonitoredDownloadsCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.TrackedDownloadService.GetTrackedDownloads"
+        ],
+        "id": "A1",
+        "text": "On a ProcessMonitoredDownloadsCommand, the service takes all tracked downloads that are trackable and processes each one in turn."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadProcessingService.Execute(NzbDrone.Core.Download.ProcessMonitoredDownloadsCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.CompletedDownloadService.Import(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload)"
+        ],
+        "id": "A2",
+        "text": "A download in ImportPending state is imported when completed download handling is enabled in the configuration."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadProcessingService.Execute(NzbDrone.Core.Download.ProcessMonitoredDownloadsCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.FailedDownloadService.ProcessFailed(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload)"
+        ],
+        "id": "A3",
+        "text": "A download in FailedPending state is passed to failed download processing."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadProcessingService.Execute(NzbDrone.Core.Download.ProcessMonitoredDownloadsCommand)"
+        ],
+        "id": "R1",
+        "text": "Only tracked downloads flagged as trackable are processed."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadProcessingService.Execute(NzbDrone.Core.Download.ProcessMonitoredDownloadsCommand)"
+        ],
+        "id": "R2",
+        "text": "Completed items are processed before failed ones, so a failed import can change state and be handled in the same run."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadProcessingService.Execute(NzbDrone.Core.Download.ProcessMonitoredDownloadsCommand)"
+        ],
+        "id": "R3",
+        "text": "An error while processing one download is logged at debug level and does not stop the other downloads."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.CompletedDownloadService.Import(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload)"
+        ],
+        "id": "R4",
+        "text": "Import marks the download as blocked with a warning if the download cannot be parsed (no remote episode), and sets state Importing before running the import."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.CompletedDownloadService.Import(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload)"
+        ],
+        "id": "R5",
+        "text": "If no files are eligible for import, the download gets the warning \"No files found are eligible for import in {path}\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.CompletedDownloadService.Import(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload)"
+        ],
+        "id": "R6",
+        "text": "If some results were not imported, a warning \"One or more episodes expected in this release were not imported or missing from the release\" is added with per-file errors, and the import is blocked."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.FailedDownloadService.ProcessFailed(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.FailedDownloadService.GetGrabbedHistory(System.String)"
+        ],
+        "id": "R7",
+        "text": "Failed processing only acts on FailedPending downloads that have grabbed history for their download id; otherwise it does nothing."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.FailedDownloadService.ProcessFailed(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload)"
+        ],
+        "id": "R8",
+        "text": "The failure message is \"Encrypted download detected\" if the item is encrypted, the client's message if it failed with a non-blank message, otherwise \"Failed download detected\"."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadProcessingService.RemoveCompletedDownloads"
+        ],
+        "id": "R9",
+        "text": "Only imported downloads whose client item can be removed are announced as removable."
+      }
+    ],
+    "shows": [],
+    "sideEffects": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadProcessingService.RemoveCompletedDownloads",
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadCanBeRemovedEvent)"
+        ],
+        "id": "E1",
+        "text": "After processing, a DownloadCanBeRemovedEvent is published for each imported download that can be removed."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadProcessingService.Execute(NzbDrone.Core.Download.ProcessMonitoredDownloadsCommand)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.TrackedDownloads.DownloadMonitoringService.Handle(NzbDrone.Core.Download.DownloadsProcessedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Extras.ExtraService.Handle(NzbDrone.Core.Download.DownloadsProcessedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Notifications.NotificationService.HandleAsync(NzbDrone.Core.Download.DownloadsProcessedEvent)"
+        ],
+        "id": "E2",
+        "text": "A DownloadsProcessedEvent is published at the end of every run; download monitoring, extras and notifications handle it."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Download.FailedDownloadService.ProcessFailed(NzbDrone.Core.Download.TrackedDownloads.TrackedDownload)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.FailedDownloadService.PublishDownloadFailedEvent(NzbDrone.Core.History.EpisodeHistory,System.Collections.Generic.List{System.Int32},System.String,System.String,NzbDrone.Core.Download.TrackedDownloads.TrackedDownload,System.Boolean)"
+        ],
+        "id": "E3",
+        "text": "Failed processing sets the download state to Failed and publishes a DownloadFailedEvent with series, episodes, quality, message and source from the grabbed history."
+      },
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Blocklisting.BlocklistService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.History.DownloadHistoryService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.History.HistoryService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.RedownloadFailedDownloadService.Handle(NzbDrone.Core.Download.DownloadFailedEvent)",
+          "Sonarr.Core|M:NzbDrone.Core.Download.DownloadEventHub.Handle(NzbDrone.Core.Download.DownloadFailedEvent)"
+        ],
+        "id": "E4",
+        "text": "DownloadFailedEvent is handled by blocklisting, download history, history, redownload and the download event hub."
+      }
+    ]
+  },
+  "title": "Process Monitored Downloads",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

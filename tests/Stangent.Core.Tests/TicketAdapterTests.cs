@@ -178,7 +178,6 @@ public class TicketAdapterTests
         Assert.Equal("https://mcp.atlassian.com/v2/mcp", t.Endpoint);
         Assert.Equal(1.0, t.ProveBudget.Usd);
         Assert.Equal(30, t.ProveBudget.Turns);
-        Assert.True(t.AiPoints);
         Assert.Equal("internal", t.Tone);
         Assert.False(Trackers.Open(repo.Repo, new MemorySecretStore(), TextWriter.Null, null).Replaying);
     }

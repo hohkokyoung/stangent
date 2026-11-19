@@ -1,8 +1,8 @@
 ---
 phase: 1b
 name: frontend-api
-status: done
-consumes: { store: 1, artifact-base: 1, telemetry-event: 1, cli-conventions: 2, benchmark: 1, code-graph: 3 }
+status: needs review
+consumes: { store: 1, artifact-base: 1, telemetry-event: 2, cli-conventions: 3, benchmark: 1, code-graph: 4 }
 provides: {}
 ---
 
@@ -255,3 +255,106 @@ the v2 layout (the frontend extractor writes fragments, which are unchanged), th
 `FrontendScanner`, `frontend-http`, `ApiShapes`); fragments are stored as before; all tests pass on v3. Kavita's
 OpenAPI answer key, re-run on the v3 graph, gives byte-identical results (endpoints and fields 1.00 / 1.00, 405
 callers linked). 1b now consumes `code-graph: 3` and is `done` again.
+
+### Needs review 2026-11-04 · `code-graph` v3 → v4 (overhaul 1.1, 1.2; D115)
+v4 added `opens-screen` lines, kept apart from the walked lines, and `meta.dirtyFiles`. Follow-up: confirm nothing here depends on v3, re-run this phase's tests, then move `consumes` to `code-graph: 4`.
+Checked 2026-11-04 (D20): by grep, nothing outside `Stangent.Graph`'s own new detector reads the new values; its extractor and fragments are unchanged. All tests pass, so this now consumes `code-graph: 4`.
+
+### Reopened 2026-11-04 by the overhaul, 1.2 · Playwright as evidence (D115)
+
+**What was built.** The `playwright-specs` detector, `stangent graph screen-tests`, and `PlaywrightSpecs` in `Stangent.Graph`, the one
+place that finds specs and matches a path to a route. Bug proof calls it, and keeps its own looser read of `goto` so its results don't
+change. Details: `docs/code-graph.md`, "Screen tests".
+
+**Results, no AI.** Measured once, with nothing tuned afterwards except the wording of one ❓ reason.
+
+| Repo (commit) | Screens | Specs | `goto`s read | Resolved | ❓ `goto`s | ❓ specs with no `goto` |
+|---|---|---|---|---|---|---|
+| eShop (913acea) | Blazor, no `page` points | 3 | 5 | 0 | 5, no screen on the map | 0 |
+| Actual (288bf88) | React Router | 32 | 39 | 27 | 12: 6 other receivers, 3 built URLs, 3 no screen | 4 |
+| bonds (9862157) | React Router | 32 | 205 | 96, on 20 routes | 109, all built URLs | 0 |
+| **Total** | | **67** | **249** | **123 (49%)** | **126** | **4** |
+
+**Re-measured 2026-11-04, after the frontend rule tightened and percent-encoded paths went to ❓.** The same on all three: eShop 0 of 5, Actual 27 of 39, bonds 96 of 205 on 20 routes, 123 of 249 in all, with the same ❓ reasons and every link citing. Each repo has one frontend with screens, so none of these three tests the new rule; the tests do. `notInCommit` is empty on all three.
+
+**Hand-check of 10 links.** Every 9th link on bonds, read against the spec line and `web/src/App.tsx`: 10 of 10 are right (`/register`, `/admin/settings`
+twice, `/login`, `/vaults`, `/auth/callback`, `/settings/personalize`, `/settings/users`, `/settings`, and one more `/register`). A
+query string was dropped correctly on `/auth/callback?link_token=…`.
+
+Beyond those ten:
+- All 27 of Actual's links go to `/`, which is `<StartPageRedirect />`. Each is right as written, and says little: its tests land there and click on. That's the redirect gap.
+- eShop's three paths (`/`, `/cart`, `/user/orders`) are real `@page` routes in Razor files. ❓ is the right answer until Razor has `page` points (D65); no link was guessed.
+- Actual's 6 "other receivers" are real `Page`s named `leader`, `follower` and so on. They stay ❓: a name can't tell them from a page object.
+- bonds has 159 test files and 32 count; the other runner's tests were left alone.
+
+**Byte check.** Against the code before these slices, on the shop fixture (334 lines) and Sonarr at 0bffefe7c8 (228,617 lines; `global.json` removed in a scratch copy, for lack of the SDK it pins), a repo with no specs exports the same bytes, apart from the fragment fingerprints, which change with every new stangent build on purpose.
+
+**Known gaps.** `docs/code-graph.md` lists them. Found while moving the finder, left alone so results stay the same:
+- A route two frontends share has the page id `page:<frontend>|<route>`, which `RelatedSpecs` never matches.
+- Bug proof reads only `*.spec.ts` and `*.spec.js`, so it finds none of Actual's `*.test.ts`, which the graph does find.
+- It also reads a `goto` in a comment, and `"/a" + id` as `/a`.
+
+**Impact on other phases.** Nothing reads these lines yet. A later step can cite `read`; a step that runs the spec can cite `ran`.
+Follow-ups: show them beside an impact answer when a consumer needs it (a new field means `impact-report` v6), and read helper files.
+
+Checked 2026-11-04 (D20, D121): `telemetry-event` v1 → v2 and `cli-conventions` v2 → v3. By grep, nothing here reads telemetry, and results are read by name, so `components` beside `result` changes nothing. Moved.
+
+## Python (D127)
+
+Built 2026-11-05 on the frontend's pattern: a parse-only extractor, the `python` and `detector-flask-routes` components, and plain React apps in a repo with Python. Rules are in `docs/code-graph.md`. `code-graph` stayed v4. No AI calls, no fresh check (D120).
+
+**Run:** `dotnet build`, `dotnet test` (1,812 tests, including 12 new ones on the hand-written `tests/fixtures/flask-shop`), `phases check`, and `graph build --no-restore`, `spec pages`, `graph where`, `graph impact` and `spec bundle` on the owner's project, in a clone outside this repo with its store uncommitted. The `shop` fixture's export is byte-identical to before, leaving out each fragment's fingerprint line (the fingerprint holds the build's own version id, so any code change moves it). `SavedWorkTests`' pins hold.
+
+**Not run:** any AI step, so whether pages written from these slices are any good is unknown. `--no-restore` means the frontend's packages weren't installed, so its calls were matched without library types; its calls here are `fetch`, which needs none. Python 3.14.7 only; older Pythons aren't tried. `python_missing` was tried by hand with no Python on the `PATH`, and has no test.
+
+**Counts on the owner's project (counts only, D127):**
+
+| Measure | Count |
+|---|---|
+| Python files read / couldn't be parsed | 15 / 0 |
+| Notebooks left out, counted | 2 |
+| Flask endpoints, a verb and path each | 32, from 27 route lines; an independent count of the source gives the same |
+| Endpoints ✅ / 🟡 | 3 / 29 |
+| Route problems (❓) | 32 |
+| Calls ✅ / 🟡 | 14 / 25 |
+| Calls proved outside the project | 766 |
+| Calls with an unknown receiver and no project name | 64 |
+| Calls unresolved (❓) | 0 |
+| Imports resolved / outside / ❓ | 10 / 177 / 8 |
+| React calls with a URL / matched / unmatched | 23 / 23 / 0 |
+| React calls with a URL built at runtime (❓) | 9 |
+| Pages it would plan: screen / component / backend | 3 / 1 / 32 |
+
+**Hand check:** 5 route lines compared with the source, and all 5 agree on file, line, function, verbs and URL. Routes commented out in the source have no endpoint. Where the same URL is commented out in two files and live in a third, only the live one is on the map.
+
+**What those counts don't say.** This code base has few calls between its own functions: most of its 869 calls go straight to packages, and it has one class. So 0 unresolved says little, and a code base with more classes would have far more ❓. Only one project was measured, and nothing was tuned on it. Most endpoints are 🟡 with a ❓ because of `sys.path`, not because they're doubtful. The matched React calls were spot-checked against the source, not all of them, and the app wasn't run.
+
+**Bug proof stays C# and TypeScript (`Stangent.Tickets`), left as is:**
+- `Proof/TestTargets.cs` finds `dotnet`, `vitest`, `jest` and `playwright` only: no pytest or unittest target, so a Python ticket gets no test target.
+- `Proof/BugProof.cs` allows and suggests those runners' commands only, and works out a build from `.csproj` projects.
+- `Points.cs` reads file and line from .NET and JavaScript stack traces, not a Python traceback, and its list of file types skips `.py`.
+- `Pull.cs` keeps `.cs`, `.ts` and `.js` attachments as text, not `.py`.
+- `PageIndex.cs` reads strings from Python with the script rule, and follows Razor views, not Flask templates.
+
+## What the tests walk through (D129, D149, `test-journeys`, off), 2026-11-06
+
+**Built from Phase 1b's frontend reader and D115's route resolution. Fakes and the extractor's own tests only: no AI, no judge, no fresh check. Measured on scratch copies, with the graphs already built.**
+
+| Repo | Test files | Tests | Hooks | Steps | ❓ | Gotos | Reach a screen | Reach a reference page | Left out as another runner's |
+|---|---|---|---|---|---|---|---|---|---|
+| eShop | 3 | 3 | 0 | 35 | 10 | 5 | 0 | 0 | 0 |
+| Actual | 32 | 140 | 57 | 1,225 | 820 | 36 | 24 | 0 | 133 |
+| Bonds | 32 | 218 | 0 | 2,779 | 956 | 142 | 60 | 0 | 127 |
+
+- **eShop by hand, every statement of its 3 test files against the output:** 35 steps, 25 right, 0 wrong, 10 ❓. The ❓ are 5 helpers (`emptyCart`, `addProductToCart`, `removeFirstCartItem`) and 5 gotos whose words are right with no screen resolved. The order, lines and words of all 35 match. Nothing in those files is missing as a step: the two lines that aren't steps name a place or hold a promise, and they're read where they're used.
+- **Actual's ❓:** 339 page-object calls, 332 targets from a page object, 69 checks on a value, 23 helpers, 18 unknown page calls, 17 loops, 12 gotos with no screen, 5 not read outside a test, 2 conditions, 2 try blocks, 1 computed selector.
+- **Bonds' ❓:** 621 helpers, 97 targets from a page object, 82 gotos with no screen, 46 computed selectors, 46 checks on a value, 25 unknown page calls, 23 page-object calls, 9 loops, 5 conditions, 1 try block, 1 not read outside a test.
+- **Actual and bonds were counted, not read through by hand.** A spot check found one real file of Actual's left out as another runner's, because it was all page objects. It's fixed, and the counts above are after the fix.
+- **With the switch off:** the command says so and writes nothing. `stangent-ts-extract.mjs` is byte-identical after the new bundle's build (checked by hash), so the graph's salt doesn't move. `SavedWorkTests`' pins pass unchanged.
+- **Tests:** 41 in the extractor's suite, of which 21 are this reader's, and `TestJourneyTests`. The only edits to existing tests are the three D149 names.
+
+**Not run:**
+- A link to a real reference page: none of these clones has recorded pages, so that ran on a fake only.
+- Any AI step, any use-case run, and a fresh check.
+- Sonarr and RealWorld's spec repo, which weren't asked for.
+

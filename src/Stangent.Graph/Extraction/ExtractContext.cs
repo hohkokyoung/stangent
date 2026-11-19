@@ -21,8 +21,33 @@ public sealed class ExtractContext(
     public string ProjectId { get; } = projectId;
     public string ProjectDir { get; } = projectDir;
     public Compilation Compilation { get; } = compilation;
+
+    /// <summary>Test frameworks' own runners' assemblies: a project referencing one is a test project (step 6, D238). Not an
+    /// assertion library alone: app code may use one (Kavita.Common references xunit.assert), and it flows to every project above.</summary>
+    static readonly HashSet<string> TestFrameworks = new(["xunit.core", "xunit.v3.core", "nunit.framework", "Microsoft.VisualStudio.TestPlatform.TestFramework",
+        "MSTest.TestFramework", "TUnit.Core"], StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Step 6 (D238): every point in a test project is test code (its fakes and helpers too, not only its [Fact] methods), so a
+    /// flow never walks into it as app code nor starts at its handlers.
+    /// </summary>
+    public bool IsTestProject { get; } = compilation.ReferencedAssemblyNames.Any(a => TestFrameworks.Contains(a.Name))
+        || files.Any(f => f.Tree.GetRoot().DescendantNodes().OfType<AttributeSyntax>().Any(a => TestAttributes.Contains(Simple(a.Name))));
+
+    /// <summary>The attributes that mark a test method (xUnit, NUnit, MSTest).</summary>
+    public static readonly HashSet<string> TestAttributes = ["Fact", "Theory", "Test", "TestCase", "TestCaseSource", "TestMethod", "DataTestMethod"];
+
+    static string Simple(NameSyntax name)
+    {
+        var text = name switch { QualifiedNameSyntax q => q.Right.Identifier.ValueText, SimpleNameSyntax n => n.Identifier.ValueText, _ => name.ToString() };
+        return text.EndsWith("Attribute", StringComparison.Ordinal) ? text[..^"Attribute".Length] : text;
+    }
     public string AssemblyName => Compilation.AssemblyName ?? "";
     public IReadOnlyList<SourceFile> Files { get; } = files;
+    /// <summary>N1: the Razor compiler's C# for each view, with the view's repo path as <see cref="SourceFile.RelativePath"/>. Detectors other than <c>razor-views</c> never see it.</summary>
+    public IReadOnlyList<SourceFile> RazorFiles { get; init; } = [];
+    /// <summary>N1: every <c>.cshtml</c> file the project owns (absolute paths), so a view the compiler made nothing for is a blind spot.</summary>
+    public IReadOnlyList<string> ViewFiles { get; init; } = [];
     public ProjectFragment Fragment { get; } = fragment;
     /// <summary>This detector's settings from <c>stangent.yaml</c> (empty when none).</summary>
     public IReadOnlyDictionary<string, List<string>> Settings { get; set; } = settings;
@@ -194,6 +219,8 @@ public sealed class LinkContext(CodeGraph graph, IReadOnlyDictionary<string, Lis
 {
     public CodeGraph Graph { get; } = graph;
     public IReadOnlyDictionary<string, List<string>> Settings { get; set; } = settings;
+    /// <summary>The repo's folder, for a detector that reads files the compiler never saw (Playwright specs).</summary>
+    public string Root { get; init; } = "";
     readonly HashSet<string> nodeIds = [.. graph.AllNodes.Select(n => n.Id)];
     readonly HashSet<(string, string, string, string)> edgeKeys = [];
 
@@ -206,13 +233,18 @@ public sealed class LinkContext(CodeGraph graph, IReadOnlyDictionary<string, Lis
         if (nodeIds.Add(node.Id)) Graph.LinkedNodes.Add(node);
     }
 
-    public void AddEdge(string source, string target, string kind, Label label, string detector)
+    /// <param name="self">Keep a line from a point to itself: a job that queues itself again (Y2). Other lines never do.</param>
+    public void AddEdge(string source, string target, string kind, Label label, string detector, bool self = false)
     {
-        if (source == target || !HasNode(source) || !HasNode(target)) return;
+        if ((source == target && !self) || !HasNode(source) || !HasNode(target)) return;
         if (edgeKeys.Add((source, target, kind, detector)))
             Graph.LinkedEdges.Add(new Edge(source, target, kind, label, detector));
     }
 
     public void AddBlindSpot(string owner, string? file, int line, string reason, string detector) =>
         Graph.LinkedBlindSpots.Add(new BlindSpot(owner, file ?? "", line, reason, detector));
+
+    /// <summary>A fact found while linking; kept in the order added, so detectors add them in a fixed order.</summary>
+    public void AddFact(string detector, string kind, string owner, string? file, int line, params (string Key, string Value)[] data) =>
+        Graph.LinkedFacts.Add(new Fact(detector, kind, owner, file, line, data.ToDictionary(d => d.Key, d => d.Value, StringComparer.Ordinal)));
 }

@@ -1,0 +1,80 @@
+{
+  "codeTitle": "GET /api/v5/Tag",
+  "entry": "endpoint:Sonarr.Api.V5|GET /api/v5/Tag",
+  "generated": {
+    "bundleHash": "ead8bb9d05e52d22ec9dd8d907d2fee35acb78492e59b4bb055e909b166a0c78",
+    "checkRetries": 0,
+    "commit": "0bffefe7c8b7804068ab0844af218376e58b1acb",
+    "slice": {
+      "chars": 8687,
+      "cutOff": 5,
+      "depth": 4,
+      "points": 14
+    },
+    "verifier": {
+      "cacheReadTokens": 877,
+      "cacheWriteTokens": 5873,
+      "calls": 1,
+      "costUsd": 0.024201,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 2000,
+      "outputTokens": 53
+    },
+    "writer": {
+      "cacheReadTokens": 1378,
+      "cacheWriteTokens": 4674,
+      "calls": 1,
+      "costUsd": 0.023876,
+      "inputTokens": 2,
+      "model": "claude-sonnet-5-5",
+      "ms": 3484,
+      "outputTokens": 490
+    }
+  },
+  "group": "Sonarr.Api.V5",
+  "id": "endpoint:Sonarr.Api.V5|GET /api/v5/Tag",
+  "kind": "backend",
+  "schemaVersion": 1,
+  "sections": {
+    "actions": [
+      {
+        "cites": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/Tag",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Tags.TagController.GetAll"
+        ],
+        "endpoints": [
+          "endpoint:Sonarr.Api.V5|GET /api/v5/Tag"
+        ],
+        "id": "A1",
+        "text": "A caller requests all tags and receives them with an OK response."
+      }
+    ],
+    "rules": [
+      {
+        "cites": [
+          "Sonarr.Core|M:NzbDrone.Core.Tags.TagService.All"
+        ],
+        "id": "R1",
+        "text": "Tags are sorted by Label before being returned."
+      }
+    ],
+    "shows": [
+      {
+        "cites": [
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Tags.TagController.GetAll",
+          "Sonarr.Api.V5|M:Sonarr.Api.V5.Tags.TagResourceMapper.ToResource(NzbDrone.Core.Tags.Tag)"
+        ],
+        "id": "S1",
+        "text": "Returns a JSON list of all tags, each with its Id and Label."
+      }
+    ],
+    "sideEffects": []
+  },
+  "title": "List tags (GET /api/v5/Tag)",
+  "unknowns": [],
+  "verification": {
+    "dropped": 0,
+    "findings": []
+  }
+}

@@ -1,0 +1,678 @@
+using System.IO.Compression;
+using System.Text;
+using System.Text.Json.Nodes;
+using DocumentFormat.OpenXml.Packaging;
+using Stangent.Graph;
+using Stangent.Spec.Fsd;
+using Stangent.Spec.Pages;
+using Stangent.Spec.Trace;
+using Stangent.Tickets;
+
+namespace Stangent.Core.Tests;
+
+/// <summary>Files inside a document: read, kept and listed, what's refused, their ids, the section's fingerprint and the switch that shows them to the checks (A.6, A.7, A.8, D123).</summary>
+public sealed class EmbeddedFilesTests : IDisposable
+{
+    readonly TempRepo archive = new();
+    readonly TempRepo repo;
+
+    public EmbeddedFilesTests() => repo = new TempRepo($"version: 1\nfsd: {{ archive: {{ name: a, path: '{archive.Root}', git: false }} }}\n");
+
+    public void Dispose()
+    {
+        repo.Dispose();
+        archive.Dispose();
+    }
+
+    const string Object = """<w:p><w:r><w:object xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><o:OLEObject ProgID="Excel.Sheet.12" r:id="RID"/></w:object></w:r></w:p>""";
+
+    /// <summary>A Word file with a section called <c>Rules</c>, a second called <c>Other</c>, and a file on <c>Rules</c>.</summary>
+    internal static byte[] WordWith(string name, byte[] bytes, string contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", string text = "Rules text here for the reader.", string heading = "Rules")
+    {
+        const string id = "rIdEmbed";
+        return FsdDocxTests.Docx(FsdDocxTests.H(heading) + FsdDocxTests.P(text) + Object.Replace("RID", id, StringComparison.Ordinal) + FsdDocxTests.H("Other") + FsdDocxTests.P("Other text."), main =>
+        {
+            var part = main.AddEmbeddedPackagePart(contentType);
+            main.ChangeIdOfPart(part, id);
+            using var s = part.GetStream(FileMode.Create);
+            s.Write(bytes);
+            _ = name;
+        });
+    }
+
+    string DocDir => FsdImport.DocDir(repo.Root, "fsd");
+
+    JsonObject Import(byte[] bytes, string fileName = "fsd.docx")
+    {
+        var file = Path.Combine(repo.Root, fileName);
+        File.WriteAllBytes(file, bytes);
+        var imported = FsdImport.Import(repo.Repo, file, "fsd");
+        Committed.All(repo.Repo);
+        return imported;
+    }
+
+    JsonObject Document() => FsdDocument.Load(repo.Root, "fsd");
+
+    static byte[] Zip(params (string Name, byte[] Bytes)[] entries)
+    {
+        using var stream = new MemoryStream();
+        using (var zip = new ZipArchive(stream, ZipArchiveMode.Create, true))
+            foreach (var (name, bytes) in entries)
+            {
+                using var e = zip.CreateEntry(name, CompressionLevel.Optimal).Open();
+                e.Write(bytes);
+            }
+        return stream.ToArray();
+    }
+
+    static AttachmentRecord One(string name, byte[] bytes, ImportOptions? options = null) => EmbeddedFiles.One(new FileInDocument(name, bytes, "Rules", "test"), options ?? new ImportOptions(), 1);
+
+    // ---- saved, linked, and document.md untouched ----
+
+    [Fact]
+    public void An_embedded_workbook_is_saved_with_an_id_and_a_csv_per_sheet_and_the_text_stays_out_of_the_document()
+    {
+        var workbook = XlsxFixture.Build([
+            new("Rates", XlsxFixture.Row(1, XlsxFixture.Str("A1", "Tier"), XlsxFixture.Str("B1", "Fee, in EUR")) + XlsxFixture.Row(3, XlsxFixture.Str("A3", "Gold"), XlsxFixture.Num("B3", "12"))),
+            new("Back", XlsxFixture.Row(1, XlsxFixture.Str("A1", "secret")), State: "hidden"),
+        ]);
+        var result = Import(WordWith("rates.xlsx", workbook));
+        Assert.Equal("imported", (string)result["status"]!);
+        var doc = Document();
+        var attachment = doc["attachments"]![0]!;
+        Assert.Equal(("A-0001", "S-0001", "Rules", "excel", "converted"), ((string)attachment["id"]!, (string)attachment["section"]!, (string)attachment["sectionNumber"]!, (string)attachment["kind"]!, (string)attachment["reading"]!));
+        var folder = FsdAttachments.Folder(DocDir, "A-0001");
+        // I.7, D16: as it came, it's in the archive and not the repo; its record says where, and what it came to stays.
+        Assert.False(Directory.Exists(Path.Combine(folder, "original")));
+        var original = attachment["files"]!.AsArray().Single(f => (string)f!["role"]! == "original")!;
+        Assert.Equal(workbook, File.ReadAllBytes(Path.Combine(archive.Root, (string)original["archived"]!)));
+        // Line N of the CSV is row N of the sheet, and a comma in a cell is quoted.
+        Assert.Equal("Tier,\"Fee, in EUR\"\n\nGold,12\n", File.ReadAllText(Path.Combine(folder, "rates.csv")));
+        Assert.False(File.Exists(Path.Combine(folder, "back.csv")));
+        Assert.Contains(attachment["problems"]!.AsArray(), p => ((string)p!).Contains("hidden sheet \"Back\"", StringComparison.Ordinal));
+
+        var section = doc["sections"]![0]!;
+        Assert.Equal("A-0001", (string)section["attachments"]![0]!["id"]!);
+        Assert.Contains("attachments/A-0001/", (string)section["attachmentLines"]![0]!);
+        Assert.Contains("generated by stangent", (string)section["attachmentLines"]![0]!);
+        Assert.Null(doc["sections"]![1]!["attachments"]);
+        Assert.Contains("attachments/A-0001/", FsdOutline.ShowText(FsdOutline.Show(repo.Root, "fsd", "Rules")));
+
+        // The text and the Markdown are as they'd be with no file in the document at all.
+        var plain = DocxConverter.Convert(FsdDocxTests.Docx(FsdDocxTests.H("Rules") + FsdDocxTests.P("Rules text here for the reader.") + FsdDocxTests.H("Other") + FsdDocxTests.P("Other text.")));
+        Assert.Equal(plain.Markdown, Chapters.Text(DocDir));
+        Assert.DoesNotContain("Gold", plain.Markdown);
+        Assert.Equal(CanonicalJson.Hash(plain.Sections[0].Text), (string)section["textHash"]!);
+
+        var report = File.ReadAllText(Path.Combine(DocDir, ImportReport.FileName));
+        Assert.Contains("Attachments: 1.", report);
+        Assert.Contains("## attachment (1)", report);
+        Assert.Contains("hidden sheet \"Back\"", report);
+        var line = doc["problems"]!.AsArray().Single(p => (string)p!["kind"]! == "attachment")!;
+        Assert.Equal(("Rules", "S-0001"), ((string)line["sectionNumber"]!, (string)line["section"]!));
+    }
+
+    [Fact]
+    public void The_same_file_gives_the_same_bytes_and_the_embedded_file_is_no_longer_listed_as_not_read()
+    {
+        var word = WordWith("rates.xlsx", XlsxFixture.Rates());
+        var a = ImportPipeline.Run(ImportPipeline.ForFile("a.docx")!, word, new()).Document;
+        var b = ImportPipeline.Run(ImportPipeline.ForFile("a.docx")!, word, new()).Document;
+        Assert.Equal(a.Markdown, b.Markdown);
+        Assert.Equal(a.Problems, b.Problems);
+        Assert.Equal(a.Attachments[0].Outputs.Select(o => (o.Path, Convert.ToHexString(o.Bytes))), b.Attachments[0].Outputs.Select(o => (o.Path, Convert.ToHexString(o.Bytes))));
+        Assert.DoesNotContain(a.Problems, p => p.Contains("an embedded file not read", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_file_nothing_in_the_body_points_to_is_read_with_no_section()
+    {
+        var word = FsdDocxTests.Docx(FsdDocxTests.H("Rules") + FsdDocxTests.P("Text."), main =>
+        {
+            using var s = main.AddEmbeddedPackagePart("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet").GetStream(FileMode.Create);
+            s.Write(XlsxFixture.Rates());
+        });
+        var a = Assert.Single(ImportPipeline.Run(ImportPipeline.ForFile("a.docx")!, word, new()).Document.Attachments);
+        Assert.Null(a.Section);
+        Assert.Equal("converted", a.Status);
+    }
+
+    [Fact]
+    public void A_file_on_a_sheet_is_read_with_that_sheet_as_its_section()
+    {
+        var file = XlsxFixture.Build([new("Rates", XlsxFixture.Row(1, XlsxFixture.Str("A1", "Tier")), Parts: part =>
+        {
+            using var s = part.AddEmbeddedPackagePart("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet").GetStream(FileMode.Create);
+            s.Write(XlsxFixture.Rates());
+        })]);
+        var a = Assert.Single(ImportPipeline.Run(ImportPipeline.ForFile("a.xlsx")!, file, new()).Document.Attachments);
+        Assert.Equal(("Rates", "excel"), (a.Section, a.Kind));
+    }
+
+    [Fact]
+    public void A_word_file_and_a_pdf_inside_become_text_through_the_same_steps()
+    {
+        var inner = FsdDocxTests.Docx(FsdDocxTests.H("Inner") + FsdDocxTests.P("Inner words stay here."));
+        var word = One("notes.docx", inner);
+        Assert.Equal(("word", "converted"), (word.Kind, word.Status));
+        Assert.Contains("Inner words stay here.", Encoding.UTF8.GetString(word.Outputs.Single(o => o.Path == "notes.md").Bytes));
+
+        using var pdf = new PdfFixture();
+        pdf.Page("Refunds are paid within five days.");
+        var read = One("terms.pdf", pdf.Build());
+        Assert.Equal(("pdf", "converted"), (read.Kind, read.Status));
+        Assert.Contains("Refunds are paid", Encoding.UTF8.GetString(read.Outputs.Single(o => o.Path == "terms.md").Bytes));
+    }
+
+    // ---- kept and listed: nothing stops the import ----
+
+    [Fact]
+    public void A_file_that_cant_be_read_is_kept_and_listed_and_the_import_goes_on()
+    {
+        using var scannedPdf = new PdfFixture();
+        scannedPdf.Page();
+        var cases = new (string Name, byte[] Bytes, string Why)[]
+        {
+            ("deck.pptx", Zip(("ppt/slides/slide1.xml", [1])), "PowerPoint"),
+            ("notes.bin", [1, 2, 3], "no format"),
+            ("oleObject1.bin", [1, 2, 3], "no format"),
+            ("broken.docx", [1, 2, 3], "can't be opened"),
+            ("broken.xlsx", [1, 2, 3], "can't be opened"),
+            ("scanned.pdf", scannedPdf.Build(), "No page of this PDF"),
+            ("broken.zip", [1, 2, 3], "can't be opened"),
+        };
+        foreach (var (name, bytes, why) in cases)
+        {
+            var r = One(name, bytes);
+            Assert.Equal((name, "kept"), (r.FileName, r.Status));
+            Assert.Contains(why, r.Why!, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(bytes, r.Outputs.Single(o => o.Role == "original").Bytes);
+        }
+        Assert.Equal("imported", (string)Import(WordWith("x.bin", [1, 2, 3], "application/octet-stream"))["status"]!);
+        var line = Document()["problems"]!.AsArray().Single(p => (string)p!["kind"]! == "attachment")!;
+        Assert.Contains("kept, not read", (string)line["detail"]!);
+    }
+
+    [Fact]
+    public void A_locked_file_is_kept_and_a_labelled_one_isnt_saved_at_all()
+    {
+        var locked = One("locked.xlsx", XlsxFixture.Ole(("EncryptedPackage", new byte[10])));
+        Assert.Equal("kept", locked.Status);
+        Assert.Contains("locked", locked.Why!);
+
+        using var stream = new MemoryStream();
+        stream.Write(XlsxFixture.Rates());
+        using (var zip = new ZipArchive(stream, ZipArchiveMode.Update, true))
+        using (var w = new StreamWriter(zip.CreateEntry("docProps/custom.xml").Open()))
+            w.Write("""<Properties xmlns="x"><property name="MSIP_Label_1234-ab_Name"><vt>Secret</vt></property></Properties>""");
+        var withheld = One("labelled.xlsx", stream.ToArray());
+        Assert.Equal("withheld", withheld.Status);
+        Assert.Empty(withheld.Outputs);
+        Assert.Equal("converted", One("labelled.xlsx", stream.ToArray(), new ImportOptions(AllowLabels: ["Secret"])).Status);
+    }
+
+    [Fact]
+    public void An_ole_package_gives_up_the_file_inside_small_or_large()
+    {
+        var small = One("oleObject1.bin", XlsxFixture.Ole(("\u0001Ole10Native", XlsxFixture.Native("rates.xlsx", XlsxFixture.Rates()))));
+        Assert.Equal(("ole", "converted"), (small.Kind, small.Status));
+        Assert.Contains(small.Outputs, o => o.Path == "package/rates.xlsx/rates.csv" && o.Role == "csv");
+
+        var unread = One("oleObject2.bin", XlsxFixture.Ole(("\u0001Ole10Native", XlsxFixture.Native("data.bin", new byte[5000]))));
+        Assert.Equal("kept", unread.Status);
+        Assert.Contains("data.bin", unread.Why!);
+        Assert.Contains(unread.Outputs, o => o.Path == "package/data.bin/original/data.bin" && o.Bytes.Length == 5000);
+
+        Assert.Contains("old Excel", One("oleObject3.bin", XlsxFixture.Ole(("Workbook", new byte[10]))).Why!);
+        Assert.Contains("can't be read", One("oleObject4.bin", XlsxFixture.Ole(("Other", new byte[10]))).Why!);
+    }
+
+    [Fact]
+    public void A_malformed_ole_file_reads_as_no_container_and_never_loops()
+    {
+        var ole = XlsxFixture.Ole(("A", new byte[10]));
+        var looped = (byte[])ole.Clone();
+        // The directory's first FAT entry points at itself once sectors are walked.
+        var fatSector = BitConverter.ToInt32(looped, 76);
+        var directory = BitConverter.ToInt32(looped, 48);
+        BitConverter.GetBytes(directory).CopyTo(looped, (fatSector + 1) * 512 + directory * 4);
+        Assert.Null(OleContainer.TryOpen(looped));
+        Assert.Null(OleContainer.TryOpen(ole[..600]));
+        Assert.Null(OleContainer.TryOpen(new byte[10]));
+        Assert.NotNull(OleContainer.TryOpen(ole));
+    }
+
+    // ---- hostile input ----
+
+    [Theory]
+    [InlineData("../evil.txt")]
+    [InlineData("a/../../evil.txt")]
+    [InlineData("..\\evil.txt")]
+    [InlineData("/etc/evil.txt")]
+    [InlineData("C:\\evil.txt")]
+    public void A_zip_name_that_climbs_out_is_refused_and_nothing_lands_outside(string name)
+    {
+        Assert.NotNull(EmbeddedFiles.UnsafeName(name));
+        var r = One("pack.zip", Zip((name, [1]), ("good/rates.xlsx", XlsxFixture.Rates())));
+        Assert.Equal("converted", r.Status);
+        Assert.Contains(r.Problems, p => p.StartsWith($"refused \"{name}\"", StringComparison.Ordinal));
+        Assert.All(r.Outputs, o => Assert.DoesNotContain("evil", o.Path));
+        Assert.Contains(r.Outputs, o => o.Path == "unpacked/good/rates.xlsx/rates.csv");
+
+        var folder = Path.Combine(repo.Root, "out");
+        EmbeddedFiles.Write(folder, r);
+        Assert.Equal(1, Directory.EnumerateFiles(repo.Root, "*", SearchOption.TopDirectoryOnly).Count(f => Path.GetFileName(f) == "stangent.yaml"));
+        Assert.Empty(Directory.EnumerateFiles(repo.Root, "evil*", SearchOption.AllDirectories));
+    }
+
+    [Fact]
+    public void Writing_refuses_a_path_that_leaves_its_folder_whatever_gave_it()
+    {
+        var bad = new AttachmentRecord("x", "t", null, "h", 0, "other", "kept", "w", [], [new AttachmentOutput("../../evil.txt", [1], "kept")]);
+        Assert.Throws<InvalidOperationException>(() => EmbeddedFiles.Write(Path.Combine(repo.Root, "out"), bad));
+    }
+
+    [Fact]
+    public void A_symbolic_link_in_a_zip_is_refused()
+    {
+        using var stream = new MemoryStream();
+        using (var zip = new ZipArchive(stream, ZipArchiveMode.Create, true))
+        {
+            var link = zip.CreateEntry("link");
+            link.ExternalAttributes = unchecked((int)(0xA1FFu << 16));
+            using var e = link.Open();
+            e.Write("/etc/passwd"u8);
+        }
+        Assert.Contains(One("pack.zip", stream.ToArray()).Problems, p => p.Contains("symbolic link", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_zip_bomb_is_stopped_by_its_ratio_at_the_stated_limit_with_the_import_going_on()
+    {
+        var bomb = Zip(("zeros.bin", new byte[20 << 20]));
+        var r = One("bomb.zip", bomb);
+        Assert.Equal("kept", r.Status);
+        Assert.Contains(r.Problems, p => p.Contains("times its packed size", StringComparison.Ordinal));
+        Assert.DoesNotContain(r.Outputs, o => o.Path.Contains("zeros", StringComparison.Ordinal));
+        Assert.Equal(bomb.Length, r.Outputs.Single().Bytes.Length);
+    }
+
+    [Fact]
+    public void An_office_file_that_is_a_bomb_is_kept_unopened_and_as_a_main_workbook_it_stops()
+    {
+        var bomb = Zip(("xl/workbook.xml", new byte[20 << 20]));
+        var r = One("bomb.xlsx", bomb);
+        Assert.Equal("kept", r.Status);
+        Assert.Contains("times its packed size", r.Why!);
+        Assert.Equal("xlsx_too_large", Assert.Throws<StangentException>(() => ImportPipeline.ForFile("a.xlsx")!.Safety(bomb, new())).Code);
+    }
+
+    [Fact]
+    public void Limits_on_one_file_and_all_of_an_attachment_and_entries_each_stop_it_and_are_listed()
+    {
+        var files = Zip(("a.bin", new byte[1000]), ("b.bin", new byte[1000]));
+        var perFile = One("p.zip", files, new ImportOptions { Limits = new(MaxFileBytes: 500) });
+        Assert.Contains(perFile.Problems, p => p.Contains("limit of 500 bytes for one file", StringComparison.Ordinal));
+
+        var total = One("p.zip", files, new ImportOptions { Limits = new(MaxUnpackedBytes: 1500) });
+        Assert.Contains(total.Problems, p => p.Contains("limit of 1500 bytes one attachment can unpack", StringComparison.Ordinal));
+        Assert.Single(total.Outputs, o => o.Path.StartsWith("unpacked/", StringComparison.Ordinal));
+
+        var entries = One("p.zip", files, new ImportOptions { Limits = new(MaxEntries: 1) });
+        Assert.Equal("kept", entries.Status);
+        Assert.Contains("over the limit of 1", entries.Why!);
+    }
+
+    [Fact]
+    public void Files_nested_in_files_stop_at_the_stated_depth_and_are_listed()
+    {
+        var bytes = XlsxFixture.Rates();
+        for (var i = 0; i < 6; i++) bytes = Zip(($"level{i}.{(i == 0 ? "xlsx" : "zip")}", bytes));
+        var r = One("top.zip", bytes);
+        Assert.Contains(r.Problems, p => p.Contains("nested more than 3 files deep", StringComparison.Ordinal));
+        Assert.DoesNotContain(r.Outputs, o => o.Role == "csv");
+
+        var shallow = One("top.zip", Zip(("rates.xlsx", XlsxFixture.Rates())));
+        Assert.Contains(shallow.Outputs, o => o.Role == "csv");
+    }
+
+    [Fact]
+    public void A_word_file_inside_a_word_file_is_read_and_its_file_goes_with_it()
+    {
+        var inner = WordWith("rates.xlsx", XlsxFixture.Rates());
+        var outer = One("outer.docx", inner);
+        Assert.Equal("converted", outer.Status);
+        Assert.Contains(outer.Outputs, o => o.Role == "csv" && o.Path.StartsWith("embedded/1-", StringComparison.Ordinal) && o.Path.EndsWith("/rates.csv", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Two_zip_names_that_differ_only_by_case_dont_land_on_one_file()
+    {
+        var r = One("p.zip", Zip(("A.bin", [1]), ("a.bin", [2])));
+        Assert.Equal(2, r.Outputs.Where(o => o.Path.StartsWith("unpacked/", StringComparison.Ordinal)).Select(o => o.Path.ToLowerInvariant()).Distinct().Count());
+    }
+
+    [Fact]
+    public void A_file_attached_to_a_pdf_is_read_with_no_section()
+    {
+        var d = ImportPipeline.Run(ImportPipeline.ForFile("a.pdf")!, PdfWithFile("rates.bin", [1, 2, 3]), new(Flat: true)).Document;
+        var a = Assert.Single(d.Attachments);
+        Assert.Equal(("rates.bin", (string?)null, "kept"), (a.FileName, a.Section, a.Status));
+        Assert.Equal([1, 2, 3], a.Outputs.Single().Bytes);
+        Assert.Contains(d.Problems, p => p.StartsWith("attachment \"rates.bin\" with no section", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Off_a_file_attached_to_a_PDF_has_no_section_and_the_document_is_as_it_was()
+    {
+        var d = ImportPipeline.Run(ImportPipeline.ForFile("a.pdf")!, PdfWithFile("rates.bin", [1, 2, 3]), new(Flat: true)).Document;
+        var same = AttachmentHome.Apply(d, on: false);
+        Assert.Same(d, same);
+        Assert.Null(Assert.Single(d.Attachments).Section);
+    }
+
+    [Fact]
+    public void On_it_gets_a_section_of_its_own_at_the_end_and_flat_it_goes_in_the_one_section()
+    {
+        var pdf = PdfWithFile("rates.bin", [1, 2, 3]);
+        var flat = ImportPipeline.Run(ImportPipeline.ForFile("a.pdf")!, pdf, new(Flat: true)).Document;
+        // A hand-written PDF can't have bookmarks here, so the same file and a numbered section as a bookmarked PDF would give.
+        var d = flat with { Markdown = "# 1 Rules\n\nText.\n", Sections = [new FsdSection("1", "number", "Rules", 1, null, "Text.", 1)] };
+        var on = AttachmentHome.Apply(d, on: true);
+        Assert.Equal("2", on.Sections[^1].Id);
+        Assert.Equal(d.Sections.Count + 1, on.Sections.Count);
+        var home = on.Sections[^1];
+        Assert.Equal(AttachmentHome.Title, home.Title);
+        Assert.Contains("- rates.bin", home.Text);
+        Assert.Equal(home.Id, Assert.Single(on.Attachments).Section);
+        Assert.StartsWith(d.Markdown.TrimEnd('\n'), on.Markdown);
+        Assert.Equal($"# {AttachmentHome.Title}", on.Markdown.Split('\n')[home.Line - 1]);
+
+        var flatOn = AttachmentHome.Apply(flat, on: true);
+        Assert.Equal(flat.Sections.Count, flatOn.Sections.Count);
+        Assert.Equal(FsdSections.FlatId, Assert.Single(flatOn.Attachments).Section);
+    }
+
+    [Fact]
+    public void With_the_switch_on_an_import_of_it_records_a_section_and_a_home_for_the_file()
+    {
+        using var on = new TempRepo($"version: 1\ncomponents: {{ attachment-home: true, first-import-approval: false }}\nfsd: {{ archive: {{ name: a, path: '{archive.Root}', git: false }} }}\n");
+        var file = Path.Combine(on.Root, "a.pdf");
+        File.WriteAllBytes(file, PdfWithFile("rates.bin", [1, 2, 3]));
+        FsdImport.Import(on.Repo, file, "fsd", flat: true);
+        Committed.All(on.Repo);
+        var doc = FsdDocument.Load(on.Root, "fsd");
+        Assert.NotNull(doc["attachments"]![0]!["section"]);
+        Assert.NotNull(doc["sections"]![0]!["attachments"]);
+    }
+
+    /// <summary>A one-page PDF, written by hand, as PdfPig's builder can't attach a file.</summary>
+    static byte[] PdfWithFile(string name, byte[] file)
+    {
+        var o = new MemoryStream();
+        var offsets = new List<long>();
+        void W(string s) => o.Write(Encoding.Latin1.GetBytes(s));
+        void Obj(string body) { offsets.Add(o.Length); W($"{offsets.Count} 0 obj\n{body}\nendobj\n"); }
+        W("%PDF-1.7\n");
+        Obj($"<< /Type /Catalog /Pages 2 0 R /Names << /EmbeddedFiles << /Names [({name}) 6 0 R] >> >> >>");
+        Obj("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+        Obj("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>");
+        const string content = "BT /F1 12 Tf 72 700 Td (Refunds are paid within five days.) Tj ET";
+        Obj($"<< /Length {content.Length} >>\nstream\n{content}\nendstream");
+        Obj("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+        Obj($"<< /Type /Filespec /F ({name}) /EF << /F 7 0 R >> >>");
+        offsets.Add(o.Length);
+        W($"7 0 obj\n<< /Type /EmbeddedFile /Length {file.Length} >>\nstream\n");
+        o.Write(file);
+        W("\nendstream\nendobj\n");
+        var xref = o.Length;
+        W($"xref\n0 {offsets.Count + 1}\n0000000000 65535 f \n");
+        foreach (var at in offsets) W($"{at:D10} 00000 n \n");
+        W($"trailer\n<< /Size {offsets.Count + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n");
+        return o.ToArray();
+    }
+
+    // ---- ids and the fingerprint across versions ----
+
+    JsonObject Entry(string file) => FsdCompare.Show(repo.Root, "fsd")["sections"]!.AsArray().OfType<JsonObject>().Single(e => (string?)e["file"] == file);
+
+    string Csv(string id = "A-0001") => Path.Combine(FsdAttachments.Folder(DocDir, id), "rates.csv");
+
+    JsonObject Take() => FsdCompare.Take(repo.Repo, "fsd", ["S-0001"], false);
+
+    [Fact]
+    public void Same_text_and_a_changed_attachment_is_offered_and_taking_it_brings_the_new_file_under_its_id()
+    {
+        Import(WordWith("rates.xlsx", XlsxFixture.Rates("12")));
+        var before = (JsonObject)Document()["attachments"]![0]!;
+        var ninetyNine = XlsxFixture.Rates("99");
+        Assert.Equal("compared", (string)Import(WordWith("rates.xlsx", ninetyNine))["status"]!);
+        var rules = Entry("Rules");
+        // D396: a section's attachments count as its words do, so this is the file's change, offered.
+        Assert.Equal(("file-changed", false, false), ((string)rules["case"]!, (bool)rules["textChanged"]!, (bool)rules["headingChanged"]!));
+        var name = (string)before["fileName"]!;
+        Assert.Equal(("changed", name), ((string)rules["attachmentsChanged"]![0]!["change"]!, (string)rules["attachmentsChanged"]![0]!["fileName"]!));
+        Assert.Equal("same", (string)Entry("Other")["case"]!);
+        Assert.Null(Entry("Other")["attachmentsChanged"]);
+        Assert.Contains($"{name} changed", File.ReadAllText(Path.Combine(FsdCompare.Dir(repo.Root, "fsd"), "comparison.md")));
+        // Compared, never imported over (D385): the repo's files are as they were until a person takes the section.
+        Assert.Contains("Gold,12", File.ReadAllText(Csv()));
+
+        var words = Chapters.Text(DocDir);
+        var taken = Take();
+        Assert.Equal("S-0001", (string)Assert.Single(taken["taken"]!.AsArray())!["section"]!);
+        var moved = Assert.Single(taken["attachments"]!.AsArray())!;
+        Assert.Equal(("A-0001", 0, 0), ((string)Assert.Single(moved["kept"]!.AsArray())!, moved["added"]!.AsArray().Count, moved["removed"]!.AsArray().Count));
+        Assert.Null(taken["attachmentsNotTaken"]);
+        Assert.Equal(words, Chapters.Text(DocDir)); // its words are the same, byte for byte
+        Assert.Contains("Gold,99", File.ReadAllText(Csv()));
+        var record = (JsonObject)Assert.Single(FsdDocument.Facts(repo.Root, "fsd")!["attachments"]!.AsArray())!;
+        Assert.Equal(("A-0001", "S-0001", "Rules"), ((string)record["id"]!, (string)record["section"]!, (string)record["sectionNumber"]!));
+        Assert.NotEqual((string)before["hash"]!, (string)record["hash"]!);
+        Assert.Equal((string)record["hash"]!, (string)FsdDocument.Facts(repo.Root, "fsd")!["fileSections"]!.AsArray().OfType<JsonObject>().Single(f => (string)f["section"]! == "S-0001")["attachments"]![0]!["hash"]!);
+        Assert.Contains("specs/fsd/fsd/attachments/A-0001", taken["changed"]!.AsArray().Select(c => (string)c!));
+
+        // Committed, the next file compares against what was taken.
+        Committed.All(repo.Repo);
+        Import(WordWith("rates.xlsx", ninetyNine));
+        Assert.Equal("same", (string)Entry("Rules")["case"]!);
+    }
+
+    [Fact]
+    public void An_attachment_added_gets_a_new_id_one_gone_is_marked_removed_and_a_removed_id_never_comes_back()
+    {
+        const string body = "Rules text here for the reader.";
+        var none = FsdDocxTests.Docx(FsdDocxTests.H("Rules") + FsdDocxTests.P(body) + FsdDocxTests.H("Other") + FsdDocxTests.P("Other text."));
+        Import(none);
+        Import(WordWith("rates.xlsx", XlsxFixture.Rates()));
+        var added = Entry("Rules");
+        Assert.Equal(("file-changed", "added"), ((string)added["case"]!, (string)added["attachmentsChanged"]![0]!["change"]!));
+        Assert.Equal(["A-0001"], Assert.Single(Take()["attachments"]!.AsArray())!["added"]!.AsArray().Select(a => (string)a!));
+        Assert.Contains("Silver tier fee is seven", File.ReadAllText(Csv()));
+        Committed.All(repo.Repo);
+        Assert.Equal("A-0001", (string)Assert.Single(Document()["sections"]![0]!["attachments"]!.AsArray())!["id"]!);
+
+        Import(none);
+        Assert.Equal(("file-changed", "removed"), ((string)Entry("Rules")["case"]!, (string)Entry("Rules")["attachmentsChanged"]![0]!["change"]!));
+        Assert.Equal(["A-0001"], Assert.Single(Take()["attachments"]!.AsArray())!["removed"]!.AsArray().Select(a => (string)a!));
+        Assert.False(Directory.Exists(FsdAttachments.Folder(DocDir, "A-0001")));
+        Assert.Null(FsdDocument.Facts(repo.Root, "fsd")!["attachments"]);
+        Assert.Contains("A-0001", FsdVersions.Ledger(repo.Root, "fsd").Removed("attachments"));
+        Committed.All(repo.Repo);
+
+        Import(WordWith("rates.xlsx", XlsxFixture.Rates("7")));
+        Assert.Equal(["A-0002"], Assert.Single(Take()["attachments"]!.AsArray())!["added"]!.AsArray().Select(a => (string)a!));
+        Assert.Contains("Gold,7", File.ReadAllText(Csv("A-0002")));
+    }
+
+    [Fact]
+    public void An_attachment_the_pm_edited_is_never_taken_over_committed_or_not()
+    {
+        Import(WordWith("rates.xlsx", XlsxFixture.Rates("12")));
+        File.WriteAllText(Csv(), "Tier,Fee\nGold,15\n");
+        Committed.All(repo.Repo);
+        Import(WordWith("rates.xlsx", XlsxFixture.Rates("99")));
+        var rules = Entry("Rules");
+        // The PM's committed edit is the repo's change, and the file's too: side by side, the repo's kept.
+        Assert.Equal(("both-changed", true), ((string)rules["case"]!, (bool)rules["attachmentFilesEditedHere"]!));
+        Assert.Equal("nothing_taken", Assert.Throws<StangentException>(() => Take()).Code);
+        Assert.Equal("Tier,Fee\nGold,15\n", File.ReadAllText(Csv()));
+    }
+
+    [Fact]
+    public void An_uncommitted_edit_to_an_offered_sections_attachment_is_kept()
+    {
+        Import(WordWith("rates.xlsx", XlsxFixture.Rates("12")));
+        Import(WordWith("rates.xlsx", XlsxFixture.Rates("99")));
+        Assert.Equal("file-changed", (string)Entry("Rules")["case"]!);
+        File.WriteAllText(Csv(), "Tier,Fee\nGold,15\n");
+        var refused = Assert.Throws<StangentException>(() => Take());
+        Assert.Equal("nothing_taken", refused.Code);
+        Assert.Contains("A-0001", Assert.Single(refused.Details), StringComparison.Ordinal);
+        Assert.Equal("Tier,Fee\nGold,15\n", File.ReadAllText(Csv()));
+        Assert.Equal("A-0001", (string)FsdDocument.Facts(repo.Root, "fsd")!["attachments"]![0]!["id"]!);
+    }
+
+    [Fact]
+    public void Same_text_and_the_same_attachment_is_unchanged()
+    {
+        var word = XlsxFixture.Rates("12");
+        Import(WordWith("rates.xlsx", word));
+        Import(Touch(WordWith("rates.xlsx", word)));
+        var rules = Entry("Rules");
+        Assert.Equal("same", (string)rules["case"]!);
+        Assert.Null(rules["attachmentsChanged"]);
+    }
+
+    /// <summary>The same Word file with a different hash, as a re-save gives: a new part nothing reads.</summary>
+    static byte[] Touch(byte[] docx)
+    {
+        using var stream = new MemoryStream();
+        stream.Write(docx);
+        using (var zip = new ZipArchive(stream, ZipArchiveMode.Update, true))
+        using (var w = new StreamWriter(zip.CreateEntry("docProps/extra.xml").Open()))
+            w.Write("<x/>");
+        return stream.ToArray();
+    }
+
+    [Fact]
+    public void A_sections_attachments_and_content_hash_are_worked_out_on_read_from_the_documents_attachments()
+    {
+        // Since phase fs layer 2 (D392) document.json keeps no sections, so no section can be read without its content hash.
+        Import(WordWith("rates.xlsx", XlsxFixture.Rates("12")));
+        Assert.Null(FsdDocument.Facts(repo.Root, "fsd")!["sections"]);
+        var record = Assert.Single(Document()["attachments"]!.AsArray())!;
+        var rules = Document()["sections"]!.AsArray().OfType<JsonObject>().Single(s => (string)s["id"]! == "Rules");
+        Assert.Equal((string)record["section"]!, (string)rules["permanentId"]!);
+        Assert.Equal((string)record["id"]!, (string)Assert.Single(rules["attachments"]!.AsArray())!["id"]!);
+        Assert.Equal(FsdAttachments.ContentHash((string)rules["text"]!, [(string)record["hash"]!]), (string)rules["contentHash"]!);
+        Assert.Contains((string)record["id"]!, (string)Assert.Single(rules["attachmentLines"]!.AsArray())!, StringComparison.Ordinal);
+        Assert.Equal("unchanged", (string)FsdImport.Reread(repo.Repo, "fsd")["status"]!);
+    }
+
+    [Fact]
+    public void A_section_with_no_attachments_has_a_content_hash_equal_to_its_text_hash()
+    {
+        Import(FsdDocxTests.Docx(FsdDocxTests.H("Rules") + FsdDocxTests.P("Text.")));
+        var s = Document()["sections"]![0]!;
+        Assert.Equal((string)s["textHash"]!, (string)s["contentHash"]!);
+        Assert.Null(Document()["attachments"]);
+    }
+
+    [Fact]
+    public void Text_that_changes_with_the_same_attachment_is_offered_with_no_file_named()
+    {
+        var workbook = XlsxFixture.Rates();
+        Import(WordWith("rates.xlsx", workbook, text: "Rules text here for the reader."));
+        Import(WordWith("rates.xlsx", workbook, text: "Quite different rules text this time."));
+        var rules = Entry("Rules");
+        Assert.Equal("file-changed", (string)rules["case"]!);
+        Assert.Null(rules["attachmentsChanged"]);
+    }
+
+    [Fact]
+    public void Reading_the_original_again_with_files_this_build_can_read_is_compared()
+    {
+        Import(WordWith("rates.xlsx", XlsxFixture.Rates()));
+        var doc = Document();
+        doc.Remove("attachments");
+        File.WriteAllText(Path.Combine(DocDir, "document.json"), CanonicalJson.Serialize(FsdDocument.Stripped(doc)));
+        Committed.All(repo.Repo);
+        var again = FsdImport.Reread(repo.Repo, "fsd");
+        Assert.Equal(("compared", true), ((string)again["status"]!, (bool)again["reread"]!));
+        Assert.Equal("added", (string)Entry("Rules")["attachmentsChanged"]![0]!["change"]!);
+    }
+
+    // ---- what a frozen link quotes from an attachment (D342 cut the switch) ----
+
+    SpecApp Attached()
+    {
+        var app = new SpecApp($"version: 1\nfsd: {{ archive: {{ name: a, path: '{archive.Root}', git: false }} }}\n");
+        var file = Path.Combine(app.Root, "shop.docx");
+        File.WriteAllBytes(file, WordWith("rates.xlsx", XlsxFixture.Rates(), text: "Every order sends a receipt.", heading: "Orders"));
+        FsdImport.Import(app.Repo, file, "attached");
+        Committed.All(app.Repo);
+        return app;
+    }
+
+    const string Quote = "Silver tier fee is seven";
+
+    [Fact]
+    public void A_link_cant_name_a_path_outside_the_documents_own_files()
+    {
+        using var on = Attached();
+        var fsd = new JsonObject { ["doc"] = "attached", ["attachment"] = "A-0001", ["attachmentFile"] = "../../../stangent.yaml" };
+        Assert.False(AttachmentChecks.Check(on.Root, fsd, "version: 1").Holds);
+    }
+
+    // ---- tickets ----
+
+    async Task<JsonObject> Pull(string extra, string name, byte[] bytes)
+    {
+        using var ticketRepo = TicketFixtures.Repo(extra);
+        TicketFixtures.Make(TicketFixtures.ReplayDir(ticketRepo), "SON-7", "Task", "x", "See the file", files: [new("1", name, "application/octet-stream", bytes)]);
+        await using var tracker = Trackers.Open(ticketRepo.Repo, new Stangent.Tickets.Secrets.MemorySecretStore(), TextWriter.Null, new FolderRawSink(TicketPaths.TicketsDir(ticketRepo.Root)));
+        var t = await TicketPull.RunAsync(ticketRepo.Repo, tracker, "SON-7", TestContext.Current.CancellationToken);
+        var folder = Path.Combine(new TicketPaths(ticketRepo.Root, "SON-7").Attachments, "1", "converted");
+        var saved = Directory.Exists(folder) ? new JsonArray([.. Directory.EnumerateFiles(folder).Select(Path.GetFileName).Order(StringComparer.Ordinal).Select(f => (JsonNode)f!)]) : new JsonArray();
+        var o = t["attachments"]![0]!.AsObject().DeepClone().AsObject();
+        o["onDisk"] = saved;
+        return o;
+    }
+
+    [Fact]
+    public async Task A_tickets_workbook_converts_and_reaches_ticket_json_and_the_ai_steps()
+    {
+        var on = await Pull("", "rates.xlsx", XlsxFixture.Rates());   // always since D381 (was the ticket-excel-text switch)
+        Assert.Contains("| Gold | 12 |", (string)on["text"]!);
+        Assert.Equal("xlsx", (string)on["format"]!);
+        Assert.NotNull(on["converted"]);
+        Assert.Contains(on["onDisk"]!.AsArray(), f => (string?)f == "rates.csv");
+    }
+
+    [Fact]
+    public async Task A_tickets_zip_and_a_word_file_holding_a_workbook_are_saved_the_same_way_with_the_word_files_text_unchanged()
+    {
+        var zip = await Pull("", "pack.zip", Zip(("rates.xlsx", XlsxFixture.Rates())));
+        Assert.Contains(zip["onDisk"]!.AsArray(), f => (string?)f == "converted.json");
+        Assert.Null(zip["text"]);
+
+        var word = await Pull("", "spec.docx", WordWith("rates.xlsx", XlsxFixture.Rates()));
+        Assert.Contains("Rules text here", (string)word["text"]!);
+        Assert.DoesNotContain("Gold", (string)word["text"]!);
+        Assert.Contains(word["onDisk"]!.AsArray(), f => (string?)f == "converted.json");
+
+        var plain = await Pull("", "spec.docx", FsdDocxTests.Docx(FsdDocxTests.H("Rules") + FsdDocxTests.P("Text.")));
+        Assert.Empty(plain["onDisk"]!.AsArray());
+    }
+
+    [Fact]
+    public void Evidence_can_name_an_attachment_only_on_a_document_citation()
+    {
+        static IReadOnlyList<string> Check(string citation) => Stangent.Core.Evidence.EvidenceValidator.Validate(
+            $$"""{ "id": "X-1", "citation": {{citation}}, "contentHash": "{{new string('a', 64)}}", "commit": "{{new string('a', 40)}}", "strength": "stated", "checkedBy": [{ "kind": "code", "name": "c" }] }""");
+        Assert.Empty(Check("""{ "kind": "document", "ref": "d", "attachment": "A-0003", "file": "rates.csv", "sheet": "Rates", "row": 12 }"""));
+        Assert.NotEmpty(Check("""{ "kind": "document", "ref": "d", "sheet": "Rates" }"""));
+        Assert.NotEmpty(Check("""{ "kind": "code", "ref": "d", "attachment": "A-0003" }"""));
+    }
+}

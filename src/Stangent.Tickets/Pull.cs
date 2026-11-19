@@ -12,6 +12,7 @@ namespace Stangent.Tickets;
 public sealed class TicketPaths(string root, string key)
 {
     public string Key { get; } = TicketKeys.Check(key);
+    public string Root => root;
     public static string TicketsDir(string root) => Path.Combine(root, ".stangent", "tickets");
     public string Dir => Path.Combine(TicketsDir(root), Key);
     public string Raw => Path.Combine(Dir, "raw");
@@ -26,7 +27,7 @@ public sealed class TicketPaths(string root, string key)
 
 /// <summary>
 /// <c>stangent ticket pull &lt;KEY&gt;</c> (plan step 2, D72, D75): the ticket through the adapter, every attachment saved
-/// with its hash, text attachments in up to a cap, <c>.docx</c> through 2b's converter, images and anything else listed,
+/// with its hash, text attachments in up to a cap, <c>.docx</c> and <c>.pdf</c> through the import steps, images and anything else listed,
 /// and a bug's steps, expected and actual result, version and environment in their own fields. All code: the same
 /// ticket and files give the same <c>ticket.json</c>, byte for byte.
 /// </summary>
@@ -56,7 +57,7 @@ public static partial class TicketPull
 
         var files = new JsonArray();
         foreach (var a in ticket.Attachments.OrderBy(a => a.Id, StringComparer.Ordinal))
-            files.Add(await Attachment(paths, tracker, ticket, a, settings.AttachmentChars, description, comments, ct));
+            files.Add(await Attachment(paths, tracker, ticket, a, settings.AttachmentChars, description, comments, true, ct));
 
         var isBug = settings.IsBugType(ticket.Type);
         var result = new JsonObject
@@ -88,7 +89,7 @@ public static partial class TicketPull
         ?? throw new StangentException("not_pulled", $"{key} hasn't been pulled. Run `stangent ticket pull {key}` first.", ExitCodes.NotFound);
 
     static async Task<JsonNode> Attachment(TicketPaths paths, IIssueTracker tracker, Ticket ticket, TicketAttachment a, int cap,
-        string description, List<(TicketComment c, string Text)> comments, CancellationToken ct)
+        string description, List<(TicketComment c, string Text)> comments, bool excelText, CancellationToken ct)
     {
         var kind = Kind(a);
         var o = new JsonObject { ["id"] = a.Id, ["fileName"] = a.FileName, ["mimeType"] = a.MimeType, ["size"] = a.Size, ["kind"] = kind };
@@ -109,9 +110,14 @@ public static partial class TicketPull
         string? text = kind switch
         {
             "text" => Decode(await File.ReadAllBytesAsync(saved.Path, ct)),
-            "docx" => DocxConverter.Convert(await File.ReadAllBytesAsync(saved.Path, ct)).Markdown,
+            "docx" => Document(a, await File.ReadAllBytesAsync(saved.Path, ct), o),
+            // A workbook's text reaches ticket.json and the AI steps (D123); always since D381, which removed ticket-excel-text.
+            _ when ImportPipeline.ForFile(a.FileName)?.Name == "xlsx" && !excelText => null,
+            // A PDF keeps its kind, "other", since ticket-bundle has no other value for it: its text and its format say the rest.
+            _ when ImportPipeline.ForFile(a.FileName) is not null => Document(a, await File.ReadAllBytesAsync(saved.Path, ct), o),
             _ => null,
         };
+        SaveConverted(paths, a, saved.Path, o, excelText);
         if (text is not null)
         {
             text = text.Replace("\r\n", "\n");
@@ -120,6 +126,41 @@ public static partial class TicketPull
             o["truncated"] = text.Length > cap;
         }
         return o;
+    }
+
+    /// <summary>
+    /// A workbook's CSVs, a zip's contents and files inside a document, through the same path as an FSD's (A.7, D123), saved under <c>converted/</c> beside the attachment with a <c>converted.json</c>.
+    /// Nothing about it stops the pull. Off, <c>ticket.json</c> is byte for byte what it was, so no ticket hash moves; on, it lists them too, and a bundle still leaves that out.
+    /// </summary>
+    static void SaveConverted(TicketPaths paths, TicketAttachment a, string file, JsonObject attachment, bool excelText)
+    {
+        var folder = Path.Combine(paths.Attachments, a.Id, "converted");
+        if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
+        var ext = Path.GetExtension(a.FileName).ToLowerInvariant();
+        if (ImportPipeline.ForFile(a.FileName) is null && ext != ".zip") return;
+        var record = EmbeddedFiles.One(new FileInDocument(a.FileName, File.ReadAllBytes(file), null, "ticket attachment"), new ImportOptions(), 1);
+        if (ext is not (".xlsx" or ".xlsm" or ".zip") && !record.Outputs.Any(o => o.Path.StartsWith("embedded/", StringComparison.Ordinal))) return;
+        var saved = record with { Outputs = [.. record.Outputs.Where(o => o.Role != "original")] };
+        EmbeddedFiles.Write(folder, saved);
+        var json = EmbeddedFiles.Json(saved, int.MaxValue);
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, "converted.json"), CanonicalJson.Serialize(json));
+        if (excelText) attachment["converted"] = json;
+    }
+
+    /// <summary>A document through the same import steps as an FSD (D121). A ticket's attachment isn't the agreed FSD, so nothing about it stops the pull:
+    /// see <see cref="ImportPipeline.Attachment"/>. What the import listed goes beside it, for a person; the bundle leaves it out.</summary>
+    static string? Document(TicketAttachment a, byte[] bytes, JsonObject attachment)
+    {
+        var converted = ImportPipeline.Attachment(a.FileName, bytes)!;
+        if (converted.NotConverted is { } why)
+        {
+            attachment["notConverted"] = why;
+            return null;
+        }
+        attachment["format"] = converted.Format;
+        if (converted.Problems.Count > 0) attachment["problems"] = converted.Problems;
+        return converted.Text;
     }
 
     public static string Kind(TicketAttachment a)

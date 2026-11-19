@@ -1,0 +1,13 @@
+@* V2: buttons that cancel their own submit: a popup opener (its onclick opens a page) and a hidden refresh button whose script returns false. *@
+<button type="submit" onclick="javascript:openWindow('@Url.Action("Notes")'); return false;">Add note</button>
+<button type="submit" id="refresh-notes" style="display: none"></button>
+<script>
+    $('#refresh-notes').click(function () {
+        reloadNotes();
+        return false;
+    });
+</script>
+<button type="button" onclick="postSelected('@Url.Action("Archive")')">Archive selected</button>
+<script>
+    function editColumn(id) { return '<button onclick="javascript:edit(' + id + '); return false;">Edit</button>'; }
+</script>

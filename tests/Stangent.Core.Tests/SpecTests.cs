@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Stangent.Core.State;
 using Stangent.Graph;
 using Stangent.Spec;
 using Stangent.Spec.Pages;
@@ -236,7 +237,7 @@ public class SpecTests
         var verify = PageRun.Check(app.Pages(), page, app.Repo, null);
         Assert.Equal("page-verifier-output.v1.json", (string)verify.ToJson(page.Id)["next"]!["schema"]!);
         // The names resolve to real schemas, so `stangent spec schema <name>` can print them.
-        foreach (var agent in new[] { PageRun.Writer, PageRun.Verifier, Stangent.Spec.Fsd.LinkRun.Finder, Stangent.Spec.Fsd.LinkRun.Judge, Stangent.Spec.Fsd.LinkRun.Checker })
+        foreach (var agent in new[] { PageRun.Writer, PageRun.Verifier, Stangent.Spec.Fsd.FsdReview.Reviewer })
             Assert.Contains("\"$schema\"", SchemaRegistry.EmbeddedText(RunStep.SchemaOf(agent)!));
     }
 
@@ -277,7 +278,24 @@ public class SpecTests
         Assert.DoesNotContain(stale["stale"]!.AsArray(), s => (string)s!["id"]! == "page:/orders"); // the screen stops at the endpoint
         var rerun = PageRun.Prepare(app.Pages(), page, app.Repo);
         Assert.Equal("write", rerun.Action);
-        Assert.Contains("Orders over 100 are refused", File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(rerun.Output!)!, "bundle.md")));
+        Assert.Contains("Orders over 100 are refused", SharedHead.Assemble(File.ReadAllText(Path.Combine(app.Root, Path.GetDirectoryName(rerun.Output!)!, "bundle.md"))));
+    }
+
+    [Fact]
+    public void A_page_run_s_stages_are_in_the_history_and_a_restart_is_a_new_run()
+    {
+        using var app = new SpecApp();
+        var page = app.Pages().Find(SpecApp.Post)!;
+        var step = PageRun.Prepare(app.Pages(), page, app.Repo);
+        WriteOutput(app, step, GoodEndpointPage());
+        PageRun.Check(app.Pages(), page, app.Repo, null);
+        PageRun.Prepare(app.Pages(), page, app.Repo);
+        PageRun.Check(app.Pages(), page, app.Repo, null);
+        PageRun.Check(app.Pages(), page, app.Repo, null);
+
+        Assert.Equal([((string?)null, "write"), ("write", "verify"), (null, "write"), ("write", "failed")],
+            StateChanges.History(app.Root, StateKinds.PageRun, SpecApp.Post).Select(m => (m.From, m.To)));
+        Assert.Equal("failed the code check twice", StateChanges.History(app.Root, StateKinds.PageRun, SpecApp.Post).Last().Reason);
     }
 
     [Fact]
@@ -395,6 +413,24 @@ public class SpecTests
         var step = PageRun.Prepare(app.Pages(), app.Pages().Find(SpecApp.Post)!, app.Repo);
         Assert.Equal(("failed", "none"), (step.Status, step.Action));
         Assert.StartsWith("slice over the size cap", step.Errors![0]);
+    }
+
+    [Fact]
+    public void A_page_behind_the_code_is_flagged_where_its_read_and_an_unwritten_one_isnt_called_behind()
+    {
+        using var app = new SpecApp();
+        var (page, paths) = (app.Pages().Find(SpecApp.Post)!, new SpecPaths(app.Root));
+        Assert.False(Staleness.Behind(app.Pages(), paths, page));
+
+        var step = PageRun.Prepare(app.Pages(), page, app.Repo);
+        WriteOutput(app, step, GoodEndpointPage());
+        WriteOutput(app, PageRun.Check(app.Pages(), page, app.Repo, null), new JsonObject { ["findings"] = new JsonArray() });
+        PageRun.Check(app.Pages(), page, app.Repo, null);
+        Assert.False(Staleness.Behind(app.Pages(), paths, page));
+
+        app.Write("Core/OrderService.cs", File.ReadAllText(Path.Combine(app.Root, "Core/OrderService.cs")).Replace("total > 100", "total > 200").TrimEnd('\n'));
+        Assert.True(Staleness.Behind(app.Pages(), paths, page));
+        Assert.Contains("Behind the code: page `p` was written at abcdef0123 ", Staleness.BehindWarning("p", "abcdef0123456", "99"));
     }
 
     [Fact]

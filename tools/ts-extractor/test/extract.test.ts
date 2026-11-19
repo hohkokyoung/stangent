@@ -135,6 +135,25 @@ test("configured wrappers: a fixed verb, the verb read off the name, and URL and
   assert.deepEqual(calls, [`DELETE ${BASE}items/1`, `PATCH ${BASE}items/2`, `PUT ${BASE}items/3`]);
 });
 
+test("a wrapper's own body shows the API root it adds (G2)", () => {
+  const root = project({
+    "src/fetch.ts": "declare const window: { App: { urlBase: string } };\nexport const urlBase = window.App.urlBase;\nexport const apiRoot = '/api/v5';",
+    "src/path.ts": "import { apiRoot, urlBase } from './fetch';\nconst getQueryPath = (path: string) => {\n  return urlBase + apiRoot + path;\n};\nexport default getQueryPath;",
+    "src/hooks.ts": [
+      "import getQueryPath from './path';",
+      "declare function fetchJson(o: { path: string }): void;",
+      "export function useApiMutation(options: { path: string; method: string }) { fetchJson({ path: getQueryPath(options.path) }); }",
+      "export function useApiQuery(o: { path: string }) { const { path } = o; fetchJson({ path: getQueryPath(path) }); }",
+      "export function useRaw(o: { path: string }) { fetchJson({ path: o.path }); }",
+    ].join("\n"),
+    "src/use.ts": "import { useApiMutation, useApiQuery, useRaw } from './hooks';\nexport function a() { useApiMutation({ path: '/series', method: 'POST' }); useApiQuery({ path: '/series/lookup' }); useRaw({ path: '/raw' }); }",
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p",
+    settings: { "frontend-http": { wrappers: ["useApiMutation:path:method", "useApiQuery:path", "useRaw:path"] } } }).lines;
+  const calls = lines.filter((l) => l.t === "fact" && l.kind === "call").map((l) => l.t === "fact" ? `${l.data.verb} ${l.data.url}` : "").sort();
+  assert.deepEqual(calls, [`GET ${BASE}/api/v5/series/lookup`, `GET ${BASE}raw`, `POST ${BASE}/api/v5/series`]);
+});
+
 test("a verb is read off whole words of a wrapper's name, never part of one", () => {
   const root = project({
     "src/api.ts": [
@@ -146,4 +165,799 @@ test("a verb is read off whole words of a wrapper's name, never part of one", ()
     settings: { "frontend-http": { wrappers: ["dispatchQuery", "fetchUpdates", "useApiMutation:path"] } } }).lines;
   const calls = lines.filter((l) => l.t === "fact" && l.kind === "call").map((l) => l.t === "fact" ? `${l.data.verb} ${l.data.url}` : "").sort();
   assert.deepEqual(calls, [`GET ${BASE}a`, `GET ${BASE}b`, `POST ${BASE}c`]);
+});
+
+test("enums are printed only when asked for, with members, values and lines", () => {
+  const root = project({ "src/status.ts": 'export enum Status {\n  Open,\n  Closed = 5,\n  Named = "n",\n}\nexport class A {}\n' });
+  const options = { tsconfig: path.join(root, "tsconfig.json"), root, projectId: "project:tsconfig.json", settings: {} };
+  assert.deepEqual(extract(options).lines.filter((l) => l.t === "enum"), []);
+  const found = extract({ ...options, enums: true }).lines.filter((l) => l.t === "enum");
+  assert.equal(found.length, 1);
+  const status = found[0] as Extract<typeof found[0], { t: "enum" }>;
+  assert.equal(status.id, "ts|src/status.ts#Status");
+  assert.equal(status.name, "Status");
+  assert.deepEqual(status.members, [{ name: "Open", value: "0", line: 2 }, { name: "Closed", value: "5", line: 3 }, { name: "Named", value: "n", line: 4 }]);
+  // The rest of the output is what it always was.
+  assert.deepEqual(extract({ ...options, enums: true }).lines.filter((l) => l.t !== "enum"), extract(options).lines);
+});
+
+// ---- Screens with no route (root-screens) ------------------------------------------------------
+
+function noRoute(files: Record<string, string>, on = true) {
+  const root = project(Object.fromEntries(Object.entries(files).map(([name, text]) => [`src/${name}`, text])));
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "project:tsconfig.json", settings: {}, rootScreens: on }).lines;
+  return {
+    screens: lines.flatMap((l) => (l.t === "node" && l.kind === "page" && l.name.startsWith("(no route) ") ? [l.name.slice("(no route) ".length)] : [])).sort(),
+    targets: lines.flatMap((l) => (l.t === "edge" && l.kind === "routes-to" && l.source.includes("(no route)") ? [l.target] : [])).sort(),
+    unknown: lines.flatMap((l) => (l.t === "blind" && l.detector === "root-screens" ? [l.reason] : [])),
+    lines,
+  };
+}
+const REACT_DOM = `declare module "react-dom" { export function render(e: any, at: any): void; }
+declare module "react-dom/client" { export function createRoot(at: any): { render(e: any): void }; }
+declare module "react-router-dom" { export const Route: any; export const Routes: any; export const BrowserRouter: any; }
+declare module "acme-ui" { export const Theme: any; export const Toast: any; }`;
+const INDEX = `import { createRoot } from "react-dom/client"; import App from "./App"; createRoot(document.body).render(<App />);`;
+const WIDGET = (name: string) => `export default function ${name}() { return <div>${name}</div>; }`;
+
+test("a component on another branch from the routes is a screen; the path to the routes isn't", () => {
+  const r = noRoute({
+    "types.d.ts": REACT_DOM, "index.tsx": INDEX, "Door.tsx": WIDGET("Door"), "Tasks.tsx": WIDGET("Tasks"),
+    "Shell.tsx": `import { Routes, Route } from "react-router-dom"; import Tasks from "./Tasks"; export default function Shell() { return <Routes><Route path="/tasks" element={<Tasks />} /></Routes>; }`,
+    "App.tsx": `import Door from "./Door"; import Shell from "./Shell"; export default function App({ who }: any) { return <div>{who ? <Shell /> : <Door />}</div>; }`,
+  });
+  assert.deepEqual(r.screens, ["Door"]);
+  assert.deepEqual(r.targets, ["ts|src/Door.tsx#Door"]);
+  assert.deepEqual(r.unknown, []);
+});
+
+test("an early return is a branch too, and library wrappers are walked through", () => {
+  const r = noRoute({
+    "types.d.ts": REACT_DOM, "index.tsx": INDEX, "Wait.tsx": WIDGET("Wait"),
+    "App.tsx": `import { BrowserRouter, Routes } from "react-router-dom"; import { Theme } from "acme-ui"; import Wait from "./Wait";
+      export default function App({ busy }: any) { if (busy) return <Wait />; return <Theme><BrowserRouter><Routes /></BrowserRouter></Theme>; }`,
+  });
+  assert.deepEqual(r.screens, ["Wait"]);
+});
+
+test("layout always shown beside the routes or round them isn't a screen", () => {
+  const r = noRoute({
+    "types.d.ts": REACT_DOM, "index.tsx": INDEX, "Bar.tsx": WIDGET("Bar"), "Frame.tsx": `export default function Frame({ children }: any) { return <main>{children}</main>; }`,
+    "App.tsx": `import { Routes } from "react-router-dom"; import Bar from "./Bar"; import Frame from "./Frame";
+      export default function App() { return <div><Bar /><Frame><Routes /></Frame></div>; }`,
+  });
+  assert.deepEqual(r.screens, []);
+  assert.deepEqual(r.unknown, []);
+});
+
+test("a condition beside the routes and a component picked at runtime are unknown, never a guess", () => {
+  const r = noRoute({
+    "types.d.ts": REACT_DOM, "index.tsx": INDEX, "Note.tsx": WIDGET("Note"), "A.tsx": WIDGET("A"), "B.tsx": WIDGET("B"),
+    "App.tsx": `import { Routes } from "react-router-dom"; import Note from "./Note"; import A from "./A"; import B from "./B";
+      const views: any = { A, B };
+      export default function App({ open, which, Pick }: any) { const Chosen = which ? A : B; return <div>{open && <Note />}<Routes />{views[which]}<Chosen /><Pick /></div>; }`,
+  });
+  assert.deepEqual(r.screens, []);
+  assert.equal(r.unknown.length, 4);
+  assert.ok(r.unknown.some((u) => u.includes("Note") && u.includes("beside the routes")));
+  assert.ok(r.unknown.some((u) => u.includes("views[which]")));
+  assert.ok(r.unknown.some((u) => u.includes("<Chosen>")));
+  assert.ok(r.unknown.some((u) => u.includes("<Pick>")));
+});
+
+test("with no routes, what the root shows counts; a root showing only itself is the screen", () => {
+  assert.deepEqual(noRoute({
+    "types.d.ts": REACT_DOM, "index.tsx": INDEX, "One.tsx": WIDGET("One"), "Two.tsx": WIDGET("Two"),
+    "App.tsx": `import One from "./One"; import Two from "./Two"; export default function App({ a }: any) { return a ? <One /> : <Two />; }`,
+  }).screens, ["One", "Two"]);
+  assert.deepEqual(noRoute({ "types.d.ts": REACT_DOM, "index.tsx": INDEX, "App.tsx": WIDGET("App") }).screens, ["App"]);
+});
+
+test("already routed components get no second page; test files and other render calls aren't roots", () => {
+  const r = noRoute({
+    "types.d.ts": REACT_DOM, "index.tsx": INDEX, "Door.tsx": WIDGET("Door"),
+    "App.tsx": `import { Routes, Route } from "react-router-dom"; import Door from "./Door";
+      export default function App({ who }: any) { return who ? <Routes><Route path="/door" element={<Door />} /></Routes> : <Door />; }`,
+    "App.test.tsx": `import ReactDOM from "react-dom"; import Door from "./Door"; it("mounts", () => { ReactDOM.render(<Door />, document.body); });`,
+    "other.tsx": `import Door from "./Door"; declare const engine: any; engine.render(<Door />);`,
+  });
+  assert.deepEqual(r.screens, []);
+});
+
+test("off, the output doesn't change; lazy, class and React.render roots are read; same names stay apart", () => {
+  const files = {
+    "types.d.ts": REACT_DOM, "index.tsx": `import ReactDOM from "react-dom"; import App from "./App"; ReactDOM.render(<App />, document.body);`,
+    "a/Form.tsx": WIDGET("Form"), "b/Form.tsx": WIDGET("Form"), "Late.tsx": WIDGET("Late"),
+    "App.tsx": `import { lazy } from "react"; import { Routes } from "react-router-dom"; import F from "./a/Form"; import G from "./b/Form";
+      const Late = lazy(() => import("./Late"));
+      export default class App { props: any; render() { const p = this.props; if (p.a) return <F />; if (p.b) return <G />; if (p.c) return <Late />; return <Routes />; } }`,
+  };
+  assert.deepEqual(noRoute(files).screens, ["Late", "src/a/Form", "src/b/Form"]);
+  const off = noRoute(files, false);
+  assert.deepEqual([off.screens, off.unknown], [[], []]);
+});
+
+// ---- Routes written with render or children (route-render) --------------------------------------
+
+function rendered(files: Record<string, string>, on = true) {
+  const root = project(Object.fromEntries(Object.entries(files).map(([name, text]) => [`src/${name}`, text])));
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "project:tsconfig.json", settings: {}, routeRender: on }).lines;
+  return {
+    pages: lines.flatMap((l) => (l.t === "node" && l.kind === "page" ? [l.name] : [])).sort(),
+    targets: lines.flatMap((l) => (l.t === "edge" && l.kind === "routes-to" && l.detector === "route-render" ? [`${l.source.split("|")[1]} -> ${l.target.split("#")[1]}`] : [])).sort(),
+    unknown: lines.flatMap((l) => (l.t === "blind" && l.detector === "route-render" ? [l.reason] : [])),
+    lines,
+  };
+}
+const ROUTES = (body: string) => `import { Route } from "react-router-dom"; import Tasks from "./Tasks"; import Help from "./Help";
+const show = (props: any) => <Help {...props} />;
+export function App({ picked }: any) { return <div>${body}</div>; }`;
+const ROUTE_FILES = (body: string) => ({ "lib.d.ts": REACT_DOM, "Tasks.tsx": WIDGET("Tasks"), "Help.tsx": WIDGET("Help"), "App.tsx": ROUTES(body) });
+
+test("render and children routes get a page naming the component in their JSX", () => {
+  const r = rendered(ROUTE_FILES(`<Route path="/a" render={(props) => <Tasks {...props} />} />
+    <Route path="/b" children={<Help />} />
+    <Route path="/c"><Tasks /></Route>
+    <Route path="/d" render={show} />
+    <Route path="/e" render={(p) => (p.ok ? <Tasks /> : <Help />)} />`));
+  assert.deepEqual(r.pages, ["/a", "/b", "/c", "/d", "/e"]);
+  assert.deepEqual(r.targets, ["/a -> Tasks", "/b -> Help", "/c -> Tasks", "/d -> Help", "/e -> Help", "/e -> Tasks"]);
+  assert.deepEqual(r.unknown, []);
+});
+
+test("a render route with no component to read is unknown, never a guess", () => {
+  const r = rendered(ROUTE_FILES(`<Route path="/p" render={picked} /><Route path="/t" render={() => <div>text</div>} />`));
+  assert.deepEqual(r.pages, ["/p", "/t"]);
+  assert.equal(r.unknown.length, 2);
+});
+
+test("off, the output doesn't change; a route naming its component keeps it; nested routes stay routes", () => {
+  const files = ROUTE_FILES(`<Route path="/a" render={() => <Tasks />} /><Route path="/n"><Route path="m" element={<Help />} /></Route>`);
+  assert.deepEqual(rendered(files, false).pages, ["/n/m"]);
+  const on = rendered(files);
+  assert.deepEqual(on.pages, ["/a", "/n/m"]);
+  assert.deepEqual(on.targets, ["/a -> Tasks"]);
+  assert.deepEqual(rendered(ROUTE_FILES(`<Route path="/z" component={Tasks} render={() => <Help />} />`)).targets, []);
+});
+
+test("route guards are facts on each page they hold for, a parent's included (G8)", () => {
+  const root = project({
+    "src/stub.d.ts": "declare module '@angular/core' { export function Component(m: object): ClassDecorator; }",
+    "src/list.component.ts": "import { Component } from '@angular/core';\n@Component({ selector: 'app-list', template: '<p></p>' })\nexport class ListComponent {}",
+    "src/guards.ts": "export const authGuard = () => true;\nexport const adminGuard = () => true;",
+    "src/routes.ts": [
+      "import { ListComponent } from './list.component';",
+      "import { authGuard, adminGuard } from './guards';",
+      "export const routes = [",
+      "  { path: 'open', component: ListComponent },",
+      "  { path: '', canActivate: [authGuard], children: [",
+      "    { path: 'list', component: ListComponent },",
+      "    { path: 'admin', component: ListComponent, canActivate: [adminGuard] },",
+      "  ] },",
+      "];",
+    ].join("\n"),
+  }, { experimentalDecorators: true });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const guards = (page: string) => lines.flatMap((l) => l.t === "fact" && l.kind === "guard" && l.node.endsWith(`|${page}`) ? [l.data.guard.split("#")[1]] : []).sort();
+  assert.deepEqual(guards("/open"), []);
+  assert.deepEqual(guards("/list"), ["authGuard"]);
+  assert.deepEqual(guards("/admin"), ["adminGuard", "authGuard"]);
+});
+
+test("a React button says which handler it runs and what it shows; the handler is a point that calls the hook (G5, G6)", () => {
+  const root = project({
+    "src/hooks.ts": "export function useAddSeries() { return { addSeries: (x: number) => x }; }\nexport function translate(key: string, o?: object) { return key; }\nexport function useCallback<T>(f: T, deps: unknown[]): T { return f; }",
+    "src/Modal.tsx": [
+      "import { useAddSeries, translate, useCallback } from './hooks';",
+      "declare const Button: (p: { onPress?: () => void; children?: unknown }) => any;",
+      "declare const Modal: (p: { onClose?: () => void; children?: unknown }) => any;",
+      "export function AddModal(p: { title: string }) {",
+      "  const { addSeries } = useAddSeries();",
+      "  const handleAddPress = useCallback(() => { addSeries(1); }, [addSeries]);",
+      "  return <Modal onClose={() => addSeries(0)}><Button onPress={handleAddPress}>{translate('AddSeriesWithTitle', { title: p.title })}</Button><Button onPress={() => addSeries(2)}>Cancel</Button></Modal>;",
+      "}",
+    ].join("\n"),
+  }, { jsx: "preserve" });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const handler = "ts|src/Modal.tsx#AddModal.handleAddPress";
+  assert.ok(lines.some((l) => l.t === "node" && l.id === handler && l.kind === "method"), "the handler is a point");
+  assert.ok(lines.some((l) => l.t === "edge" && l.kind === "calls" && l.source === handler && l.target.endsWith("hooks.ts#useAddSeries")), "it calls the hook it got addSeries from");
+  assert.ok(lines.some((l) => l.t === "edge" && l.kind === "uses" && l.source.endsWith("#AddModal") && l.target === handler), "the component uses it");
+  const events = lines.flatMap((l) => l.t === "fact" && l.kind === "ui-event" ? [`${l.data.element} ${l.data.event} ${l.data.handler.split("#").pop()} [${l.data.keys}] [${l.data.text}]`] : []).sort();
+  assert.deepEqual(events, ["Button onPress AddModal.handleAddPress [AddSeriesWithTitle] []", "Button onPress inline [] [Cancel]", "Modal onClose inline [] []"]);
+});
+
+test("an Angular (click) says which method it calls and what the element shows (G5, G6)", () => {
+  const root = project({
+    "src/stub.d.ts": "declare module '@angular/core' { export function Component(m: object): ClassDecorator; }",
+    "src/star.component.ts": [
+      "import { Component } from '@angular/core';",
+      "@Component({ selector: 'app-star', template: '<button (click)=\"toggle()\" ngbTooltip=\"{{on ? t(\\'remove-from-want-to-read\\') : t(\\'add-to-want-to-read\\')}}\"><span>Star</span></button>' })",
+      "export class StarComponent { on = false; toggle() {} t(k: string) { return k; } }",
+    ].join("\n"),
+  }, { experimentalDecorators: true });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const events = lines.flatMap((l) => l.t === "fact" && l.kind === "ui-event" ? [`${l.data.element} ${l.data.event} ${l.data.handler.split("#").pop()} [${l.data.keys}] [${l.data.text}]`] : []);
+  assert.deepEqual(events, ["button click StarComponent.toggle [remove-from-want-to-read|add-to-want-to-read] [Star]"]);
+});
+
+test("a lazy route array is walked once, under its parent's path and guards, whatever it's called (F7)", () => {
+  const root = project({
+    "src/stub.d.ts": "declare module '@angular/core' { export function Component(m: object): ClassDecorator; }",
+    "src/list.component.ts": "import { Component } from '@angular/core';\n@Component({ selector: 'app-list', template: '<p></p>' })\nexport class ListComponent {}",
+    "src/guards.ts": "export const authGuard = () => true;",
+    "src/browse.routes.ts": "import { ListComponent } from './list.component';\nexport const routes = [{ path: 'genres', component: ListComponent }];",
+    "src/app.routes.ts": "import { authGuard } from './guards';\nexport const routes = [{ path: 'browse', canActivate: [authGuard], loadChildren: () => import('./browse.routes').then(m => m.routes) }];",
+  }, { experimentalDecorators: true, module: "esnext" });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const pages = lines.flatMap((l) => l.t === "node" && l.kind === "page" ? [l.name] : []).sort();
+  assert.deepEqual(pages, ["/browse/genres"]);
+  assert.ok(lines.some((l) => l.t === "fact" && l.kind === "guard" && l.node.endsWith("|/browse/genres")));
+});
+
+test("constants' values and SignalR listeners, a list's items and enum members included (G9, G10)", () => {
+  const root = project({
+    "src/events.ts": "export enum EVENTS { ScanSeries = 'ScanSeries', SeriesAdded = 'SeriesAdded' }\nexport const PRIMARY = 'primary';\nexport const LIMIT = -5;\nexport const ON = true;",
+    "src/hub.ts": [
+      "import { EVENTS } from './events';",
+      "declare const connection: { on(name: string, f: (x: unknown) => void): void };",
+      "const listed = [EVENTS.ScanSeries, EVENTS.SeriesAdded];",
+      "export function listen(name: string) {",
+      "  connection.on('receiveMessage', () => {});",
+      "  listed.forEach(event => connection.on(event, () => {}));",
+      "  connection.on(name, () => {});",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const values = lines.flatMap((l) => l.t === "fact" && l.kind === "value" ? [`${l.node.split("#")[1]}=${l.data.value}`] : []).sort();
+  assert.deepEqual(values, ["LIMIT=-5", "ON=true", "PRIMARY=primary"]);
+  const on = lines.flatMap((l) => l.t === "fact" && l.kind === "signalr-on" ? [l.data.name] : []).sort();
+  assert.deepEqual(on, ["", "ScanSeries", "SeriesAdded", "receiveMessage"]);
+});
+
+test("plain scripts and a view's inline scripts: jQuery calls and event bindings (N5)", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "stangent-js-"));
+  fs.mkdirSync(path.join(root, "js"));
+  fs.writeFileSync(path.join(root, "js/site.js"), [
+    "function check() {",
+    "  $.ajax({ url: '/api/orders', type: 'POST' });",
+    "}",
+    "$(function () { $('#check-email').click(check); $(document).on('click.cart', '.add', function () { $.get('/api/cart'); }); });",
+    "document.getElementById('save').addEventListener('click', check);",
+  ].join("\n"));
+  const lines = extract({
+    tsconfig: root, root, projectId: "p", settings: {}, files: [path.join(root, "js/site.js")],
+    inline: [{ owner: "view:V.cshtml", file: "V.cshtml", line: 7, text: "\n  $.post('/api/x');\n  check();\n  $.post('__server_value__'); // don't\n  $.get('/api/__server_value__/items');" }],
+  }).lines;
+  const calls = lines.flatMap((l) => l.t === "fact" && l.kind === "call" ? [`${l.node} ${l.data.verb} ${l.data.url} ${l.file}:${l.line}`] : []).sort();
+  assert.deepEqual(calls, [
+    "ts|js/site.js#check POST /api/orders js/site.js:2",
+    "file:js/site.js GET /api/cart js/site.js:4",
+    "view:V.cshtml POST /api/x V.cshtml:8",
+    "view:V.cshtml GET /api/{*}/items V.cshtml:11",
+  ].sort());
+  // A URL the server writes whole is made at runtime: ❓.
+  assert.ok(lines.some((l) => l.t === "blind" && l.node === "view:V.cshtml" && l.line === 10 && l.reason === "HTTP POST to a URL built at runtime"));
+  const events = lines.flatMap((l) => l.t === "fact" && l.kind === "dom-event" ? [`${l.data.selector} ${l.data.event} ${l.data.handler}`] : []).sort();
+  assert.deepEqual(events, [".add click inline", "#check-email click ts|js/site.js#check", "#save click ts|js/site.js#check"].sort());
+  // The inline script's code belongs to the view: what it calls is the view's line, and it declares no points of its own.
+  assert.ok(lines.some((l) => l.t === "edge" && l.source === "view:V.cshtml" && l.target === "ts|js/site.js#check"));
+  assert.ok(!lines.some((l) => l.t === "node" && l.file === "V.cshtml"));
+});
+
+test("a global in several plain scripts is a guess to each, and a handler is a function only when it is one (T2, T7)", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "stangent-js-"));
+  fs.mkdirSync(path.join(root, "js"));
+  fs.writeFileSync(path.join(root, "js/admin.js"), "function setLocation(url) { window.location = url; }");
+  fs.writeFileSync(path.join(root, "js/public.js"), "function setLocation(url) { window.location.href = url; }");
+  fs.writeFileSync(path.join(root, "js/page.js"), [
+    "function go() { setLocation('/x'); }",
+    "$('#many').click(function () { $.get('/api/a'); go(); });",
+    "$('#one').click(function () { go(); });",
+  ].join("\n"));
+  const files = ["admin.js", "public.js", "page.js"].map((f) => path.join(root, "js", f));
+  const lines = extract({ tsconfig: root, root, projectId: "p", settings: {}, files }).lines;
+  const calls = lines.flatMap((l) => l.t === "edge" && l.source === "ts|js/page.js#go" && l.kind === "calls" ? [`${l.target} ${l.label}`] : []).sort();
+  assert.deepEqual(calls, ["ts|js/admin.js#setLocation 1", "ts|js/public.js#setLocation 1"]);
+  const events = lines.flatMap((l) => l.t === "fact" && l.kind === "dom-event" ? [`${l.data.selector} ${l.data.handler}`] : []).sort();
+  assert.deepEqual(events, ["#many inline", "#one ts|js/page.js#go"]);
+});
+
+test("a handler that always stops the browser's own action says so (V2)", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "stangent-js-"));
+  fs.mkdirSync(path.join(root, "js"));
+  fs.writeFileSync(path.join(root, "js/page.js"), [
+    "$('#refresh').click(function () { reload(); return false; });",
+    "$('#maybe').click(function () { if (busy) return false; reload(); });",
+    "document.getElementById('plain').addEventListener('click', function () { return false; });",
+    "document.getElementById('stop').addEventListener('submit', function (e) { e.preventDefault(); reload(); });",
+    "function reload() {}",
+  ].join("\n"));
+  const lines = extract({ tsconfig: root, root, projectId: "p", settings: {}, files: [path.join(root, "js/page.js")] }).lines;
+  const events = lines.flatMap((l) => l.t === "fact" && l.kind === "dom-event" ? [`${l.data.selector} ${l.data.cancels}`] : []).sort();
+  // jQuery honours `return false`; addEventListener doesn't; a conditional one isn't "always".
+  assert.deepEqual(events, ["#maybe ", "#plain ", "#refresh yes", "#stop yes"]);
+});
+
+test("a URL built from a parameter takes each value its callers pass, paired with the verb under the same condition (D190)", () => {
+  const root = project({
+    "src/path.ts": "export const apiRoot = '/api/v5';\nconst getQueryPath = (path: string) => {\n  return apiRoot + path;\n};\nexport default getQueryPath;",
+    "src/query.ts": "const getQueryString = (q?: Record<string, string>) => {\n  if (!q) {\n    return '';\n  }\n  return `?${new URLSearchParams(q)}`;\n};\nexport default getQueryString;",
+    "src/save.ts": [
+      "import getQueryPath from './path';",
+      "import getQueryString from './query';",
+      "declare function fetchJson(o: { path: string; method?: string }): void;",
+      "export const useSave = (id: number | undefined, path: string) => {",
+      "  const save = () => fetchJson({ path: getQueryPath(id ? `${path}/${id}` : path) + getQueryString({}), method: id ? 'PUT' : 'POST' });",
+      "  return save;",
+      "};",
+      "export const useManage = (id: number | undefined, path: string) => useSave(id, path);",
+    ].join("\n"),
+    "src/indexers.ts": "import { useManage } from './save';\nconst PATH = '/indexer';\nexport const useManageIndexer = (id?: number) => useManage(id, PATH);",
+    "src/lists.ts": "import { useManage } from './save';\nexport const useManageList = (id?: number) => useManage(id, '/importlist');",
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p",
+    settings: { "frontend-http": { wrappers: ["fetchJson:path:method@GET"] } } }).lines;
+  const calls = lines.filter((l) => l.t === "fact" && l.kind === "call").map((l) => l.t === "fact" ? `${l.data.verb} ${l.data.url} ${l.data.from} ${String(l.data.origin).split("#")[1]} ${l.data.of}` : "").sort();
+  assert.deepEqual(calls, [
+    `POST ${BASE}api/v5/importlist parameter useManageList 4`,
+    `POST ${BASE}api/v5/indexer parameter useManageIndexer 4`,
+    `PUT ${BASE}api/v5/importlist/{*} parameter useManageList 4`,
+    `PUT ${BASE}api/v5/indexer/{*} parameter useManageIndexer 4`,
+  ]);
+  assert.equal(lines.filter((l) => l.t === "blind").length, 0);
+});
+
+test("a plain script's object methods are points; a URL only a view passes is open; jQuery's callbacks are calls (D191)", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "stangent-js-"));
+  const file = path.join(root, "cart.js");
+  fs.writeFileSync(file, [
+    "var Cart = {",
+    "  add: function (urladd, form) {",
+    "    this.send(urladd, form);",
+    "  },",
+    "  send: function (requestUrl, data) {",
+    "    $.ajax({",
+    "      url: requestUrl,",
+    "      type: 'POST',",
+    "      success: this.done,",
+    "      error: this.failed",
+    "    });",
+    "  },",
+    "  done: function (response) { },",
+    "  failed: function () { }",
+    "};",
+  ].join("\n"));
+  const lines = extract({ root, tsconfig: root, projectId: "p", settings: {}, files: [file] }).lines;
+  const methods = lines.filter((l) => l.t === "node" && l.kind === "method").map((l) => l.t === "node" ? l.name : "").sort();
+  assert.deepEqual(methods, ["Cart.add", "Cart.done", "Cart.failed", "Cart.send"]);
+  const opens = lines.filter((l) => l.t === "fact" && l.kind === "call-open").map((l) => l.t === "fact" ? `${l.data.verb} ${l.data.open.split("#")[1]}` : "");
+  assert.deepEqual(opens, ["POST Cart.add@0"]);
+  const callbacks = lines.filter((l) => l.t === "fact" && l.kind === "call-site" && l.data.callback).map((l) => l.t === "fact" ? `${l.line} ${l.data.callback} ${l.data.target.split("#")[1]}` : "");
+  assert.deepEqual(callbacks, ["9 success Cart.done", "10 error Cart.failed"]);
+});
+
+test("an app's ajax wrapper spreading its options into $.ajax gives the url and verb its callers pass (step 6, S13)", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "stangent-js-"));
+  const file = path.join(root, "ajax.js");
+  fs.writeFileSync(file, [
+    "const apiRoot = window.App.apiRoot;",
+    "function addRootUrl(ajaxOptions) {",
+    "  ajaxOptions.url = apiRoot + ajaxOptions.url;",
+    "}",
+    "function createAjaxRequest(originalAjaxOptions) {",
+    "  const ajaxOptions = { ...originalAjaxOptions };",
+    "  addRootUrl(ajaxOptions);",
+    "  return $.ajax({ xhr: () => null, ...ajaxOptions });",
+    "}",
+    "function requestAction(payload) {",
+    "  const ajaxOptions = { url: `/${payload.provider}/action/${payload.action}`, method: 'POST' };",
+    "  return createAjaxRequest(ajaxOptions);",
+    "}",
+    "function getCaptchaCookie() {",
+    "  return requestAction({ provider: 'indexer', action: 'getCaptchaCookie' });",
+    "}",
+  ].join("\n"));
+  const lines = extract({ root, tsconfig: root, projectId: "p", settings: {}, files: [file] }).lines;
+  const calls = lines.filter((l) => l.t === "fact" && l.kind === "call").map((l) => l.t === "fact" ? `${l.data.verb} ${l.data.url} ${l.data.from}` : "");
+  assert.deepEqual(calls, [`POST ${BASE}/indexer/action/getCaptchaCookie parameter`]);
+  assert.equal(lines.filter((l) => l.t === "blind").length, 0);
+});
+
+test("a returned UrlTree and a navigation the function leaves after are exits; other navigation is a step (D192)", () => {
+  const root = project({
+    "src/router.ts": "export declare class Router { parseUrl(u: string): object; createUrlTree(c: string[]): object; navigateByUrl(u: string): void; navigate(c: unknown[], o?: object): void; }\nexport declare function of<T>(v: T): T;\nexport declare function map<T>(f: (x: T) => unknown): unknown;",
+    "src/guard.ts": [
+      "import { Router, of, map } from './router';",
+      "export const guard = (router: Router, id: number, ok: boolean) => {",
+      "  if (isNaN(id)) {",
+      "    return of(router.parseUrl('/home'));",
+      "  }",
+      "  map((has: boolean) => has || router.parseUrl('/home'));",
+      "  if (!ok) return router.createUrlTree(['/login']);",
+      "  return true;",
+      "};",
+      "export class Reader {",
+      "  constructor(private router: Router) {}",
+      "  open(id: number | null) {",
+      "    if (id === null) {",
+      "      this.router.navigateByUrl('/home');",
+      "      return;",
+      "    }",
+      "    this.router.navigateByUrl('/reader');",
+      "    location.href = '/x';",
+      "    this.router.navigate(['edit'], { relativeTo: this });",
+      "  }",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const exits = lines.filter((l) => l.t === "fact" && l.kind === "exit").map((l) => l.t === "fact" ? `${l.line} ${l.data.kind} ${l.data.result} ${JSON.parse(l.data.conditions).map((c: { text: string }) => c.text).join(",")}` : "");
+  assert.deepEqual(exits, ["4 Redirect '/home' isNaN(id)", "6 Redirect '/home' isNaN(id)", "7 Redirect ['/login'] !ok,isNaN(id)", "14 Redirect '/home' id === null"]);
+  const navs = lines.filter((l) => l.t === "fact" && l.kind === "navigate").map((l) => l.t === "fact" ? `${l.line} ${l.data.to} ${l.data.via} ${l.data.root ?? ""}` : "");
+  // D204: a router call reads its path from the app's root unless it passes relativeTo.
+  assert.deepEqual(navs, ["17 '/reader' router 1", "18 '/x' location ", "19 ['edit'] router "]);
+});
+
+test("an error callback is a catch condition on what runs inside it (D192)", () => {
+  const root = project({
+    "src/a.ts": [
+      "declare function catchError(f: () => unknown): unknown;",
+      "declare function warn(): void;",
+      "export function load(p: Promise<void>, o: { subscribe(x: { error: () => void }): void }) {",
+      "  catchError(() => {",
+      "    warn();",
+      "  });",
+      "  p.catch(() => warn());",
+      "  o.subscribe({ error: () => warn() });",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const conds = lines.filter((l) => l.t === "fact" && l.kind === "condition" && l.data.call === "warn").map((l) => l.t === "fact" ? `${l.line} ${JSON.parse(l.data.conditions).map((c: { kind: string; line: number }) => `${c.kind}@${c.line}`).join(",")}` : "");
+  assert.deepEqual(conds, ["5 catch@4", "7 catch@7", "8 catch@8"]);
+});
+
+test("httpResource's returned URLs and an image's src are GET requests (D193)", () => {
+  const root = project({
+    "src/svc.ts": [
+      "declare function httpResource<T>(f: () => string | undefined): T;",
+      "export class Svc {",
+      "  baseUrl = 'api/';",
+      "  errors(id: () => number | undefined) {",
+      "    return httpResource<string[]>(() => {",
+      "      const x = id();",
+      "      if (x === undefined) return undefined;",
+      "      return this.baseUrl + `server/errors?seriesId=${x}`;",
+      "    });",
+      "  }",
+      "  pageUrl(c: number, p: number) { return `${this.baseUrl}reader/image?chapterId=${c}&page=${p}`; }",
+      "  bookmarkUrl(s: number) { return `${this.baseUrl}reader/bookmark-image?seriesId=${s}`; }",
+      "}",
+      "export class Reader {",
+      "  constructor(private svc: Svc, private marks: boolean) {}",
+      "  getPageUrl = (page: number, chapter: number) => {",
+      "    if (this.marks) return this.svc.bookmarkUrl(1);",
+      "    return this.svc.pageUrl(chapter, page);",
+      "  }",
+      "  load() { const img = new Image(); img.src = this.getPageUrl(1, 2); }",
+      "}",
+    ].join("\n"),
+  }, { lib: ["ES2022", "DOM"] });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const calls = lines.filter((l) => l.t === "fact" && l.kind === "call").map((l) => l.t === "fact" ? `${l.line} ${l.data.verb} ${l.data.url} ${l.data.via} ${l.data.from ?? ""}` : "").sort();
+  assert.deepEqual(calls, [
+    "20 GET api/reader/bookmark-image img-src returns",
+    "20 GET api/reader/image img-src returns",
+    "8 GET api/server/errors angular-httpResource ",
+  ]);
+});
+
+test("each branch of an earlier if / else if chain that leaves is an unless condition; a chain ending in else isn't (D198)", () => {
+  const root = project({
+    "src/a.ts": [
+      "declare function scan(): void;",
+      "export function refresh(isNew: boolean, never: boolean, manual: boolean) {",
+      "  if (isNew) {",
+      "    scan();",
+      "  } else if (never) {",
+      "    return;",
+      "  } else if (manual) {",
+      "    return;",
+      "  }",
+      "  scan();",
+      "  if (isNew) { return; } else { return; }",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const at10 = lines.find((l) => l.t === "fact" && l.kind === "condition" && l.line === 10);
+  assert.ok(at10 && at10.t === "fact");
+  assert.deepEqual(JSON.parse(at10.data.conditions).map((c: { kind: string; text: string; line: number }) => `${c.kind} ${c.text}@${c.line}`), ["unless manual@7", "unless never@5"]);
+});
+
+test("code in a function given to a cache's get-or-create call runs only when nothing is stored (D215)", () => {
+  const root = project({
+    "src/a.ts": [
+      "declare function load(): number;",
+      "interface PriceCache { get(key: string, make: () => number): number }",
+      "interface Store { get(key: string, make: () => number): number }",
+      "export function run(cache: PriceCache, store: Store, m: { getOrSet(k: string, f: () => number): number; getOrder(f: () => number): number }) {",
+      "  cache.get('k', () => load());",
+      "  m.getOrSet('k', () => load());",
+      "  store.get('k', () => load());",
+      "  m.getOrder(() => load());",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const conds = lines.filter((l) => l.t === "fact" && l.kind === "condition" && l.data.call === "load")
+    .map((l) => l.t === "fact" ? `${l.line} ${JSON.parse(l.data.conditions).map((c: { kind: string; text: string; line: number }) => `${c.kind} ${c.text}@${c.line}`).join(",")}` : "");
+  // 7: get on a type that doesn't name a cache; 8: getOrder isn't a get-or name.
+  assert.deepEqual(conds, ["5 cache-miss cache.get@5", "6 cache-miss m.getOrSet@6"]);
+});
+
+test("a call after ?. runs only when what's before it is set, and so do its arguments (D216)", () => {
+  const root = project({
+    "src/a.ts": [
+      "declare function load(n: number): number;",
+      "interface R { next?: R; draw(p: number): void; me(): R }",
+      "export class C {",
+      "  renderer(): R | undefined { return undefined; }",
+      "  run(a: R | undefined, done?: () => void) {",
+      "    this.renderer()?.draw(load(1));",
+      "    a?.next?.draw(2);",
+      "    a?.me().draw(3);",
+      "    done?.();",
+      "    a?.draw([1].map(() => load(4))[0]);",
+      "    load(5);",
+      "  }",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const conds = lines.filter((l) => l.t === "fact" && l.kind === "condition")
+    .map((l) => l.t === "fact" ? `${l.line} ${l.data.call}: ${JSON.parse(l.data.conditions).map((c: { kind: string; text: string }) => `${c.kind} ${c.text}`).join(",")}` : "");
+  assert.deepEqual(conds, [
+    "6 this.renderer()?.draw: set this.renderer()",
+    "6 load: set this.renderer()",
+    "7 a?.next?.draw: set a?.next",
+    "8 a?.me().draw: set a",
+    "8 a?.me: set a",
+    "9 done: set done",
+    "10 a?.draw: set a",
+    "10 [1].map: set a",
+    "10 load: set a",
+  ]);
+});
+
+test("code in a function handed to code that keeps it runs later; a library's callback runs now; a listener's is marked (D201)", () => {
+  const root = project({
+    "src/a.ts": [
+      "declare function act(): void;",
+      "declare const hub: { on(e: string, f: () => void): void };",
+      "type Item = { cb?: () => void };",
+      "function keep(item: Item, cb: () => void) { item.cb = cb; }",
+      "function keepAll(items: Item[], cb: () => void) { items.forEach((i) => keep(i, cb)); return items; }",
+      "function run(cb: () => void) { cb(); }",
+      "export function screen(items: Item[]) {",
+      "  keepAll(items, () => act());",
+      "  run(() => act());",
+      "  [1].map(() => act());",
+      "  hub.on('x', () => act());",
+      "  keepDeep(items, () => act());",
+      "}",
+      "function keepDeep(items: Item[], cb: () => void) { items.forEach((i) => { i.cb = cb; keepDeep([], cb); }); }",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const sites = lines.filter((l) => l.t === "fact" && l.kind === "call-site" && l.data.target.endsWith("#act")).map((l) => l.t === "fact" ? `${l.line} ${l.data.deferred ?? ""}` : "").sort();
+  // A function passing the callback only back to itself (applying it down a tree) still never calls it.
+  assert.deepEqual(sites, ["10 ", "11 listener:on", "12 kept:keepDeep", "8 kept:keepAll", "9 "]);
+});
+
+test("a function only stored on a property, or handed to code that only stores a function calling it, runs later (D306)", () => {
+  const root = project({
+    "src/a.ts": [
+      "declare function act(): void;",
+      "declare function later(): { pipe(f: unknown): unknown };",
+      "declare function tap(f: () => void): unknown;",
+      "type Item = { callback?: (a: Item) => unknown };",
+      "function wire(items: Item[], handler: (a: Item) => unknown) {",
+      "  items.forEach((i) => { i.callback = (a) => handler(a); });",
+      "  return items;",
+      "}",
+      "export function select(items: Item[]) {",
+      "  wire(items, (a) => act());",
+      "  items[0].callback = () => act();",
+      "  items[0].callback = () => later().pipe(tap(() => act()));",
+      "  run(items, (a) => act());",
+      "  const reader = { onload: null as null | (() => void) };",
+      "  reader.onload = () => act();",
+      "}",
+      "function run(items: Item[], handler: (a: Item) => unknown) { items.forEach((i) => handler(i)); }",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const sites = lines.filter((l) => l.t === "fact" && l.kind === "call-site" && l.data.target.endsWith("#act")).map((l) => l.t === "fact" ? `${l.line} ${l.data.deferred ?? ""}` : "").sort();
+  // The stream inside a stored function is the stored function's: it doesn't run in this flow at all.
+  // An event property's function is a listener, run when the event comes (FileReader's onload), not a later action.
+  assert.deepEqual(sites, ["10 kept:wire", "11 kept:callback", "12 kept:callback", "13 ", "15 listener:onload"]);
+});
+
+test("a function stored as an object's property runs later; a top-level object's function runs where it's called (D191); a stream's callback runs now only when the stream starts with a request (D202)", () => {
+  const root = project({
+    "src/lib.d.ts": [
+      "declare class Observable<T> { pipe(...ops: unknown[]): Observable<T>; subscribe(f?: unknown): void; }",
+      "declare class HttpClient { get(u: string): Observable<string>; }",
+      "declare function switchMap(f: (v: unknown) => unknown): unknown;",
+      "declare function skip(n: number): unknown;",
+      "declare function filter(f: (v: number) => boolean): unknown;",
+      "declare const lib: { ajax(o: { success: () => void }): void };",
+    ].join("\n"),
+    "src/a.ts": [
+      "export function act() {}",
+      "function own(o: { cb: () => void }) { return o; }",
+      "export class Screen {",
+      "  constructor(private http: HttpClient, private changes: Observable<number>) {}",
+      "  load() { return this.http.get('/x'); }",
+      "  open() {",
+      "    const card = { readFunc: () => act() };",
+      "    lib.ajax({ success: () => act() });",
+      "    own({ cb: () => act() });",
+      "    this.http.get('/y').subscribe(() => act());",
+      "    this.load().pipe(switchMap(() => act())).subscribe();",
+      "    this.changes.pipe(skip(1), switchMap(() => act())).subscribe();",
+      "    this.changes.subscribe({ next: () => act() });",
+      "    this.changes.pipe(filter((n) => n > 0), switchMap(() => act())).subscribe();",
+      "    return card;",
+      "  }",
+      "}",
+      "var Cart = { add: function () { act(); } };",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const sites = lines.filter((l) => l.t === "fact" && l.kind === "call-site" && l.data.target.endsWith("#act")).map((l) => l.t === "fact" ? `${l.line} ${l.data.deferred ?? ""}` : "").sort();
+  // Fresh check S30: a gating operator before the callback is part of when it runs.
+  assert.deepEqual(sites, ["10 ", "11 ", "12 stream:this.changes", "13 stream:this.changes", "14 stream:this.changes when filter((n) => n > 0)", "18 ", "7 kept:readFunc", "8 ", "9 kept:cb"]);
+});
+
+test("a call through a value another function returned says so; one whose returns name the function is that function (D210)", () => {
+  const root = project({
+    "src/lib.ts": [
+      "export function getPredicate(type: string) { return (a: number, b: number) => a === b; }",
+      "export const makeStore = (name: string) => (pick: (s: number) => number) => pick(1);",
+      "export const createOptions = (name: string) => {",
+      "  const store = makeStore(name);",
+      "  const useOption = (key: string) => store((s) => s);",
+      "  return { useOption };",
+      "};",
+      "export function useCallback<T>(f: T, deps: unknown[]): T { return f; }",
+      "export function usePage() {",
+      "  const handleGoToPage = useCallback((n: number) => n, []);",
+      "  return { goToPage: handleGoToPage };",
+      "}",
+    ].join("\n"),
+    "src/use.ts": [
+      "import { getPredicate, createOptions, usePage } from './lib';",
+      "const { useOption } = createOptions('x');",
+      "export function filter(type: string) {",
+      "  const predicate = getPredicate(type);",
+      "  return predicate(1, 2);",
+      "}",
+      "export const useDelete = () => useOption('delete');",
+      "export function Page() {",
+      "  const { goToPage } = usePage();",
+      "  return goToPage(1);",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const sites = lines.flatMap((l) => l.t === "fact" && l.kind === "call-site" && l.file === "src/use.ts"
+    ? [`${l.line} ${l.data.target.split("#")[1]} ${l.data.fromResult ?? "-"}`] : []).sort();
+  assert.deepEqual(sites, [
+    "10 usePage.handleGoToPage -",
+    "2 createOptions -",
+    "4 getPredicate -",
+    "5 getPredicate 1",
+    "7 createOptions 1",
+    "9 usePage -",
+  ]);
+  const store = lines.flatMap((l) => l.t === "fact" && l.kind === "call-site" && l.file === "src/lib.ts" && l.line === 5 ? [`${l.data.target.split("#")[1]} ${l.data.fromResult ?? "-"}`] : []);
+  assert.deepEqual(store, ["makeStore 1"]);
+});
+
+test("code in a function given to a timer runs later, after its delay (D212)", () => {
+  const root = project({
+    "src/a.ts": [
+      "declare function act(): void;",
+      "export function start() {",
+      "  setInterval(() => act(), 600000);",
+      "  setTimeout(() => { act(); }, 200);",
+      "  act();",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const sites = lines.filter((l) => l.t === "fact" && l.kind === "call-site" && l.data.target.endsWith("#act")).map((l) => l.t === "fact" ? `${l.line} ${l.data.deferred ?? ""}` : "").sort();
+  assert.deepEqual(sites, ["3 timer:setInterval", "4 timer:setTimeout", "5 "]);
+});
+
+test("an element inside a component that draws nothing while a prop is unset is shown only when it draws (D213)", () => {
+  const root = project({
+    "src/Modal.tsx": [
+      "export function Modal({ isOpen, children }: { isOpen: boolean; children?: unknown }) {",
+      "  const id = 1;",
+      "  if (!isOpen) {",
+      "    return null;",
+      "  }",
+      "  return <div id={String(id)}>{children}</div>;",
+      "}",
+      "export function Box(props: { hidden?: boolean; children?: unknown }) {",
+      "  if (props.hidden) return null;",
+      "  return <section>{props.children}</section>;",
+      "}",
+      "export function Plain({ isOpen }: { isOpen: boolean }) {",
+      "  if (!isOpen) return null;",
+      "  return <p />;",
+      "}",
+    ].join("\n"),
+    "src/Page.tsx": [
+      "import { Modal, Box, Plain } from './Modal';",
+      "export function Content() { return <p />; }",
+      "export function Page({ open }: { open: boolean }) {",
+      "  return <div>",
+      "    <Modal isOpen={open}><div>{open ? <Content /> : null}</div></Modal>",
+      "    <Box><Content /></Box>",
+      "    <Plain isOpen={open} />",
+      "    <Content />",
+      "  </div>;",
+      "}",
+    ].join("\n"),
+  }, { jsx: "preserve" });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p", settings: {} }).lines;
+  const sites = lines.flatMap((l) => l.t === "fact" && l.kind === "call-site" && l.file === "src/Page.tsx" && l.data.kind === "renders"
+    ? [`${l.line} ${l.data.target.split("#")[1]} ${l.data.closedBy ?? "-"}`] : []).sort();
+  assert.deepEqual(sites, [
+    "5 Content Modal|!isOpen|isOpen=open",
+    "5 Modal -",
+    "6 Box -",
+    "6 Content Box|props.hidden|hidden=not passed",
+    "7 Plain -",
+    "8 Content -",
+  ]);
+});
+
+test("a wrapper that sends from a mutation hook's function only sets the request up; the mutation runs it later (D214)", () => {
+  const root = project({
+    "node_modules/@tanstack/react-query/package.json": '{ "name": "@tanstack/react-query", "types": "index.d.ts" }',
+    "node_modules/@tanstack/react-query/index.d.ts": [
+      "export declare function useMutation(o: { mutationFn: (d?: unknown) => Promise<unknown>; onSuccess?: () => void }): { mutate: () => void };",
+      "export declare function useQuery(o: { queryFn: () => Promise<unknown> }): unknown;",
+    ].join("\n"),
+    "src/hooks.ts": [
+      "import { useMutation, useQuery } from '@tanstack/react-query';",
+      "declare function fetchJson(o: { path: string }): Promise<unknown>;",
+      "export function useApiMutation(options: { path: string; method: string }) {",
+      "  return useMutation({ mutationFn: async (d) => fetchJson({ path: options.path }) });",
+      "}",
+      "export function useApiQuery(options: { path: string }) {",
+      "  return useQuery({ queryFn: () => fetchJson({ path: options.path }) });",
+      "}",
+    ].join("\n"),
+    "src/use.ts": [
+      "import { useApiMutation, useApiQuery } from './hooks';",
+      "export function useCommands() {",
+      "  const { mutate } = useApiMutation({ path: '/command', method: 'POST' });",
+      "  useApiQuery({ path: '/command' });",
+      "  return mutate;",
+      "}",
+    ].join("\n"),
+  });
+  const lines = extract({ tsconfig: path.join(root, "tsconfig.json"), root, projectId: "p",
+    settings: { "frontend-http": { wrappers: ["useApiMutation:path:method", "useApiQuery:path", "fetchJson:path@GET"] } } }).lines;
+  const calls = lines.filter((l) => l.t === "fact" && l.kind === "call" && l.file === "src/use.ts")
+    .map((l) => l.t === "fact" ? `${l.line} ${l.data.verb} ${l.data.deferred ?? "-"}` : "").sort();
+  assert.deepEqual(calls, ["3 POST mutation:useMutation", "4 GET -"]);
 });

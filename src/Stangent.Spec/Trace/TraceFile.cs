@@ -8,20 +8,25 @@ using YamlDotNet.RepresentationModel;
 namespace Stangent.Spec.Trace;
 
 /// <summary>
-/// <c>specs/trace.yaml</c> (D58, contract <c>trace-links</c> v1): one entry per link or finding between an FSD section
+/// <c>specs/trace.yaml</c> (D58, contract <c>trace-links</c> v4): one entry per link or finding between an FSD section
 /// and a reference page, with both quotes, the state, and the decision a person makes by editing the file in a PR.
 /// Written by code in one fixed form, so a re-run with the same content gives the same bytes; the dashboard (Phase 8)
 /// will edit the same file.
 /// </summary>
 public static class TraceFile
 {
-    public const string Schema = "trace-links.v1.json";
-    public static readonly string[] States = ["agree", "gap", "conflict", "undocumented"];
-    public static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "defer"];
+    public const string Schema = "trace-links.v4.json";
+    public static readonly string[] States = ["agree", "gap", "conflict", "undocumented", "partial", "unclear", "table-fact"];
+    /// <summary>A difference found by comparing a table with the code, by code (C.2, D124): it has no page, and it holds what was compared in <c>table_fact</c>.</summary>
+    public const string TableFact = "table-fact";
+    public static readonly string[] Decisions = ["agree", "code-wrong", "fsd-wrong", "page-wrong", "defer", "accepted", "not-a-difference"];
+
+    /// <summary>What a finding carries beyond its link (D118).</summary>
+    public static readonly string[] FindingFields = ["finding", "severity", "severity_by", "evidence", "evidence_hash", "verdict", "disproof", "disproof_hash", "review", "review_note", "review_hash", "standing", "standing_note", "standing_hash", "security", "security_hash", "security_state", "security_note", "security_answer_hash"];
 
     public static string PathIn(string root) => Path.Combine(root, "specs", "trace.yaml");
 
-    public static JsonObject Empty() => new() { ["version"] = 1, ["entries"] = new JsonArray() };
+    public static JsonObject Empty() => new() { ["version"] = 3, ["entries"] = new JsonArray() };
 
     public static JsonObject Load(string root) => File.Exists(PathIn(root)) ? Parse(File.ReadAllText(PathIn(root))) : Empty();
 
@@ -35,12 +40,14 @@ public static class TraceFile
         return ToJson(stream.Documents[0].RootNode, "") as JsonObject ?? throw new StangentException("invalid_trace", "trace.yaml must be a mapping.");
     }
 
-    static JsonNode? ToJson(YamlNode node, string key) => node switch
+    internal static JsonNode? ToJson(YamlNode node, string key) => node switch
     {
         YamlMappingNode m => new JsonObject(m.Children.Select(c => KeyValuePair.Create(((YamlScalarNode)c.Key).Value!, ToJson(c.Value, ((YamlScalarNode)c.Key).Value!)))),
         YamlSequenceNode s => new JsonArray([.. s.Children.Select(c => ToJson(c, ""))]),
         YamlScalarNode { Value: null or "" or "~" or "null" } sc when sc.Style == YamlDotNet.Core.ScalarStyle.Plain => null,
         YamlScalarNode sc when key == "version" && int.TryParse(sc.Value, out var v) => v,
+        // An evidence record's lines; the contract wants numbers.
+        YamlScalarNode { Style: YamlDotNet.Core.ScalarStyle.Plain } sc when key is "start" or "end" or "row" && int.TryParse(sc.Value, out var line) => line,
         YamlScalarNode sc => sc.Value,
         _ => null,
     };
@@ -49,9 +56,10 @@ public static class TraceFile
     public static string Write(JsonObject trace)
     {
         var sb = new StringBuilder();
-        sb.Append("# FSD ↔ reference page links and findings (trace-links v1, D58). Edit `decision` only:\n");
-        sb.Append("# agree, code-wrong, fsd-wrong or defer. `decided_by` is filled from git after merge, never typed.\n");
-        sb.Append("version: 1\nentries:");
+        sb.Append("# FSD ↔ reference page links and findings (trace-links v3, D58, D99, D118). Edit `decision` only:\n");
+        sb.Append("# agree, code-wrong, fsd-wrong, page-wrong, defer, accepted or not-a-difference. On a finding, also `severity`: blocker, major, minor, cosmetic or ungraded.\n");
+        sb.Append("# `decided_by` and `severity_by` are filled from git after merge, never typed. Code fills the rest.\n");
+        sb.Append("version: 4\nentries:");
         var entries = Sorted(trace["entries"]?.AsArray() ?? []).ToList();
         if (entries.Count == 0) sb.Append(" []");
         sb.Append('\n');
@@ -63,14 +71,42 @@ public static class TraceFile
             {
                 if (e[end] is not JsonObject o) { sb.Append($"    {end}: null\n"); continue; }
                 sb.Append($"    {end}:\n");
-                foreach (var k in end == "fsd" ? new[] { "doc", "section", "title", "quote", "quoteHash" } : ["id", "statement", "quote", "quoteHash"])
+                foreach (var k in end == "fsd" ? new[] { "doc", "section", "sectionId", "title", "requirement", "claim", "quote", "quoteHash", "attachment", "attachmentFile", "attachmentSheet", "attachmentRow" } : ["id", "statement", "quote", "quoteHash"])
                     if (o[k] is not null) sb.Append($"      {k}: {S(o[k])}\n");
             }
             sb.Append($"    by: {S(e["by"])}\n");
             if (e["check"] is not null) sb.Append($"    check: {S(e["check"])}\n");
             if (e["note"] is not null) sb.Append($"    note: {S(e["note"])}\n");
+            if (e["partial"] is JsonObject partial) sb.Append($"    partial: {partial.ToJsonString(Json)}\n");
+            if (e["table_fact"] is JsonObject tableFact) sb.Append($"    table_fact: {tableFact.ToJsonString(Json)}\n");
             sb.Append($"    decision: {S(e["decision"])}\n");
             sb.Append($"    decided_by: {S(e["decided_by"])}\n");
+            if (e["decided_on"] is not null) sb.Append($"    decided_on: {S(e["decided_on"])}\n");
+            if (e["carried_from"] is not null) sb.Append($"    carried_from: {S(e["carried_from"])}\n");
+            if (e["finding"] is not null) sb.Append($"    finding: {S(e["finding"])}\n");
+            if (e["severity"] is not null) sb.Append($"    severity: {S(e["severity"])}\n");
+            if (e["severity_by"] is not null) sb.Append($"    severity_by: {S(e["severity_by"])}\n");
+            if (e["evidence"] is JsonArray { Count: > 0 } evidence)
+            {
+                // One record a line, as JSON, which is valid YAML: only code writes these, so a diff stays short.
+                sb.Append("    evidence:\n");
+                foreach (var record in evidence) sb.Append($"      - {record?.ToJsonString(Json) ?? "null"}\n");
+            }
+            if (e["evidence_hash"] is not null) sb.Append($"    evidence_hash: {S(e["evidence_hash"])}\n");
+            if (e["verdict"] is not null) sb.Append($"    verdict: {S(e["verdict"])}\n");
+            if (e["disproof"] is JsonObject disproof) sb.Append($"    disproof: {disproof.ToJsonString(Json)}\n");
+            if (e["disproof_hash"] is not null) sb.Append($"    disproof_hash: {S(e["disproof_hash"])}\n");
+            if (e["review"] is not null) sb.Append($"    review: {S(e["review"])}\n");
+            if (e["review_note"] is JsonObject note) sb.Append($"    review_note: {note.ToJsonString(Json)}\n");
+            if (e["review_hash"] is not null) sb.Append($"    review_hash: {S(e["review_hash"])}\n");
+            if (e["standing"] is not null) sb.Append($"    standing: {S(e["standing"])}\n");
+            if (e["standing_note"] is JsonObject standing) sb.Append($"    standing_note: {standing.ToJsonString(Json)}\n");
+            if (e["standing_hash"] is not null) sb.Append($"    standing_hash: {S(e["standing_hash"])}\n");
+            if (e["security"] is JsonObject security) sb.Append($"    security: {security.ToJsonString(Json)}\n");
+            if (e["security_hash"] is not null) sb.Append($"    security_hash: {S(e["security_hash"])}\n");
+            if (e["security_state"] is not null) sb.Append($"    security_state: {S(e["security_state"])}\n");
+            if (e["security_note"] is JsonObject securityNote) sb.Append($"    security_note: {securityNote.ToJsonString(Json)}\n");
+            if (e["security_answer_hash"] is not null) sb.Append($"    security_answer_hash: {S(e["security_answer_hash"])}\n");
         }
         return sb.ToString();
     }
@@ -96,8 +132,56 @@ public static class TraceFile
     static readonly JsonSerializerOptions Json = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     /// <summary>An entry's id: the same link and quotes always get the same id, so decisions survive a re-run.</summary>
-    public static string EntryId(string state, string? doc, string? section, string? page, string? fsdQuote, string? pageQuote) =>
-        "L" + CanonicalJson.Hash(string.Join("\u0001", state, doc ?? "", section ?? "", page ?? "", Quotes.Normalize(fsdQuote ?? ""), Quotes.Normalize(pageQuote ?? "")))[..10];
+    /// <summary>The id an entry should have, with its section as given. A table fact has no page quote, so what was compared stands in for it: two members missing from one table cite the same header.</summary>
+    public static string IdOf(JsonObject e, string? section) => (string?)e["fsd"]?["claim"] is { } claim
+        ? ClaimEntryId((string)e["state"]!, (string?)e["fsd"]?["doc"], (string?)e["fsd"]?["sectionId"], (string?)e["page"]?["id"], claim, (string?)e["page"]?["statement"])
+        : EntryId((string)e["state"]!, (string?)e["fsd"]?["doc"], section, (string?)e["page"]?["id"], (string?)e["fsd"]?["quote"],
+        (string?)e["table_fact"]?["key"] ?? (string?)e["page"]?["quote"], (string?)e["fsd"]?["requirement"]);
+
+    public static string EntryId(string state, string? doc, string? section, string? page, string? fsdQuote, string? pageQuote, string? requirement = null) =>
+        "L" + CanonicalJson.Hash(string.Join("\u0001", [state, doc ?? "", section ?? "", page ?? "", Quotes.Normalize(fsdQuote ?? ""), Quotes.Normalize(pageQuote ?? ""), .. requirement is null ? Array.Empty<string>() : [requirement]]))[..10];
+
+    /// <summary>What <c>fsd.claim</c> says on a judge's undocumented link with <c>claim-links</c> on: it's a link by ids, resting on no claim.</summary>
+    public const string NoClaim = "none";
+
+    /// <summary>A link's id with <c>claim-links</c> on (D145), from ids alone, so it holds whichever words were ever quoted, and a section's new number moves nothing. The state stays in it: a ruling on `agree` must not carry over to a `conflict`.</summary>
+    public static string ClaimEntryId(string state, string? doc, string? sectionId, string? page, string? claim, string? statement) =>
+        "L" + CanonicalJson.Hash(string.Join("\u0001", "claims", state, doc ?? "", sectionId ?? "", page ?? "", claim ?? "", statement ?? ""))[..10];
+
+    /// <summary>A link without its section. Its id holds the section's number, so a section that moved has a new id; this is how a base
+    /// file's copy of the entry is still found (D117). Two entries sharing a key are left out, because it can't tell them apart.</summary>
+    public static IReadOnlyDictionary<string, JsonObject> ByLink(JsonArray entries) => entries.OfType<JsonObject>().GroupBy(LinkKey)
+        .Where(g => g.Count() == 1).ToDictionary(g => g.Key, g => g.Single(), StringComparer.Ordinal);
+
+    public static string LinkKey(JsonObject e) => string.Join("\u0001", (string?)e["state"] ?? "", (string?)e["fsd"]?["doc"] ?? "", (string?)e["fsd"]?["requirement"] ?? "", (string?)e["page"]?["id"] ?? "",
+        (string?)e["page"]?["statement"] ?? "", Quotes.Normalize((string?)e["fsd"]?["quote"] ?? ""), Quotes.Normalize((string?)e["table_fact"]?["key"] ?? (string?)e["page"]?["quote"] ?? ""));
+
+    /// <summary>A removed section's mark (D117). It keeps what cited the section on file, out of reach of any section that gets the same number later.</summary>
+    public static string RemovedSection(string permanentId, string section) => $"(removed {permanentId}) {section}";
+
+    public static bool IsRemovedSection(string? section) => section is not null && System.Text.RegularExpressions.Regex.IsMatch(section, @"^\(removed S-\d+\) ");
 
     public static string QuoteHash(string quote) => CanonicalJson.Hash(Quotes.Normalize(quote));
+
+    /// <summary>The evidence as code wrote it. Without a base to compare with, this is how an out-of-date record is told from a typed one.</summary>
+    public static string EvidenceHash(JsonArray evidence) => CanonicalJson.Hash(CanonicalJson.SerializeCompact(evidence));
+
+    /// <summary>A verdict as code wrote it (D119), so one typed by hand to clear a finding out of a queue is seen.</summary>
+    public static string DisproofHash(string? verdict, JsonObject? disproof) =>
+        CanonicalJson.Hash((verdict ?? "") + "\n" + (disproof is null ? "" : CanonicalJson.SerializeCompact(disproof)));
+
+    /// <summary>A finding's standing as code wrote it (D122), so one typed by hand to take a finding out of a queue is seen.</summary>
+    public static string StandingHash(string? standing, JsonObject? note) =>
+        CanonicalJson.Hash((standing ?? "") + "\n" + (note is null ? "" : CanonicalJson.SerializeCompact(note)));
+
+    /// <summary>A review as code wrote it, on the verdict it was about, so one typed by hand or left over from an older verdict closes nothing.</summary>
+    public static string ReviewHash(string? review, JsonObject? note, string? disproofHash) =>
+        CanonicalJson.Hash((review ?? "") + "\n" + (note is null ? "" : CanonicalJson.SerializeCompact(note)) + "\n" + (disproofHash ?? ""));
+
+    /// <summary>A security flag as code wrote it (D148), once its citation passed.</summary>
+    public static string SecurityHash(JsonObject? flag) => CanonicalJson.Hash(flag is null ? "" : CanonicalJson.SerializeCompact(flag));
+
+    /// <summary>A person's answer to a flag as code wrote it, on the flag it answered, so one typed by hand or left over from an older flag answers nothing.</summary>
+    public static string SecurityAnswerHash(string? answer, JsonObject? note, string? securityHash) =>
+        CanonicalJson.Hash((answer ?? "") + "\n" + (note is null ? "" : CanonicalJson.SerializeCompact(note)) + "\n" + (securityHash ?? ""));
 }

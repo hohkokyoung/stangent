@@ -1,0 +1,19 @@
+estimate: at least 62 AI calls, cost unknown (no earlier `fsd disprove check` call with a cost in this repo's telemetry)
+disprove:current	sonarr-fsd	1
+disprove:current	sonarr-fsd	2
+disprove:current	sonarr-fsd	3
+disprove:recorded	sonarr-fsd	3.1
+disprove:recorded	sonarr-fsd	1.2
+disprove:recorded	sonarr-fsd	3.2
+disprove:recorded	sonarr-fsd	1.1
+disprove:recorded	sonarr-fsd	Wanted / Missing episodes
+disprove:recorded	sonarr-fsd	Settings / Tags
+disprove:recorded	sonarr-fsd	Settings / Profiles / Quality profiles
+disprove:recorded	sonarr-fsd	Settings / Quality definitions
+disprove:recorded	sonarr-fsd	Settings / Profiles / Delay profiles
+disprove:recorded	sonarr-fsd	Settings / General / Logging
+disprove:recorded	sonarr-fsd	System / Backups
+disprove:recorded	sonarr-fsd	Settings / General / Backups
+disprove:recorded	sonarr-fsd	Settings / Interface
+spent: 61 AI calls, $7.30 of $10
+exit 0
