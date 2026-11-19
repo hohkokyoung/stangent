@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:fsd-view-output:v1",
+  "title": "What stangent-view-writer returns (D416)",
+  "description": "For each flow the input names (V1, V2, …): a short title for the journey and one plain line per step the input lists (S the start, A who may start it, C1… what it changes, X1… how it stops early). Code checks every line names one listed step, every step has a line, each is one sentence with no code name its step doesn't have.",
+  "type": "object",
+  "required": ["flows"],
+  "additionalProperties": false,
+  "properties": {
+    "flows": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "required": ["flow", "title", "lines"],
+        "additionalProperties": false,
+        "properties": {
+          "flow": { "description": "The flow's id as the input names it: V1, V2, …", "type": "string", "pattern": "^V[0-9]+$" },
+          "title": { "description": "The journey's name in plain words, as a product manager would say it (\"Remove read items from a reading list\"), at most 80 characters.", "type": "string", "minLength": 1, "maxLength": 200 },
+          "lines": {
+            "type": "array",
+            "maxItems": 40,
+            "items": {
+              "type": "object",
+              "required": ["item", "text"],
+              "additionalProperties": false,
+              "properties": {
+                "item": { "description": "The step's id as the input lists it: S, A, C1…, X1…", "type": "string", "pattern": "^(S|A|C[0-9]+|X[0-9]+)$" },
+                "text": { "description": "One plain sentence for a product manager saying what this step means for the user: who may do it, what changes, or when it stops and what they see. No code names, no backticks, at most 200 characters.", "type": "string", "minLength": 1, "maxLength": 400 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

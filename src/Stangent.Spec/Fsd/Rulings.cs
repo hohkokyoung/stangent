@@ -27,6 +27,9 @@ public sealed class RulingEntry
     public string? NotFound;
     public string? Flagged;
     public bool New;
+    /// <summary>Code the checklist left out, every finding a control (D414): listed, not asked; numbered after every question,
+    /// asked in Jira when a ticket lands on it. Set by code from the review on each refresh, never by a person.</summary>
+    public bool OnDemand;
     public JsonObject? Jira;
     /// <summary>What a ruling written into the FSD replaced (D386, <c>fsd write</c>): the old key, the ruling, the PM's words,
     /// who ruled. Set, the entry is a confirmed match on the new sentence, and no review finding of the old key comes back.</summary>
@@ -47,6 +50,8 @@ public sealed class RulingEntry
     public bool IsMatch => State == "match";
     public bool IsUndocumented => State == "undocumented";
     public bool IsDifference => State is "gap" or "conflict";
+    /// <summary>Ruled keep with no sentence (D417): counts as blank until the PM says what the kept code should do.</summary>
+    public bool NeedsWords => Ruling == "keep" && Statement is null;
 
     /// <summary>The key compared across review runs: a quote as the merge joins it, a link by its kind and id.</summary>
     public string Key => IsUndocumented || (KeyQuote is null && KeyLink is not null)
@@ -197,6 +202,7 @@ public static partial class Rulings
             NotFound = Str(e["notFound"]),
             Flagged = Str(e["flagged"]),
             New = e["new"] is JsonValue n && n.TryGetValue<bool>(out var nv) && nv,
+            OnDemand = e["onDemand"] is JsonValue od && od.TryGetValue<bool>(out var odv) && odv,
             Jira = e["jira"] as JsonObject is { } j ? (JsonObject)j.DeepClone() : null,
             WrittenFrom = e["writtenFrom"] as JsonObject is { } w ? (JsonObject)w.DeepClone() : null,
             Ruling = Str(e["ruling"]),
@@ -243,7 +249,7 @@ public static partial class Rulings
         node.Children.FirstOrDefault(c => c.Key is YamlScalarNode { Value: var v } && v == key).Value;
 
     static readonly HashSet<string> IntKeys = ["version", "runs"];
-    static readonly HashSet<string> BoolKeys = ["exact", "disagrees", "new", "inFsd"];
+    static readonly HashSet<string> BoolKeys = ["exact", "disagrees", "new", "inFsd", "onDemand"];
 
     /// <summary>YAML → the JSON the schema checks: plain scalars typed by their key (numbers in <c>version</c> and <c>runs</c>,
     /// booleans in <c>exact</c>, <c>disagrees</c>, <c>new</c> and a v1 file's <c>inFsd</c>), blanks as null, everything else a string.</summary>
@@ -269,15 +275,16 @@ public static partial class Rulings
     {
         var sb = new StringBuilder();
         sb.Append($"# The PM's rulings on the FSD review of {file.Doc} (contract rulings v2; D361, D363, D366, D386). Written by `stangent fsd rulings`.\n");
-        sb.Append("# Nobody needs to edit this file (D371): read truth-map.md and tell Claude the answers (`/stangent:rule " + file.Doc + "`),\n");
+        sb.Append("# Nobody needs to edit this file (D371): read the view (specs/fsd/index.md) and tell Claude the answers (`/stangent:rule " + file.Doc + "`),\n");
         sb.Append("# or run `stangent fsd rule " + file.Doc + " <number> <answer>`. A hand edit is still read; then change only these:\n");
         sb.Append("#   ruling:    a gap or conflict: code-right, fsd-right or restated; undocumented code: keep, remove or restated;\n");
         sb.Append("#              a match: confirmed or not-a-match\n");
-        sb.Append("#   statement: the rule in your words; required for restated\n");
+        sb.Append("#   statement: the rule in your words; required for restated and keep (say what the kept code should do, D417)\n");
         sb.Append("#   pmNote:    anything else\n");
         sb.Append("#   matches:   confirmed, once a section's matches look right (a match added later shows `new: true`)\n");
         sb.Append("# and delete a `flagged:` or `new:` line once you have looked. Put text holding a colon or a # in quotes. An entry marked\n");
-        sb.Append("# `notFound:` stays until it is dropped. Comments outside the ruling and matches lines aren't kept.\n");
+        sb.Append("# `notFound:` stays until it is dropped. An entry marked `onDemand:` is listed, not asked (D414): it is asked in Jira when\n");
+        sb.Append("# a ticket lands on it. Comments outside the ruling and matches lines aren't kept.\n");
         sb.Append("# Who answered and when come from git, never from this file:\n");
         sb.Append("# commit, then run `stangent fsd rulings-check " + file.Doc + "`.\n");
         sb.Append($"contract: {Rulings.Contract}\nversion: {Version}\n");
@@ -323,6 +330,7 @@ public static partial class Rulings
         if (e.NotFound is not null) sb.Append($"{p}notFound: {S(e.NotFound)}\n");
         if (e.Flagged is not null) sb.Append($"{p}flagged: {S(e.Flagged)}\n");
         if (e.New) sb.Append($"{p}new: true\n");
+        if (e.OnDemand) sb.Append($"{p}onDemand: true\n");
         if (e.Jira is not null) sb.Append($"{p}jira: {e.Jira.ToJsonString(Json)}\n");
         if (e.WrittenFrom is not null) sb.Append($"{p}writtenFrom: {e.WrittenFrom.ToJsonString(Json)}\n");
         sb.Append(Pm(p, "ruling", e.Ruling, e.RulingRaw));
@@ -609,7 +617,12 @@ public static partial class Rulings
                 Link = use.Select(x => x.Link).OrderBy(l => l.Precision).ThenBy(l => l.Key, StringComparer.Ordinal).First(),   // not by finding order: a re-review that reorders them mustn't flag
                 Disagrees = differences.Count > 0 && matches.Count > 0,
             };
-            if (state == "undocumented") e.KeyLink = e.Link.Key;
+            if (state == "undocumented")
+            {
+                e.KeyLink = e.Link.Key;
+                // D414: every finding a control the checklist left out (`S03.012`, not a whole screen `S03`, not the reviewer's own).
+                e.OnDemand = use.All(x => (string?)x.Finding["item"] is { } item && item.Contains('.', StringComparison.Ordinal));
+            }
             foreach (var (f, _, _) in use)
             {
                 foreach (var ev in f["evidence"]!.AsArray().Select(x => ((string)x!).Trim())) if (!e.Evidence.Contains(ev)) e.Evidence.Add(ev);

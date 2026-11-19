@@ -170,7 +170,7 @@ public sealed class FsdWriteTests : IDisposable
         Assert.True(ok, string.Join("; ", check["problems"]!.AsArray()));
         var w = Assert.Single(check["written"]!.AsArray());
         Assert.Equal(("restated", "Pat PM"), ((string?)w!["from"], (string?)w["committer"]));
-        var md = File.ReadAllText(TruthMap.MarkdownPath(Root, "shop"));
+        var md = TruthView.ReadAll(Root, "shop");
         Assert.Contains("Written into the FSD from the PM's own words", md);
         Assert.Contains("it replaced: “A refund sends the customer an email.”", md);
         Assert.DoesNotContain("inFsd", File.ReadAllText(TruthMap.JsonPath(Root, "shop")));
@@ -199,6 +199,19 @@ public sealed class FsdWriteTests : IDisposable
         Assert.Equal(("match", "S-0003", "undocumented"), (e.State, e.KeySection, (string?)e.WrittenFrom!["state"]));
         Assert.NotNull((string?)e.WrittenFrom["link"]);
         Assert.True((bool)FsdCheck.Run(Repo, "shop", [], [])["ok"]!);
+    }
+
+    [Fact]
+    public void A_keep_with_the_pms_sentence_goes_into_the_spec_as_their_own_words_do()
+    {
+        // D417 (5): the keep's sentence is the PM's own words, placed as a restated ruling's are.
+        Rule("file:web", "ruling", "keep");
+        Rule("file:web", "statement", "\"Settings also list every saved filter.\"");
+        var (result, _) = FsdWrite.Run(Repo, "shop", null, "S-0003", null, null);
+        Assert.Equal("added", (string)Assert.Single(result["written"]!.AsArray())!["how"]!);
+        Assert.Contains("Settings hold the shop's currency.\n\nSettings also list every saved filter.", Chapters().Single(c => c.Key.Contains("s0003", StringComparison.Ordinal)).Value);
+        var e = Read().Sections.Single(s => s.SectionId == "S-0003").Entries.Single();
+        Assert.Equal(("keep", "Settings also list every saved filter."), ((string?)e.WrittenFrom!["ruling"], (string?)e.WrittenFrom["statement"]));
     }
 
     /// <summary>The gap gets a code-right ruling, and the run is prepared under a cap.</summary>

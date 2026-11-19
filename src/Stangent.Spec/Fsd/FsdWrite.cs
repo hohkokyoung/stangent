@@ -53,7 +53,7 @@ public static partial class FsdWrite
         var w = new JsonObject { ["state"] = e.State, ["section"] = e.KeySection };
         if (e.KeyQuote is not null) w["quote"] = e.KeyQuote; else w["link"] = e.KeyLink;
         w["ruling"] = e.Ruling;
-        if (e.Ruling == "restated") w["statement"] = e.Statement;
+        if (e.Ruling is "restated" or "keep" && e.Statement is not null) w["statement"] = e.Statement;
         if (cites is { Count: > 0 }) w["cites"] = new JsonArray([.. cites.Select(c => (JsonNode)c)]);
         if (who is { Committed: true }) { w["by"] = who.By; w["on"] = who.On; }
         e.WrittenFrom = w;
@@ -65,13 +65,13 @@ public static partial class FsdWrite
         (e.Flagged, e.New, e.NotFound, e.Disagrees) = (null, false, null, false);
     }
 
-    /// <summary>Waiting to be written: a restated or code-right difference, or restated undocumented code, not written,
-    /// flagged or lost by the last review.</summary>
+    /// <summary>Waiting to be written: a restated or code-right difference, or undocumented code restated or kept with the
+    /// PM's sentence (D417), not written, flagged or lost by the last review.</summary>
     static bool Waiting(RulingEntry e) => Writable(e) && e.NotFound is null && e.Flagged is null;
 
     /// <summary>A ruling that becomes FSD words, not written yet.</summary>
     static bool Writable(RulingEntry e) => e.Problem is null && e.WrittenFrom is null
-        && ((e.IsDifference && e.Ruling is "restated" or "code-right") || (e.IsUndocumented && e.Ruling == "restated"));
+        && ((e.IsDifference && e.Ruling is "restated" or "code-right") || (e.IsUndocumented && (e.Ruling == "restated" || e.Ruling == "keep" && e.Statement is not null)));
 
     // ---- the chapters, in memory ------------------------------------------------------------------------------------------
 
@@ -373,7 +373,7 @@ public static partial class FsdWrite
             else ready.Add(p);
         }
 
-        // --section with --item: which undocumented code's words go where (truth-map.md's number, the map the PM read).
+        // --section with --item: which undocumented code's words go where (the view's number, the map the PM read).
         RulingEntry? placing = null;
         var undocumented = ready.Where(p => p.Entry.IsUndocumented).ToList();
         if (item is { } n)
@@ -382,7 +382,7 @@ public static partial class FsdWrite
             var map = File.Exists(TruthMap.JsonPath(root, doc)) ? JsonNode.Parse(File.ReadAllText(TruthMap.JsonPath(root, doc)))!.AsObject()
                 : throw new StangentException("no_truth_map", $"{doc} has no truth map: run `stangent fsd rulings-check {doc}`.", ExitCodes.NotFound);
             if (mapId is { Length: > 0 } && !string.Equals(mapId.Trim(), PmAnswers.MapId(map), StringComparison.OrdinalIgnoreCase))
-                throw new StangentException("map_rebuilt", $"truth-map.md was rebuilt since it was read (map {mapId.Trim()}, now {PmAnswers.MapId(map)}): read it again; nothing was written.", ExitCodes.Failed);
+                throw new StangentException("map_rebuilt", $"the view was rebuilt since it was read (map {mapId.Trim()}, now {PmAnswers.MapId(map)}): read it again; nothing was written.", ExitCodes.Failed);
             var (_, en) = PmAnswers.Find(map, n);
             var key = en?["key"] as JsonObject;
             placing = undocumented.Select(p => p.Entry).FirstOrDefault(e => key is not null && e.KeyLink == (string?)key["link"] && e.KeySection == (string?)key["section"])
@@ -393,7 +393,7 @@ public static partial class FsdWrite
             if (undocumented.Count != 1)
                 throw new StangentException("usage", undocumented.Count == 0
                     ? "--section places the PM's words about code no section covers, and none is waiting to be written."
-                    : $"{undocumented.Count} rulings in the PM's words about code no section covers are waiting; say which goes in {section} with --item <its number in truth-map.md>.", ExitCodes.Usage,
+                    : $"{undocumented.Count} rulings in the PM's words about code no section covers are waiting; say which goes in {section} with --item <its number in the view>.", ExitCodes.Usage,
                     [.. undocumented.Select(p => p.Entry.Describe())]);
             placing = undocumented[0].Entry;
         }
@@ -406,7 +406,8 @@ public static partial class FsdWrite
             target = matches[0];
         }
 
-        foreach (var p in ready.Where(p => p.Entry.Ruling == "restated"))
+        // The PM's own words: a restated ruling, or a keep with its sentence (D417), placed as restated words are.
+        foreach (var p in ready.Where(p => p.Entry.Ruling == "restated" || p.Entry.IsUndocumented))
         {
             var e = p.Entry;
             var who = TruthMap.Who(e, p.Block, blame);

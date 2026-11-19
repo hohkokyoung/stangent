@@ -101,7 +101,7 @@ On 2026-11-07 the spec-to-code links failed their targets: they found 24 of 30 k
 | **FSD** | Functional spec document: what the app should do. It arrives as the client's Word, PDF or Excel file; after import it's the chapter files in the repo |
 | **Chapter file** | One Markdown file per FSD chapter, under `specs/fsd/<doc>/chapters/`, the copy the PM edits |
 | **Ruling** | The PM's answer to one review finding, kept in `rulings.yaml` until it's written into the FSD's words |
-| **Truth map** | All the PM's rulings for one FSD, built by code (`truth-map.md` for the PM, `.json` for agents); tickets are judged against it |
+| **Truth map** | All the PM's rulings for one FSD, built by code (`.json` for agents; for the PM a view: `specs/fsd/index.md`, one summary per area, one file per module, D415); tickets are judged against it |
 | **Point** | A function or method in the graph |
 | **Flow** | One user or system action, laid out step by step by code |
 | **Area** | A group of flows (one part of the app, as its users name it), confirmed by a person once |

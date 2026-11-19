@@ -13,7 +13,7 @@ public sealed record AiSettings(string Agent, string Model, string Effort, strin
     public static readonly IReadOnlyList<string> Efforts = ["low", "medium", "high", "xhigh", "max"];
 
     /// <summary>Every AI step's agent, as <c>plugin/agents/</c> names them (a test holds the two equal).</summary>
-    public static readonly IReadOnlyList<string> Agents = ["stangent-bug-reproducer", "stangent-file-finder", "stangent-fixer", "stangent-fsd-lister", "stangent-fsd-reviewer", "stangent-fsd-writer", "stangent-page-verifier", "stangent-page-writer", "stangent-question-writer", "stangent-summary-writer"];
+    public static readonly IReadOnlyList<string> Agents = ["stangent-bug-reproducer", "stangent-file-finder", "stangent-fixer", "stangent-fsd-lister", "stangent-fsd-reviewer", "stangent-fsd-writer", "stangent-page-verifier", "stangent-page-writer", "stangent-question-writer", "stangent-summary-writer", "stangent-view-writer"];
 
     /// <summary>Every step's settings at once, so a run with one step unpinned stops before its first call, not halfway (D161).</summary>
     public static IReadOnlyList<AiSettings> ResolveAll(StangentConfig config, string? modelFlag = null, string? effortFlag = null) =>

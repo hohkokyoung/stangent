@@ -70,7 +70,8 @@ reply gives the rule in words about a match, the ruling becomes an entry of the 
 `ticket:<KEY>` (in the match's section, else with the code no section covers), on the ticket's file and symbol points; a
 review refresh keeps it as it is, never "not found again". Listed with why, nothing written: a `Ruling:` with nothing
 after it, two different `Ruling:` lines in one comment, a reply that doesn't fit the question (`keep` on a conflict,
-`the FSD is right` when nothing in the FSD covers it), people whose latest replies disagree (each person's latest reply
+`the FSD is right` when nothing in the FSD covers it, a bare `keep` or `the code is right` on code the FSD doesn't
+mention, which asks back for the sentence of what it should do, D417), people whose latest replies disagree (each person's latest reply
 replaces their earlier ones), a proof that no longer stops on the truth map, a "not covered" ticket in a repo with
 several FSDs, an entry a refresh removed, and a reply drafted before that a person has since taken out of `rulings.yaml`
 (recorded in `.stangent/tickets/<KEY>/rulings-drafted.json`; delete it to draft again). A reply already in `rulings.yaml`

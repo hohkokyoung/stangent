@@ -48,7 +48,9 @@
         "notFound": { "type": ["string", "null"] },
         "new": { "type": "boolean" },
         "jira": { "type": ["object", "null"] },
-        "writtenFrom": { "description": "The ruling this confirmed match was written from (D386): rulings.yaml's writtenFrom, as is.", "type": ["object", "null"] }
+        "writtenFrom": { "description": "The ruling this confirmed match was written from (D386): rulings.yaml's writtenFrom, as is.", "type": ["object", "null"] },
+        "onDemand": { "description": "A control the checklist left out (D414): listed, not asked; numbered after every question, and asked in Jira when a ticket lands on it. Absent means false.", "type": "boolean" },
+        "needsWords": { "description": "Ruled keep with no sentence (D417): counts as blank until the PM says what the kept code should do. Absent means false.", "type": "boolean" }
       }
     }
   },

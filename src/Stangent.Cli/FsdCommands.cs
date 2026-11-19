@@ -163,7 +163,7 @@ static class FsdCommands
             return result;
         }));
         fsd.Subcommands.Add(rulings);
-        var rulingsCheck = new Command("rulings-check", "Check rulings.yaml (each value one of its state's, restated with a statement, every entry keyed), take who ruled and when from git blame, list medium and low matches first, count, and write specs/fsd/<doc>/truth-map.json (contract truth-map v2) and truth-map.md (D366). Problems write nothing. Code only.") { docArgument };
+        var rulingsCheck = new Command("rulings-check", "Check rulings.yaml (each value one of its state's, restated with a statement, every entry keyed), take who ruled and when from git blame, list medium and low matches first, count, and write specs/fsd/<doc>/truth-map.json (contract truth-map v2) and the PM's view: specs/fsd/index.md, one summary per area and one file per module under specs/fsd/<doc>/view/ (D415). Problems write nothing. Code only.") { docArgument };
         rulingsCheck.SetAction(pr => Cli.Run(pr, "fsd rulings-check", ctx =>
         {
             var report = TruthMap.Check(ctx.Repo, pr.GetValue(docArgument)!, out var ok);
@@ -172,17 +172,17 @@ static class FsdCommands
             throw new CheckFailed("rulings_need_attention", $"{report["file"]} needs attention; see result.problems.", report);
         }));
         fsd.Subcommands.Add(rulingsCheck);
-        var ruleNumber = new Argument<int>("number") { Description = "The question's number in truth-map.md." };
+        var ruleNumber = new Argument<int>("number") { Description = "The question's number in the PM's view (specs/fsd/<doc>/view/)." };
         var ruleAnswer = new Argument<string?>("answer") { Description = "yes or no (a match, or a section's matches); code or fsd (which is right); keep or remove (code the FSD doesn't mention); clear (undo); drop (an item the review didn't find again).", Arity = ArgumentArity.ZeroOrOne };
         var ruleWords = new Option<string?>("--words") { Description = "The rule in your own words (restated, or with any answer)." };
         var ruleNote = new Option<string?>("--note") { Description = "A note to keep with the answer (replaces an earlier one)." };
-        var ruleMap = new Option<string?>("--map") { Description = "The map id at the top of the truth-map.md the PM read: refused if the map was rebuilt since." };
-        var rule = new Command("rule", "Record the PM's answer to a numbered question of truth-map.md in rulings.yaml (D371), so nobody edits the file: the number is read back through truth-map.json, the answer checked against the item, the file rewritten keeping every other line. The truth map isn't rebuilt and nothing is committed. Code only.") { docArgument, ruleNumber, ruleAnswer, ruleWords, ruleNote, ruleMap };
+        var ruleMap = new Option<string?>("--map") { Description = "The map id at the top of the view file the PM read: refused if the map was rebuilt since." };
+        var rule = new Command("rule", "Record the PM's answer to a numbered question of the PM's view in rulings.yaml (D371; keep needs --words, D417), so nobody edits the file: the number is read back through truth-map.json, the answer checked against the item, the file rewritten keeping every other line. The truth map isn't rebuilt and nothing is committed. Code only.") { docArgument, ruleNumber, ruleAnswer, ruleWords, ruleNote, ruleMap };
         rule.SetAction(pr => Cli.Run(pr, "fsd rule", ctx => PmAnswers.Apply(ctx.Repo, pr.GetValue(docArgument)!, pr.GetValue(ruleNumber), pr.GetValue(ruleAnswer), pr.GetValue(ruleWords), pr.GetValue(ruleNote), pr.GetValue(ruleMap))));
         fsd.Subcommands.Add(rule);
         var writeCost = new Option<string?>("--max-cost") { Description = "The cost cap in dollars for the AI that drafts the FSD's words for rulings that the code is right (rule 9), or `none` for the drafter's own cap. Without it those rulings are listed; the PM's own words are written either way." };
         var writeSection = new Option<string?>("--section") { Description = "Where the PM's words about code no section covers go, by permanent id (S-0012) or number: added at the end of that section. Without it they are listed, never guessed." };
-        var writeItem = new Option<int?>("--item") { Description = "With --section, when more than one is waiting: the code's number in truth-map.md." };
+        var writeItem = new Option<int?>("--item") { Description = "With --section, when more than one is waiting: the code's number in the PM's view." };
         var write = new Command("write", "Turn rulings into the FSD's words (D379, D386, D387), uncommitted: the PM's own words replace the quoted sentence, or go at the end of the --section named; a ruling that the code is right goes to an AI step under --max-cost (D60), checked by `fsd write-check`. Each written entry becomes a confirmed match with writtenFrom, and its section's recorded hash moves to the new text. A ruling drafted from Jira waits until committed. Then `fsd check`, read the diff, commit.") { docArgument, writeCost, writeSection, writeItem, ruleMap };
         write.SetAction(pr => Cli.Run(pr, "fsd write", ctx =>
         {
@@ -216,6 +216,39 @@ static class FsdCommands
             return json;
         }));
         fsd.Subcommands.Add(writeCheck);
+        var viewCost = new Option<string?>("--max-cost") { Description = "The cost cap in dollars for the AI that puts the linked flows into plain words (rule 9), or `none` for the writer's own cap. Without it the flows waiting are counted and the command named." };
+        var view = new Command("view", "Put the flows the PM's questions link to into plain words (D416): code picks each flow's start, who may start it, what it changes and how it stops early; with --max-cost, `stangent-view-writer` words each pick (D60), checked by `fsd view-check`. Flows already worded on the same picks are skipped.") { docArgument, viewCost };
+        view.SetAction(pr => Cli.Run(pr, "fsd view", ctx =>
+        {
+            var doc = pr.GetValue(docArgument)!;
+            var (result, step) = FlowWords.Run(ctx.Repo, doc, pr.GetValue(viewCost));
+            ctx.Span.Attributes["stangent.artifact.count"] = (int)result["waiting"]!;
+            if (step is null) return result;
+            var json = SpecCommands.Finish(step, $"{doc} view").AsObject();
+            json["next"]!["limits"] = FlowWords.DriverLimits(ctx.Repo, doc);
+            foreach (var (k, v) in result.ToList()) if (k != "next") json[k] = v?.DeepClone();
+            return json;
+        }));
+        fsd.Subcommands.Add(view);
+        var viewCheck = new Command("view-check", "Check the plain words of `fsd view` (D416): every line names one picked step, every step has a line, each one sentence with no code name its step doesn't have. Passing words go into specs/fsd/<doc>/flow-words.json and the view is rewritten; one retry, then a failing line keeps the code's own label.") { docArgument, usageOption };
+        viewCheck.SetAction(pr => Cli.Run(pr, "fsd view-check", ctx =>
+        {
+            var doc = pr.GetValue(docArgument)!;
+            var (result, step) = FlowWords.Check(ctx.Repo, doc, SpecCommands.ReadUsage(ctx, pr.GetValue(usageOption)));
+            ctx.Span.Attributes["stangent.artifact.count"] = result["worded"]?.AsArray().Count ?? 0;
+            if (step.Status == "retry")
+            {
+                var retry = step.ToJson($"{doc} view");
+                retry["next"]!["limits"] = FlowWords.DriverLimits(ctx.Repo, doc);
+                foreach (var (k, v) in result.ToList()) if (k != "next") retry[k] = v?.DeepClone();
+                throw new CheckFailed("check_failed", $"{doc} view: some words failed the code check; the writer gets one retry with the errors.", retry);
+            }
+            var json = step.ToJson($"{doc} view");
+            foreach (var (k, v) in result.ToList()) if (k != "next") json[k] = v?.DeepClone();
+            json["after"] = result["next"]?.DeepClone();
+            return json;
+        }));
+        fsd.Subcommands.Add(viewCheck);
 
         var trace = new Command("trace", "specs/trace.yaml: the links, findings and decisions (D58), frozen since the link route was cut (D342); table facts still write to it.");
         root.Subcommands.Add(trace);

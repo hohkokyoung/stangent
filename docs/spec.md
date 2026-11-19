@@ -397,7 +397,7 @@ stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and r
   gap or conflict, both stay and each lists the other in `disagreesWith` (the difference is what gets ruled). `review.json` holds the commit, FSD version, model, effort,
   tokens, each run's counts and usage, the findings (`F-001` …, in section order, not permanent) and what was dropped;
   `review.md` is the same by section (gaps, conflicts, left out, matches), then screens no section covers. Both are generated:
-  answers don't go here: the PM rules on the findings through the truth map (below: `truth-map.md`'s numbered questions, `fsd rule`; the old route's `trace.yaml` decisions stay with it).
+  answers don't go here: the PM rules on the findings through the truth map (below: the view's numbered questions, `fsd rule`; the old route's `trace.yaml` decisions stay with it).
 - **Matches from the checklist** (D405): an item a run covered with a checked quote, and no run left out, becomes a
   `match` finding (its section, the quote, the item's `file:line`, `item`), joined across runs by item; a screen item has no
   line and gives none. Code checked the quote and the line, not that the code does what the sentence says: the PM confirms
@@ -409,8 +409,8 @@ stangent fsd review-merge <doc>          # → specs/fsd/<doc>/review.json and r
   the coverage line (listed, covered by code, covered by the AI, left out, not checked; and the inventory's commit when it
   isn't the reviewed one), a "Left out, by screen" list (each with its finding id, line, which runs, and the reviewer's
   note) and a "Not checked" list; a checklist finding isn't listed again by section. No inventory: `checklist` is null
-  and `review.md` says the screens and controls weren't listed by code. Each left-out item is a finding the PM rules keep
-  or remove like any other (D361).
+  and `review.md` says the screens and controls weren't listed by code. Each left-out item is a finding; a control the
+  checklist left out is listed for the PM, not asked, and asked when a ticket lands on it (D414, below).
 - **What it doesn't show:** that a difference is real. The quote and line checks keep the AI honest about what it read;
   D322's checker found 0 of 20 false after the quote rule, on one app.
 - **Checked free (2026-11-15):** the saved Kavita runs through the built command: 29 of 30, 0 dropped
@@ -459,19 +459,64 @@ The PM's rulings on the review's findings judge tickets. Built so far:
 - **The check and the truth map** (`stangent fsd rulings-check <doc>`, D363, D366 (3); code only): every value is one of
   its state's, `restated` has a statement, `matches` is `confirmed` or blank, every entry has a key and sits under its own
   section. Problems are listed and nothing is written. Otherwise it writes `specs/fsd/<doc>/truth-map.json` (contract
-  `truth-map` v2 since phase fs layer 4, for agents) and `truth-map.md` (the same, for the PM), the same bytes from the same inputs. **Who ruled
+  `truth-map` v2 since phase fs layer 4, for agents) and the PM's view (D415, below), the same bytes from the same inputs. **Who ruled
   and when** come from `git blame` of the working file on the entry's `ruling` line, or for a match its section confirmed,
   on the `matches` line: the commit's author and date; a line not yet committed shows `committed: false` and a warning
   (commit, then run it again). Each entry gets a **standing**: `not-found` and `flagged` first, then `blank` or `ruled`
   (differences, undocumented), `confirmed`, `unconfirmed` or `not-a-match` (matches). Printed: counts by standing and state,
   unconfirmed matches by confidence, per section, the links per kind and the fallback share ("42 entries: flow 11, screen
   27, node 4, file 0 (fallback 9.5%)"), `verifyFirst` (unconfirmed low, then medium matches, for the PM at setup), and
-  `done` when every entry is ruled, confirmed or not a match. `truth-map.json` holds every FSD section in order with its
+  `done` when every entry but a listed control (D414) is ruled, confirmed or not a match. `truth-map.json` holds every FSD section in order with its
   text and its entries (ruling, statement, who, standing, link, evidence, runs, confidence), the code no section covers,
-  and each linked flow's actor, steps with their conditions, scenarios, endings and its 🟡/❓ counts. `truth-map.md`
-  shows the matches to verify first, then each section's text as a quote with its entries, then the flows (30 steps and
-  20 scenarios each, then "and N more, in <file>"). A ruling made before the commit reads `not committed`.
-- **The PM answers in plain words** (layer 2b, D371; code only): nobody edits `rulings.yaml`. `truth-map.md` opens with
+  and each linked flow's actor, steps with their conditions, scenarios, endings and its 🟡/❓ counts. A ruling made
+  before the commit reads `not committed`.
+- **Listed, not asked** (D414; `rulings` v2 and `truth-map` v2 gain an optional `onDemand`, additive, no bump): an
+  undocumented entry whose every finding is a control the checklist left out (`item` `S03.012`, not a whole screen `S03`,
+  not the reviewer's own) is marked `onDemand: true` by `fsd rulings` on each refresh. It is numbered after every question
+  (sections' questions, then the code no section covers, then the listed ones in the same order), shown in the view under
+  "Listed, no answer needed" with its number and never asked, counted apart (`counts.listed`), and `done` doesn't wait for
+  it. A ticket that lands on one finds it blank, so `ticket prove` says unclear and the questions draft asks the PM about
+  that control in Jira; the `Ruling:` reply fills it (D364, D374). An answer given anyway is kept. Kavita: about 38
+  questions up front instead of 105.
+- **Keep comes with the PM's sentence** (D417): `keep` needs `statement`, what the kept code should do. `fsd rule … keep`
+  without `--words` is refused; `rulings-check` refuses a bare keep whose `ruling` line isn't committed, and one already
+  committed is listed (`needsWords`, a warning) and counts as blank (`standing: blank`, `needsWords: true` in the map)
+  until it has words. A Jira `Ruling: keep` (or `the code is right`) on undocumented code is listed and asked back:
+  the sentence alone is the answer. `fsd write` places a keep's sentence as it places restated words (`writtenFrom.ruling:
+  keep`, D417 (5)).
+- **The PM's view** (D415, `TruthView`; replaces the single `truth-map.md`, which `rulings-check` deletes): written by code
+  from `truth-map.json`, the same bytes each time. `specs/fsd/index.md`, the root of the mapping, from every document's
+  `truth-map.json`: each document with its review's commits and its open, answered and listed counts; the actors across
+  the app (from worded flows, D416) with the areas they appear in; per document the counts by kind in plain words
+  (promised, not built · built differently · built, not in the spec · looks right, one answer per section) and its areas
+  with their counts. Per document, `specs/fsd/<doc>/view/<NN-area>/`: an area is an FSD top-level chapter (`07-7-reading-lists`),
+  and code no section covers is one more area, `zz-not-in-the-spec`, one module per screen. Its `summary.md`: modules
+  with their question numbers and open counts, actors, screens, journeys, how sure, every question one line each, and
+  the listed controls by screen. One file per module (a section with text or entries, `7.2-reading-list-details.md`):
+  the section's text, then only its questions: a section's matches as one question (each match with its own number for
+  a `no`), then each difference or undocumented entry with a headline (the review's first note), "Spec says" / "App
+  does", where it stands, how sure, the PM's words, how it works today (D416) and, while open, the answers with what each
+  causes ("`code`: the app is right. The spec changes to say what the app does, and a ticket asking for the spec's way is
+  turned away"). The code is folded at the bottom for developers: each entry's lines and link, and each linked flow's
+  picks with their words. `TruthView.ReadAll` gives the whole view as one text, for Claude and checks.
+- **Flows in plain words** (D416, `FlowWords`; `stangent fsd view <doc> [--max-cost N|none]`, `fsd view-check <doc>`,
+  `plugin/scripts/fsd-view-run.sh --max-cost N <doc>`): code picks from each flow a numbered question links to (never a
+  listed control's) its start (S), who may start it (A), each change, the same change once (C1…: a save, work queued, a
+  file written, a push, an outside call, a navigation; a read isn't one) and each way it stops early with its condition
+  (X1…), at most 8 changes and 8 stops (Kavita's 475 flows: changes p95 8, stops p90 8), the rest counted. `fsd view`
+  prepares the flows whose picks have no checked words (`.stangent/fsd/<doc>/view/input.md`, stage on the state module
+  as `fsd-view-run`); without a cost choice it counts them and names the command (rule 9). `stangent-view-writer` runs
+  with no tools (every pick is in its prompt) and returns a title and one line per pick (`fsd-view-output.v1.json`).
+  `fsd view-check`: every line names one pick, every pick has a line, none extra, one sentence of at most 200
+  characters, no backtick or line break, and no code name its step doesn't have (a dotted name, a call, an inner
+  capital, snake_case; a number isn't one). One retry for the flows with problems; after it a failing line keeps the
+  code's own label, marked "its plain words failed the check". Words go into `specs/fsd/<doc>/flow-words.json`
+  (`flow-words` v1, AI output kept, D18) with the hash of the picks they were checked against (their code and conditions,
+  not their lines, so an edit above a flow costs nothing), and the view is rewritten, also before a retry;
+  a flow whose picks changed shows "not in plain words yet" until worded again. The chart is drawn by code: the journey
+  in order, each edge case a dashed branch from the start. Trusted by one frozen measurement (D416 (4)), not yet run.
+- **The PM answers in plain words** (layer 2b, D371; code only; since D415 the view replaces `truth-map.md`, so read
+  "the view" where this says `truth-map.md`): nobody edits `rulings.yaml`. `truth-map.md` opened with
   how to answer and the numbered questions still open (medium and low matches first, then items to look at again, then
   the unanswered, then sections whose matches aren't confirmed); each section's entries are numbered, with what the
   review found in plain words ("The FSD and the code disagree") and, while open, the question and its answers ("**Which is
@@ -484,7 +529,7 @@ The PM's rulings on the review's findings judge tickets. Built so far:
   goes back to its key through `truth-map.json` (the map the PM read), and the key is looked up in today's
   `rulings.yaml`: an item a refresh removed or changed in kind is refused, never put on another. An answer that doesn't
   fit its item, or would leave the file one `rulings-check` refuses (a match `restated`), is refused, and nothing is
-  written; so is a file with problems, and a `--map <id>` other than the one at the top of `truth-map.md` ("Questions
+  written; so is a file with problems, and a `--map <id>` other than the one at the top of every view file ("questions
   numbered for map `…`": a map rebuilt since numbers differently). The file is written as `fsd rulings` writes it: on a
   file stangent wrote only the answered lines change; on a hand-edited one the PM's `ruling` and `matches` lines are kept
   as typed, but `statement` and `pmNote` come back quoted and comments go, which blame doesn't read. Answering with the

@@ -174,7 +174,7 @@ public sealed class RulingRepliesTests : IDisposable
         check = TruthMap.Check(Repo, "shop", out _);
         jira = check["fromJira"]![0]!;
         Assert.Equal((true, "Dana Lead", true), ((bool)jira["committed"]!, (string)jira["committer"]!, (bool)jira["differ"]!));
-        Assert.Contains("in Jira by Pat PM (SHOP-1, comment 101), confirmed by Dana Lead", File.ReadAllText(TruthMap.MarkdownPath(Root, "shop")));
+        Assert.Contains("in Jira by Pat PM (SHOP-1, comment 101), confirmed by Dana Lead", TruthView.ReadAll(Root, "shop"));
         Assert.True((bool)TruthList.Build(Repo, ["src/orders.ts"])["entries"]!.AsArray().OfType<JsonObject>().Single(e => (string)e["state"]! == "conflict")["usable"]!);
 
         // The PM answers it again through Claude: the answer is theirs now, so its jira line goes.
@@ -223,6 +223,26 @@ public sealed class RulingRepliesTests : IDisposable
     }
 
     [Fact]
+    public void A_bare_keep_from_jira_is_asked_back_and_the_sentence_alone_is_the_answer()
+    {
+        // D417: keeping code the FSD doesn't mention needs the PM's sentence; a bare keep (or "the code is right") is asked back.
+        Asked(null);
+        Write($".stangent/tickets/{Key}/bundle.json", """{ "points": [ { "kind": "file", "id": "src/config.ts" } ] }""");
+        var before = File.ReadAllText(RulingsPath);
+        foreach (var bare in new[] { "Ruling: keep", "Ruling: the code is right" })
+        {
+            var asked = Pull(Comment("101", "Pat PM", bare));
+            Assert.Equal("listed", (string)asked["state"]!);
+            Assert.Contains("say in one sentence what it should do", asked.ToJsonString());
+            Assert.Equal(before, File.ReadAllText(RulingsPath));
+        }
+        var answered = Pull(Comment("101", "Pat PM", "Ruling: The config screen sets the shop's defaults."));
+        Assert.Equal("drafted", (string)answered["state"]!);
+        var own = Assert.Single(Rulings.Load(Root, "shop").File!.Undocumented);
+        Assert.Equal(("restated", "The config screen sets the shop's defaults."), (own.Ruling, own.Statement));
+    }
+
+    [Fact]
     public void A_ticket_nothing_covered_gets_an_entry_of_its_own_that_a_review_refresh_keeps()
     {
         Asked(null);
@@ -242,7 +262,7 @@ public sealed class RulingRepliesTests : IDisposable
         Assert.Null(own.NotFound);
         Assert.Equal("restated", own.Ruling);
         TruthMap.Check(Repo, "shop", out _);
-        Assert.Contains("added from Jira SHOP-1, not a review finding", File.ReadAllText(TruthMap.MarkdownPath(Root, "shop")));
+        Assert.Contains("added from Jira SHOP-1, not a review finding", TruthView.ReadAll(Root, "shop"));
         // Committed, then new words from Jira: only the statement line changes, and that alone keeps it uncommitted.
         Commit("Rule SHOP-1", "Dana Lead");
         Assert.Equal("drafted", (string)Pull(Comment("103", "Pat PM", "Ruling: A deleted order leaves the order list at once."))["state"]!);

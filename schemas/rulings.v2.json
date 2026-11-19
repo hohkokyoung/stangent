@@ -45,6 +45,7 @@
         "notFound": { "description": "The review commit whose runs no longer found it; kept because it holds a ruling (D363).", "type": ["string", "null"] },
         "flagged": { "description": "Why the PM should look again (its link changed, its section changed, its state changed). The PM deletes the line.", "type": ["string", "null"] },
         "new": { "description": "A match added after its section's matches were confirmed. The PM deletes the line, or rules it.", "type": "boolean" },
+        "onDemand": { "description": "Code the checklist left out, every finding a control (D414): listed, not asked; asked in Jira when a ticket lands on it. Set by code on each refresh.", "type": "boolean" },
         "writtenFrom": {
           "description": "A ruling written into the FSD (D386, `stangent fsd write`): the entry is now a confirmed match on the new sentence, and this names what it replaced. state and quote (or link, for code no section covered) are the old entry's key; ruling is code-right or restated; statement the PM's words for restated; by and on who ruled, from git blame when the ruling was committed before it was written (null when the commit of the write is the ruling).",
           "type": "object",
@@ -55,7 +56,7 @@
             "section": { "type": ["string", "null"] },
             "quote": { "type": ["string", "null"] },
             "link": { "type": ["string", "null"] },
-            "ruling": { "enum": ["code-right", "restated"] },
+            "ruling": { "description": "code-right (an AI's checked draft), restated (the PM's words), or keep with the PM's sentence (D417).", "enum": ["code-right", "restated", "keep"] },
             "statement": { "type": ["string", "null"] },
             "cites": { "description": "code-right: the code lines the AI's new words describe, checked by `fsd write-check`.", "type": "array", "items": { "type": "string" } },
             "by": { "type": ["string", "null"] },
@@ -70,7 +71,7 @@
           "properties": { "key": { "type": "string" }, "comment": { "type": "string" }, "author": { "type": "string" }, "created": { "type": "string" } }
         },
         "ruling": { "description": "The PM's: code-right, fsd-right or restated (gap, conflict); keep, remove or restated (undocumented); confirmed or not-a-match (match). Null until ruled.", "type": ["string", "null"] },
-        "statement": { "description": "The rule in the PM's words; required for restated.", "type": ["string", "null"] },
+        "statement": { "description": "The rule in the PM's words; required for restated and, since D417, for keep.", "type": ["string", "null"] },
         "pmNote": { "type": ["string", "null"] }
       }
     }

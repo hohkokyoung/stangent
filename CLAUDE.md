@@ -82,6 +82,8 @@ stangent fsd take <doc> --all-updates                     # copy in what only th
 stangent fsd export <doc> --whole                         # the whole FSD as one Markdown file, outside git, markers off
 stangent jira login                                       # browser sign-in to Atlassian's MCP v2; token in the OS keychain
 plugin/scripts/fix-run.sh --max-cost 3 --context bundle <KEY>...  # Phase 4: fix start → stangent-fixer → fix check → report; never pushes
+stangent fsd rulings-check <doc>                          # rulings → truth-map.json and the PM's view: specs/fsd/index.md, specs/fsd/<doc>/view/ (D415)
+plugin/scripts/fsd-view-run.sh --max-cost 1 <doc>         # the view's linked flows in plain words (D416, paid): fsd view → stangent-view-writer → fsd view-check
 ```
 
 Python analysis needs `python3` (3.9 or newer), as frontends need Node: without it, `python_missing` in `loadErrors` and the rest still builds. The extractor is `tools/py-extractor/stangent_py_extract.py`, one standard-library file, copied beside the stangent assemblies (`py-extractor/`); `STANGENT_PY_EXTRACTOR` points elsewhere. It only parses: an app's code is never imported or run.

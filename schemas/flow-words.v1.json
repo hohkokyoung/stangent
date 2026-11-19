@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:stangent:schema:flow-words:v1",
+  "title": "specs/fsd/<doc>/flow-words.json: the linked flows in plain words (D416)",
+  "description": "Per flow id, the plain words stangent-view-writer gave its picked steps, checked by code, and the hash of the picks they were checked against: words are used only while the flow's picks hash the same. A pick in `failed` keeps the code's own label in the PM's view. AI output, kept (D18).",
+  "type": "object",
+  "required": ["contract", "version", "doc", "flows"],
+  "additionalProperties": false,
+  "properties": {
+    "contract": { "const": "flow-words" },
+    "version": { "const": 1 },
+    "doc": { "type": "string" },
+    "flows": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["itemsHash", "title", "lines", "failed"],
+        "additionalProperties": false,
+        "properties": {
+          "itemsHash": { "type": "string" },
+          "title": { "description": "The journey's name in plain words; empty when it failed the check.", "type": "string" },
+          "lines": { "type": "object", "additionalProperties": { "type": "string" } },
+          "failed": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

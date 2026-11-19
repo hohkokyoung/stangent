@@ -255,7 +255,7 @@ public static partial class TicketDrafts
                 "flagged" => $"**For the PM:** {subject}, and its ruling needs another look{code}. {(undocumented ? "Keep this code or remove it?" : "Which is right, the code or the FSD?")}",
                 "not-found" => $"**For the PM:** {subject}, and the last FSD review didn't find it again{code}. {(undocumented ? "Keep this code or remove it?" : "Which is right, the code or the FSD?")}",
                 _ => undocumented
-                    ? $"**For the PM:** {subject}, and nobody has ruled whether to keep it{code}. Keep it or remove it?"
+                    ? $"**For the PM:** {subject}, and nobody has ruled whether to keep it{code}. If it should stay, what should it do? Or should it be removed?"
                     : $"**For the PM:** {subject}, and nobody has ruled whether the code or the FSD is right{code}. Which is right?",
             };
         return ask + "\n\nReply with a line starting `Ruling:`, for example `Ruling: the FSD is right`, `Ruling: the code is right`, or the rule in your own words.";

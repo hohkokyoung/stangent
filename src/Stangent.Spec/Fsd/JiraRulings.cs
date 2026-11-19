@@ -169,12 +169,14 @@ public static partial class JiraRulings
                 misfit = $"the question asked whether the code does what the FSD says, so `{w}` doesn't answer it: reply `Ruling: yes`, `Ruling: no`, or the rule in your words";
                 return null;
             case "undocumented":
-                // "The code is right" about code no FSD sentence covers means keep it as it is.
-                if (w is "keep" or "code-right") return "keep";
                 if (w == "remove") return "remove";
-                misfit = notCovered || e.KeySection is null
-                    ? $"nothing in the FSD covers this, so `{w}` can't be the answer: reply `Ruling: keep`, `Ruling: remove`, or the rule in your own words"
-                    : $"this is code the FSD doesn't mention, so `{w}` doesn't answer it: reply `Ruling: keep`, `Ruling: remove`, or the rule in your own words";
+                // D417: keeping it needs the PM's sentence, what the kept code should do; a bare keep (or "the code is right")
+                // is asked back, never drafted. The sentence alone is the answer (drafted as the rule in their words).
+                misfit = w is "keep" or "code-right"
+                    ? "to keep it, say in one sentence what it should do: reply `Ruling:` and that sentence, or `Ruling: remove`"
+                    : notCovered || e.KeySection is null
+                    ? $"nothing in the FSD covers this, so `{w}` can't be the answer: reply `Ruling:` and what it should do in one sentence, or `Ruling: remove`"
+                    : $"this is code the FSD doesn't mention, so `{w}` doesn't answer it: reply `Ruling:` and what it should do in one sentence, or `Ruling: remove`";
                 return null;
             default:
                 if (w is "code-right" or "fsd-right") return w;

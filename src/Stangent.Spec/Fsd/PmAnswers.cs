@@ -6,7 +6,7 @@ namespace Stangent.Spec.Fsd;
 
 /// <summary>
 /// <c>stangent fsd rule &lt;doc&gt; &lt;n&gt; [answer]</c> (D371): the PM's answer to question <c>n</c> of
-/// <c>truth-map.md</c>, written into <c>rulings.yaml</c> so no person edits it. The number is read back to its entry's key
+/// the PM's view (D415), written into <c>rulings.yaml</c> so no person edits it. The number is read back to its entry's key
 /// through <c>truth-map.json</c>, the map the PM read, and the key is looked up in today's <c>rulings.yaml</c>; the truth map
 /// isn't rebuilt, so every number keeps its meaning until <c>fsd rulings-check</c> runs. Code checks the answer fits the item
 /// (D18). Nothing is committed: who answered comes from git when it is.
@@ -29,7 +29,7 @@ public static class PmAnswers
         var root = repo.Root;
         var mapPath = TruthMap.JsonPath(root, doc);
         if (!File.Exists(mapPath))
-            throw new StangentException("no_truth_map", $"{doc} has no truth map yet: run `stangent fsd rulings-check {doc}`, then read truth-map.md.", ExitCodes.NotFound);
+            throw new StangentException("no_truth_map", $"{doc} has no truth map yet: run `stangent fsd rulings-check {doc}`, then read the view (specs/fsd/{doc}/view/).", ExitCodes.NotFound);
         var map = JsonNode.Parse(File.ReadAllText(mapPath))!.AsObject();
         var path = Rulings.PathFor(root, doc);
         if (!File.Exists(path))
@@ -38,7 +38,7 @@ public static class PmAnswers
         // number is refused rather than put on whatever holds that number now.
         var builtId = MapId(map);
         if (mapId is { Length: > 0 } && !string.Equals(mapId.Trim(), builtId, StringComparison.OrdinalIgnoreCase))
-            throw new StangentException("map_rebuilt", $"truth-map.md was rebuilt since you read it (your numbers are from map {mapId.Trim()}, it is now map {builtId}): read it again; nothing was written.", ExitCodes.Failed);
+            throw new StangentException("map_rebuilt", $"the view was rebuilt since you read it (your numbers are from map {mapId.Trim()}, it is now map {builtId}): read it again; nothing was written.", ExitCodes.Failed);
         var yaml = File.ReadAllText(path);
         var (file, parseProblems) = Rulings.Parse(yaml);
         var problems = TruthMap.Problems(file, parseProblems);
@@ -57,7 +57,7 @@ public static class PmAnswers
             // A section's question: are all its matches right?
             var sid = (string)section!["sectionId"]!;
             var block = file.Sections.FirstOrDefault(b => b.SectionId == sid)
-                ?? throw Refuse($"{n} ({Heading(section)}) isn't in rulings.yaml any more: a review refresh changed it. Run `stangent fsd rulings-check {doc}` and read truth-map.md again.");
+                ?? throw Refuse($"{n} ({Heading(section)}) isn't in rulings.yaml any more: a review refresh changed it. Run `stangent fsd rulings-check {doc}` and read the view again.");
             if (words is not null || note is not null) throw Refuse($"{n} asks whether {Heading(section)}'s matches are all right: answer `yes`, or answer `no` on the one that isn't. Words and notes go on an entry's own number.");
             if (answer is "clear") { (block.Matches, block.MatchesRaw) = (null, null); said = "not confirmed (cleared)"; }
             else if (Yes.Contains(answer))
@@ -77,9 +77,9 @@ public static class PmAnswers
         var found = file.WithSections.FirstOrDefault(x => x.Entry.Problem is null && x.Entry.Key == probe.Key);
         var what = Describe(section, entry);
         if (found.Entry is not { } target)
-            throw Refuse($"{n} ({what}) isn't in rulings.yaml any more: a review refresh changed it. Run `stangent fsd rulings-check {doc}` and read truth-map.md again.");
+            throw Refuse($"{n} ({what}) isn't in rulings.yaml any more: a review refresh changed it. Run `stangent fsd rulings-check {doc}` and read the view again.");
         if (target.State != probe.State)
-            throw Refuse($"{n} ({what}) has changed since truth-map.md was made: the review now calls it a {target.State}. Run `stangent fsd rulings-check {doc}` and read it again.");
+            throw Refuse($"{n} ({what}) has changed since the view was made: the review now calls it a {target.State}. Run `stangent fsd rulings-check {doc}` and read it again.");
 
         if (answer is "drop")
         {
@@ -103,6 +103,9 @@ public static class PmAnswers
         if (ruling is null && words is not null) ruling = "restated";
         if (ruling == "restated" && words is null && target.Statement is null)
             throw Refuse($"For \"in my words\", say the rule: `--words \"…\"`.");
+        // D417: a bare keep says nothing about how the kept code should work, so it would back no ticket and could turn a real bug away.
+        if (ruling == "keep" && words is null && target.Statement is null)
+            throw Refuse($"{n}: keep needs one sentence in your words, what the kept code should do: `keep --words \"…\"` (D417).");
         if (ruling is not null)
         {
             var oldStatement = target.Statement;
@@ -110,7 +113,7 @@ public static class PmAnswers
             else
             {
                 (target.Ruling, target.RulingRaw) = (ruling, null);
-                target.Statement = words ?? (ruling == "restated" ? oldStatement : null);
+                target.Statement = words ?? (ruling is "restated" or "keep" ? oldStatement : null);
             }
             // Answered means looked at: a flag or "new" mark is done with (D369's "delete the line once you have looked").
             target.Flagged = null;
@@ -169,7 +172,7 @@ public static class PmAnswers
         }
         foreach (var e in map["undocumented"]!.AsArray().OfType<JsonObject>())
             if ((int?)e["n"] == n) return (null, e);
-        throw Refuse($"truth-map.md has no question {n}.");
+        throw Refuse($"the view has no question {n}.");
     }
 
     static string Heading(JsonObject s) => (string?)s["idKind"] == "number" ? $"{(string)s["section"]!} {(string)s["title"]!}" : (string)s["title"]!;
@@ -195,7 +198,7 @@ public static class PmAnswers
         Quotes.WriteAtomic(path, text);
     }
 
-    /// <summary>The map's short id, shown at the top of truth-map.md: its rulings.yaml hash's first 8 characters.</summary>
+    /// <summary>The map's short id, shown at the top of every view file (D415): its rulings.yaml hash's first 8 characters.</summary>
     public static string MapId(JsonObject map) => ((string?)map["rulingsHash"] ?? "").Replace("sha256:", "", StringComparison.Ordinal) is var h && h.Length >= 8 ? h[..8] : h;
 
     static JsonObject Report(string doc, int n, string what, string said, string path, string root, string field, string? ruling, string? statement, string? pmNote, string mapId) => new()
