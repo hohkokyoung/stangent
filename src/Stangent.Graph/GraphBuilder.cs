@@ -324,8 +324,34 @@ public static class GraphBuilder
             finally { r.AnalyzerLoadFailed -= Failed; }
         }
         return failures.Count > 0 ? $"the Razor compiler didn't load: {string.Join("; ", failures.Distinct()).Split('\n')[0]}"
-            : generators == 0 ? "the Razor compiler has no generator stangent can run"
+            : generators == 0 ? NewerCompiler(razor.Select(r => r.FullPath)) is { } wants
+                ? $"the SDK's Razor compiler needs compiler {wants}, stangent has {typeof(Compilation).Assembly.GetName().Version}; pin an older SDK with global.json"
+                : "the Razor compiler has no generator stangent can run"
             : null;   // it ran and made none: views compiled at runtime, the project's own choice
+    }
+
+    /// <summary>The newest Microsoft.CodeAnalysis version these assemblies were built against, when newer than stangent's own:
+    /// a failed load is cached, so a second look gets no event and this is how the cause is told.</summary>
+    static Version? NewerCompiler(IEnumerable<string> paths)
+    {
+        var ours = typeof(Compilation).Assembly.GetName().Version!;
+        Version? newest = null;
+        foreach (var path in paths)
+            try
+            {
+                using var stream = File.OpenRead(path);
+                using var pe = new System.Reflection.PortableExecutable.PEReader(stream);
+                if (!pe.HasMetadata) continue;
+                var md = System.Reflection.Metadata.PEReaderExtensions.GetMetadataReader(pe);
+                foreach (var h in md.AssemblyReferences)
+                {
+                    var a = md.GetAssemblyReference(h);
+                    if (md.GetString(a.Name) == "Microsoft.CodeAnalysis" && a.Version > ours && (newest is null || a.Version > newest))
+                        newest = a.Version;
+                }
+            }
+            catch (Exception e) when (e is IOException or BadImageFormatException or UnauthorizedAccessException) { }
+        return newest;
     }
 
     /// <summary>An MSBuild workspace set up the way stangent loads projects (also used by the benchmark).</summary>

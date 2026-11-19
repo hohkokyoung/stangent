@@ -40,6 +40,9 @@ static class ShopCopy
             Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(root, rel))!);
             File.Copy(file, Path.Combine(root, rel));
         }
+        // Outside the repo the copy would build with the machine's newest SDK, whose Razor compiler may need a newer
+        // compiler than stangent's (CI's runner has .NET 11): pin it to the repo's own SDK, as a client repo pins its.
+        File.Copy(Path.Combine(RepoRoot.Find(), "global.json"), Path.Combine(root, "global.json"));
         Git(root, "init -q");
         Git(root, "add -A");
         Git(root, "-c user.name=test -c user.email=test@example.invalid commit -q -m fixture");

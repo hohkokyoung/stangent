@@ -320,7 +320,8 @@ Also read by flows:
   and read-named repository methods. A name word must be whole (`All`, `AllAsync`, never `Allow`).
 - **Server-rendered views (N1, N2).** Read from the C# the SDK's own Razor compiler makes for each `.cshtml` (its source
   generator, already run inside the compilation the graph loads), so markup, tag helper values and the view's C# are what the
-  build sees; nothing is parsed twice. A view `uses` its `@model` and whatever repo code it names (`asp-for` properties,
+  build sees; nothing is parsed twice. When a project has `.cshtml` files and the compiler makes none, `loadErrors` says why (it
+  didn't load, or the SDK's Razor compiler needs a newer compiler than stangent's: pin an older SDK with `global.json`; D412). A view `uses` its `@model` and whatever repo code it names (`asp-for` properties,
   injected services); `renders` its partials (`<partial>`, `Html.PartialAsync`: beside the view, then the shared folders; a
   name with a folder or an extension is relative to the view) and view components (by type, or by name to the class MVC's
   rules make a component). Each form is a `form` point linked to the endpoint it posts to (`calls-http`): by route name (a
